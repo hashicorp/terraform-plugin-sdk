@@ -92,7 +92,7 @@ func getImporters(pkg string, forks map[string]bool) []string {
 	return res
 }
 
-// get all forks of hashicorp/terraform and terraform-providrs/*
+// get all forks of hashicorp/terraform and terraform-providrs/* and hashicorp/otto
 func getForks() map[string]bool {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -154,6 +154,24 @@ listproviders:
 			break listproviders
 		}
 		opt2.Page = resp.NextPage
+	}
+
+	forks["github.com/hashicorp/otto"] = true
+	// get forks of hashicorp/otto
+	// although someone might have kept otto alive?
+	opt4 := &github.RepositoryListForksOptions{ListOptions: github.ListOptions{PerPage: 200}}
+	for {
+		repos, resp, err := client.Repositories.ListForks(ctx, "hashicorp", "otto", opt4)
+		if err != nil {
+			log.Fatalf("Could not retrieve forks: %s", err)
+		}
+		for _, repo := range repos {
+			forks["github.com/"+repo.GetFullName()] = true
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt4.Page = resp.NextPage
 	}
 
 	return forks
