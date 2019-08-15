@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/version"
 
 	"github.com/hashicorp/terraform/states"
@@ -37,8 +36,8 @@ type BuiltinEvalContext struct {
 
 	// Schemas is a repository of all of the schemas we should need to
 	// decode configuration blocks and expressions. This must be constructed by
-	// the caller to include schemas for all of the providers, resource types,
-	// data sources and provisioners used by the given configuration and
+	// the caller to include schemas for all of the providers, resource types, and
+	// data sources used by the given configuration and
 	// state.
 	//
 	// This must not be mutated during evaluation.
@@ -59,8 +58,6 @@ type BuiltinEvalContext struct {
 	ProviderCache       map[string]providers.Interface
 	ProviderInputConfig map[string]map[string]cty.Value
 	ProviderLock        *sync.Mutex
-	ProvisionerCache    map[string]provisioners.Interface
-	ProvisionerLock     *sync.Mutex
 	ChangesValue        *plans.ChangesSync
 	StateValue          *states.SyncState
 
@@ -210,63 +207,6 @@ func (ctx *BuiltinEvalContext) SetProviderInput(pc addrs.ProviderConfig, c map[s
 	ctx.ProviderLock.Lock()
 	ctx.ProviderInputConfig[absProvider.String()] = c
 	ctx.ProviderLock.Unlock()
-}
-
-func (ctx *BuiltinEvalContext) InitProvisioner(n string) (provisioners.Interface, error) {
-	ctx.once.Do(ctx.init)
-
-	// If we already initialized, it is an error
-	if p := ctx.Provisioner(n); p != nil {
-		return nil, fmt.Errorf("Provisioner '%s' already initialized", n)
-	}
-
-	// Warning: make sure to acquire these locks AFTER the call to Provisioner
-	// above, since it also acquires locks.
-	ctx.ProvisionerLock.Lock()
-	defer ctx.ProvisionerLock.Unlock()
-
-	key := PathObjectCacheKey(ctx.Path(), n)
-
-	p, err := ctx.Components.ResourceProvisioner(n, key)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx.ProvisionerCache[key] = p
-
-	return p, nil
-}
-
-func (ctx *BuiltinEvalContext) Provisioner(n string) provisioners.Interface {
-	ctx.once.Do(ctx.init)
-
-	ctx.ProvisionerLock.Lock()
-	defer ctx.ProvisionerLock.Unlock()
-
-	key := PathObjectCacheKey(ctx.Path(), n)
-	return ctx.ProvisionerCache[key]
-}
-
-func (ctx *BuiltinEvalContext) ProvisionerSchema(n string) *configschema.Block {
-	ctx.once.Do(ctx.init)
-
-	return ctx.Schemas.ProvisionerConfig(n)
-}
-
-func (ctx *BuiltinEvalContext) CloseProvisioner(n string) error {
-	ctx.once.Do(ctx.init)
-
-	ctx.ProvisionerLock.Lock()
-	defer ctx.ProvisionerLock.Unlock()
-
-	key := PathObjectCacheKey(ctx.Path(), n)
-
-	prov := ctx.ProvisionerCache[key]
-	if prov != nil {
-		return prov.Close()
-	}
-
-	return nil
 }
 
 func (ctx *BuiltinEvalContext) EvaluateBlock(body hcl.Body, schema *configschema.Block, self addrs.Referenceable, keyData InstanceKeyEvalData) (cty.Value, hcl.Body, tfdiags.Diagnostics) {

@@ -26,8 +26,7 @@ type ApplyGraphBuilder struct {
 	// State is the current state
 	State *states.State
 
-	// Components is a factory for the plug-in components (providers and
-	// provisioners) available for use.
+	// Components is a factory for the plug-in components (providers) available for use.
 	Components contextComponentFactory
 
 	// Schemas is the repository of schemas we will draw from to analyse
@@ -142,10 +141,6 @@ func (b *ApplyGraphBuilder) Steps() []GraphTransformer {
 			},
 		),
 
-		// Provisioner-related transformations
-		&MissingProvisionerTransformer{Provisioners: b.Components.ResourceProvisioners()},
-		&ProvisionerTransformer{},
-
 		// Add root variables
 		&RootVariableTransformer{Config: b.Config},
 
@@ -196,7 +191,6 @@ func (b *ApplyGraphBuilder) Steps() []GraphTransformer {
 
 		// Close opened plugin connections
 		&CloseProviderTransformer{},
-		&CloseProvisionerTransformer{},
 
 		// Single root
 		&RootTransformer{},

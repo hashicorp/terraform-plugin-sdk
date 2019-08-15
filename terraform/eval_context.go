@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform/lang"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/states"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/zclconf/go-cty/cty"
@@ -64,25 +63,6 @@ type EvalContext interface {
 	// from user input.
 	ProviderInput(addrs.ProviderConfig) map[string]cty.Value
 	SetProviderInput(addrs.ProviderConfig, map[string]cty.Value)
-
-	// InitProvisioner initializes the provisioner with the given name and
-	// returns the implementation of the resource provisioner or an error.
-	//
-	// It is an error to initialize the same provisioner more than once.
-	InitProvisioner(string) (provisioners.Interface, error)
-
-	// Provisioner gets the provisioner instance with the given name (already
-	// initialized) or returns nil if the provisioner isn't initialized.
-	Provisioner(string) provisioners.Interface
-
-	// ProvisionerSchema retrieves the main configuration schema for a
-	// particular provisioner, which must have already been initialized with
-	// InitProvisioner.
-	ProvisionerSchema(string) *configschema.Block
-
-	// CloseProvisioner closes provisioner connections that aren't needed
-	// anymore.
-	CloseProvisioner(string) error
 
 	// EvaluateBlock takes the given raw configuration block and associated
 	// schema and evaluates it to produce a value of an object type that

@@ -14,60 +14,6 @@ func TestApplyGraphBuilder_impl(t *testing.T) {
 	var _ GraphBuilder = new(ApplyGraphBuilder)
 }
 
-func TestApplyGraphBuilder(t *testing.T) {
-	changes := &plans.Changes{
-		Resources: []*plans.ResourceInstanceChangeSrc{
-			{
-				Addr: mustResourceInstanceAddr("test_object.create"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Create,
-				},
-			},
-			{
-				Addr: mustResourceInstanceAddr("test_object.other"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Update,
-				},
-			},
-			{
-				Addr: mustResourceInstanceAddr("module.child.test_object.create"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Create,
-				},
-			},
-			{
-				Addr: mustResourceInstanceAddr("module.child.test_object.other"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Create,
-				},
-			},
-		},
-	}
-
-	b := &ApplyGraphBuilder{
-		Config:     testModule(t, "graph-builder-apply-basic"),
-		Changes:    changes,
-		Components: simpleMockComponentFactory(),
-		Schemas:    simpleTestSchemas(),
-	}
-
-	g, err := b.Build(addrs.RootModuleInstance)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if g.Path.String() != addrs.RootModuleInstance.String() {
-		t.Fatalf("wrong path %q", g.Path.String())
-	}
-
-	actual := strings.TrimSpace(g.String())
-
-	expected := strings.TrimSpace(testApplyGraphBuilderStr)
-	if actual != expected {
-		t.Fatalf("wrong result\n\ngot:\n%s\n\nwant:\n%s", actual, expected)
-	}
-}
-
 // This tests the ordering of two resources where a non-CBD depends
 // on a CBD. GH-11349.
 func TestApplyGraphBuilder_depCbd(t *testing.T) {
@@ -370,71 +316,6 @@ func TestApplyGraphBuilder_moduleDestroy(t *testing.T) {
 		t, g,
 		"module.B.test_object.foo (destroy)",
 		"module.A.test_object.foo (destroy)",
-	)
-}
-
-func TestApplyGraphBuilder_provisioner(t *testing.T) {
-	changes := &plans.Changes{
-		Resources: []*plans.ResourceInstanceChangeSrc{
-			{
-				Addr: mustResourceInstanceAddr("test_object.foo"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Create,
-				},
-			},
-		},
-	}
-
-	b := &ApplyGraphBuilder{
-		Config:     testModule(t, "graph-builder-apply-provisioner"),
-		Changes:    changes,
-		Components: simpleMockComponentFactory(),
-		Schemas:    simpleTestSchemas(),
-	}
-
-	g, err := b.Build(addrs.RootModuleInstance)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	testGraphContains(t, g, "provisioner.test")
-	testGraphHappensBefore(
-		t, g,
-		"provisioner.test",
-		"test_object.foo",
-	)
-}
-
-func TestApplyGraphBuilder_provisionerDestroy(t *testing.T) {
-	changes := &plans.Changes{
-		Resources: []*plans.ResourceInstanceChangeSrc{
-			{
-				Addr: mustResourceInstanceAddr("test_object.foo"),
-				ChangeSrc: plans.ChangeSrc{
-					Action: plans.Delete,
-				},
-			},
-		},
-	}
-
-	b := &ApplyGraphBuilder{
-		Destroy:    true,
-		Config:     testModule(t, "graph-builder-apply-provisioner"),
-		Changes:    changes,
-		Components: simpleMockComponentFactory(),
-		Schemas:    simpleTestSchemas(),
-	}
-
-	g, err := b.Build(addrs.RootModuleInstance)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	testGraphContains(t, g, "provisioner.test")
-	testGraphHappensBefore(
-		t, g,
-		"provisioner.test",
-		"test_object.foo (destroy)",
 	)
 }
 

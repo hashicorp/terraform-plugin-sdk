@@ -16,7 +16,6 @@ var ReservedDataSourceFields = []string{
 	"depends_on",
 	"lifecycle",
 	"provider",
-	"provisioner",
 }
 
 var ReservedResourceFields = []string{
@@ -26,7 +25,6 @@ var ReservedResourceFields = []string{
 	"id",
 	"lifecycle",
 	"provider",
-	"provisioner",
 }
 
 // Resource represents a thing in Terraform that has a set of configurable

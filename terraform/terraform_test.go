@@ -23,7 +23,6 @@ import (
 	"github.com/hashicorp/terraform/internal/initwd"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/registry"
 	"github.com/hashicorp/terraform/states"
 )
@@ -192,12 +191,6 @@ func testModuleInline(t *testing.T, sources map[string]string) *configs.Config {
 
 func testProviderFuncFixed(rp providers.Interface) providers.Factory {
 	return func() (providers.Interface, error) {
-		return rp, nil
-	}
-}
-
-func testProvisionerFuncFixed(rp provisioners.Interface) ProvisionerFactory {
-	return func() (provisioners.Interface, error) {
 		return rp, nil
 	}
 }
@@ -649,127 +642,6 @@ module.child:
   Outputs:
 
   foo = bar
-`
-
-const testTerraformApplyProvisionerStr = `
-aws_instance.bar:
-  ID = foo
-  provider = provider.aws
-
-  Dependencies:
-    aws_instance.foo
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  compute = value
-  compute_value = 1
-  num = 2
-  type = aws_instance
-  value = computed_value
-`
-
-const testTerraformApplyProvisionerModuleStr = `
-<no state>
-module.child:
-  aws_instance.bar:
-    ID = foo
-    provider = provider.aws
-`
-
-const testTerraformApplyProvisionerFailStr = `
-aws_instance.bar: (tainted)
-  ID = foo
-  provider = provider.aws
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  num = 2
-  type = aws_instance
-`
-
-const testTerraformApplyProvisionerFailCreateStr = `
-aws_instance.bar: (tainted)
-  ID = foo
-  provider = provider.aws
-`
-
-const testTerraformApplyProvisionerFailCreateNoIdStr = `
-<no state>
-`
-
-const testTerraformApplyProvisionerFailCreateBeforeDestroyStr = `
-aws_instance.bar: (tainted) (1 deposed)
-  ID = foo
-  provider = provider.aws
-  require_new = xyz
-  type = aws_instance
-  Deposed ID 1 = bar
-`
-
-const testTerraformApplyProvisionerResourceRefStr = `
-aws_instance.bar:
-  ID = foo
-  provider = provider.aws
-  num = 2
-  type = aws_instance
-`
-
-const testTerraformApplyProvisionerSelfRefStr = `
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  foo = bar
-  type = aws_instance
-`
-
-const testTerraformApplyProvisionerMultiSelfRefStr = `
-aws_instance.foo.0:
-  ID = foo
-  provider = provider.aws
-  foo = number 0
-  type = aws_instance
-aws_instance.foo.1:
-  ID = foo
-  provider = provider.aws
-  foo = number 1
-  type = aws_instance
-aws_instance.foo.2:
-  ID = foo
-  provider = provider.aws
-  foo = number 2
-  type = aws_instance
-`
-
-const testTerraformApplyProvisionerMultiSelfRefSingleStr = `
-aws_instance.foo.0:
-  ID = foo
-  provider = provider.aws
-  foo = number 0
-  type = aws_instance
-aws_instance.foo.1:
-  ID = foo
-  provider = provider.aws
-  foo = number 1
-  type = aws_instance
-
-  Dependencies:
-    aws_instance.foo[0]
-aws_instance.foo.2:
-  ID = foo
-  provider = provider.aws
-  foo = number 2
-  type = aws_instance
-
-  Dependencies:
-    aws_instance.foo[0]
-`
-
-const testTerraformApplyProvisionerDiffStr = `
-aws_instance.bar:
-  ID = foo
-  provider = provider.aws
-  foo = bar
-  type = aws_instance
 `
 
 const testTerraformApplyDestroyStr = `

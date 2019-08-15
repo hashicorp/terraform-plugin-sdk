@@ -5,14 +5,12 @@ import (
 
 	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 )
 
 // simpleMockComponentFactory returns a component factory pre-configured with
-// one provider and one provisioner, both called "test".
+// one provider called "test".
 //
-// The provider is built with simpleMockProvider and the provisioner with
-// simpleMockProvisioner, and all schemas used in both are as built by
+// The provider is built with simpleMockProvider, all schemas used are as built by
 // function simpleTestSchema.
 //
 // Each call to this function produces an entirely-separate set of objects,
@@ -24,16 +22,10 @@ func simpleMockComponentFactory() *basicComponentFactory {
 	// so that test code can customize it before passing this component
 	// factory into real code under test.
 	provider := simpleMockProvider()
-	provisioner := simpleMockProvisioner()
 	return &basicComponentFactory{
 		providers: map[string]providers.Factory{
 			"test": func() (providers.Interface, error) {
 				return provider, nil
-			},
-		},
-		provisioners: map[string]ProvisionerFactory{
-			"test": func() (provisioners.Interface, error) {
-				return provisioner, nil
 			},
 		},
 	}

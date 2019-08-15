@@ -8,7 +8,6 @@ import (
 
 var VersionedPlugins = map[int]plugin.PluginSet{
 	5: {
-		"provider":    &GRPCProviderPlugin{},
-		"provisioner": &GRPCProvisionerPlugin{},
+		"provider": &GRPCProviderPlugin{},
 	},
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/lang"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/states"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/zclconf/go-cty/cty"
@@ -58,23 +57,6 @@ type MockEvalContext struct {
 	ConfigureProviderAddr   addrs.ProviderConfig
 	ConfigureProviderConfig cty.Value
 	ConfigureProviderDiags  tfdiags.Diagnostics
-
-	InitProvisionerCalled      bool
-	InitProvisionerName        string
-	InitProvisionerProvisioner provisioners.Interface
-	InitProvisionerError       error
-
-	ProvisionerCalled      bool
-	ProvisionerName        string
-	ProvisionerProvisioner provisioners.Interface
-
-	ProvisionerSchemaCalled bool
-	ProvisionerSchemaName   string
-	ProvisionerSchemaSchema *configschema.Block
-
-	CloseProvisionerCalled      bool
-	CloseProvisionerName        string
-	CloseProvisionerProvisioner provisioners.Interface
 
 	EvaluateBlockCalled     bool
 	EvaluateBlockBody       hcl.Body
@@ -188,30 +170,6 @@ func (c *MockEvalContext) SetProviderInput(addr addrs.ProviderConfig, vals map[s
 	c.SetProviderInputCalled = true
 	c.SetProviderInputAddr = addr
 	c.SetProviderInputValues = vals
-}
-
-func (c *MockEvalContext) InitProvisioner(n string) (provisioners.Interface, error) {
-	c.InitProvisionerCalled = true
-	c.InitProvisionerName = n
-	return c.InitProvisionerProvisioner, c.InitProvisionerError
-}
-
-func (c *MockEvalContext) Provisioner(n string) provisioners.Interface {
-	c.ProvisionerCalled = true
-	c.ProvisionerName = n
-	return c.ProvisionerProvisioner
-}
-
-func (c *MockEvalContext) ProvisionerSchema(n string) *configschema.Block {
-	c.ProvisionerSchemaCalled = true
-	c.ProvisionerSchemaName = n
-	return c.ProvisionerSchemaSchema
-}
-
-func (c *MockEvalContext) CloseProvisioner(n string) error {
-	c.CloseProvisionerCalled = true
-	c.CloseProvisionerName = n
-	return nil
 }
 
 func (c *MockEvalContext) EvaluateBlock(body hcl.Body, schema *configschema.Block, self addrs.Referenceable, keyData InstanceKeyEvalData) (cty.Value, hcl.Body, tfdiags.Diagnostics) {

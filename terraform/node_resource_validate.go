@@ -1,10 +1,7 @@
 package terraform
 
 import (
-	"github.com/hashicorp/terraform/configs"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -50,40 +47,6 @@ func (n *NodeValidatableResource) EvalTree() EvalNode {
 				ConfigVal:      &configVal,
 			},
 		},
-	}
-
-	if managed := n.Config.Managed; managed != nil {
-		hasCount := n.Config.Count != nil
-		hasForEach := n.Config.ForEach != nil
-
-		// Validate all the provisioners
-		for _, p := range managed.Provisioners {
-			var provisioner provisioners.Interface
-			var provisionerSchema *configschema.Block
-
-			if p.Connection == nil {
-				p.Connection = config.Managed.Connection
-			} else if config.Managed.Connection != nil {
-				p.Connection.Config = configs.MergeBodies(config.Managed.Connection.Config, p.Connection.Config)
-			}
-
-			seq.Nodes = append(
-				seq.Nodes,
-				&EvalGetProvisioner{
-					Name:   p.Type,
-					Output: &provisioner,
-					Schema: &provisionerSchema,
-				},
-				&EvalValidateProvisioner{
-					ResourceAddr:       addr.Resource,
-					Provisioner:        &provisioner,
-					Schema:             &provisionerSchema,
-					Config:             p,
-					ResourceHasCount:   hasCount,
-					ResourceHasForEach: hasForEach,
-				},
-			)
-		}
 	}
 
 	return seq

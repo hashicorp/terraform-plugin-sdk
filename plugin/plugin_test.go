@@ -9,9 +9,3 @@ func testProviderFixed(p terraform.ResourceProvider) ProviderFunc {
 		return p
 	}
 }
-
-func testProvisionerFixed(p terraform.ResourceProvisioner) ProvisionerFunc {
-	return func() terraform.ResourceProvisioner {
-		return p
-	}
-}

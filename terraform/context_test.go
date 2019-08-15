@@ -26,7 +26,6 @@ import (
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/plans/planfile"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/states"
 	"github.com/hashicorp/terraform/states/statefile"
 	"github.com/hashicorp/terraform/tfdiags"
@@ -436,29 +435,6 @@ func testProvider(prefix string) *MockProvider {
 
 	p.GetSchemaReturn = testProviderSchema(prefix)
 
-	return p
-}
-
-func testProvisioner() *MockProvisioner {
-	p := new(MockProvisioner)
-	p.GetSchemaResponse = provisioners.GetSchemaResponse{
-		Provisioner: &configschema.Block{
-			Attributes: map[string]*configschema.Attribute{
-				"command": {
-					Type:     cty.String,
-					Optional: true,
-				},
-				"order": {
-					Type:     cty.String,
-					Optional: true,
-				},
-				"when": {
-					Type:     cty.String,
-					Optional: true,
-				},
-			},
-		},
-	}
 	return p
 }
 

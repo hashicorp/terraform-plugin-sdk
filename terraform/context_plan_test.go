@@ -17,7 +17,6 @@ import (
 
 	"github.com/hashicorp/terraform/addrs"
 	"github.com/hashicorp/terraform/configs/configschema"
-	"github.com/hashicorp/terraform/configs/hcl2shim"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
 	"github.com/hashicorp/terraform/states"
@@ -876,119 +875,6 @@ module.child:
 	}
 }
 
-// https://github.com/hashicorp/terraform/issues/3114
-func TestContext2Plan_moduleOrphansWithProvisioner(t *testing.T) {
-	m := testModule(t, "plan-modules-remove-provisioners")
-	p := testProvider("aws")
-	pr := testProvisioner()
-	p.DiffFn = testDiffFn
-	s := MustShimLegacyState(&State{
-		Modules: []*ModuleState{
-			&ModuleState{
-				Path: []string{"root"},
-				Resources: map[string]*ResourceState{
-					"aws_instance.top": &ResourceState{
-						Type: "aws_instance",
-						Primary: &InstanceState{
-							ID: "top",
-						},
-					},
-				},
-			},
-			&ModuleState{
-				Path: []string{"root", "parent", "childone"},
-				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
-						Type: "aws_instance",
-						Primary: &InstanceState{
-							ID: "baz",
-						},
-						Provider: "provider.aws",
-					},
-				},
-			},
-			&ModuleState{
-				Path: []string{"root", "parent", "childtwo"},
-				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
-						Type: "aws_instance",
-						Primary: &InstanceState{
-							ID: "baz",
-						},
-						Provider: "provider.aws",
-					},
-				},
-			},
-		},
-	})
-	ctx := testContext2(t, &ContextOpts{
-		Config: m,
-		ProviderResolver: providers.ResolverFixed(
-			map[string]providers.Factory{
-				"aws": testProviderFuncFixed(p),
-			},
-		),
-		Provisioners: map[string]ProvisionerFactory{
-			"shell": testProvisionerFuncFixed(pr),
-		},
-		State: s,
-	})
-
-	plan, diags := ctx.Plan()
-	if diags.HasErrors() {
-		t.Fatalf("unexpected errors: %s", diags.Err())
-	}
-
-	schema := p.GetSchemaReturn.ResourceTypes["aws_instance"]
-	ty := schema.ImpliedType()
-
-	if len(plan.Changes.Resources) != 3 {
-		t.Error("expected 3 planned resources, got", len(plan.Changes.Resources))
-	}
-
-	for _, res := range plan.Changes.Resources {
-
-		ric, err := res.Decode(ty)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		switch i := ric.Addr.String(); i {
-		case "module.parent.module.childone.aws_instance.foo":
-			if res.Action != plans.Delete {
-				t.Fatalf("expected resource Delete, got %s", res.Action)
-			}
-		case "module.parent.module.childtwo.aws_instance.foo":
-			if res.Action != plans.Delete {
-				t.Fatalf("expected resource Delete, got %s", res.Action)
-			}
-		case "aws_instance.top":
-			if res.Action != plans.NoOp {
-				t.Fatal("expected no changes, got", res.Action)
-			}
-		default:
-			t.Fatalf("unknown instance: %s\nafter: %#v", i, hcl2shim.ConfigValueFromHCL2(ric.After))
-		}
-	}
-
-	expectedState := `aws_instance.top:
-  ID = top
-  provider = provider.aws
-
-module.parent.childone:
-  aws_instance.foo:
-    ID = baz
-    provider = provider.aws
-module.parent.childtwo:
-  aws_instance.foo:
-    ID = baz
-    provider = provider.aws`
-
-	if expectedState != ctx.State().String() {
-		t.Fatalf("\nexpect state: %q\ngot state:    %q\n", expectedState, ctx.State().String())
-	}
-}
-
 func TestContext2Plan_moduleProviderInherit(t *testing.T) {
 	var l sync.Mutex
 	var calls []string
@@ -1679,29 +1565,6 @@ func TestContext2Plan_preventDestroy_destroyPlan(t *testing.T) {
 			t.Logf(legacyDiffComparisonString(plan.Changes))
 		}
 		t.Fatalf("expected err would contain %q\nerr: %s", expectedErr, diags.Err())
-	}
-}
-
-func TestContext2Plan_provisionerCycle(t *testing.T) {
-	m := testModule(t, "plan-provisioner-cycle")
-	p := testProvider("aws")
-	p.DiffFn = testDiffFn
-	pr := testProvisioner()
-	ctx := testContext2(t, &ContextOpts{
-		Config: m,
-		ProviderResolver: providers.ResolverFixed(
-			map[string]providers.Factory{
-				"aws": testProviderFuncFixed(p),
-			},
-		),
-		Provisioners: map[string]ProvisionerFactory{
-			"local-exec": testProvisionerFuncFixed(pr),
-		},
-	})
-
-	_, diags := ctx.Plan()
-	if !diags.HasErrors() {
-		t.Fatalf("succeeded; want errors")
 	}
 }
 

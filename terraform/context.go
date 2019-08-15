@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform/lang"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/provisioners"
 	"github.com/hashicorp/terraform/states"
 	"github.com/hashicorp/terraform/states/statefile"
 	"github.com/hashicorp/terraform/tfdiags"
@@ -64,7 +63,6 @@ type ContextOpts struct {
 	Hooks            []Hook
 	Parallelism      int
 	ProviderResolver providers.Resolver
-	Provisioners     map[string]ProvisionerFactory
 
 	// If non-nil, will apply as additional constraints on the provider
 	// plugins that will be requested from the provider resolver.
@@ -187,8 +185,7 @@ func NewContext(opts *ContextOpts) (*Context, tfdiags.Diagnostics) {
 	}
 
 	components := &basicComponentFactory{
-		providers:    providerFactories,
-		provisioners: opts.Provisioners,
+		providers: providerFactories,
 	}
 
 	log.Printf("[TRACE] terraform.NewContext: loading provider schemas")
@@ -365,7 +362,7 @@ func (c *Context) State() *states.State {
 // values are retained in the main state associated with the receiving context.
 //
 // This function takes no action against remote APIs but it does need access
-// to all provider and provisioner instances in order to obtain their schemas
+// to all provider instances in order to obtain their schemas
 // for type checking.
 //
 // The result is an evaluation scope that can be used to resolve references
@@ -797,7 +794,7 @@ func (c *Context) watchStop(walker *ContextGraphWalker) (chan struct{}, <-chan s
 		}
 
 		// If we're here, we're stopped, trigger the call.
-		log.Printf("[TRACE] Context: requesting providers and provisioners to gracefully stop")
+		log.Printf("[TRACE] Context: requesting providers to gracefully stop")
 
 		{
 			// Copy the providers so that a misbehaved blocking Stop doesn't
@@ -808,23 +805,6 @@ func (c *Context) watchStop(walker *ContextGraphWalker) (chan struct{}, <-chan s
 				ps = append(ps, p)
 			}
 			defer walker.providerLock.Unlock()
-
-			for _, p := range ps {
-				// We ignore the error for now since there isn't any reasonable
-				// action to take if there is an error here, since the stop is still
-				// advisory: Terraform will exit once the graph node completes.
-				p.Stop()
-			}
-		}
-
-		{
-			// Call stop on all the provisioners
-			walker.provisionerLock.Lock()
-			ps := make([]provisioners.Interface, 0, len(walker.provisionerCache))
-			for _, p := range walker.provisionerCache {
-				ps = append(ps, p)
-			}
-			defer walker.provisionerLock.Unlock()
 
 			for _, p := range ps {
 				// We ignore the error for now since there isn't any reasonable

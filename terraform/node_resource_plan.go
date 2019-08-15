@@ -97,7 +97,6 @@ func (n *NodePlannableResource) DynamicExpand(ctx EvalContext) (*Graph, error) {
 		a.Config = n.Config
 		a.ResolvedProvider = n.ResolvedProvider
 		a.Schema = n.Schema
-		a.ProvisionerSchemas = n.ProvisionerSchemas
 
 		return &NodePlannableResourceInstance{
 			NodeAbstractResourceInstance: a,
@@ -115,7 +114,6 @@ func (n *NodePlannableResource) DynamicExpand(ctx EvalContext) (*Graph, error) {
 		a.Config = n.Config
 		a.ResolvedProvider = n.ResolvedProvider
 		a.Schema = n.Schema
-		a.ProvisionerSchemas = n.ProvisionerSchemas
 
 		return &NodePlannableResourceInstanceOrphan{
 			NodeAbstractResourceInstance: a,

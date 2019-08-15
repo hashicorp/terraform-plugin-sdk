@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/providers"
 
 	"github.com/hashicorp/terraform/addrs"
-	"github.com/hashicorp/terraform/configs"
 	"github.com/hashicorp/terraform/states"
 )
 
@@ -26,15 +25,14 @@ type NodeDestroyResourceInstance struct {
 }
 
 var (
-	_ GraphNodeResource            = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeResourceInstance    = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeDestroyer           = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeDestroyerCBD        = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeReferenceable       = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeReferencer          = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeEvalable            = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeProviderConsumer    = (*NodeDestroyResourceInstance)(nil)
-	_ GraphNodeProvisionerConsumer = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeResource         = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeResourceInstance = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeDestroyer        = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeDestroyerCBD     = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeReferenceable    = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeReferencer       = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeEvalable         = (*NodeDestroyResourceInstance)(nil)
+	_ GraphNodeProviderConsumer = (*NodeDestroyResourceInstance)(nil)
 )
 
 func (n *NodeDestroyResourceInstance) Name() string {
@@ -92,31 +90,6 @@ func (n *NodeDestroyResourceInstance) ReferenceableAddrs() []addrs.Referenceable
 	}
 
 	return destroyAddrs
-}
-
-// GraphNodeReferencer, overriding NodeAbstractResource
-func (n *NodeDestroyResourceInstance) References() []*addrs.Reference {
-	// If we have a config, then we need to include destroy-time dependencies
-	if c := n.Config; c != nil && c.Managed != nil {
-		var result []*addrs.Reference
-
-		// We include conn info and config for destroy time provisioners
-		// as dependencies that we have.
-		for _, p := range c.Managed.Provisioners {
-			schema := n.ProvisionerSchemas[p.Type]
-
-			if p.When == configs.ProvisionerWhenDestroy {
-				if p.Connection != nil {
-					result = append(result, ReferencesFromConfig(p.Connection.Config, connectionBlockSupersetSchema)...)
-				}
-				result = append(result, ReferencesFromConfig(p.Config, schema)...)
-			}
-		}
-
-		return result
-	}
-
-	return nil
 }
 
 // GraphNodeEvalable
@@ -189,39 +162,6 @@ func (n *NodeDestroyResourceInstance) EvalTree() EvalNode {
 					Addr:   addr.Resource,
 					State:  &state,
 					Change: &changeApply,
-				},
-
-				// Run destroy provisioners if not tainted
-				&EvalIf{
-					If: func(ctx EvalContext) (bool, error) {
-						if state != nil && state.Status == states.ObjectTainted {
-							return false, nil
-						}
-
-						return true, nil
-					},
-
-					Then: &EvalApplyProvisioners{
-						Addr:           addr.Resource,
-						State:          &state,
-						ResourceConfig: n.Config,
-						Error:          &err,
-						When:           configs.ProvisionerWhenDestroy,
-					},
-				},
-
-				// If we have a provisioning error, then we just call
-				// the post-apply hook now.
-				&EvalIf{
-					If: func(ctx EvalContext) (bool, error) {
-						return err != nil, nil
-					},
-
-					Then: &EvalApplyPost{
-						Addr:  addr.Resource,
-						State: &state,
-						Error: &err,
-					},
 				},
 
 				// Make sure we handle data sources properly.
