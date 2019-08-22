@@ -5,8 +5,8 @@ import (
 
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/earlyconfig"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
-	tfversion "github.com/hashicorp/terraform-plugin-sdk/version"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
 )
 
 // CheckCoreVersionRequirements visits each of the modules in the given

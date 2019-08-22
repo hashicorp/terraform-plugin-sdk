@@ -3,9 +3,9 @@ package terraform
 import (
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 )
 
 // simpleMockComponentFactory returns a component factory pre-configured with

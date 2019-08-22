@@ -8,10 +8,10 @@ import (
 	"sync"
 
 	plugin "github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
-	"github.com/hashicorp/terraform-plugin-sdk/plugin/convert"
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/convert"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/msgpack"
 	"google.golang.org/grpc"

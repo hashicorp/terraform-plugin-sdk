@@ -1,6 +1,6 @@
 package terraform
 
-import "github.com/hashicorp/terraform-plugin-sdk/dag"
+import "github.com/hashicorp/terraform-plugin-sdk/internal/dag"
 
 // GraphDot returns the dot formatting of a visual representation of
 // the given Terraform graph.
