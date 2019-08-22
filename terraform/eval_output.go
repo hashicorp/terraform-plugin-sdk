@@ -7,9 +7,9 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/plans"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 )
 
 // EvalDeleteOutput is an EvalNode implementation that deletes an output

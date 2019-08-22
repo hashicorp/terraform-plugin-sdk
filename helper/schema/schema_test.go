@@ -13,7 +13,7 @@ import (
 
 	"github.com/hashicorp/hil"
 	"github.com/hashicorp/hil/ast"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )

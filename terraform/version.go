@@ -1,7 +1,7 @@
 package terraform
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/version"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/version"
 )
 
 // Deprecated: Providers should use schema.Provider.TerraformVersion instead

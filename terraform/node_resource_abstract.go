@@ -5,13 +5,13 @@ import (
 	"log"
 	"sort"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/dag"
-	"github.com/hashicorp/terraform-plugin-sdk/lang"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/dag"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/lang"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 // ConcreteResourceNodeFunc is a callback type used to convert an

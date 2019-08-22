@@ -8,12 +8,12 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 func TestContext2Validate_badCount(t *testing.T) {

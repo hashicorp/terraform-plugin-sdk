@@ -3,7 +3,7 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 )
 
 // NodeOutputOrphan represents an output that is an orphan.

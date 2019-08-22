@@ -3,7 +3,7 @@ package terraform
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 )
 
 func TestMockResourceProvisioner_impl(t *testing.T) {

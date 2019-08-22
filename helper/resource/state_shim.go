@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

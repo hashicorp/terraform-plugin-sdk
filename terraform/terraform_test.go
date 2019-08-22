@@ -15,17 +15,17 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configload"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/experiment"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configload"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/helper/experiment"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/initwd"
-	"github.com/hashicorp/terraform-plugin-sdk/plans"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
-	"github.com/hashicorp/terraform-plugin-sdk/registry"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/registry"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 )
 
 // This is the directory where our test fixtures are.

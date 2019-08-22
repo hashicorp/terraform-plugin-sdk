@@ -22,7 +22,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-sdk/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/mitchellh/copystructure"
 	"github.com/mitchellh/mapstructure"

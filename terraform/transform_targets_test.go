@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 )
 
 func TestTargetsTransformer(t *testing.T) {

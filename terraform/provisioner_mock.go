@@ -7,7 +7,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 )
 
 var _ provisioners.Interface = (*MockProvisioner)(nil)

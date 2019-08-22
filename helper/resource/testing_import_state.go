@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

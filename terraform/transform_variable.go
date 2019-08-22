@@ -1,8 +1,8 @@
 package terraform
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 )
 
 // RootVariableTransformer is a GraphTransformer that adds all the root

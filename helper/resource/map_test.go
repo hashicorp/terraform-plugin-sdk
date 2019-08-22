@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/config"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/helper/config"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

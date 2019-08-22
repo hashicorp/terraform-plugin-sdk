@@ -13,8 +13,8 @@ import (
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/modsdir"
-	"github.com/hashicorp/terraform-plugin-sdk/registry"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/registry"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 const initFromModuleRootCallName = "root"

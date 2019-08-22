@@ -15,7 +15,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/discovery"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

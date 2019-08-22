@@ -3,9 +3,9 @@ package terraform
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/zclconf/go-cty/cty"
 )
 

@@ -4,7 +4,7 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

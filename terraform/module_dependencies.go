@@ -3,11 +3,11 @@ package terraform
 import (
 	version "github.com/hashicorp/go-version"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/moduledeps"
-	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/moduledeps"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 )
 
 // ConfigTreeDependencies returns the dependencies of the tree of modules

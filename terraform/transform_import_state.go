@@ -3,9 +3,9 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 // ImportStateTransformer is a GraphTransformer that adds nodes to the

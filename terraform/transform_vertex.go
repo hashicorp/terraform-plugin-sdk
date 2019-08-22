@@ -3,7 +3,7 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/dag"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/dag"
 )
 
 // VertexTransformer is a GraphTransformer that transforms vertices

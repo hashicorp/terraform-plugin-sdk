@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/earlyconfig"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/modsdir"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 // LoadConfig loads a full configuration tree that has previously had all of

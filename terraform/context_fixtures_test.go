@@ -3,9 +3,9 @@ package terraform
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/zclconf/go-cty/cty"
 )
 

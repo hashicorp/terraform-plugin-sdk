@@ -9,14 +9,14 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/plans"
-	"github.com/hashicorp/terraform-plugin-sdk/plans/objchange"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/provisioners"
-	"github.com/hashicorp/terraform-plugin-sdk/states"
-	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/plans/objchange"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 // EvalApply is an EvalNode implementation that writes the diff to

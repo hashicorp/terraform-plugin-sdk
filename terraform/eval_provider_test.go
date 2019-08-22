@@ -6,10 +6,10 @@ import (
 	"github.com/hashicorp/hcl2/hcldec"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 )
 
 func TestBuildProviderConfig(t *testing.T) {

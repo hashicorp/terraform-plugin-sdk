@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-plugin-sdk/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/zclconf/go-cty/cty"

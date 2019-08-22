@@ -1,7 +1,7 @@
 package terraform
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 )
 
 // ProvisionerUIOutput is an implementation of UIOutput that calls a hook
