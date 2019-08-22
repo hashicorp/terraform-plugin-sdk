@@ -1,7 +1,7 @@
 package customdiff
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 // ForceNewIf returns a CustomizeDiffFunc that flags the given key as

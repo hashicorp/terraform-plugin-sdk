@@ -3,7 +3,7 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 // NodeModuleRemoved represents a module that is no longer in the

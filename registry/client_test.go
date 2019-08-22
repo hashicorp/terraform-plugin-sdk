@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	version "github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform/registry/regsrc"
-	"github.com/hashicorp/terraform/registry/test"
-	"github.com/hashicorp/terraform/svchost/disco"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/regsrc"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/test"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost/disco"
 )
 
 func TestLookupModuleVersions(t *testing.T) {

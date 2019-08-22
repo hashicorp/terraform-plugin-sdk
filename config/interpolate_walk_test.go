@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/hil/ast"
-	"github.com/hashicorp/terraform/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/configs/hcl2shim"
 	"github.com/mitchellh/reflectwalk"
 )
 

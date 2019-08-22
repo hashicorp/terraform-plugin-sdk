@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 func TestFlatConfigTransformer_nilModule(t *testing.T) {

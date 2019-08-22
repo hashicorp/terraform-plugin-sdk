@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-test/deep"
 
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 func TestAddressedTypes(t *testing.T) {

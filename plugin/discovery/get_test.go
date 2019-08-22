@@ -17,10 +17,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/registry"
-	"github.com/hashicorp/terraform/registry/response"
-	"github.com/hashicorp/terraform/svchost"
-	"github.com/hashicorp/terraform/svchost/disco"
+	"github.com/hashicorp/terraform-plugin-sdk/registry"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/response"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost/disco"
 	"github.com/mitchellh/cli"
 )
 
@@ -476,7 +476,7 @@ func TestProviderInstallerGet(t *testing.T) {
 
 // test that the provider installer can install plugins from a plugin cache dir
 // into a target directory that does not exist.
-//  https://github.com/hashicorp/terraform/issues/20532
+//  https://github.com/hashicorp/terraform-plugin-sdk/issues/20532
 func TestProviderInstallerGet_cache(t *testing.T) {
 	server := testReleaseServer()
 	server.Start()

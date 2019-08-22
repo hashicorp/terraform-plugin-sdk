@@ -12,11 +12,11 @@ import (
 	"strings"
 
 	version "github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform/registry/regsrc"
-	"github.com/hashicorp/terraform/registry/response"
-	"github.com/hashicorp/terraform/svchost"
-	"github.com/hashicorp/terraform/svchost/auth"
-	"github.com/hashicorp/terraform/svchost/disco"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/regsrc"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/response"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost/auth"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost/disco"
 )
 
 // Disco return a *disco.Disco mapping registry.terraform.io, localhost,

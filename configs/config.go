@@ -5,7 +5,7 @@ import (
 
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl2/hcl"
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 // A Config is a node in the tree of modules within a configuration.

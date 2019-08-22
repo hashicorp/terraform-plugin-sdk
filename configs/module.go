@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl2/hcl"
 
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 // Module is a container for a set of configuration constructs that are

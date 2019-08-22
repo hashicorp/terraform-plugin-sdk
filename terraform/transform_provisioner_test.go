@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/hashicorp/terraform/dag"
-	"github.com/hashicorp/terraform/states"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/dag"
+	"github.com/hashicorp/terraform-plugin-sdk/states"
 )
 
 func TestMissingProvisionerTransformer(t *testing.T) {

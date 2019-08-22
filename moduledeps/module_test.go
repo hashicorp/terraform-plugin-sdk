@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/terraform/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
 )
 
 func TestModuleWalkTree(t *testing.T) {

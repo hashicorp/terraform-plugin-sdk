@@ -3,7 +3,7 @@ package structure
 import (
 	"reflect"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func SuppressJsonDiff(k, old, new string, d *schema.ResourceData) bool {

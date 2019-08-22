@@ -8,10 +8,10 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/hashicorp/terraform/configs/configschema"
-	"github.com/hashicorp/terraform/providers"
-	"github.com/hashicorp/terraform/states"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/providers"
+	"github.com/hashicorp/terraform-plugin-sdk/states"
 )
 
 func TestContext2Input(t *testing.T) {
@@ -716,7 +716,7 @@ func TestContext2Input_varPartiallyComputed(t *testing.T) {
 }
 
 // Module variables weren't being interpolated during the Input walk.
-// https://github.com/hashicorp/terraform/issues/5322
+// https://github.com/hashicorp/terraform-plugin-sdk/issues/5322
 func TestContext2Input_interpolateVar(t *testing.T) {
 	input := new(MockUIInput)
 

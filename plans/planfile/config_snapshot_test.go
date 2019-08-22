@@ -9,7 +9,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/hashicorp/terraform/configs/configload"
+	"github.com/hashicorp/terraform-plugin-sdk/configs/configload"
 )
 
 func TestConfigSnapshotRoundtrip(t *testing.T) {
