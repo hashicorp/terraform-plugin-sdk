@@ -35,7 +35,7 @@ type fileLoaderFunc func(path string) (configurable, []string, error)
 // This is not currently enabled for release builds.
 //
 // For example:
-//    go install -ldflags="-X github.com/hashicorp/terraform/config.enableHCL2Experiment=true" github.com/hashicorp/terraform
+//    go install -ldflags="-X github.com/hashicorp/terraform-plugin-sdk/config.enableHCL2Experiment=true" github.com/hashicorp/terraform
 var enableHCL2Experiment = ""
 
 // loadTree takes a single file and loads the entire importTree for that

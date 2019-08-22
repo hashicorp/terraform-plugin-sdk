@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/hashicorp/terraform/lang"
-	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/lang"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 // EvalLocal is an EvalNode implementation that evaluates the

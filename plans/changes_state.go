@@ -1,7 +1,7 @@
 package plans
 
 import (
-	"github.com/hashicorp/terraform/states"
+	"github.com/hashicorp/terraform-plugin-sdk/states"
 )
 
 // PlannedState merges the set of changes described by the receiver into the

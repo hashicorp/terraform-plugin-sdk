@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/httpclient"
-	"github.com/hashicorp/terraform/registry/regsrc"
-	"github.com/hashicorp/terraform/registry/response"
-	"github.com/hashicorp/terraform/svchost"
-	"github.com/hashicorp/terraform/svchost/disco"
-	"github.com/hashicorp/terraform/version"
+	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/regsrc"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/response"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost/disco"
+	"github.com/hashicorp/terraform-plugin-sdk/version"
 )
 
 const (

@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform/helper/didyoumean"
-	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/didyoumean"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 // StaticValidateTraversal checks whether the given traversal (which must be

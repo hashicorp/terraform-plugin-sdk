@@ -6,7 +6,7 @@ import (
 	"github.com/apparentlymart/go-dump/dump"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
 )
 
 func TestProposedNewObject(t *testing.T) {

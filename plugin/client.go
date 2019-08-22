@@ -6,7 +6,7 @@ import (
 
 	hclog "github.com/hashicorp/go-hclog"
 	plugin "github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/terraform/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
 )
 
 // ClientConfig returns a configuration object that can be used to instantiate

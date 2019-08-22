@@ -3,7 +3,7 @@ package schema
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
 )
 

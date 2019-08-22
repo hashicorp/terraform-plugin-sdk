@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-test/deep"
 
-	tfversion "github.com/hashicorp/terraform/version"
+	tfversion "github.com/hashicorp/terraform-plugin-sdk/version"
 )
 
 func TestRoundtrip(t *testing.T) {

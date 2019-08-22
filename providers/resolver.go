@@ -3,7 +3,7 @@ package providers
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
 )
 
 // Resolver is an interface implemented by objects that are able to resolve

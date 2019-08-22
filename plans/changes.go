@@ -1,8 +1,8 @@
 package plans
 
 import (
-	"github.com/hashicorp/terraform/addrs"
-	"github.com/hashicorp/terraform/states"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/states"
 	"github.com/zclconf/go-cty/cty"
 )
 

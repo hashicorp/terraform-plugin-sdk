@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-getter"
 
-	"github.com/hashicorp/terraform/registry/regsrc"
+	"github.com/hashicorp/terraform-plugin-sdk/registry/regsrc"
 )
 
 var localSourcePrefixes = []string{

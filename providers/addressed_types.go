@@ -3,7 +3,7 @@ package providers
 import (
 	"sort"
 
-	"github.com/hashicorp/terraform/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/addrs"
 )
 
 // AddressedTypes is a helper that extracts all of the distinct provider

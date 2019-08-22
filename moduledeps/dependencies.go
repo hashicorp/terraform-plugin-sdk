@@ -1,7 +1,7 @@
 package moduledeps
 
 import (
-	"github.com/hashicorp/terraform/plugin/discovery"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin/discovery"
 )
 
 // Providers describes a set of provider dependencies for a given module.

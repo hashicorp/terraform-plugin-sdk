@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/terraform/svchost"
+	"github.com/hashicorp/terraform-plugin-sdk/svchost"
 )
 
 func TestHelperProgramCredentialsSource(t *testing.T) {
