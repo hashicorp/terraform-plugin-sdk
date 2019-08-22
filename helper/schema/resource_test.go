@@ -771,7 +771,7 @@ func TestResourceInternalValidate(t *testing.T) {
 						Optional: true,
 						Elem: &Resource{
 							Schema: map[string]*Schema{
-								"provisioner": {
+								"connection": {
 									Type:     TypeString,
 									Optional: true,
 								},

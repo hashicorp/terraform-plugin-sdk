@@ -51,36 +51,6 @@ type MockHook struct {
 	PostDiffReturn       HookAction
 	PostDiffError        error
 
-	PreProvisionInstanceCalled bool
-	PreProvisionInstanceAddr   addrs.AbsResourceInstance
-	PreProvisionInstanceState  cty.Value
-	PreProvisionInstanceReturn HookAction
-	PreProvisionInstanceError  error
-
-	PostProvisionInstanceCalled bool
-	PostProvisionInstanceAddr   addrs.AbsResourceInstance
-	PostProvisionInstanceState  cty.Value
-	PostProvisionInstanceReturn HookAction
-	PostProvisionInstanceError  error
-
-	PreProvisionInstanceStepCalled          bool
-	PreProvisionInstanceStepAddr            addrs.AbsResourceInstance
-	PreProvisionInstanceStepProvisionerType string
-	PreProvisionInstanceStepReturn          HookAction
-	PreProvisionInstanceStepError           error
-
-	PostProvisionInstanceStepCalled          bool
-	PostProvisionInstanceStepAddr            addrs.AbsResourceInstance
-	PostProvisionInstanceStepProvisionerType string
-	PostProvisionInstanceStepErrorArg        error
-	PostProvisionInstanceStepReturn          HookAction
-	PostProvisionInstanceStepError           error
-
-	ProvisionOutputCalled          bool
-	ProvisionOutputAddr            addrs.AbsResourceInstance
-	ProvisionOutputProvisionerType string
-	ProvisionOutputMessage         string
-
 	PreRefreshCalled     bool
 	PreRefreshAddr       addrs.AbsResourceInstance
 	PreRefreshGen        states.Generation
@@ -169,57 +139,6 @@ func (h *MockHook) PostDiff(addr addrs.AbsResourceInstance, gen states.Generatio
 	h.PostDiffPriorState = priorState
 	h.PostDiffPlannedState = plannedNewState
 	return h.PostDiffReturn, h.PostDiffError
-}
-
-func (h *MockHook) PreProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.PreProvisionInstanceCalled = true
-	h.PreProvisionInstanceAddr = addr
-	h.PreProvisionInstanceState = state
-	return h.PreProvisionInstanceReturn, h.PreProvisionInstanceError
-}
-
-func (h *MockHook) PostProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.PostProvisionInstanceCalled = true
-	h.PostProvisionInstanceAddr = addr
-	h.PostProvisionInstanceState = state
-	return h.PostProvisionInstanceReturn, h.PostProvisionInstanceError
-}
-
-func (h *MockHook) PreProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string) (HookAction, error) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.PreProvisionInstanceStepCalled = true
-	h.PreProvisionInstanceStepAddr = addr
-	h.PreProvisionInstanceStepProvisionerType = typeName
-	return h.PreProvisionInstanceStepReturn, h.PreProvisionInstanceStepError
-}
-
-func (h *MockHook) PostProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string, err error) (HookAction, error) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.PostProvisionInstanceStepCalled = true
-	h.PostProvisionInstanceStepAddr = addr
-	h.PostProvisionInstanceStepProvisionerType = typeName
-	h.PostProvisionInstanceStepErrorArg = err
-	return h.PostProvisionInstanceStepReturn, h.PostProvisionInstanceStepError
-}
-
-func (h *MockHook) ProvisionOutput(addr addrs.AbsResourceInstance, typeName string, line string) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.ProvisionOutputCalled = true
-	h.ProvisionOutputAddr = addr
-	h.ProvisionOutputProvisionerType = typeName
-	h.ProvisionOutputMessage = line
 }
 
 func (h *MockHook) PreRefresh(addr addrs.AbsResourceInstance, gen states.Generation, priorState cty.Value) (HookAction, error) {

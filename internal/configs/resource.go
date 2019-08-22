@@ -35,7 +35,6 @@ type Resource struct {
 // ManagedResource represents a "resource" block in a module or file.
 type ManagedResource struct {
 	Connection   *Connection
-	Provisioners []*Provisioner
 
 	CreateBeforeDestroy bool
 	PreventDestroy      bool
@@ -243,13 +242,6 @@ func decodeResourceBlock(block *hcl.Block) (*Resource, hcl.Diagnostics) {
 			r.Managed.Connection = &Connection{
 				Config:    block.Body,
 				DeclRange: block.DefRange,
-			}
-
-		case "provisioner":
-			pv, pvDiags := decodeProvisionerBlock(block)
-			diags = append(diags, pvDiags...)
-			if pv != nil {
-				r.Managed.Provisioners = append(r.Managed.Provisioners, pv)
 			}
 
 		default:
@@ -463,7 +455,6 @@ var resourceBlockSchema = &hcl.BodySchema{
 		{Type: "locals"}, // reserved for future use
 		{Type: "lifecycle"},
 		{Type: "connection"},
-		{Type: "provisioner", LabelNames: []string{"type"}},
 	},
 }
 

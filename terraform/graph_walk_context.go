@@ -8,11 +8,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/dag"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
@@ -43,9 +41,6 @@ type ContextGraphWalker struct {
 	providerCache      map[string]providers.Interface
 	providerSchemas    map[string]*ProviderSchema
 	providerLock       sync.Mutex
-	provisionerCache   map[string]provisioners.Interface
-	provisionerSchemas map[string]*configschema.Block
-	provisionerLock    sync.Mutex
 }
 
 func (w *ContextGraphWalker) EnterPath(path addrs.ModuleInstance) EvalContext {
@@ -84,8 +79,6 @@ func (w *ContextGraphWalker) EnterPath(path addrs.ModuleInstance) EvalContext {
 		ProviderCache:       w.providerCache,
 		ProviderInputConfig: w.Context.providerInputConfig,
 		ProviderLock:        &w.providerLock,
-		ProvisionerCache:    w.provisionerCache,
-		ProvisionerLock:     &w.provisionerLock,
 		ChangesValue:        w.Changes,
 		StateValue:          w.State,
 		Evaluator:           evaluator,
@@ -144,8 +137,6 @@ func (w *ContextGraphWalker) init() {
 	w.contexts = make(map[string]*BuiltinEvalContext)
 	w.providerCache = make(map[string]providers.Interface)
 	w.providerSchemas = make(map[string]*ProviderSchema)
-	w.provisionerCache = make(map[string]provisioners.Interface)
-	w.provisionerSchemas = make(map[string]*configschema.Block)
 	w.variableValues = make(map[string]map[string]cty.Value)
 
 	// Populate root module variable values. Other modules will be populated

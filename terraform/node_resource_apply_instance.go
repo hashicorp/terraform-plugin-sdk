@@ -6,7 +6,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
@@ -363,14 +362,6 @@ func (n *NodeApplyableResourceInstance) evalTreeManagedResource(addr addrs.AbsRe
 				ProviderAddr:   n.ResolvedProvider,
 				ProviderSchema: &providerSchema,
 				State:          &state,
-			},
-			&EvalApplyProvisioners{
-				Addr:           addr.Resource,
-				State:          &state, // EvalApplyProvisioners will skip if already tainted
-				ResourceConfig: n.Config,
-				CreateNew:      &createNew,
-				Error:          &err,
-				When:           configs.ProvisionerWhenCreate,
 			},
 			&EvalMaybeTainted{
 				Addr:        addr.Resource,

@@ -39,7 +39,6 @@ var (
 	_ GraphNodeReferencer                    = (*NodePlanDeposedResourceInstanceObject)(nil)
 	_ GraphNodeEvalable                      = (*NodePlanDeposedResourceInstanceObject)(nil)
 	_ GraphNodeProviderConsumer              = (*NodePlanDeposedResourceInstanceObject)(nil)
-	_ GraphNodeProvisionerConsumer           = (*NodePlanDeposedResourceInstanceObject)(nil)
 )
 
 func (n *NodePlanDeposedResourceInstanceObject) Name() string {
@@ -174,7 +173,6 @@ var (
 	_ GraphNodeReferencer                    = (*NodeDestroyDeposedResourceInstanceObject)(nil)
 	_ GraphNodeEvalable                      = (*NodeDestroyDeposedResourceInstanceObject)(nil)
 	_ GraphNodeProviderConsumer              = (*NodeDestroyDeposedResourceInstanceObject)(nil)
-	_ GraphNodeProvisionerConsumer           = (*NodeDestroyDeposedResourceInstanceObject)(nil)
 )
 
 func (n *NodeDestroyDeposedResourceInstanceObject) Name() string {

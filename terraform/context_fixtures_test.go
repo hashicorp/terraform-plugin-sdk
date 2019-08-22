@@ -15,7 +15,6 @@ import (
 type contextTestFixture struct {
 	Config           *configs.Config
 	ProviderResolver providers.Resolver
-	Provisioners     map[string]ProvisionerFactory
 }
 
 // ContextOpts returns a ContextOps pre-populated with the elements of this
@@ -25,7 +24,6 @@ func (f *contextTestFixture) ContextOpts() *ContextOpts {
 	return &ContextOpts{
 		Config:           f.Config,
 		ProviderResolver: f.ProviderResolver,
-		Provisioners:     f.Provisioners,
 	}
 }
 

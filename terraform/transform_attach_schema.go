@@ -25,21 +25,9 @@ type GraphNodeAttachProviderConfigSchema interface {
 	AttachProviderConfigSchema(*configschema.Block)
 }
 
-// GraphNodeAttachProvisionerSchema is an interface implemented by node types
-// that need one or more provisioner schemas attached.
-type GraphNodeAttachProvisionerSchema interface {
-	ProvisionedBy() []string
-
-	// SetProvisionerSchema is called during transform for each provisioner
-	// type returned from ProvisionedBy, providing the configuration schema
-	// for each provisioner in turn. The implementer should save these for
-	// later use in evaluating provisioner configuration blocks.
-	AttachProvisionerSchema(name string, schema *configschema.Block)
-}
-
 // AttachSchemaTransformer finds nodes that implement
-// GraphNodeAttachResourceSchema, GraphNodeAttachProviderConfigSchema, or
-// GraphNodeAttachProvisionerSchema, looks up the needed schemas for each
+// GraphNodeAttachResourceSchema, or GraphNodeAttachProviderConfigSchema,
+// looks up the needed schemas for each
 // and then passes them to a method implemented by the node.
 type AttachSchemaTransformer struct {
 	Schemas *Schemas
@@ -79,19 +67,6 @@ func (t *AttachSchemaTransformer) Transform(g *Graph) error {
 			}
 			log.Printf("[TRACE] AttachSchemaTransformer: attaching provider config schema to %s", dag.VertexName(v))
 			tv.AttachProviderConfigSchema(schema)
-		}
-
-		if tv, ok := v.(GraphNodeAttachProvisionerSchema); ok {
-			names := tv.ProvisionedBy()
-			for _, name := range names {
-				schema := t.Schemas.ProvisionerConfig(name)
-				if schema == nil {
-					log.Printf("[ERROR] AttachSchemaTransformer: No schema available for provisioner %q on %q", name, dag.VertexName(v))
-					continue
-				}
-				log.Printf("[TRACE] AttachSchemaTransformer: attaching provisioner %q config schema to %s", name, dag.VertexName(v))
-				tv.AttachProvisionerSchema(name, schema)
-			}
 		}
 	}
 

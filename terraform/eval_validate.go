@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
@@ -106,115 +105,6 @@ func (n *EvalValidateProvider) Eval(ctx EvalContext) (interface{}, error) {
 	diags = diags.Append(validateResp.Diagnostics)
 
 	return nil, diags.NonFatalErr()
-}
-
-// EvalValidateProvisioner is an EvalNode implementation that validates
-// the configuration of a provisioner belonging to a resource. The provisioner
-// config is expected to contain the merged connection configurations.
-type EvalValidateProvisioner struct {
-	ResourceAddr       addrs.Resource
-	Provisioner        *provisioners.Interface
-	Schema             **configschema.Block
-	Config             *configs.Provisioner
-	ResourceHasCount   bool
-	ResourceHasForEach bool
-}
-
-func (n *EvalValidateProvisioner) Eval(ctx EvalContext) (interface{}, error) {
-	provisioner := *n.Provisioner
-	config := *n.Config
-	schema := *n.Schema
-
-	var diags tfdiags.Diagnostics
-
-	{
-		// Validate the provisioner's own config first
-
-		configVal, _, configDiags := n.evaluateBlock(ctx, config.Config, schema)
-		diags = diags.Append(configDiags)
-		if configDiags.HasErrors() {
-			return nil, diags.Err()
-		}
-
-		if configVal == cty.NilVal {
-			// Should never happen for a well-behaved EvaluateBlock implementation
-			return nil, fmt.Errorf("EvaluateBlock returned nil value")
-		}
-
-		req := provisioners.ValidateProvisionerConfigRequest{
-			Config: configVal,
-		}
-
-		resp := provisioner.ValidateProvisionerConfig(req)
-		diags = diags.Append(resp.Diagnostics)
-	}
-
-	{
-		// Now validate the connection config, which contains the merged bodies
-		// of the resource and provisioner connection blocks.
-		connDiags := n.validateConnConfig(ctx, config.Connection, n.ResourceAddr)
-		diags = diags.Append(connDiags)
-	}
-
-	return nil, diags.NonFatalErr()
-}
-
-func (n *EvalValidateProvisioner) validateConnConfig(ctx EvalContext, config *configs.Connection, self addrs.Referenceable) tfdiags.Diagnostics {
-	// We can't comprehensively validate the connection config since its
-	// final structure is decided by the communicator and we can't instantiate
-	// that until we have a complete instance state. However, we *can* catch
-	// configuration keys that are not valid for *any* communicator, catching
-	// typos early rather than waiting until we actually try to run one of
-	// the resource's provisioners.
-
-	var diags tfdiags.Diagnostics
-
-	if config == nil || config.Config == nil {
-		// No block to validate
-		return diags
-	}
-
-	// We evaluate here just by evaluating the block and returning any
-	// diagnostics we get, since evaluation alone is enough to check for
-	// extraneous arguments and incorrectly-typed arguments.
-	_, _, configDiags := n.evaluateBlock(ctx, config.Config, connectionBlockSupersetSchema)
-	diags = diags.Append(configDiags)
-
-	return diags
-}
-
-func (n *EvalValidateProvisioner) evaluateBlock(ctx EvalContext, body hcl.Body, schema *configschema.Block) (cty.Value, hcl.Body, tfdiags.Diagnostics) {
-	keyData := EvalDataForNoInstanceKey
-	selfAddr := n.ResourceAddr.Instance(addrs.NoKey)
-
-	if n.ResourceHasCount {
-		// For a resource that has count, we allow count.index but don't
-		// know at this stage what it will return.
-		keyData = InstanceKeyEvalData{
-			CountIndex: cty.UnknownVal(cty.Number),
-		}
-
-		// "self" can't point to an unknown key, but we'll force it to be
-		// key 0 here, which should return an unknown value of the
-		// expected type since none of these elements are known at this
-		// point anyway.
-		selfAddr = n.ResourceAddr.Instance(addrs.IntKey(0))
-	} else if n.ResourceHasForEach {
-		// For a resource that has for_each, we allow each.value and each.key
-		// but don't know at this stage what it will return.
-		keyData = InstanceKeyEvalData{
-			EachKey:   cty.UnknownVal(cty.String),
-			EachValue: cty.DynamicVal,
-		}
-
-		// "self" can't point to an unknown key, but we'll force it to be
-		// key "" here, which should return an unknown value of the
-		// expected type since none of these elements are known at
-		// this point anyway.
-		selfAddr = n.ResourceAddr.Instance(addrs.StringKey(""))
-	}
-
-	return ctx.EvaluateBlock(body, schema, selfAddr, keyData)
 }
 
 // connectionBlockSupersetSchema is a schema representing the superset of all

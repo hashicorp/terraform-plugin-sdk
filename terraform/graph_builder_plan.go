@@ -120,9 +120,6 @@ func (b *PlanGraphBuilder) Steps() []GraphTransformer {
 		// Add root variables
 		&RootVariableTransformer{Config: b.Config},
 
-		&MissingProvisionerTransformer{Provisioners: b.Components.ResourceProvisioners()},
-		&ProvisionerTransformer{},
-
 		// Add module variables
 		&ModuleVariableTransformer{
 			Config: b.Config,
@@ -163,7 +160,6 @@ func (b *PlanGraphBuilder) Steps() []GraphTransformer {
 
 		// Close opened plugin connections
 		&CloseProviderTransformer{},
-		&CloseProvisionerTransformer{},
 
 		// Single root
 		&RootTransformer{},

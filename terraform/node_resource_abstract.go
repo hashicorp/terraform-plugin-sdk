@@ -51,8 +51,6 @@ type NodeAbstractResource struct {
 	SchemaVersion uint64              // Schema version of "Schema", as decided by the provider
 	Config        *configs.Resource   // Config is the resource in the config
 
-	ProvisionerSchemas map[string]*configschema.Block
-
 	Targets []addrs.Targetable // Set from GraphNodeTargetable
 
 	// The address of the provider this resource will use
@@ -60,17 +58,15 @@ type NodeAbstractResource struct {
 }
 
 var (
-	_ GraphNodeSubPath                 = (*NodeAbstractResource)(nil)
-	_ GraphNodeReferenceable           = (*NodeAbstractResource)(nil)
-	_ GraphNodeReferencer              = (*NodeAbstractResource)(nil)
-	_ GraphNodeProviderConsumer        = (*NodeAbstractResource)(nil)
-	_ GraphNodeProvisionerConsumer     = (*NodeAbstractResource)(nil)
-	_ GraphNodeResource                = (*NodeAbstractResource)(nil)
-	_ GraphNodeAttachResourceConfig    = (*NodeAbstractResource)(nil)
-	_ GraphNodeAttachResourceSchema    = (*NodeAbstractResource)(nil)
-	_ GraphNodeAttachProvisionerSchema = (*NodeAbstractResource)(nil)
-	_ GraphNodeTargetable              = (*NodeAbstractResource)(nil)
-	_ dag.GraphNodeDotter              = (*NodeAbstractResource)(nil)
+	_ GraphNodeSubPath              = (*NodeAbstractResource)(nil)
+	_ GraphNodeReferenceable        = (*NodeAbstractResource)(nil)
+	_ GraphNodeReferencer           = (*NodeAbstractResource)(nil)
+	_ GraphNodeProviderConsumer     = (*NodeAbstractResource)(nil)
+	_ GraphNodeResource             = (*NodeAbstractResource)(nil)
+	_ GraphNodeAttachResourceConfig = (*NodeAbstractResource)(nil)
+	_ GraphNodeAttachResourceSchema = (*NodeAbstractResource)(nil)
+	_ GraphNodeTargetable           = (*NodeAbstractResource)(nil)
+	_ dag.GraphNodeDotter           = (*NodeAbstractResource)(nil)
 )
 
 // NewNodeAbstractResource creates an abstract resource graph node for
@@ -98,19 +94,17 @@ type NodeAbstractResourceInstance struct {
 }
 
 var (
-	_ GraphNodeSubPath                 = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeReferenceable           = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeReferencer              = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeProviderConsumer        = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeProvisionerConsumer     = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeResource                = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeResourceInstance        = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeAttachResourceState     = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeAttachResourceConfig    = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeAttachResourceSchema    = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeAttachProvisionerSchema = (*NodeAbstractResourceInstance)(nil)
-	_ GraphNodeTargetable              = (*NodeAbstractResourceInstance)(nil)
-	_ dag.GraphNodeDotter              = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeSubPath              = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeReferenceable        = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeReferencer           = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeProviderConsumer     = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeResource             = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeResourceInstance     = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeAttachResourceState  = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeAttachResourceConfig = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeAttachResourceSchema = (*NodeAbstractResourceInstance)(nil)
+	_ GraphNodeTargetable           = (*NodeAbstractResourceInstance)(nil)
+	_ dag.GraphNodeDotter           = (*NodeAbstractResourceInstance)(nil)
 )
 
 // NewNodeAbstractResourceInstance creates an abstract resource instance graph
@@ -191,24 +185,6 @@ func (n *NodeAbstractResource) References() []*addrs.Reference {
 		result = append(result, refs...)
 		refs, _ = lang.ReferencesInBlock(c.Config, n.Schema)
 		result = append(result, refs...)
-		if c.Managed != nil {
-			for _, p := range c.Managed.Provisioners {
-				if p.When != configs.ProvisionerWhenCreate {
-					continue
-				}
-				if p.Connection != nil {
-					refs, _ = lang.ReferencesInBlock(p.Connection.Config, connectionBlockSupersetSchema)
-					result = append(result, refs...)
-				}
-
-				schema := n.ProvisionerSchemas[p.Type]
-				if schema == nil {
-					log.Printf("[WARN] no schema for provisioner %q is attached to %s, so provisioner block references cannot be detected", p.Type, n.Name())
-				}
-				refs, _ = lang.ReferencesInBlock(p.Config, schema)
-				result = append(result, refs...)
-			}
-		}
 		return result
 	}
 
@@ -385,31 +361,6 @@ func (n *NodeAbstractResourceInstance) ProvidedBy() (addrs.AbsProviderConfig, bo
 
 	// Use our type and containing module path to guess a provider configuration address
 	return n.Addr.Resource.DefaultProviderConfig().Absolute(n.Path()), false
-}
-
-// GraphNodeProvisionerConsumer
-func (n *NodeAbstractResource) ProvisionedBy() []string {
-	// If we have no configuration, then we have no provisioners
-	if n.Config == nil || n.Config.Managed == nil {
-		return nil
-	}
-
-	// Build the list of provisioners we need based on the configuration.
-	// It is okay to have duplicates here.
-	result := make([]string, len(n.Config.Managed.Provisioners))
-	for i, p := range n.Config.Managed.Provisioners {
-		result[i] = p.Type
-	}
-
-	return result
-}
-
-// GraphNodeProvisionerConsumer
-func (n *NodeAbstractResource) AttachProvisionerSchema(name string, schema *configschema.Block) {
-	if n.ProvisionerSchemas == nil {
-		n.ProvisionerSchemas = make(map[string]*configschema.Block)
-	}
-	n.ProvisionerSchemas[name] = schema
 }
 
 // GraphNodeResource

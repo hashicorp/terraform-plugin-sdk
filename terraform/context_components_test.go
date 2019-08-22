@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 )
 
 // simpleMockComponentFactory returns a component factory pre-configured with
@@ -24,16 +23,10 @@ func simpleMockComponentFactory() *basicComponentFactory {
 	// so that test code can customize it before passing this component
 	// factory into real code under test.
 	provider := simpleMockProvider()
-	provisioner := simpleMockProvisioner()
 	return &basicComponentFactory{
 		providers: map[string]providers.Factory{
 			"test": func() (providers.Interface, error) {
 				return provider, nil
-			},
-		},
-		provisioners: map[string]ProvisionerFactory{
-			"test": func() (provisioners.Interface, error) {
-				return provisioner, nil
 			},
 		},
 	}

@@ -42,30 +42,6 @@ type Hook interface {
 	PreDiff(addr addrs.AbsResourceInstance, gen states.Generation, priorState, proposedNewState cty.Value) (HookAction, error)
 	PostDiff(addr addrs.AbsResourceInstance, gen states.Generation, action plans.Action, priorState, plannedNewState cty.Value) (HookAction, error)
 
-	// The provisioning hooks signal both the overall start end end of
-	// provisioning for a particular instance and of each of the individual
-	// configured provisioners for each instance. The sequence of these
-	// for a given instance might look something like this:
-	//
-	//          PreProvisionInstance(aws_instance.foo[1], ...)
-	//      PreProvisionInstanceStep(aws_instance.foo[1], "file")
-	//     PostProvisionInstanceStep(aws_instance.foo[1], "file", nil)
-	//      PreProvisionInstanceStep(aws_instance.foo[1], "remote-exec")
-	//               ProvisionOutput(aws_instance.foo[1], "remote-exec", "Installing foo...")
-	//               ProvisionOutput(aws_instance.foo[1], "remote-exec", "Configuring bar...")
-	//     PostProvisionInstanceStep(aws_instance.foo[1], "remote-exec", nil)
-	//         PostProvisionInstance(aws_instance.foo[1], ...)
-	//
-	// ProvisionOutput is called with output sent back by the provisioners.
-	// This will be called multiple times as output comes in, with each call
-	// representing one line of output. It cannot control whether the
-	// provisioner continues running.
-	PreProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error)
-	PostProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error)
-	PreProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string) (HookAction, error)
-	PostProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string, err error) (HookAction, error)
-	ProvisionOutput(addr addrs.AbsResourceInstance, typeName string, line string)
-
 	// PreRefresh and PostRefresh are called before and after a single
 	// resource state is refreshed, respectively.
 	PreRefresh(addr addrs.AbsResourceInstance, gen states.Generation, priorState cty.Value) (HookAction, error)
@@ -103,25 +79,6 @@ func (*NilHook) PreDiff(addr addrs.AbsResourceInstance, gen states.Generation, p
 
 func (*NilHook) PostDiff(addr addrs.AbsResourceInstance, gen states.Generation, action plans.Action, priorState, plannedNewState cty.Value) (HookAction, error) {
 	return HookActionContinue, nil
-}
-
-func (*NilHook) PreProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error) {
-	return HookActionContinue, nil
-}
-
-func (*NilHook) PostProvisionInstance(addr addrs.AbsResourceInstance, state cty.Value) (HookAction, error) {
-	return HookActionContinue, nil
-}
-
-func (*NilHook) PreProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string) (HookAction, error) {
-	return HookActionContinue, nil
-}
-
-func (*NilHook) PostProvisionInstanceStep(addr addrs.AbsResourceInstance, typeName string, err error) (HookAction, error) {
-	return HookActionContinue, nil
-}
-
-func (*NilHook) ProvisionOutput(addr addrs.AbsResourceInstance, typeName string, line string) {
 }
 
 func (*NilHook) PreRefresh(addr addrs.AbsResourceInstance, gen states.Generation, priorState cty.Value) (HookAction, error) {

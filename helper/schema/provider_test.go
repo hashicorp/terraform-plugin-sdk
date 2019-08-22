@@ -577,10 +577,6 @@ func TestProvider_InternalValidate(t *testing.T) {
 		{ // Reserved resource fields should be allowed in provider block
 			P: &Provider{
 				Schema: map[string]*Schema{
-					"provisioner": {
-						Type:     TypeString,
-						Optional: true,
-					},
 					"count": {
 						Type:     TypeInt,
 						Optional: true,

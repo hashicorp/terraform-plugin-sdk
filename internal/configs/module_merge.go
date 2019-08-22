@@ -225,9 +225,6 @@ func (r *Resource) merge(or *Resource) hcl.Diagnostics {
 			r.Managed.PreventDestroy = or.Managed.PreventDestroy
 			r.Managed.PreventDestroySet = or.Managed.PreventDestroySet
 		}
-		if len(or.Managed.Provisioners) != 0 {
-			r.Managed.Provisioners = or.Managed.Provisioners
-		}
 	}
 
 	r.Config = MergeBodies(r.Config, or.Config)
