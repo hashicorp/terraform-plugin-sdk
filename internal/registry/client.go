@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/regsrc"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/response"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost"

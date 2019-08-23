@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
 )
 
 const versionServiceID = "versions.v1"
