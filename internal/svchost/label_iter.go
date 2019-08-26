@@ -17,21 +17,8 @@ type labelIter struct {
 	i        int
 }
 
-func (l *labelIter) reset() {
-	l.curStart = 0
-	l.curEnd = 0
-	l.i = 0
-}
-
 func (l *labelIter) done() bool {
 	return l.curStart >= len(l.orig)
-}
-
-func (l *labelIter) result() string {
-	if l.slice != nil {
-		return strings.Join(l.slice, ".")
-	}
-	return l.orig
 }
 
 func (l *labelIter) label() string {
@@ -59,11 +46,4 @@ func (l *labelIter) next() {
 			l.curStart = len(l.orig)
 		}
 	}
-}
-
-func (l *labelIter) set(s string) {
-	if l.slice == nil {
-		l.slice = strings.Split(l.orig, ".")
-	}
-	l.slice[l.i] = s
 }

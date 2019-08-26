@@ -11,10 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/hil"
-	"github.com/hashicorp/hil/ast"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -125,11 +123,6 @@ func TestValueType_Zero(t *testing.T) {
 			t.Fatalf("%d: %#v != %#v", i, actual, tc.Value)
 		}
 	}
-}
-
-func interfaceToVariableSwallowError(input interface{}) ast.Variable {
-	variable, _ := hil.InterfaceToVariable(input)
-	return variable
 }
 
 func TestSchemaMap_Diff(t *testing.T) {

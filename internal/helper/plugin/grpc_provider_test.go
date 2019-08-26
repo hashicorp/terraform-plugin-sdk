@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/convert"
+	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/msgpack"
@@ -22,7 +22,6 @@ import (
 var _ proto.ProviderServer = (*GRPCProviderServer)(nil)
 
 var (
-	typeComparer  = cmp.Comparer(cty.Type.Equals)
 	valueComparer = cmp.Comparer(cty.Value.RawEquals)
 	equateEmpty   = cmpopts.EquateEmpty()
 )
