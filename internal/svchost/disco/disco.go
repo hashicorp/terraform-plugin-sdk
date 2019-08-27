@@ -18,7 +18,7 @@ import (
 	"time"
 
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost/auth"
 )

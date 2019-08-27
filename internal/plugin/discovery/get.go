@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/errwrap"
 	getter "github.com/hashicorp/go-getter"
 	multierror "github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/regsrc"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/response"
