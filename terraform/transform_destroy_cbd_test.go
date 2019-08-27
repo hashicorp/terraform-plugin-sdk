@@ -185,14 +185,3 @@ test_object.A (destroy)
   test_object.B
 test_object.B
 `
-
-const testTransformCBDEdgeDepNonCBDStr = `
-test_object.A
-test_object.A (destroy) (modified)
-  test_object.A
-  test_object.B
-  test_object.B (destroy)
-test_object.B
-test_object.B (destroy)
-  test_object.B
-`

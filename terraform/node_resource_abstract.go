@@ -274,20 +274,6 @@ func (n *NodeAbstractResourceInstance) References() []*addrs.Reference {
 	return nil
 }
 
-// converts an instance address to the legacy dotted notation
-func dottedInstanceAddr(tr addrs.ResourceInstance) string {
-	// The legacy state format uses dot-separated instance keys,
-	// rather than bracketed as in our modern syntax.
-	var suffix string
-	switch tk := tr.Key.(type) {
-	case addrs.IntKey:
-		suffix = fmt.Sprintf(".%d", int(tk))
-	case addrs.StringKey:
-		suffix = fmt.Sprintf(".%s", string(tk))
-	}
-	return tr.Resource.String() + suffix
-}
-
 // StateReferences returns the dependencies to put into the state for
 // this resource.
 func (n *NodeAbstractResourceInstance) StateReferences() []addrs.Referenceable {
