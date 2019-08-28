@@ -5,6 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/agext/levenshtein v1.2.2
+	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/apparentlymart/go-cidr v1.0.1
 	github.com/apparentlymart/go-dump v0.0.0-20180507223929-23540a00eaa3
 	github.com/armon/go-radix v1.0.0 // indirect
@@ -31,7 +32,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20190821133035-82a99dc22ef4
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
-	github.com/keybase/go-crypto v0.0.0-20190403132359-d65b6b94177f
+	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/mitchellh/cli v1.0.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/copystructure v1.0.0
