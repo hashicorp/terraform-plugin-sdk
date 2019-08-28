@@ -12,9 +12,9 @@ import (
 
 	"github.com/go-test/deep"
 	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configload"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )

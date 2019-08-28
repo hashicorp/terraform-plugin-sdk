@@ -8,8 +8,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
+	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/zclconf/go-cty/cty"
 
 	mockproto "github.com/hashicorp/terraform-plugin-sdk/internal/plugin/mock_proto"
