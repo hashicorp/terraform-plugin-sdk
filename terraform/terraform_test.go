@@ -227,46 +227,6 @@ func (h *HookRecordApplyOrder) PreApply(addr addrs.AbsResourceInstance, gen stat
 // Below are all the constant strings that are the expected output for
 // various tests.
 
-const testTerraformInputProviderOnlyStr = `
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  foo = us-west-2
-  type = aws_instance
-`
-
-const testTerraformInputVarOnlyStr = `
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  foo = us-east-1
-  type = aws_instance
-`
-
-const testTerraformInputVarOnlyUnsetStr = `
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  bar = baz
-  foo = foovalue
-  type = aws_instance
-`
-
-const testTerraformInputVarsStr = `
-aws_instance.bar:
-  ID = foo
-  provider = provider.aws
-  bar = override
-  foo = us-east-1
-  type = aws_instance
-aws_instance.foo:
-  ID = foo
-  provider = provider.aws
-  bar = baz
-  num = 2
-  type = aws_instance
-`
-
 const testTerraformApplyStr = `
 aws_instance.bar:
   ID = foo
@@ -1020,18 +980,6 @@ aws_instance.bar:
   map.Hello = World
   string = baz
   type = aws_instance
-`
-
-const testTerraformInputHCL = `
-hcl_instance.hcltest:
-  ID = foo
-  provider = provider.hcl
-  bar.w = z
-  bar.x = y
-  foo.# = 2
-  foo.0 = a
-  foo.1 = b
-  type = hcl_instance
 `
 
 const testTerraformRefreshDataRefDataStr = `
