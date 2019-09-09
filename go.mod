@@ -3,7 +3,6 @@ module github.com/hashicorp/terraform-plugin-sdk
 go 1.12
 
 require (
-	cloud.google.com/go v0.39.0 // indirect
 	github.com/agext/levenshtein v1.2.2
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/apparentlymart/go-cidr v1.0.1
@@ -19,13 +18,12 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
-	github.com/hashicorp/go-getter v1.3.0
+	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-hclog v0.9.2
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-plugin v1.0.1
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.0
-	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/hcl2 v0.0.0-20190821123243-0c888d1241f6
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93
@@ -47,10 +45,6 @@ require (
 	github.com/zclconf/go-cty-yaml v1.0.1
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
-	golang.org/x/sys v0.0.0-20190523142557-0e01d883c5c5 // indirect
-	golang.org/x/tools v0.0.0-20190524140312-2c0ae7006135
-	google.golang.org/appengine v1.6.0 // indirect
-	google.golang.org/genproto v0.0.0-20190513181449-d00d292a067c // indirect
+	golang.org/x/tools v0.0.0-20190628153133-6cdbf07be9d0
 	google.golang.org/grpc v1.23.0
 )
