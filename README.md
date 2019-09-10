@@ -10,7 +10,7 @@ See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) secti
 
 ## Scope (Providers VS Core)
 
-Terraform **Core**:
+### Terraform Core
 
  - acts as gRPC _client_
  - interacts with the user
@@ -24,7 +24,7 @@ Terraform **Core**:
  - decides ordering of (Create, Read, Update, Delete) operations on resources and data sources
  - ...
 
-Terraform **Provider** (via this SDK):
+### Terraform Provider (via this SDK)
 
  - acts as gRPC _server_
  - executes any domain-specific logic based on received parsed configuration
@@ -43,7 +43,7 @@ TODO
 
 ## Contributing
 
-TODO
+See [`.github/CONTRIBUTING.md`](https://github.com/hashicorp/terraform-plugin-sdk/blob/master/.github/CONTRIBUTING.md)
 
 ## License
 
