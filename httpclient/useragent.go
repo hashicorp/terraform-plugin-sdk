@@ -5,12 +5,14 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/meta"
 )
 
 const uaEnvVar = "TF_APPEND_USER_AGENT"
 
 func TerraformUserAgent(version string) string {
-	ua := fmt.Sprintf("HashiCorp Terraform/%s (+https://www.terraform.io)", version)
+	ua := fmt.Sprintf("HashiCorp Terraform/%s (+https://www.terraform.io) Terraform Plugin SDK/%s", version, meta.SDKVersionString())
 
 	if add := os.Getenv(uaEnvVar); add != "" {
 		add = strings.TrimSpace(add)

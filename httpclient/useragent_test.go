@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/meta"
 )
 
 func TestUserAgentAppendViaEnvVar(t *testing.T) {
@@ -13,7 +15,7 @@ func TestUserAgentAppendViaEnvVar(t *testing.T) {
 		defer os.Unsetenv(uaEnvVar)
 	}
 
-	expectedBase := "HashiCorp Terraform/0.0.0 (+https://www.terraform.io)"
+	expectedBase := "HashiCorp Terraform/0.0.0 (+https://www.terraform.io) Terraform Plugin SDK/" + meta.SDKVersionString()
 
 	testCases := []struct {
 		envVarValue string
