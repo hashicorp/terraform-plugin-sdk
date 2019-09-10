@@ -513,6 +513,13 @@ func TestFunctions(t *testing.T) {
 			},
 		},
 
+		"parseint": {
+			{
+				`parseint("100", 10)`,
+				cty.NumberIntVal(100),
+			},
+		},
+
 		"pathexpand": {
 			{
 				`pathexpand("~/test-file")`,
