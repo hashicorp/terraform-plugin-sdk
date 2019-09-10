@@ -52,10 +52,19 @@ jobs:
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
+  "docker-go112 release":
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "3b:ec:3f:f1:0d:1a:a9:2c:a6:6f:03:cb:46:37:11:50"
+      - get_dependencies
+      - run: ./scripts/release/release.sh
 
 workflows:
   version: 2
-  workflow:
+  pr:
     jobs:
       - "docker-go112 build"
       - "docker-go112 test":
@@ -67,3 +76,29 @@ workflows:
       - "docker-go112 gofmt":
           requires:
             - "docker-go112 build"
+  release:
+    jobs:
+      - "docker-go112 build"
+      - "docker-go112 test":
+          requires:
+            - "docker-go112 build"
+      - "docker-go112 vet":
+          requires:
+            - "docker-go112 build"
+      - "docker-go112 gofmt":
+          requires:
+            - "docker-go112 build"
+      - trigger-release:
+          filters:
+            branches:
+              only: master
+          type: approval
+      - "docker-go112 release":
+          filters:
+            branches:
+              only: master
+          requires:
+            - trigger-release
+            - "docker-go112 test"
+            - "docker-go112 vet"
+            - "docker-go112 gofmt"
