@@ -6,9 +6,8 @@ or submit the issue describing the problem you're aiming to solve.
 Any bug fix and feature has to be considered in the context
 of many (100+) providers and wider Terraform ecosystem.
 This is great as your contribution can have a big positive impact,
-but as every sword comes with two edges, we have to assess potential
-negative impact too (e.g. breaking existing providers which
-may not use a new feature).
+but we have to assess potential negative impact too (e.g. breaking
+existing providers which may not use a new feature).
 
 To provide some safety to wider provider ecosystem, we strictly follow
 [semantic versioning](https://semver.org/) and any changes that could be
