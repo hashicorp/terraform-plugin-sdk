@@ -12,5 +12,12 @@ git cherry-pick --no-commit --mainline 1 "$COMMIT_ID"
 echo "Unstaging files removed by us..."
 git status --short | sed -n 's/^DU //p' | ifne xargs git rm
 
+echo "Unstaging files where SDK intentionally diverges from Core..."
+for f in $(git diff --name-only --cached | grep -Ef ./scripts/cherry_pick/IGNORE_FILES)
+do
+    git reset "$f"
+    git checkout -- "$f"
+done
+
 echo "Committing changes. If this fails, you must resolve the merge conflict manually."
 git commit -C "$COMMIT_ID" && echo "Success!"
