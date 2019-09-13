@@ -4,41 +4,41 @@
 or submit the issue describing the problem you're aiming to solve.
 
 Any bug fix and feature has to be considered in the context
-of many (100+) providers and wider Terraform ecosystem.
+of many (100+) providers and the wider Terraform ecosystem.
 This is great as your contribution can have a big positive impact,
 but we have to assess potential negative impact too (e.g. breaking
 existing providers which may not use a new feature).
 
-To provide some safety to wider provider ecosystem, we strictly follow
+To provide some safety to the wider provider ecosystem, we strictly follow
 [semantic versioning](https://semver.org/) and any changes that could be
 considered as breaking will only be released as part of major release.
 
 ## Table of Contents
 
  - [I just have a question](#i-just-have-a-question)
- - [I want to report a vulnerability](#i-want-to-report-vulnerability)
+ - [I want to report a vulnerability](#i-want-to-report-a-vulnerability)
  - [Scope (Core vs SDK vs Providers)](#scope-core-vs-sdk-vs-providers)
  - [New Issue](#new-issue)
  - [New Pull Request](#new-pull-request)
 
 ## I just have a question
 
-> **Note:** We generally use GitHub for tracking bugs and feature requests related to Plugin SDK.
+> **Note:** We use GitHub for tracking bugs and feature requests related to Plugin SDK.
 
 For questions, please see relevant channels at https://www.terraform.io/community.html
 
-## I want to report vulnerability
+## I want to report a vulnerability
 
-Please disclose security vulnerabilities responsibly by following procedure
+Please disclose security vulnerabilities responsibly by following the procedure
 described at https://www.hashicorp.com/security#vulnerability-reporting
 
 ## Scope (Core vs SDK vs Providers)
 
-While Terraform acts as a single program from user's perspective
+While Terraform acts as a single program from the user's perspective
 it is made up of a few parts, each of which have different role and repository.
 
-This section describes scope of notable repositories, which may help you
-ensure you're in the right place when reporting bugs, feature requests
+This section describes the scope of notable repositories, which may help you
+ensure you're in the right place when reporting bugs and feature requests,
 or submitting a patch.
 
  - `hashicorp/terraform` - Terraform **Core** which implements all the low-level functionality which isn't domain specific (that's covered by providers). Read more about [distinction between core & providers in the Readme](https://github.com/hashicorp/terraform-plugin-sdk/blob/master/README.md#scope-providers-vs-core).
@@ -46,7 +46,7 @@ or submitting a patch.
  - `hashicorp/terraform-plugin-sdk` - Terraform **Plugin SDK** used to build Providers
  - `hashicorp/terraform-website` - Source code of **documentation** published on [terraform.io](https://www.terraform.io), including [Extend section](https://www.terraform.io/docs/extend/index.html) which has source in [the `extend` folder](https://github.com/hashicorp/terraform-website/tree/master/content/source/docs/extend).
  - `hashicorp/hcl2` - **HCL** (HashiCorp Config Language) is the language used by users of Terraform (Core) to describe infrastructure. The parser and other features concerning the language (such as builtin functions) are found here.
- - `zclconf/go-cty` - **cty** is the type system used by both Terraform (Core) and SDK (therefore providers too) to represent data in state before and after gRPC encoding/decoding
+ - `zclconf/go-cty` - **cty**, the type system used by both Terraform (Core) and SDK (therefore providers too) to represent data in state before and after gRPC encoding/decoding
 
 ## New Issue
 
