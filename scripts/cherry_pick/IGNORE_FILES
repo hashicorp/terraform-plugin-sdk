@@ -1,0 +1,3 @@
+^internal/httpclient/(testdata/.*|test-fixtures/.*|[^/]*)$
+^internal/helper/encryption/(testdata/.*|test-fixtures/.*|[^/]*)$
+^internal/version/(testdata/.*|test-fixtures/.*|[^/]*)$
