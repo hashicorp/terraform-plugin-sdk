@@ -188,7 +188,16 @@ func (n *EvalDiff) Eval(ctx EvalContext) (interface{}, error) {
 	}
 
 	// The provider gets an opportunity to customize the proposed new value,
-	// which in turn produces the _planned_ new value.
+	// which in turn produces the _planned_ new value. But before
+	// we send back this information, we need to process ignore_changes
+	// so that CustomizeDiff will not act on them
+	var ignoreChangeDiags tfdiags.Diagnostics
+	proposedNewVal, ignoreChangeDiags = n.processIgnoreChanges(priorVal, proposedNewVal)
+	diags = diags.Append(ignoreChangeDiags)
+	if ignoreChangeDiags.HasErrors() {
+		return nil, diags.Err()
+	}
+
 	resp := provider.PlanResourceChange(providers.PlanResourceChangeRequest{
 		TypeName:         n.Addr.Resource.Type,
 		Config:           configVal,
@@ -257,13 +266,14 @@ func (n *EvalDiff) Eval(ctx EvalContext) (interface{}, error) {
 		}
 	}
 
-	{
-		var moreDiags tfdiags.Diagnostics
-		plannedNewVal, moreDiags = n.processIgnoreChanges(priorVal, plannedNewVal)
-		diags = diags.Append(moreDiags)
-		if moreDiags.HasErrors() {
-			return nil, diags.Err()
-		}
+	// TODO: We should be able to remove this repeat of processing ignored changes
+	// after the plan, which helps providers relying on old behavior "just work"
+	// in the next major version, such that we can be stricter about ignore_changes
+	// values
+	plannedNewVal, ignoreChangeDiags = n.processIgnoreChanges(priorVal, plannedNewVal)
+	diags = diags.Append(ignoreChangeDiags)
+	if ignoreChangeDiags.HasErrors() {
+		return nil, diags.Err()
 	}
 
 	// The provider produces a list of paths to attributes whose changes mean
