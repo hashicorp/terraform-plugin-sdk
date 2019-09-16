@@ -8,7 +8,14 @@ set -e
 # 3. Commit changes
 # 4. Create a Git tag
 
+function pleaseUseGNUsed {
+    echo "Please install GNU sed to your PATH as 'sed'."
+    exit 1
+}
+
 function init {
+  sed --version > /dev/null || pleaseUseGNUsed
+
   DATE=`date '+%B %d, %Y'`
   START_DIR=`pwd`
 
@@ -20,17 +27,7 @@ function init {
     git config --global user.name "Terraform SDK CircleCI"
   fi
 
-  # Determine OS platform for sed command
-  if [[ `uname` == "Linux" ]]; then
-    echo "Using GNU sed"
-    SED="sed -i"
-  fi
-  if [[ `uname` == "Darwin" ]];then
-    echo "Using BSD sed"
-    SED="sed -i ''"
-  fi
   TARGET_VERSION="$(getTargetVersion)"
-  echo "$TARGET_VERSION"
 }
 
 function getTargetVersion {
@@ -41,7 +38,7 @@ function getTargetVersion {
 }
 
 function modifyChangelog {
-  $SED "s/$TARGET_VERSION (Unreleased)$/$TARGET_VERSION ($DATE)/" CHANGELOG.md
+  sed -i "s/$TARGET_VERSION (Unreleased)$/$TARGET_VERSION ($DATE)/" CHANGELOG.md
 }
 
 function changelogLinks {
@@ -58,8 +55,8 @@ function changelogMain {
 }
 
 function modifyVersionFiles {
-  $SED "s/const Version =.*/const SDKVersion = \"${TARGET_VERSION}\"/" meta/meta.go
-  $SED "s/var Prerelease =.*/var SDKPrerelease = \"\"/" meta/meta.go
+  sed -i "s/const Version =.*/const SDKVersion = \"${TARGET_VERSION}\"/" meta/meta.go
+  sed -i "s/var Prerelease =.*/var SDKPrerelease = \"\"/" meta/meta.go
 }
 
 function commitChanges {
