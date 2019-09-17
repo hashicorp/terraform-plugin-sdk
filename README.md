@@ -35,11 +35,11 @@ See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) secti
 
 ## Migrating to SDK v1 from built-in SDK
 
-TODO
+Migrating to the standalone SDK v1 is covered on the [Plugin SDK section](https://www.terraform.io/docs/extend/plugin-sdk.html) of the website.
 
 ## Versioning
 
-TODO
+The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modules) versioned using [semantic versioning](https://semver.org/).
 
 ## Contributing
 
