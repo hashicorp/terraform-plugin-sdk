@@ -2,7 +2,7 @@
 
 FEATURES:
 
- * `schema.Provider.TerraformVersion` now defaults to "v0.11+compatible" to indicate when Terraform 0.10/0.11 CLI is communicating with the plugin. [GH-52]
+ * `schema.Provider.TerraformVersion` now defaults to "0.11+compatible" to indicate when Terraform 0.10/0.11 CLI is communicating with the plugin. [GH-52]
  * `terraform plan` and `terraform apply` will now warn when the `-target` option is used, to draw attention to the fact that the result of applying the plan is likely to be incomplete, and to remind to re-run `terraform plan` with no targets afterwards to ensure that the configuration has converged. [GH-182]
  * config: New function `parseint` for parsing strings containing digits as integers in various bases. [GH-181]
  * config: New function `cidrsubnets`, which is a companion to the existing function `cidrsubnet` which can allocate multiple consecutive subnet prefixes (possibly of different prefix lengths) in a single call. [GH-187]
