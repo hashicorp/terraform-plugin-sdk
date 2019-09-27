@@ -1,17 +1,17 @@
-# 1.1.0 (Unreleased)
+# 1.1.0 (September 27, 2019)
 
 FEATURES:
 
- * `schema.Provider.TerraformVersion` now defaults to "0.11+compatible" to indicate when Terraform 0.10/0.11 CLI is communicating with the plugin. [GH-52]
- * `terraform plan` and `terraform apply` will now warn when the `-target` option is used, to draw attention to the fact that the result of applying the plan is likely to be incomplete, and to remind to re-run `terraform plan` with no targets afterwards to ensure that the configuration has converged. [GH-182]
- * config: New function `parseint` for parsing strings containing digits as integers in various bases. [GH-181]
- * config: New function `cidrsubnets`, which is a companion to the existing function `cidrsubnet` which can allocate multiple consecutive subnet prefixes (possibly of different prefix lengths) in a single call. [GH-187]
+ * `schema.Provider.TerraformVersion` now defaults to "0.11+compatible" to indicate when Terraform 0.10/0.11 CLI is communicating with the plugin. ([#52](https://github.com/hashicorp/terraform-plugin-sdk/issues/52))
+ * `terraform plan` and `terraform apply` will now warn when the `-target` option is used, to draw attention to the fact that the result of applying the plan is likely to be incomplete, and to remind to re-run `terraform plan` with no targets afterwards to ensure that the configuration has converged. ([#182](https://github.com/hashicorp/terraform-plugin-sdk/issues/182))
+ * config: New function `parseint` for parsing strings containing digits as integers in various bases. ([#181](https://github.com/hashicorp/terraform-plugin-sdk/issues/181))
+ * config: New function `cidrsubnets`, which is a companion to the existing function `cidrsubnet` which can allocate multiple consecutive subnet prefixes (possibly of different prefix lengths) in a single call. ([#187](https://github.com/hashicorp/terraform-plugin-sdk/issues/187))
  
 BUG FIXES:
 
- * Fix persistence of private data in acceptance tests. [GH-183]
- * command/import: fix error during import when implied provider was not used. [GH-184]
- * Fix evaluation errors when an indexed data source is evaluated during refresh. [GH-188]
+ * Fix persistence of private data in acceptance tests. ([#183](https://github.com/hashicorp/terraform-plugin-sdk/issues/183))
+ * command/import: fix error during import when implied provider was not used. ([#184](https://github.com/hashicorp/terraform-plugin-sdk/issues/184))
+ * Fix evaluation errors when an indexed data source is evaluated during refresh. ([#188](https://github.com/hashicorp/terraform-plugin-sdk/issues/188))
 
 # 1.0.0 (September 17, 2019)
 
