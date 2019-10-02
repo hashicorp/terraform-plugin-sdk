@@ -353,7 +353,7 @@ func TestEvalValidateResource_invalidDependsOn(t *testing.T) {
 	}
 
 	// Test for handling an unknown root without attribute, like a
-	// typo that omits the dot inbetween "path.module".
+	// typo that omits the dot between "path.module".
 	rc.DependsOn = append(rc.DependsOn, hcl.Traversal{
 		hcl.TraverseRoot{
 			Name: "pathmodule",

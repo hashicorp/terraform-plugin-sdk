@@ -54,7 +54,7 @@ We welcome issues of all kinds including feature requests, bug reports or docume
 
 ### Bug Reports
 
- - [ ] **Test against latest release**: Make sure you test against the latest avaiable version of both Terraform and SDK.
+ - [ ] **Test against latest release**: Make sure you test against the latest available version of both Terraform and SDK.
 It is possible we already fixed the bug you're experiencing.
 
  - [ ] **Search for duplicates**: It's helpful to keep bug reports consolidated to one thread, so do a quick search on existing bug reports to check if anybody else has reported the same thing. You can scope searches by the label `bug` to help narrow things down.

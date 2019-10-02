@@ -321,7 +321,7 @@ func writeStateV4(file *File, w io.Writer) tfdiags.Diagnostics {
 			diags = diags.Append(tfdiags.Sourceless(
 				tfdiags.Error,
 				"Failed to serialize output value in state",
-				fmt.Sprintf("An error occured while serializing output value %q: %s.", name, err),
+				fmt.Sprintf("An error occurred while serializing output value %q: %s.", name, err),
 			))
 			continue
 		}
@@ -331,7 +331,7 @@ func writeStateV4(file *File, w io.Writer) tfdiags.Diagnostics {
 			diags = diags.Append(tfdiags.Sourceless(
 				tfdiags.Error,
 				"Failed to serialize output value in state",
-				fmt.Sprintf("An error occured while serializing the type of output value %q: %s.", name, err),
+				fmt.Sprintf("An error occurred while serializing the type of output value %q: %s.", name, err),
 			))
 			continue
 		}
@@ -420,7 +420,7 @@ func writeStateV4(file *File, w io.Writer) tfdiags.Diagnostics {
 		diags = diags.Append(tfdiags.Sourceless(
 			tfdiags.Error,
 			"Failed to serialize state",
-			fmt.Sprintf("An error occured while serializing the state to save it. This is a bug in Terraform and should be reported: %s.", err),
+			fmt.Sprintf("An error occurred while serializing the state to save it. This is a bug in Terraform and should be reported: %s.", err),
 		))
 		return diags
 	}
@@ -431,7 +431,7 @@ func writeStateV4(file *File, w io.Writer) tfdiags.Diagnostics {
 		diags = diags.Append(tfdiags.Sourceless(
 			tfdiags.Error,
 			"Failed to write state",
-			fmt.Sprintf("An error occured while writing the serialized state: %s.", err),
+			fmt.Sprintf("An error occurred while writing the serialized state: %s.", err),
 		))
 		return diags
 	}

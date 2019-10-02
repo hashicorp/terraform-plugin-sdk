@@ -141,7 +141,7 @@ func (h *Host) ServiceURL(id string) (*url.URL, error) {
 // that service are returned.
 //
 // When the requested version is not provided but the service is, we will
-// search for all alternative versions. If mutliple alternative versions
+// search for all alternative versions. If multiple alternative versions
 // are found, the contrains of the latest available version are returned.
 //
 // When a service is not provided at all an error will be returned instead.

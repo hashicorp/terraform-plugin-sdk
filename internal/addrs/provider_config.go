@@ -239,7 +239,7 @@ func ParseAbsProviderConfigStr(str string) (AbsProviderConfig, tfdiags.Diagnosti
 }
 
 // ProviderConfigDefault returns the address of the default provider config
-// of the given type inside the recieving module instance.
+// of the given type inside the receiving module instance.
 func (m ModuleInstance) ProviderConfigDefault(name string) AbsProviderConfig {
 	return AbsProviderConfig{
 		Module: m,
@@ -250,7 +250,7 @@ func (m ModuleInstance) ProviderConfigDefault(name string) AbsProviderConfig {
 }
 
 // ProviderConfigAliased returns the address of an aliased provider config
-// of with given type and alias inside the recieving module instance.
+// of with given type and alias inside the receiving module instance.
 func (m ModuleInstance) ProviderConfigAliased(name, alias string) AbsProviderConfig {
 	return AbsProviderConfig{
 		Module: m,
@@ -266,7 +266,7 @@ func (m ModuleInstance) ProviderConfigAliased(name, alias string) AbsProviderCon
 // such inheritance is possible, and thus whether the returned address is valid.
 //
 // Inheritance is possible only for default (un-aliased) providers in modules
-// other than the root module. Even if a valid address is returned, inheritence
+// other than the root module. Even if a valid address is returned, inheritance
 // may not be performed for other reasons, such as if the calling module
 // provided explicit provider configurations within the call for this module.
 // The ProviderTransformer graph transform in the main terraform module has

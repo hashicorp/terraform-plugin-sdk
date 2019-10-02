@@ -126,7 +126,7 @@ func (t *TargetsTransformer) addDependencies(targetedNodes *dag.Set, g *Graph) (
 	queue := targetedNodes.List()
 	for len(queue) > 0 {
 		vertices := queue
-		queue = nil // ready to append for next iteration if neccessary
+		queue = nil // ready to append for next iteration if necessary
 		for _, v := range vertices {
 			// providers don't cause transitive dependencies, so don't target
 			// downstream from them.

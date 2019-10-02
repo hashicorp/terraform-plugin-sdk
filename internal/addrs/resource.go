@@ -51,7 +51,7 @@ func (r Resource) Absolute(module ModuleInstance) AbsResource {
 }
 
 // DefaultProviderConfig returns the address of the provider configuration
-// that should be used for the resource identified by the reciever if it
+// that should be used for the resource identified by the receiver if it
 // does not have a provider configuration address explicitly set in
 // configuration.
 //
@@ -185,7 +185,7 @@ func (m ModuleInstance) ResourceInstance(mode ResourceMode, typeName string, nam
 }
 
 // ContainingResource returns the address of the resource that contains the
-// receving resource instance. In other words, it discards the key portion
+// receiving resource instance. In other words, it discards the key portion
 // of the address to produce an AbsResource value.
 func (r AbsResourceInstance) ContainingResource() AbsResource {
 	return AbsResource{

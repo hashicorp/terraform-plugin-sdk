@@ -1817,7 +1817,7 @@ func TestContext2Plan_blockNestingGroup(t *testing.T) {
 		// This represents the situation where the remote service _always_ creates
 		// a single "blah", regardless of whether the block is present, but when
 		// the block _is_ present the user can override some aspects of it. The
-		// absense of the block means "use the defaults", in that case.
+		// absence of the block means "use the defaults", in that case.
 		Config: cty.ObjectVal(map[string]cty.Value{
 			"blah": cty.ObjectVal(map[string]cty.Value{
 				"baz": cty.NullVal(cty.String),
@@ -4642,7 +4642,7 @@ func TestContext2Plan_targetedModuleUntargetedVariable(t *testing.T) {
 	}
 }
 
-// ensure that outputs missing references due to targetting are removed from
+// ensure that outputs missing references due to targeting are removed from
 // the graph.
 func TestContext2Plan_outputContainsTargetedResource(t *testing.T) {
 	m := testModule(t, "plan-untargeted-resource-output")

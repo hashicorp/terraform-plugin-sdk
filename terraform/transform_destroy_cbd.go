@@ -56,7 +56,7 @@ func (t *ForcedCBDTransformer) Transform(g *Graph) error {
 		}
 
 		if !dn.CreateBeforeDestroy() {
-			// If there are no CBD decendent (dependent nodes), then we
+			// If there are no CBD descendant (dependent nodes), then we
 			// do nothing here.
 			if !t.hasCBDDescendent(g, v) {
 				log.Printf("[TRACE] ForcedCBDTransformer: %q (%T) has no CBD descendent, so skipping", dag.VertexName(v), v)

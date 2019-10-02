@@ -164,7 +164,7 @@ var IndentFunc = function.New(&function.Spec{
 })
 
 // ReplaceFunc constructions a function that searches a given string for another
-// given substring, and replaces each occurence with a given replacement string.
+// given substring, and replaces each occurrence with a given replacement string.
 var ReplaceFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -264,7 +264,7 @@ func Indent(spaces, str cty.Value) (cty.Value, error) {
 }
 
 // Replace searches a given string for another given substring,
-// and replaces all occurences with a given replacement string.
+// and replaces all occurrences with a given replacement string.
 func Replace(str, substr, replace cty.Value) (cty.Value, error) {
 	return ReplaceFunc.Call([]cty.Value{str, substr, replace})
 }

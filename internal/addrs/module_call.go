@@ -45,7 +45,7 @@ func (c ModuleCallInstance) String() string {
 
 // ModuleInstance returns the address of the module instance that corresponds
 // to the receiving call instance when resolved in the given calling module.
-// In other words, it returns the child module instance that the receving
+// In other words, it returns the child module instance that the receiving
 // call instance creates.
 func (c ModuleCallInstance) ModuleInstance(caller ModuleInstance) ModuleInstance {
 	return caller.Child(c.Call.Name, c.Key)
@@ -73,7 +73,7 @@ func (co ModuleCallOutput) String() string {
 }
 
 // AbsOutputValue returns the absolute output value address that corresponds
-// to the receving module call output address, once resolved in the given
+// to the receiving module call output address, once resolved in the given
 // calling module.
 func (co ModuleCallOutput) AbsOutputValue(caller ModuleInstance) AbsOutputValue {
 	moduleAddr := co.Call.ModuleInstance(caller)

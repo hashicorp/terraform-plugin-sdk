@@ -205,7 +205,7 @@ type EvalWriteState struct {
 func (n *EvalWriteState) Eval(ctx EvalContext) (interface{}, error) {
 	if n.State == nil {
 		// Note that a pointer _to_ nil is valid here, indicating the total
-		// absense of an object as we'd see during destroy.
+		// absence of an object as we'd see during destroy.
 		panic("EvalWriteState used with no ResourceInstanceObject")
 	}
 
@@ -273,7 +273,7 @@ type EvalWriteStateDeposed struct {
 func (n *EvalWriteStateDeposed) Eval(ctx EvalContext) (interface{}, error) {
 	if n.State == nil {
 		// Note that a pointer _to_ nil is valid here, indicating the total
-		// absense of an object as we'd see during destroy.
+		// absence of an object as we'd see during destroy.
 		panic("EvalWriteStateDeposed used with no ResourceInstanceObject")
 	}
 

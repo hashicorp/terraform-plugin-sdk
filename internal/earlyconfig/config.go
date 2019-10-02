@@ -68,7 +68,7 @@ type Config struct {
 	Version *version.Version
 }
 
-// ProviderDependencies returns the provider dependencies for the recieving
+// ProviderDependencies returns the provider dependencies for the receiving
 // config, including all of its descendent modules.
 func (c *Config) ProviderDependencies() (*moduledeps.Module, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics

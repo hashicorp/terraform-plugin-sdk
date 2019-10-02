@@ -24,7 +24,7 @@ const ErrorNoVersionCompatible = Error("no available version is compatible with 
 
 // ErrorVersionIncompatible indicates that all of the versions within the
 // constraints are not compatible with the current version of Terrafrom, though
-// there does exist a version outside of the constaints that is compatible.
+// there does exist a version outside of the constraints that is compatible.
 const ErrorVersionIncompatible = Error("incompatible provider version")
 
 // ErrorNoSuchProvider indicates that no provider exists with a name given

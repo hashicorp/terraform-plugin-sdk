@@ -39,11 +39,11 @@ func AssertPlanValid(schema *configschema.Block, priorState, config, plannedStat
 func assertPlanValid(schema *configschema.Block, priorState, config, plannedState cty.Value, path cty.Path) []error {
 	var errs []error
 	if plannedState.IsNull() && !config.IsNull() {
-		errs = append(errs, path.NewErrorf("planned for absense but config wants existence"))
+		errs = append(errs, path.NewErrorf("planned for absence but config wants existence"))
 		return errs
 	}
 	if config.IsNull() && !plannedState.IsNull() {
-		errs = append(errs, path.NewErrorf("planned for existence but config wants absense"))
+		errs = append(errs, path.NewErrorf("planned for existence but config wants absence"))
 		return errs
 	}
 	if plannedState.IsNull() {

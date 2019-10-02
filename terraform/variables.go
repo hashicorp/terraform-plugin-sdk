@@ -170,7 +170,7 @@ func (vv InputValues) SameValues(other InputValues) bool {
 	return true
 }
 
-// HasValues returns true if the reciever has the same values as in the given
+// HasValues returns true if the receiver has the same values as in the given
 // map, disregarding the source types and source ranges.
 //
 // Values are compared using the cty "RawEquals" method, which means that

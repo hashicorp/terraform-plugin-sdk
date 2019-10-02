@@ -183,7 +183,7 @@ func TestLookupLookupModuleError(t *testing.T) {
 
 	client := NewClient(test.Disco(server), nil)
 
-	// this should not be found in teh registry
+	// this should not be found in the registry
 	src := "bad/local/path"
 	mod, err := regsrc.ParseModuleSource(src)
 	if err != nil {

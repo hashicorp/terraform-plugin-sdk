@@ -491,7 +491,7 @@ func TestProviderInstallerGet_cache(t *testing.T) {
 	}
 
 	cache := NewLocalPluginCache(filepath.Join(tmpDir, "cache"))
-	targetDir := filepath.Join(tmpDir, "non-existant-dir")
+	targetDir := filepath.Join(tmpDir, "non-existent-dir")
 
 	defer os.RemoveAll(tmpDir)
 
