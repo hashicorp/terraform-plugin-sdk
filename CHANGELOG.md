@@ -1,8 +1,8 @@
-# 1.1.1 (Unreleased)
+# 1.1.1 (October 03, 2019)
 
 BUG FIXES:
 
- * `SDKVersion` in v1.1.0 was incorrectly set to "1.0.0" due to a bug in the release script. Fix for versions beginning at v1.1.1. [GH-191]
+ * `SDKVersion` in v1.1.0 was incorrectly set to "1.0.0" due to a bug in the release script. Fix for versions beginning at v1.1.1. ([#191](https://github.com/hashicorp/terraform-plugin-sdk/issues/191))
 
 # 1.1.0 (September 27, 2019)
 
