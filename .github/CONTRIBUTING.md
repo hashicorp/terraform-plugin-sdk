@@ -83,3 +83,19 @@ before raising a pull request.
 - [ ] **Provider testing**: The SDK's Test Framework is still undergoing active development and may not catch all corner cases when patches are tested outside of real provider code. It is therefore extremely valuable if you can run acceptance tests of at least one provider which takes advantage of your bug fix or uses new feature and demonstrate that your patch doesn't break other provider(s) relying on the existing SDK.
 
 - [ ] **Go Modules**: We use [Go Modules](https://github.com/golang/go/wiki/Modules) to manage and version all our dependencies. Please make sure that you reflect dependency changes in your pull requests appropriately (e.g. `go get`, `go mod tidy` or other commands). Where possible it is better to raise a separate pull request with just dependency changes as it's easier to review such PR(s).
+
+### Cosmetic changes, code formatting, and typos
+
+In general we do not accept PRs containing only the following changes:
+
+ - Correcting spelling or typos
+ - Code formatting, including whitespace
+ - Other cosmetic changes that do not affect functionality
+ 
+While we appreciate the effort that goes into preparing PRs, there is always a tradeoff between benefit and cost. The costs involved in accepting such contributions include the time taken for thorough review, the noise created in the git history, and the increased number of GitHub notifications that maintainers must attend to.
+
+In the case of `terraform-plugin-sdk`, the repo's close relationship to the `terraform` repo means that maintainers will sometimes port changes from `terraform` to `terraform-plugin-sdk`. Cosmetic changes to the SDK repo make this much more time-consuming as they will cause merge conflicts. This is the major hidden cost of cosmetic PRs, and the main reason we do not accept them at this time.
+
+#### Exceptions
+
+We belive that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
