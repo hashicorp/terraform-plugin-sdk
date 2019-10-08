@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -20,8 +21,8 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
-	"github.com/mitchellh/colorstring"
-
+	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/command/format"
@@ -32,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/mitchellh/colorstring"
 )
 
 // flagSweep is a flag available when running tests on the command line. It
@@ -515,6 +517,95 @@ func ParallelTest(t TestT, c TestCase) {
 	Test(t, c)
 }
 
+func shimModule(state *terraform.State, newModule *tfjson.StateModule) error {
+	path, diags := addrs.ParseModuleInstanceStr(newModule.Address)
+	if diags.HasErrors() {
+		return diags.Err()
+	}
+
+	mod := state.AddModule(path)
+	for _, res := range newModule.Resources {
+		resState := &terraform.ResourceState{
+			Provider: res.ProviderName,
+			Type:     res.Type,
+		}
+
+		flatmap := make(map[string]string)
+		for key, value := range res.AttributeValues {
+			switch v := value.(type) {
+			case bool:
+				flatmap[key] = strconv.FormatBool(v)
+			case float64:
+				flatmap[key] = strconv.FormatFloat(v, 'f', -1, 64)
+			case string:
+				flatmap[key] = v
+			default:
+				return errors.New("attributes were not flat")
+			}
+		}
+
+		if _, exists := flatmap["id"]; !exists {
+			return errors.New("attributes had no id")
+		}
+
+		resState.Primary = &terraform.InstanceState{
+			Tainted:    res.Tainted,
+			ID:         flatmap["id"],
+			Attributes: flatmap,
+			Meta: map[string]interface{}{
+				"schema_version": res.SchemaVersion,
+			},
+		}
+
+		resState.Dependencies = res.DependsOn
+
+		idx := ""
+		switch v := res.Index.(type) {
+		case int:
+			idx = fmt.Sprintf(".%d", v)
+		case string:
+			idx = "." + v
+		}
+
+		mod.Resources[res.Address+idx] = resState
+	}
+
+	for _, child := range newModule.ChildModules {
+		if err := shimModule(state, child); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
+	state := terraform.NewState()
+	state.TFVersion = jsonState.TerraformVersion
+	return state, shimModule(state, jsonState.Values.RootModule)
+}
+
+func RunLegacyTest(t *testing.T, c TestCase) {
+	wd := acctest.TestHelper.RequireNewWorkingDir(t)
+	defer wd.Close()
+
+	wd.RequireSetConfig(t, fmt.Sprintf(`provider "%s" {}`, acctest.ProviderName))
+	wd.RequireInit(t)
+	defer wd.RequireDestroy(t)
+
+	for _, step := range c.Steps {
+		wd.RequireSetConfig(t, step.Config)
+		wd.RequireApply(t)
+		newState := wd.RequireState(t)
+		state, err := shimTFJson(newState)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := step.Check(state); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // Test performs an acceptance test on a resource.
 //
 // Tests are not run unless an environmental variable "TF_ACC" is
@@ -551,6 +642,11 @@ func Test(t TestT, c TestCase) {
 	// Run the PreCheck if we have it
 	if c.PreCheck != nil {
 		c.PreCheck()
+	}
+
+	if acctest.TestHelper != nil {
+		RunLegacyTest(t.(*testing.T), c)
+		return
 	}
 
 	// get instances of all providers, so we can use the individual
