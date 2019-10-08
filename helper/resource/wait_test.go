@@ -93,3 +93,29 @@ func TestRetry_error(t *testing.T) {
 		t.Fatal("timeout")
 	}
 }
+
+func TestRetry_nilNonRetryableError(t *testing.T) {
+	t.Parallel()
+
+	f := func() *RetryError {
+		return NonRetryableError(nil)
+	}
+
+	err := Retry(1*time.Second, f)
+	if err == nil {
+		t.Fatal("should error")
+	}
+}
+
+func TestRetry_nilRetryableError(t *testing.T) {
+	t.Parallel()
+
+	f := func() *RetryError {
+		return RetryableError(nil)
+	}
+
+	err := Retry(1*time.Second, f)
+	if err == nil {
+		t.Fatal("should error")
+	}
+}
