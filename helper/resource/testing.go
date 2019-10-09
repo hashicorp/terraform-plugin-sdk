@@ -517,10 +517,49 @@ func ParallelTest(t TestT, c TestCase) {
 	Test(t, c)
 }
 
+func shimAttribute(flatmap map[string]string, currentKey string, value interface{}) {
+	switch v := value.(type) {
+	case nil:
+		// this might not be how terraform 0.11 behaved?
+		// I wonder if we should omit the entry altogether?
+		flatmap[currentKey] = ""
+	case bool:
+		flatmap[currentKey] = strconv.FormatBool(v)
+	case float64:
+		flatmap[currentKey] = strconv.FormatFloat(v, 'f', -1, 64)
+	case string:
+		flatmap[currentKey] = v
+	case map[string]interface{}:
+		if currentKey != "" {
+			currentKey += "."
+		}
+		for key, val := range v {
+			shimAttribute(flatmap, fmt.Sprintf("%s%s", currentKey, key), val)
+		}
+		flatmap[currentKey+"%"] = strconv.Itoa(len(v))
+	case []interface{}:
+		if currentKey != "" {
+			currentKey += "."
+		}
+		for i, val := range v {
+			shimAttribute(flatmap, fmt.Sprintf("%s%d", currentKey, i), val)
+		}
+		flatmap[currentKey+"#"] = strconv.Itoa(len(v))
+	default:
+		panic("Unknown json type")
+	}
+}
+
 func shimModule(state *terraform.State, newModule *tfjson.StateModule) error {
-	path, diags := addrs.ParseModuleInstanceStr(newModule.Address)
-	if diags.HasErrors() {
-		return diags.Err()
+	var path addrs.ModuleInstance
+	var diags tfdiags.Diagnostics
+	if newModule.Address == "" {
+		path = addrs.RootModuleInstance
+	} else {
+		path, diags = addrs.ParseModuleInstanceStr(newModule.Address)
+		if diags.HasErrors() {
+			return diags.Err()
+		}
 	}
 
 	mod := state.AddModule(path)
@@ -531,18 +570,7 @@ func shimModule(state *terraform.State, newModule *tfjson.StateModule) error {
 		}
 
 		flatmap := make(map[string]string)
-		for key, value := range res.AttributeValues {
-			switch v := value.(type) {
-			case bool:
-				flatmap[key] = strconv.FormatBool(v)
-			case float64:
-				flatmap[key] = strconv.FormatFloat(v, 'f', -1, 64)
-			case string:
-				flatmap[key] = v
-			default:
-				return errors.New("attributes were not flat")
-			}
-		}
+		shimAttribute(flatmap, "", res.AttributeValues)
 
 		if _, exists := flatmap["id"]; !exists {
 			return errors.New("attributes had no id")
@@ -581,7 +609,31 @@ func shimModule(state *terraform.State, newModule *tfjson.StateModule) error {
 func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
 	state := terraform.NewState()
 	state.TFVersion = jsonState.TerraformVersion
-	return state, shimModule(state, jsonState.Values.RootModule)
+	if err := shimModule(state, jsonState.Values.RootModule); err != nil {
+		return nil, err
+	}
+
+	for key, output := range jsonState.Values.Outputs {
+		outputType := ""
+		switch output.Value.(type) {
+		case string:
+			outputType = "string"
+		case []interface{}:
+			outputType = "list"
+		case map[string]interface{}:
+			outputType = "map"
+		default:
+			return nil, errors.New("output was not expected type")
+		}
+
+		state.RootModule().Outputs[key] = &terraform.OutputState{
+			Type:      outputType,
+			Value:     output.Value,
+			Sensitive: output.Sensitive,
+		}
+	}
+
+	return state, nil
 }
 
 func RunLegacyTest(t *testing.T, c TestCase) {
@@ -590,11 +642,32 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 
 	wd.RequireSetConfig(t, fmt.Sprintf(`provider "%s" {}`, acctest.ProviderName))
 	wd.RequireInit(t)
-	defer wd.RequireDestroy(t)
+
+	defer func() {
+		newState := wd.RequireState(t)
+		// destroy if state exists
+		if newState.Values != nil {
+			wd.RequireDestroy(t)
+		}
+	}()
 
 	for _, step := range c.Steps {
 		wd.RequireSetConfig(t, step.Config)
-		wd.RequireApply(t)
+		err := wd.Apply()
+
+		if step.ExpectError != nil {
+			if err == nil {
+				t.Fatal("Expected an error but got none")
+			}
+			if !step.ExpectError.MatchString(err.Error()) {
+				t.Fatalf("Expected an error with pattern, no match on: %s", err)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Fatal(err)
+		}
 		newState := wd.RequireState(t)
 		state, err := shimTFJson(newState)
 		if err != nil {
