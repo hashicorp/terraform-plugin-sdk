@@ -1,3 +1,9 @@
+# 1.2.0 (Unreleased)
+
+FEATURES:
+
+* helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures [GH-198]
+
 # 1.1.1 (October 03, 2019)
 
 BUG FIXES:
