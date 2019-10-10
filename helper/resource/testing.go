@@ -2,6 +2,7 @@ package resource
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -58,10 +59,6 @@ var flagSweepAllowFailures = flag.Bool("sweep-allow-failures", false, "Enable to
 var flagSweepRun = flag.String("sweep-run", "", "Comma seperated list of Sweeper Tests to run")
 var sweeperFuncs map[string]*Sweeper
 
-// map of sweepers that have ran, and the success/fail status based on any error
-// raised
-var sweeperRunList map[string]error
-
 // type SweeperFunc is a signature for a function that acts as a sweeper. It
 // accepts a string for the region that the sweeper is to be ran in. This
 // function must be able to construct a valid client for that region.
@@ -107,52 +104,63 @@ func TestMain(m *testing.M) {
 		// get filtered list of sweepers to run based on sweep-run flag
 		sweepers := filterSweepers(*flagSweepRun, sweeperFuncs)
 
-		// track sweeper errors across regions
-		var regionSweeperErrorFound, sweeperErrorFound bool
-
-		for _, region := range regions {
-			region = strings.TrimSpace(region)
-			// reset sweeperRunList and regionSweeperErrorFound for each region
-			sweeperRunList = map[string]error{}
-			regionSweeperErrorFound = false
-
-			log.Printf("[DEBUG] Running Sweepers for region (%s):\n", region)
-			for _, sweeper := range sweepers {
-				if err := runSweeperWithRegion(region, sweeper, *flagSweepAllowFailures); err != nil {
-					if *flagSweepAllowFailures {
-						continue
-					}
-
-					os.Exit(1)
-				}
-			}
-
-			log.Printf("Sweeper Tests ran successfully:\n")
-			for sweeper, sweeperErr := range sweeperRunList {
-				if sweeperErr == nil {
-					fmt.Printf("\t- %s\n", sweeper)
-				} else {
-					regionSweeperErrorFound = true
-				}
-			}
-
-			if regionSweeperErrorFound {
-				sweeperErrorFound = true
-				log.Printf("Sweeper Tests ran unsuccessfully:\n")
-				for sweeper, sweeperErr := range sweeperRunList {
-					if sweeperErr != nil {
-						fmt.Printf("\t- %s: %s\n", sweeper, sweeperErr)
-					}
-				}
-			}
-		}
-
-		if sweeperErrorFound {
+		if _, err := runSweepers(regions, sweepers, *flagSweepAllowFailures); err != nil {
 			os.Exit(1)
 		}
 	} else {
 		os.Exit(m.Run())
 	}
+}
+
+func runSweepers(regions []string, sweepers map[string]*Sweeper, allowFailures bool) (map[string]map[string]error, error) {
+	var sweeperErrorFound bool
+	sweeperRunList := make(map[string]map[string]error)
+
+	for _, region := range regions {
+		region = strings.TrimSpace(region)
+
+		var regionSweeperErrorFound bool
+		regionSweeperRunList := make(map[string]error)
+
+		log.Printf("[DEBUG] Running Sweepers for region (%s):\n", region)
+		for _, sweeper := range sweepers {
+			if err := runSweeperWithRegion(region, sweeper, sweepers, regionSweeperRunList, allowFailures); err != nil {
+				if allowFailures {
+					continue
+				}
+
+				sweeperRunList[region] = regionSweeperRunList
+				return sweeperRunList, fmt.Errorf("sweeper (%s) for region (%s) failed: %s", sweeper.Name, region, err)
+			}
+		}
+
+		log.Printf("Sweeper Tests ran successfully:\n")
+		for sweeper, sweeperErr := range regionSweeperRunList {
+			if sweeperErr == nil {
+				fmt.Printf("\t- %s\n", sweeper)
+			} else {
+				regionSweeperErrorFound = true
+			}
+		}
+
+		if regionSweeperErrorFound {
+			sweeperErrorFound = true
+			log.Printf("Sweeper Tests ran unsuccessfully:\n")
+			for sweeper, sweeperErr := range regionSweeperRunList {
+				if sweeperErr != nil {
+					fmt.Printf("\t- %s: %s\n", sweeper, sweeperErr)
+				}
+			}
+		}
+
+		sweeperRunList[region] = regionSweeperRunList
+	}
+
+	if sweeperErrorFound {
+		return sweeperRunList, errors.New("at least one sweeper failed")
+	}
+
+	return sweeperRunList, nil
 }
 
 // filterSweepers takes a comma seperated string listing the names of sweepers
@@ -181,11 +189,11 @@ func filterSweepers(f string, source map[string]*Sweeper) map[string]*Sweeper {
 // itself with that region for every dependency found for that sweeper. If there
 // are no dependencies, invoke the contained sweeper fun with the region, and
 // add the success/fail status to the sweeperRunList.
-func runSweeperWithRegion(region string, s *Sweeper, allowFailures bool) error {
+func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweeper, sweeperRunList map[string]error, allowFailures bool) error {
 	for _, dep := range s.Dependencies {
-		if depSweeper, ok := sweeperFuncs[dep]; ok {
+		if depSweeper, ok := sweepers[dep]; ok {
 			log.Printf("[DEBUG] Sweeper (%s) has dependency (%s), running..", s.Name, dep)
-			err := runSweeperWithRegion(region, depSweeper, allowFailures)
+			err := runSweeperWithRegion(region, depSweeper, sweepers, sweeperRunList, allowFailures)
 
 			if err != nil {
 				if allowFailures {
