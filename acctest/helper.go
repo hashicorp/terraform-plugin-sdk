@@ -8,7 +8,6 @@ import (
 )
 
 var TestHelper *tftest.Helper
-var ProviderName string
 
 func UseNewFramework(name string, providerFunc plugin.ProviderFunc) {
 	if tftest.RunningAsPlugin() {
@@ -17,7 +16,6 @@ func UseNewFramework(name string, providerFunc plugin.ProviderFunc) {
 		})
 		os.Exit(0)
 	} else {
-		ProviderName = name
 		TestHelper = tftest.AutoInitProviderHelper(name)
 	}
 }

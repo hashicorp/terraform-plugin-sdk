@@ -2,6 +2,8 @@ module github.com/hashicorp/terraform-plugin-sdk
 
 go 1.12
 
+replace github.com/apparentlymart/terraform-plugin-test => ../../apparentlymart/terraform-plugin-test
+
 require (
 	github.com/agext/levenshtein v1.2.2
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect

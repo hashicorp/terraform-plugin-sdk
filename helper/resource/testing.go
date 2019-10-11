@@ -2,7 +2,6 @@ package resource
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -21,7 +19,6 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
@@ -515,168 +512,6 @@ func LogOutput(t TestT) (logOutput io.Writer, err error) {
 func ParallelTest(t TestT, c TestCase) {
 	t.Parallel()
 	Test(t, c)
-}
-
-func shimAttribute(flatmap map[string]string, currentKey string, value interface{}) {
-	switch v := value.(type) {
-	case nil:
-		// this might not be how terraform 0.11 behaved?
-		// I wonder if we should omit the entry altogether?
-		flatmap[currentKey] = ""
-	case bool:
-		flatmap[currentKey] = strconv.FormatBool(v)
-	case float64:
-		flatmap[currentKey] = strconv.FormatFloat(v, 'f', -1, 64)
-	case string:
-		flatmap[currentKey] = v
-	case map[string]interface{}:
-		if currentKey != "" {
-			currentKey += "."
-		}
-		for key, val := range v {
-			shimAttribute(flatmap, fmt.Sprintf("%s%s", currentKey, key), val)
-		}
-		flatmap[currentKey+"%"] = strconv.Itoa(len(v))
-	case []interface{}:
-		if currentKey != "" {
-			currentKey += "."
-		}
-		for i, val := range v {
-			shimAttribute(flatmap, fmt.Sprintf("%s%d", currentKey, i), val)
-		}
-		flatmap[currentKey+"#"] = strconv.Itoa(len(v))
-	default:
-		panic("Unknown json type")
-	}
-}
-
-func shimModule(state *terraform.State, newModule *tfjson.StateModule) error {
-	var path addrs.ModuleInstance
-	var diags tfdiags.Diagnostics
-	if newModule.Address == "" {
-		path = addrs.RootModuleInstance
-	} else {
-		path, diags = addrs.ParseModuleInstanceStr(newModule.Address)
-		if diags.HasErrors() {
-			return diags.Err()
-		}
-	}
-
-	mod := state.AddModule(path)
-	for _, res := range newModule.Resources {
-		resState := &terraform.ResourceState{
-			Provider: res.ProviderName,
-			Type:     res.Type,
-		}
-
-		flatmap := make(map[string]string)
-		shimAttribute(flatmap, "", res.AttributeValues)
-
-		if _, exists := flatmap["id"]; !exists {
-			return errors.New("attributes had no id")
-		}
-
-		resState.Primary = &terraform.InstanceState{
-			Tainted:    res.Tainted,
-			ID:         flatmap["id"],
-			Attributes: flatmap,
-			Meta: map[string]interface{}{
-				"schema_version": res.SchemaVersion,
-			},
-		}
-
-		resState.Dependencies = res.DependsOn
-
-		idx := ""
-		switch v := res.Index.(type) {
-		case int:
-			idx = fmt.Sprintf(".%d", v)
-		case string:
-			idx = "." + v
-		}
-
-		mod.Resources[res.Address+idx] = resState
-	}
-
-	for _, child := range newModule.ChildModules {
-		if err := shimModule(state, child); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
-	state := terraform.NewState()
-	state.TFVersion = jsonState.TerraformVersion
-	if err := shimModule(state, jsonState.Values.RootModule); err != nil {
-		return nil, err
-	}
-
-	for key, output := range jsonState.Values.Outputs {
-		outputType := ""
-		switch output.Value.(type) {
-		case string:
-			outputType = "string"
-		case []interface{}:
-			outputType = "list"
-		case map[string]interface{}:
-			outputType = "map"
-		default:
-			return nil, errors.New("output was not expected type")
-		}
-
-		state.RootModule().Outputs[key] = &terraform.OutputState{
-			Type:      outputType,
-			Value:     output.Value,
-			Sensitive: output.Sensitive,
-		}
-	}
-
-	return state, nil
-}
-
-func RunLegacyTest(t *testing.T, c TestCase) {
-	wd := acctest.TestHelper.RequireNewWorkingDir(t)
-	defer wd.Close()
-
-	wd.RequireSetConfig(t, fmt.Sprintf(`provider "%s" {}`, acctest.ProviderName))
-	wd.RequireInit(t)
-
-	defer func() {
-		newState := wd.RequireState(t)
-		// destroy if state exists
-		if newState.Values != nil {
-			wd.RequireDestroy(t)
-		}
-	}()
-
-	for _, step := range c.Steps {
-		wd.RequireSetConfig(t, step.Config)
-		err := wd.Apply()
-
-		if step.ExpectError != nil {
-			if err == nil {
-				t.Fatal("Expected an error but got none")
-			}
-			if !step.ExpectError.MatchString(err.Error()) {
-				t.Fatalf("Expected an error with pattern, no match on: %s", err)
-			}
-			continue
-		}
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		newState := wd.RequireState(t)
-		state, err := shimTFJson(newState)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := step.Check(state); err != nil {
-			t.Fatal(err)
-		}
-	}
 }
 
 // Test performs an acceptance test on a resource.
