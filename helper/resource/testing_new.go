@@ -150,6 +150,10 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 		}
 	}()
 
+	// use this to track last step succesfully applied
+	// acts as default for import tests
+	var appliedCfg string
+
 	for i, step := range c.Steps {
 		if step.SkipFunc != nil {
 			skip, err := step.SkipFunc()
@@ -161,10 +165,6 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 				continue
 			}
 		}
-
-		// use this to track last step succesfully applied
-		// acts as default for import tests
-		var appliedCfg string
 
 		if step.ImportState {
 			if step.ResourceName == "" {
