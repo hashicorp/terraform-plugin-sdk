@@ -4,11 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -134,7 +138,19 @@ func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
 	return state, nil
 }
 
-func RunLegacyTest(t *testing.T, c TestCase) {
+func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
+
+	// TODOS
+	if c.PreventPostDestroyRefresh {
+		t.Fatal("TODO: TestCase.PreventPostDestroyRefresh")
+	}
+	if c.IDRefreshName == "" {
+		t.Fatal("TODO: TestCase.IDRefreshName")
+	}
+	if c.CheckDestroy != nil {
+		t.Fatal("TODO: TestCase.CheckDestroy")
+	}
+
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
 	defer wd.Close()
 
@@ -155,6 +171,31 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 	var appliedCfg string
 
 	for i, step := range c.Steps {
+
+		if step.PreConfig != nil {
+			step.PreConfig()
+		}
+
+		// TODOs
+		if len(step.Taint) > 0 {
+			t.Fatal("TODO: TestStep.Taint")
+		}
+		if step.Destroy {
+			t.Fatal("TODO: TestStep.Destroy")
+		}
+		if step.ExpectNonEmptyPlan {
+			t.Fatal("TODO: TestStep.ExpectNonEmptyPlan")
+		}
+		if step.PlanOnly {
+			t.Fatal("TODO: TestStep.PlanOnly")
+		}
+		if step.PreventDiskCleanup {
+			t.Fatal("TODO: TestStep.PreventDiskCleanup")
+		}
+		if step.PreventPostDestroyRefresh {
+			t.Fatal("TODO: TestStep.PreventPostDestroyRefresh")
+		}
+
 		if step.SkipFunc != nil {
 			skip, err := step.SkipFunc()
 			if err != nil {
@@ -167,6 +208,7 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 		}
 
 		if step.ImportState {
+
 			if step.ResourceName == "" {
 				t.Fatal("ResourceName is required for an import state test")
 			}
@@ -198,9 +240,6 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 			}
 			importId = step.ImportStateIdPrefix + importId
 
-			if step.PreConfig != nil {
-				step.PreConfig()
-			}
 			// create working directory for import tests
 			if step.Config == "" {
 				// I can't understand how the previous framework
@@ -250,8 +289,125 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 				}
 			}
 
+			// TODO: this was copy pasted from the old framework
+			// perhaps it can be cleaned up
+			// Verify that all the states match
 			if step.ImportStateVerify {
-				t.Fatal("TODO: ImportStateVerify")
+				// attach providers for ImportStateVerify
+				step.providers = providers
+
+				new := importState.RootModule().Resources
+				old := state.RootModule().Resources
+				for _, r := range new {
+					// Find the existing resource
+					var oldR *terraform.ResourceState
+					for _, r2 := range old {
+						if r2.Primary != nil && r2.Primary.ID == r.Primary.ID && r2.Type == r.Type {
+							oldR = r2
+							break
+						}
+					}
+					if oldR == nil {
+						t.Fatalf(
+							"Failed state verification, resource with ID %s not found",
+							r.Primary.ID)
+					}
+
+					// We'll try our best to find the schema for this resource type
+					// so we can ignore Removed fields during validation. If we fail
+					// to find the schema then we won't ignore them and so the test
+					// will need to rely on explicit ImportStateVerifyIgnore, though
+					// this shouldn't happen in any reasonable case.
+					var rsrcSchema *schema.Resource
+					if providerAddr, diags := addrs.ParseAbsProviderConfigStr(r.Provider); !diags.HasErrors() {
+						providerType := providerAddr.ProviderConfig.Type
+						if provider, ok := step.providers[providerType]; ok {
+							if provider, ok := provider.(*schema.Provider); ok {
+								rsrcSchema = provider.ResourcesMap[r.Type]
+							}
+						}
+					}
+
+					// don't add empty flatmapped containers, so we can more easily
+					// compare the attributes
+					skipEmpty := func(k, v string) bool {
+						if strings.HasSuffix(k, ".#") || strings.HasSuffix(k, ".%") {
+							if v == "0" {
+								return true
+							}
+						}
+						return false
+					}
+
+					// Compare their attributes
+					actual := make(map[string]string)
+					for k, v := range r.Primary.Attributes {
+						if skipEmpty(k, v) {
+							continue
+						}
+						actual[k] = v
+					}
+
+					expected := make(map[string]string)
+					for k, v := range oldR.Primary.Attributes {
+						if skipEmpty(k, v) {
+							continue
+						}
+						expected[k] = v
+					}
+
+					// Remove fields we're ignoring
+					for _, v := range step.ImportStateVerifyIgnore {
+						for k := range actual {
+							if strings.HasPrefix(k, v) {
+								delete(actual, k)
+							}
+						}
+						for k := range expected {
+							if strings.HasPrefix(k, v) {
+								delete(expected, k)
+							}
+						}
+					}
+
+					// Also remove any attributes that are marked as "Removed" in the
+					// schema, if we have a schema to check that against.
+					if rsrcSchema != nil {
+						for k := range actual {
+							for _, schema := range rsrcSchema.SchemasForFlatmapPath(k) {
+								if schema.Removed != "" {
+									delete(actual, k)
+									break
+								}
+							}
+						}
+						for k := range expected {
+							for _, schema := range rsrcSchema.SchemasForFlatmapPath(k) {
+								if schema.Removed != "" {
+									delete(expected, k)
+									break
+								}
+							}
+						}
+					}
+
+					if !reflect.DeepEqual(actual, expected) {
+						// Determine only the different attributes
+						for k, v := range expected {
+							if av, ok := actual[k]; ok && v == av {
+								delete(expected, k)
+								delete(actual, k)
+							}
+						}
+
+						spewConf := spew.NewDefaultConfig()
+						spewConf.SortKeys = true
+						t.Fatalf(
+							"ImportStateVerify attributes not equivalent. Difference is shown below. Top is actual, bottom is expected."+
+								"\n\n%s\n\n%s",
+							spewConf.Sdump(actual), spewConf.Sdump(expected))
+					}
+				}
 			}
 
 			importWd.Close()
@@ -259,9 +415,6 @@ func RunLegacyTest(t *testing.T, c TestCase) {
 		}
 
 		if step.Config != "" {
-			if step.PreConfig != nil {
-				step.PreConfig()
-			}
 			wd.RequireSetConfig(t, step.Config)
 			err := wd.Apply()
 
