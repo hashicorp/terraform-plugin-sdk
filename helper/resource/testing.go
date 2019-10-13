@@ -2,6 +2,7 @@ package resource
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"

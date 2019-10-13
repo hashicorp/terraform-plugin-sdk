@@ -144,7 +144,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 	if c.PreventPostDestroyRefresh {
 		t.Fatal("TODO: TestCase.PreventPostDestroyRefresh")
 	}
-	if c.IDRefreshName == "" {
+	if c.IDRefreshName != "" {
 		t.Fatal("TODO: TestCase.IDRefreshName")
 	}
 	if c.CheckDestroy != nil {
