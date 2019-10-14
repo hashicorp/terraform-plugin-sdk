@@ -404,8 +404,8 @@ func (c *CLI) initAutocomplete() {
 		cmd.Flags = map[string]complete.Predictor{
 			"-" + c.AutocompleteInstall:   complete.PredictNothing,
 			"-" + c.AutocompleteUninstall: complete.PredictNothing,
-			"-help":    complete.PredictNothing,
-			"-version": complete.PredictNothing,
+			"-help":                       complete.PredictNothing,
+			"-version":                    complete.PredictNothing,
 		}
 	}
 	cmd.GlobalFlags = c.AutocompleteGlobalFlags

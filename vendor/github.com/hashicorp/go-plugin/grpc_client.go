@@ -37,7 +37,6 @@ func dialGRPCConn(tls *tls.Config, dialer func(string, time.Duration) (net.Conn,
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32)),
 		grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(math.MaxInt32)))
 
-
 	// Connect. Note the first parameter is unused because we use a custom
 	// dialer that has the state to see the address.
 	conn, err := grpc.Dial("unused", opts...)
