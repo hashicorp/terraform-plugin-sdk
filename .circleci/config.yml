@@ -14,13 +14,13 @@ commands:
             - "/go/pkg/mod"
 
 jobs:
-  "docker-go112 build":
+  "docker-go113 build":
     docker:
       - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: go build ./...
-  "docker-go112 test":
+  "docker-go113 test":
     docker:
       - image: circleci/golang:1.13
     parameters:
@@ -40,19 +40,19 @@ jobs:
           destination: raw-test-output
       - store_test_results:
           path: << parameters.test_results >>
-  "docker-go112 vet":
+  "docker-go113 vet":
     docker:
       - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: go vet ./...
-  "docker-go112 gofmt":
+  "docker-go113 gofmt":
     docker:
       - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
-  "docker-go112 release":
+  "docker-go113 release":
     docker:
       - image: circleci/golang:1.13
     steps:
@@ -66,39 +66,39 @@ workflows:
   version: 2
   pr:
     jobs:
-      - "docker-go112 build"
-      - "docker-go112 test":
+      - "docker-go113 build"
+      - "docker-go113 test":
           requires:
-            - "docker-go112 build"
-      - "docker-go112 vet":
+            - "docker-go113 build"
+      - "docker-go113 vet":
           requires:
-            - "docker-go112 build"
-      - "docker-go112 gofmt":
+            - "docker-go113 build"
+      - "docker-go113 gofmt":
           requires:
-            - "docker-go112 build"
+            - "docker-go113 build"
   release:
     jobs:
-      - "docker-go112 build"
-      - "docker-go112 test":
+      - "docker-go113 build"
+      - "docker-go113 test":
           requires:
-            - "docker-go112 build"
-      - "docker-go112 vet":
+            - "docker-go113 build"
+      - "docker-go113 vet":
           requires:
-            - "docker-go112 build"
-      - "docker-go112 gofmt":
+            - "docker-go113 build"
+      - "docker-go113 gofmt":
           requires:
-            - "docker-go112 build"
+            - "docker-go113 build"
       - trigger-release:
           filters:
             branches:
               only: master
           type: approval
-      - "docker-go112 release":
+      - "docker-go113 release":
           filters:
             branches:
               only: master
           requires:
             - trigger-release
-            - "docker-go112 test"
-            - "docker-go112 vet"
-            - "docker-go112 gofmt"
+            - "docker-go113 test"
+            - "docker-go113 vet"
+            - "docker-go113 gofmt"
