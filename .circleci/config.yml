@@ -16,13 +16,13 @@ commands:
 jobs:
   "docker-go112 build":
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: go build ./...
   "docker-go112 test":
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     parameters:
       test_results:
         type: string
@@ -42,19 +42,19 @@ jobs:
           path: << parameters.test_results >>
   "docker-go112 vet":
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: go vet ./...
   "docker-go112 gofmt":
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
   "docker-go112 release":
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - add_ssh_keys:
           fingerprints:
