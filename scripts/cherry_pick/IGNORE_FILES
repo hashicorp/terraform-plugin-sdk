@@ -2,3 +2,4 @@
 ^internal/helper/encryption/(testdata/.*|test-fixtures/.*|[^/]*)$
 ^internal/version/(testdata/.*|test-fixtures/.*|[^/]*)$
 ^website/.*$
+^vendor/.*$
