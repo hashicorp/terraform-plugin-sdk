@@ -211,6 +211,7 @@ type Schema struct {
 	//
 	// NOTE: This currently does not work.
 	ComputedWhen []string
+	AtMostOneOf  []string
 
 	// ConflictsWith is a set of schema keys that conflict with this schema.
 	// This will only check that they're set in the _config_. This will not
@@ -1356,6 +1357,11 @@ func (m schemaMap) validate(
 				"%q: required field is not set", k)}
 		}
 
+		err := m.validateAtMostOneAttributes(k, schema, c)
+		if err != nil {
+			return nil, []error{err}
+		}
+
 		return nil, nil
 	}
 
@@ -1426,6 +1432,42 @@ func (m schemaMap) validateConflictingAttributes(
 			return fmt.Errorf(
 				"%q: conflicts with %s", k, conflictingKey)
 		}
+	}
+
+	return nil
+}
+
+func (m schemaMap) validateAtMostOneAttributes(
+	k string,
+	schema *Schema,
+	c *terraform.ResourceConfig) error {
+
+	if len(schema.AtMostOneOf) == 0 {
+		return nil
+	}
+
+	allKeys := schema.AtMostOneOf
+	allKeys = append(allKeys, k)
+	sort.Strings(allKeys)
+	specified := make([]string, 0)
+
+	for _, atMostOneOfKey := range allKeys {
+		if raw, ok := c.Get(atMostOneOfKey); ok {
+			if raw == hcl2shim.UnknownVariableValue {
+				// An unknown value might become unset (null) once known, so
+				// we must defer validation until it's known.
+				continue
+			}
+			specified = append(specified, atMostOneOfKey)
+		}
+	}
+
+	if len(specified) == 0 {
+		return fmt.Errorf("One of these %+v must be specified.", allKeys)
+	}
+
+	if len(specified) > 1 {
+		return fmt.Errorf("Only one of %+v can be specified, but %+v were specified.", allKeys, specified)
 	}
 
 	return nil
@@ -1690,7 +1732,19 @@ func (m schemaMap) validateObject(
 			ws = append(ws, ws2...)
 		}
 		if len(es2) > 0 {
-			es = append(es, es2...)
+			// An error has the chance to be duplicated so we'll loop through our list of new errors and append the
+			// not already added errors
+			for _, e2 := range es2 {
+				isFound := false
+				for _, e := range es {
+					if e == e2 {
+						isFound = true
+					}
+				}
+				if !isFound {
+					es = append(es, e2)
+				}
+			}
 		}
 	}
 
