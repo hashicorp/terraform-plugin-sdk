@@ -1357,7 +1357,7 @@ func (m schemaMap) validate(
 				"%q: required field is not set", k)}
 		}
 
-		err := m.validateAtMostOneAttributes(k, schema, c)
+		err := validateAtMostOneAttributes(k, schema, c)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -1383,7 +1383,12 @@ func (m schemaMap) validate(
 		return nil, nil
 	}
 
-	err := m.validateConflictingAttributes(k, schema, c)
+	err := validateConflictingAttributes(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	err = validateAtMostOneAttributes(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1413,7 +1418,7 @@ func isWhollyKnown(raw interface{}) bool {
 	}
 	return true
 }
-func (m schemaMap) validateConflictingAttributes(
+func validateConflictingAttributes(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
@@ -1437,7 +1442,7 @@ func (m schemaMap) validateConflictingAttributes(
 	return nil
 }
 
-func (m schemaMap) validateAtMostOneAttributes(
+func validateAtMostOneAttributes(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
