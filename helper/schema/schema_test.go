@@ -5681,9 +5681,8 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				},
 			},
 
-			Config: map[string]interface{}{
-			},
-			Err: true,
+			Config: map[string]interface{}{},
+			Err:    true,
 		},
 	}
 

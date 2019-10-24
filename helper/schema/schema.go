@@ -1468,11 +1468,11 @@ func validateAtMostOneAttributes(
 	}
 
 	if len(specified) == 0 {
-		return fmt.Errorf("One of these %+v must be specified.", allKeys)
+		return fmt.Errorf("%q: one of `%s` must be specified", k, strings.Join(allKeys, ","))
 	}
 
 	if len(specified) > 1 {
-		return fmt.Errorf("Only one of %+v can be specified, but %+v were specified.", allKeys, specified)
+		return fmt.Errorf("%q: only one of `%s` can be specified, but `%s` were specified.", k, strings.Join(allKeys, ","), strings.Join(specified, ","))
 	}
 
 	return nil
@@ -1737,19 +1737,7 @@ func (m schemaMap) validateObject(
 			ws = append(ws, ws2...)
 		}
 		if len(es2) > 0 {
-			// An error has the chance to be duplicated so we'll loop through our list of new errors and append the
-			// not already added errors
-			for _, e2 := range es2 {
-				isFound := false
-				for _, e := range es {
-					if e == e2 {
-						isFound = true
-					}
-				}
-				if !isFound {
-					es = append(es, e2)
-				}
-			}
+			es = append(es, es2...)
 		}
 	}
 
