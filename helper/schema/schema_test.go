@@ -5702,3 +5702,177 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 	}
 
 }
+
+func TestValidateAtLeastOneOfAttributes(t *testing.T) {
+	cases := map[string]struct {
+		Key    string
+		Schema map[string]*Schema
+		Config map[string]interface{}
+		Err    bool
+	}{
+
+		"two attributes specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": true,
+				"blacklist": true,
+			},
+			Err: false,
+		},
+
+		"one attributes specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": true,
+			},
+			Err: false,
+		},
+
+		"two attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist":  true,
+				"purplelist": true,
+			},
+			Err: false,
+		},
+
+		"three attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist":  true,
+				"purplelist": true,
+				"blacklist":  true,
+			},
+			Err: false,
+		},
+
+		"one attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"purplelist": true,
+			},
+			Err: false,
+		},
+
+		"no attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{},
+			Err:    true,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			c := terraform.NewResourceConfigRaw(tc.Config)
+
+			err := validateAtLeastOneAttributes(tc.Key, tc.Schema[tc.Key], c)
+			if err == nil && tc.Err {
+				t.Fatalf("expected error")
+			}
+
+			if err != nil && !tc.Err {
+				t.Fatalf("didn't expect error, got error: %+v", err)
+			}
+		})
+	}
+
+}
