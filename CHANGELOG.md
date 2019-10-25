@@ -1,8 +1,8 @@
-# 1.2.0 (Unreleased)
+# 1.2.0 (October 25, 2019)
 
 FEATURES:
 
-* helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures [GH-198]
+* helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures ([#198](https://github.com/hashicorp/terraform-plugin-sdk/issues/198))
 
 # 1.1.1 (October 03, 2019)
 
