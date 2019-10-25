@@ -5557,7 +5557,7 @@ func TestSchemaMapDeepCopy(t *testing.T) {
 	}
 }
 
-func TestValidateAtMostOneOfAttributes(t *testing.T) {
+func TestValidateExactlyOneOfAttributes(t *testing.T) {
 	cases := map[string]struct {
 		Key    string
 		Schema map[string]*Schema
@@ -5571,12 +5571,12 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"blacklist"},
+					ExactlyOneOf: []string{"blacklist"},
 				},
 				"blacklist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist"},
+					ExactlyOneOf: []string{"whitelist"},
 				},
 			},
 
@@ -5593,12 +5593,12 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"blacklist"},
+					ExactlyOneOf: []string{"blacklist"},
 				},
 				"blacklist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist"},
+					ExactlyOneOf: []string{"whitelist"},
 				},
 			},
 
@@ -5614,17 +5614,17 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -5641,17 +5641,17 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -5667,17 +5667,17 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
 					Type:        TypeBool,
 					Optional:    true,
-					AtMostOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -5690,7 +5690,7 @@ func TestValidateAtMostOneOfAttributes(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			err := validateAtMostOneAttributes(tc.Key, tc.Schema[tc.Key], c)
+			err := validateExactlyOneAttributes(tc.Key, tc.Schema[tc.Key], c)
 			if err == nil && tc.Err {
 				t.Fatalf("expected error")
 			}

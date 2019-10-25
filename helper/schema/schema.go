@@ -217,14 +217,14 @@ type Schema struct {
 	// raise an error for a malfunctioning resource that sets a conflicting
 	// key.
 	//
-	// AtMostOneOf is a set of schema keys that, when set, only one of the
+	// ExactlyOneOf is a set of schema keys that, when set, only one of the
 	// keys in that list can be specified. It will error if none are
 	// specified as well.
 	//
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
 	ConflictsWith []string
-	AtMostOneOf   []string
+	ExactlyOneOf   []string
 	AtLeastOneOf  []string
 
 	// When Deprecated is set, this attribute is deprecated.
@@ -758,8 +758,8 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: ConflictsWith cannot be set with Required", k)
 		}
 
-		if len(v.AtMostOneOf) > 0 && v.Required {
-			return fmt.Errorf("%s: AtMostOneOf cannot be set with Required", k)
+		if len(v.ExactlyOneOf) > 0 && v.Required {
+			return fmt.Errorf("%s: ExactlyOneOf cannot be set with Required", k)
 		}
 
 		if len(v.AtLeastOneOf) > 0 && v.Required {
@@ -799,8 +799,8 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			}
 		}
 
-		if len(v.AtMostOneOf) > 0 {
-			for _, key := range v.AtMostOneOf {
+		if len(v.ExactlyOneOf) > 0 {
+			for _, key := range v.ExactlyOneOf {
 				parts := strings.Split(key, ".")
 				sm := topSchemaMap
 				var target *Schema
@@ -812,7 +812,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 
 					var ok bool
 					if target, ok = sm[part]; !ok {
-						return fmt.Errorf("%s: AtMostOneOf references unknown attribute (%s) at part (%s)", k, key, part)
+						return fmt.Errorf("%s: ExactlyOneOf references unknown attribute (%s) at part (%s)", k, key, part)
 					}
 
 					if subResource, ok := target.Elem.(*Resource); ok {
@@ -820,14 +820,14 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 					}
 				}
 				if target == nil {
-					return fmt.Errorf("%s: AtMostOneOf cannot find target attribute (%s), sm: %#v", k, key, sm)
+					return fmt.Errorf("%s: ExactlyOneOf cannot find target attribute (%s), sm: %#v", k, key, sm)
 				}
 				if target.Required {
-					return fmt.Errorf("%s: AtMostOneOf cannot contain Required attribute (%s)", k, key)
+					return fmt.Errorf("%s: ExactlyOneOf cannot contain Required attribute (%s)", k, key)
 				}
 
 				if len(target.ComputedWhen) > 0 {
-					return fmt.Errorf("%s: AtMostOneOf cannot contain Computed(When) attribute (%s)", k, key)
+					return fmt.Errorf("%s: ExactlyOneOf cannot contain Computed(When) attribute (%s)", k, key)
 				}
 			}
 		}
@@ -1433,22 +1433,22 @@ func (m schemaMap) validate(
 		// We're okay as long as we had a value set
 		ok = raw != nil
 	}
+
+	err := validateExactlyOneAttributes(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	err = validateAtLeastOneAttributes(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	if !ok {
 		if schema.Required {
 			return nil, []error{fmt.Errorf(
 				"%q: required field is not set", k)}
 		}
-
-		err := validateAtMostOneAttributes(k, schema, c)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		err = validateAtLeastOneAttributes(k, schema, c)
-		if err != nil {
-			return nil, []error{err}
-		}
-
 		return nil, nil
 	}
 
@@ -1470,12 +1470,7 @@ func (m schemaMap) validate(
 		return nil, nil
 	}
 
-	err := validateConflictingAttributes(k, schema, c)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	err = validateAtMostOneAttributes(k, schema, c)
+	err = validateConflictingAttributes(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1529,28 +1524,28 @@ func validateConflictingAttributes(
 	return nil
 }
 
-func validateAtMostOneAttributes(
+func validateExactlyOneAttributes(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
 
-	if len(schema.AtMostOneOf) == 0 {
+	if len(schema.ExactlyOneOf) == 0 {
 		return nil
 	}
 
-	allKeys := schema.AtMostOneOf
+	allKeys := schema.ExactlyOneOf
 	allKeys = append(allKeys, k)
 	sort.Strings(allKeys)
 	specified := make([]string, 0)
 
-	for _, atMostOneOfKey := range allKeys {
-		if raw, ok := c.Get(atMostOneOfKey); ok {
+	for _, ExactlyOneOfKey := range allKeys {
+		if raw, ok := c.Get(ExactlyOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
 				// An unknown value might become unset (null) once known, so
 				// we must defer validation until it's known.
 				continue
 			}
-			specified = append(specified, atMostOneOfKey)
+			specified = append(specified, ExactlyOneOfKey)
 		}
 	}
 
