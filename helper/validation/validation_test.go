@@ -498,3 +498,31 @@ func TestFloatBetween(t *testing.T) {
 		}
 	}
 }
+
+func TestStringDoesNotContainAny(t *testing.T) {
+	chars := "|:/"
+
+	validStrings := []string{
+		"HelloWorld",
+		"ABC_*&^%123",
+	}
+	for _, v := range validStrings {
+		_, errors := StringDoesNotContainAny(chars)(v, "name")
+		if len(errors) != 0 {
+			t.Fatalf("%q should not contain any of %q", v, chars)
+		}
+	}
+
+	invalidStrings := []string{
+		"Hello/World",
+		"ABC|123",
+		"This will fail:",
+		chars,
+	}
+	for _, v := range invalidStrings {
+		_, errors := StringDoesNotContainAny(chars)(v, "name")
+		if len(errors) == 0 {
+			t.Fatalf("%q should contain one of %q", v, chars)
+		}
+	}
+}
