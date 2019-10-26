@@ -12,18 +12,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hcl2/hcl/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/mitchellh/copystructure"
 	"github.com/zclconf/go-cty/cty"
-	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 const (
@@ -75,64 +71,6 @@ const (
 	StateAgeReceiverNewer StateAgeComparison = 1
 	StateAgeReceiverOlder StateAgeComparison = -1
 )
-
-// BackendState stores the configuration to connect to a remote backend.
-type BackendState struct {
-	Type      string          `json:"type"`   // Backend type
-	ConfigRaw json.RawMessage `json:"config"` // Backend raw config
-	Hash      uint64          `json:"hash"`   // Hash of portion of configuration from config files
-}
-
-// Empty returns true if BackendState has no state.
-func (s *BackendState) Empty() bool {
-	return s == nil || s.Type == ""
-}
-
-// Config decodes the type-specific configuration object using the provided
-// schema and returns the result as a cty.Value.
-//
-// An error is returned if the stored configuration does not conform to the
-// given schema.
-func (s *BackendState) Config(schema *configschema.Block) (cty.Value, error) {
-	ty := schema.ImpliedType()
-	if s == nil {
-		return cty.NullVal(ty), nil
-	}
-	return ctyjson.Unmarshal(s.ConfigRaw, ty)
-}
-
-// SetConfig replaces (in-place) the type-specific configuration object using
-// the provided value and associated schema.
-//
-// An error is returned if the given value does not conform to the implied
-// type of the schema.
-func (s *BackendState) SetConfig(val cty.Value, schema *configschema.Block) error {
-	ty := schema.ImpliedType()
-	buf, err := ctyjson.Marshal(val, ty)
-	if err != nil {
-		return err
-	}
-	s.ConfigRaw = buf
-	return nil
-}
-
-// ForPlan produces an alternative representation of the reciever that is
-// suitable for storing in a plan. The current workspace must additionally
-// be provided, to be stored alongside the backend configuration.
-//
-// The backend configuration schema is required in order to properly
-// encode the backend-specific configuration settings.
-func (s *BackendState) ForPlan(schema *configschema.Block, workspaceName string) (*plans.Backend, error) {
-	if s == nil {
-		return nil, nil
-	}
-
-	configVal, err := s.Config(schema)
-	if err != nil {
-		return nil, errwrap.Wrapf("failed to decode backend config: {{err}}", err)
-	}
-	return plans.NewBackend(s.Type, configVal, schema, workspaceName)
-}
 
 // RemoteState is used to track the information about a remote
 // state store that we push/pull state to.
