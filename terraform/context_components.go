@@ -1,8 +1,6 @@
 package terraform
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 )
@@ -23,46 +21,4 @@ type contextComponentFactory interface {
 	// being initialized that can be used for internal tracking.
 	ResourceProvisioner(typ, uid string) (provisioners.Interface, error)
 	ResourceProvisioners() []string
-}
-
-// basicComponentFactory just calls a factory from a map directly.
-type basicComponentFactory struct {
-	providers    map[string]providers.Factory
-	provisioners map[string]ProvisionerFactory
-}
-
-func (c *basicComponentFactory) ResourceProviders() []string {
-	result := make([]string, len(c.providers))
-	for k := range c.providers {
-		result = append(result, k)
-	}
-
-	return result
-}
-
-func (c *basicComponentFactory) ResourceProvisioners() []string {
-	result := make([]string, len(c.provisioners))
-	for k := range c.provisioners {
-		result = append(result, k)
-	}
-
-	return result
-}
-
-func (c *basicComponentFactory) ResourceProvider(typ, uid string) (providers.Interface, error) {
-	f, ok := c.providers[typ]
-	if !ok {
-		return nil, fmt.Errorf("unknown provider %q", typ)
-	}
-
-	return f()
-}
-
-func (c *basicComponentFactory) ResourceProvisioner(typ, uid string) (provisioners.Interface, error) {
-	f, ok := c.provisioners[typ]
-	if !ok {
-		return nil, fmt.Errorf("unknown provisioner %q", typ)
-	}
-
-	return f()
 }

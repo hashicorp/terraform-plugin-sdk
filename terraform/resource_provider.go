@@ -3,10 +3,7 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
-
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/discovery"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 )
 
 // ResourceProvider is an interface that must be implemented by any
@@ -277,43 +274,3 @@ func ProviderHasDataSource(p ResourceProvider, n string) bool {
 
 	return false
 }
-
-// resourceProviderFactories matches available plugins to the given version
-// requirements to produce a map of compatible provider plugins if possible,
-// or an error if the currently-available plugins are insufficient.
-//
-// This should be called only with configurations that have passed calls
-// to config.Validate(), which ensures that all of the given version
-// constraints are valid. It will panic if any invalid constraints are present.
-func resourceProviderFactories(resolver providers.Resolver, reqd discovery.PluginRequirements) (map[string]providers.Factory, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-	ret, errs := resolver.ResolveProviders(reqd)
-	if errs != nil {
-		diags = diags.Append(
-			tfdiags.Sourceless(tfdiags.Error,
-				"Could not satisfy plugin requirements",
-				errPluginInit,
-			),
-		)
-
-		for _, err := range errs {
-			diags = diags.Append(err)
-		}
-
-		return nil, diags
-	}
-
-	return ret, nil
-}
-
-const errPluginInit = `
-Plugin reinitialization required. Please run "terraform init".
-
-Plugins are external binaries that Terraform uses to access and manipulate
-resources. The configuration provided requires plugins which can't be located,
-don't satisfy the version constraints, or are otherwise incompatible.
-
-Terraform automatically discovers provider requirements from your
-configuration, including providers used in child modules. To see the
-requirements and constraints from each module, run "terraform providers".
-`
