@@ -1524,6 +1524,18 @@ func validateConflictingAttributes(
 	return nil
 }
 
+func removeDuplicates(elements []string) []string {
+	encountered := make(map[string]struct{}, 0)
+	result := []string{}
+
+	for v := range elements {
+		encountered[elements[v]] = struct{}{}
+		result = append(result, elements[v])
+	}
+
+	return result
+}
+
 func validateExactlyOneAttributes(
 	k string,
 	schema *Schema,
@@ -1535,17 +1547,20 @@ func validateExactlyOneAttributes(
 
 	allKeys := schema.ExactlyOneOf
 	allKeys = append(allKeys, k)
+
+	allKeys = removeDuplicates(allKeys)
 	sort.Strings(allKeys)
+
 	specified := make([]string, 0)
 
-	for _, ExactlyOneOfKey := range allKeys {
-		if raw, ok := c.Get(ExactlyOneOfKey); ok {
+	for _, exactlyOneOfKey := range allKeys {
+		if raw, ok := c.Get(exactlyOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
 				// An unknown value might become unset (null) once known, so
 				// we must defer validation until it's known.
 				continue
 			}
-			specified = append(specified, ExactlyOneOfKey)
+			specified = append(specified, exactlyOneOfKey)
 		}
 	}
 
@@ -1571,6 +1586,8 @@ func validateAtLeastOneAttributes(
 
 	allKeys := schema.AtLeastOneOf
 	allKeys = append(allKeys, k)
+
+	allKeys = removeDuplicates(allKeys)
 	sort.Strings(allKeys)
 
 	for _, atLeastOneOfKey := range allKeys {
