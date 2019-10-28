@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
@@ -386,105 +385,5 @@ func TestInstanceState_MergeDiff_nilDiff(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, is2.Attributes) {
 		t.Fatalf("bad: %#v", is2.Attributes)
-	}
-}
-
-func TestParseResourceStateKey(t *testing.T) {
-	cases := []struct {
-		Input       string
-		Expected    *ResourceStateKey
-		ExpectedErr bool
-	}{
-		{
-			Input: "aws_instance.foo.3",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
-				Type:  "aws_instance",
-				Name:  "foo",
-				Index: 3,
-			},
-		},
-		{
-			Input: "aws_instance.foo.0",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
-				Type:  "aws_instance",
-				Name:  "foo",
-				Index: 0,
-			},
-		},
-		{
-			Input: "aws_instance.foo",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
-				Type:  "aws_instance",
-				Name:  "foo",
-				Index: -1,
-			},
-		},
-		{
-			Input: "data.aws_ami.foo",
-			Expected: &ResourceStateKey{
-				Mode:  DataResourceMode,
-				Type:  "aws_ami",
-				Name:  "foo",
-				Index: -1,
-			},
-		},
-		{
-			Input:       "aws_instance.foo.malformed",
-			ExpectedErr: true,
-		},
-		{
-			Input:       "aws_instance.foo.malformedwithnumber.123",
-			ExpectedErr: true,
-		},
-		{
-			Input:       "malformed",
-			ExpectedErr: true,
-		},
-	}
-	for _, tc := range cases {
-		rsk, err := ParseResourceStateKey(tc.Input)
-		if rsk != nil && tc.Expected != nil && !rsk.Equal(tc.Expected) {
-			t.Fatalf("%s: expected %s, got %s", tc.Input, tc.Expected, rsk)
-		}
-		if (err != nil) != tc.ExpectedErr {
-			t.Fatalf("%s: expected err: %t, got %s", tc.Input, tc.ExpectedErr, err)
-		}
-	}
-}
-
-func TestResourceNameSort(t *testing.T) {
-	names := []string{
-		"a",
-		"b",
-		"a.0",
-		"a.c",
-		"a.d",
-		"c",
-		"a.b.0",
-		"a.b.1",
-		"a.b.10",
-		"a.b.2",
-	}
-
-	sort.Sort(resourceNameSort(names))
-
-	expected := []string{
-		"a",
-		"a.0",
-		"a.b.0",
-		"a.b.1",
-		"a.b.2",
-		"a.b.10",
-		"a.c",
-		"a.d",
-		"b",
-		"c",
-	}
-
-	if !reflect.DeepEqual(names, expected) {
-		t.Fatalf("got: %q\nexpected: %q\n", names, expected)
 	}
 }
