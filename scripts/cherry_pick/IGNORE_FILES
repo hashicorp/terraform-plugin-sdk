@@ -3,3 +3,5 @@
 ^internal/version/(testdata/.*|test-fixtures/.*|[^/]*)$
 ^website/.*$
 ^vendor/.*$
+^go\.mod$
+^go\.sum$
