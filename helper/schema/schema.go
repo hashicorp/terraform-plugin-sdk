@@ -1529,8 +1529,10 @@ func removeDuplicates(elements []string) []string {
 	result := []string{}
 
 	for v := range elements {
-		encountered[elements[v]] = struct{}{}
-		result = append(result, elements[v])
+		if _, ok := encountered[elements[v]]; !ok {
+			encountered[elements[v]] = struct{}{}
+			result = append(result, elements[v])
+		}
 	}
 
 	return result
