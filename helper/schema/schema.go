@@ -769,21 +769,21 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		if len(v.ConflictsWith) > 0 {
 			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap)
 			if err != nil {
-				return err
+				return fmt.Errorf("ConflictsWith: %+v", err)
 			}
 		}
 
 		if len(v.ExactlyOneOf) > 0 {
 			err := checkKeysAgainstSchemaFlags(k, v.ExactlyOneOf, topSchemaMap)
 			if err != nil {
-				return err
+				return fmt.Errorf("ExactlyOneOf: %+v", err)
 			}
 		}
 
 		if len(v.AtLeastOneOf) > 0 {
 			err := checkKeysAgainstSchemaFlags(k, v.AtLeastOneOf, topSchemaMap)
 			if err != nil {
-				return err
+				return fmt.Errorf("AtLeastOneOf: %+v", err)
 			}
 		}
 
@@ -863,7 +863,7 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 
 			var ok bool
 			if target, ok = sm[part]; !ok {
-				return fmt.Errorf("%s: ConflictsWith references unknown attribute (%s) at part (%s)", k, key, part)
+				return fmt.Errorf("%s references unknown attribute (%s) at part (%s)", k, key, part)
 			}
 
 			if subResource, ok := target.Elem.(*Resource); ok {
@@ -871,14 +871,14 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 			}
 		}
 		if target == nil {
-			return fmt.Errorf("%s: ConflictsWith cannot find target attribute (%s), sm: %#v", k, key, sm)
+			return fmt.Errorf("%s cannot find target attribute (%s), sm: %#v", k, key, sm)
 		}
 		if target.Required {
-			return fmt.Errorf("%s: ConflictsWith cannot contain Required attribute (%s)", k, key)
+			return fmt.Errorf("%s cannot contain Required attribute (%s)", k, key)
 		}
 
 		if len(target.ComputedWhen) > 0 {
-			return fmt.Errorf("%s: ConflictsWith cannot contain Computed(When) attribute (%s)", k, key)
+			return fmt.Errorf("%s cannot contain Computed(When) attribute (%s)", k, key)
 		}
 	}
 	return nil
