@@ -17,14 +17,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/response"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/version"
 	"github.com/hashicorp/terraform-svchost"
 	"github.com/hashicorp/terraform-svchost/disco"
 	"github.com/mitchellh/cli"
-	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/version" 
 )
 
 const testProviderFile = "test provider binary"
