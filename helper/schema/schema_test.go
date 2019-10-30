@@ -5841,17 +5841,17 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 				"whitelist": &Schema{
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist", "purplelist"},
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "purplelist"},
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"purplelist": &Schema{
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
 				},
 			},
 
