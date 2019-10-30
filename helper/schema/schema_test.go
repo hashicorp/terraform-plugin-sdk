@@ -5569,13 +5569,13 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"blacklist"},
 				},
 				"blacklist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist"},
 				},
 			},
@@ -5591,13 +5591,13 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"blacklist"},
 				},
 				"blacklist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist"},
 				},
 			},
@@ -5612,18 +5612,18 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -5639,18 +5639,18 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -5665,18 +5665,18 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": &Schema{
-					Type:        TypeBool,
-					Optional:    true,
+					Type:         TypeBool,
+					Optional:     true,
 					ExactlyOneOf: []string{"whitelist", "blacklist"},
 				},
 			},

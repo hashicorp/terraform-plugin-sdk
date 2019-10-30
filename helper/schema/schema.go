@@ -224,7 +224,7 @@ type Schema struct {
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
 	ConflictsWith []string
-	ExactlyOneOf   []string
+	ExactlyOneOf  []string
 	AtLeastOneOf  []string
 
 	// When Deprecated is set, this attribute is deprecated.
@@ -767,101 +767,23 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if len(v.ConflictsWith) > 0 {
-			for _, key := range v.ConflictsWith {
-				parts := strings.Split(key, ".")
-				sm := topSchemaMap
-				var target *Schema
-				for _, part := range parts {
-					// Skip index fields
-					if _, err := strconv.Atoi(part); err == nil {
-						continue
-					}
-
-					var ok bool
-					if target, ok = sm[part]; !ok {
-						return fmt.Errorf("%s: ConflictsWith references unknown attribute (%s) at part (%s)", k, key, part)
-					}
-
-					if subResource, ok := target.Elem.(*Resource); ok {
-						sm = schemaMap(subResource.Schema)
-					}
-				}
-				if target == nil {
-					return fmt.Errorf("%s: ConflictsWith cannot find target attribute (%s), sm: %#v", k, key, sm)
-				}
-				if target.Required {
-					return fmt.Errorf("%s: ConflictsWith cannot contain Required attribute (%s)", k, key)
-				}
-
-				if len(target.ComputedWhen) > 0 {
-					return fmt.Errorf("%s: ConflictsWith cannot contain Computed(When) attribute (%s)", k, key)
-				}
+			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap)
+			if err != nil {
+				return err
 			}
 		}
 
 		if len(v.ExactlyOneOf) > 0 {
-			for _, key := range v.ExactlyOneOf {
-				parts := strings.Split(key, ".")
-				sm := topSchemaMap
-				var target *Schema
-				for _, part := range parts {
-					// Skip index fields
-					if _, err := strconv.Atoi(part); err == nil {
-						continue
-					}
-
-					var ok bool
-					if target, ok = sm[part]; !ok {
-						return fmt.Errorf("%s: ExactlyOneOf references unknown attribute (%s) at part (%s)", k, key, part)
-					}
-
-					if subResource, ok := target.Elem.(*Resource); ok {
-						sm = schemaMap(subResource.Schema)
-					}
-				}
-				if target == nil {
-					return fmt.Errorf("%s: ExactlyOneOf cannot find target attribute (%s), sm: %#v", k, key, sm)
-				}
-				if target.Required {
-					return fmt.Errorf("%s: ExactlyOneOf cannot contain Required attribute (%s)", k, key)
-				}
-
-				if len(target.ComputedWhen) > 0 {
-					return fmt.Errorf("%s: ExactlyOneOf cannot contain Computed(When) attribute (%s)", k, key)
-				}
+			err := checkKeysAgainstSchemaFlags(k, v.ExactlyOneOf, topSchemaMap)
+			if err != nil {
+				return err
 			}
 		}
 
 		if len(v.AtLeastOneOf) > 0 {
-			for _, key := range v.AtLeastOneOf {
-				parts := strings.Split(key, ".")
-				sm := topSchemaMap
-				var target *Schema
-				for _, part := range parts {
-					// Skip index fields
-					if _, err := strconv.Atoi(part); err == nil {
-						continue
-					}
-
-					var ok bool
-					if target, ok = sm[part]; !ok {
-						return fmt.Errorf("%s: AtLeastOneOf references unknown attribute (%s) at part (%s)", k, key, part)
-					}
-
-					if subResource, ok := target.Elem.(*Resource); ok {
-						sm = schemaMap(subResource.Schema)
-					}
-				}
-				if target == nil {
-					return fmt.Errorf("%s: AtLeastOneOf cannot find target attribute (%s), sm: %#v", k, key, sm)
-				}
-				if target.Required {
-					return fmt.Errorf("%s: AtLeastOneOf cannot contain Required attribute (%s)", k, key)
-				}
-
-				if len(target.ComputedWhen) > 0 {
-					return fmt.Errorf("%s: AtLeastOneOf cannot contain Computed(When) attribute (%s)", k, key)
-				}
+			err := checkKeysAgainstSchemaFlags(k, v.AtLeastOneOf, topSchemaMap)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -925,6 +847,40 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 	}
 
+	return nil
+}
+
+func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap) error {
+	for _, key := range keys {
+		parts := strings.Split(key, ".")
+		sm := topSchemaMap
+		var target *Schema
+		for _, part := range parts {
+			// Skip index fields
+			if _, err := strconv.Atoi(part); err == nil {
+				continue
+			}
+
+			var ok bool
+			if target, ok = sm[part]; !ok {
+				return fmt.Errorf("%s: ConflictsWith references unknown attribute (%s) at part (%s)", k, key, part)
+			}
+
+			if subResource, ok := target.Elem.(*Resource); ok {
+				sm = schemaMap(subResource.Schema)
+			}
+		}
+		if target == nil {
+			return fmt.Errorf("%s: ConflictsWith cannot find target attribute (%s), sm: %#v", k, key, sm)
+		}
+		if target.Required {
+			return fmt.Errorf("%s: ConflictsWith cannot contain Required attribute (%s)", k, key)
+		}
+
+		if len(target.ComputedWhen) > 0 {
+			return fmt.Errorf("%s: ConflictsWith cannot contain Computed(When) attribute (%s)", k, key)
+		}
+	}
 	return nil
 }
 
@@ -1545,14 +1501,9 @@ func validateExactlyOneAttributes(
 		return nil
 	}
 
-	allKeys := schema.ExactlyOneOf
-	allKeys = append(allKeys, k)
-
-	allKeys = removeDuplicates(allKeys)
+	allKeys := removeDuplicates(append(schema.ExactlyOneOf, k))
 	sort.Strings(allKeys)
-
 	specified := make([]string, 0)
-
 	for _, exactlyOneOfKey := range allKeys {
 		if raw, ok := c.Get(exactlyOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
@@ -1584,12 +1535,8 @@ func validateAtLeastOneAttributes(
 		return nil
 	}
 
-	allKeys := schema.AtLeastOneOf
-	allKeys = append(allKeys, k)
-
-	allKeys = removeDuplicates(allKeys)
+	allKeys := removeDuplicates(append(schema.AtLeastOneOf, k))
 	sort.Strings(allKeys)
-
 	for _, atLeastOneOfKey := range allKeys {
 		if raw, ok := c.Get(atLeastOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
