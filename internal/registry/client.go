@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
+	internalhttpclient "github.com/hashicorp/terraform-plugin-sdk/internal/httpclient"
+	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/regsrc"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/response"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost/disco"
+	"github.com/hashicorp/terraform-svchost"
+	"github.com/hashicorp/terraform-svchost/disco"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/version"
 )
 
@@ -46,11 +47,13 @@ func NewClient(services *disco.Disco, client *http.Client) *Client {
 	}
 
 	if client == nil {
-		client = httpclient.New()
+		client = internalhttpclient.New()
 		client.Timeout = requestTimeout
 	}
 
 	services.Transport = client.Transport
+
+	services.SetUserAgent(httpclient.TerraformUserAgent(version.String()))
 
 	return &Client{
 		client:   client,
