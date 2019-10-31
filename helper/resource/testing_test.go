@@ -934,11 +934,11 @@ func TestFilterSweepers(t *testing.T) {
 					F:    mockSweeperFunc,
 				},
 			},
-			ExpectedSweepers: []string{"aws_top"},
+			ExpectedSweepers: []string{"aws_sub", "aws_top"},
 			Filter:           "aws_top",
 		},
 		{
-			Name: "filter and none",
+			Name: "with non-matching filter",
 			Sweepers: map[string]*Sweeper{
 				"aws_dummy": &Sweeper{
 					Name: "aws_dummy",
@@ -956,6 +956,81 @@ func TestFilterSweepers(t *testing.T) {
 			},
 			Filter: "none",
 		},
+		{
+			Name: "with nested depenencies and top level filter",
+			Sweepers: map[string]*Sweeper{
+				"not_matching": &Sweeper{
+					Name: "not_matching",
+					F:    mockSweeperFunc,
+				},
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			ExpectedSweepers: []string{"matching_level1", "matching_level2", "matching_level3"},
+			Filter:           "matching_level1",
+		},
+		{
+			Name: "with nested depenencies and middle level filter",
+			Sweepers: map[string]*Sweeper{
+				"not_matching": &Sweeper{
+					Name: "not_matching",
+					F:    mockSweeperFunc,
+				},
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			ExpectedSweepers: []string{"matching_level2", "matching_level3"},
+			Filter:           "matching_level2",
+		},
+		{
+			Name: "with nested depenencies and bottom level filter",
+			Sweepers: map[string]*Sweeper{
+				"not_matching": &Sweeper{
+					Name: "not_matching",
+					F:    mockSweeperFunc,
+				},
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			ExpectedSweepers: []string{"matching_level3"},
+			Filter:           "matching_level3",
+		},
 	}
 
 	for _, tc := range cases {
@@ -964,6 +1039,188 @@ func TestFilterSweepers(t *testing.T) {
 
 		t.Run(tc.Name, func(t *testing.T) {
 			actualSweepers := filterSweepers(tc.Filter, tc.Sweepers)
+
+			var keys []string
+			for k, _ := range actualSweepers {
+				keys = append(keys, k)
+			}
+
+			sort.Strings(keys)
+			sort.Strings(tc.ExpectedSweepers)
+			if !reflect.DeepEqual(keys, tc.ExpectedSweepers) {
+				t.Fatalf("Expected keys mismatch, expected:\n%#v\ngot:\n%#v\n", tc.ExpectedSweepers, keys)
+			}
+		})
+	}
+}
+
+func TestFilterSweeperWithDependencies(t *testing.T) {
+	cases := []struct {
+		Name             string
+		Sweepers         map[string]*Sweeper
+		StartingSweeper  string
+		ExpectedSweepers []string
+	}{
+		{
+			Name: "no dependencies",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name: "matching_level1",
+					F:    mockSweeperFunc,
+				},
+				"non_matching": &Sweeper{
+					Name: "non_matching",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1"},
+		},
+		{
+			Name: "one level one dependency",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name: "matching_level2",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2"},
+		},
+		{
+			Name: "one level multiple dependencies",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2a", "matching_level2b"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2a": &Sweeper{
+					Name: "matching_level2a",
+					F:    mockSweeperFunc,
+				},
+				"matching_level2b": &Sweeper{
+					Name: "matching_level2b",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2a", "matching_level2b"},
+		},
+		{
+			Name: "multiple level one dependency",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2", "matching_level3"},
+		},
+		{
+			Name: "multiple level multiple dependencies",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2a", "matching_level2b"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2a": &Sweeper{
+					Name:         "matching_level2a",
+					Dependencies: []string{"matching_level3a", "matching_level3b"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2b": &Sweeper{
+					Name:         "matching_level2b",
+					Dependencies: []string{"matching_level3c", "matching_level3d"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3a": &Sweeper{
+					Name: "matching_level3a",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3b": &Sweeper{
+					Name: "matching_level3b",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3c": &Sweeper{
+					Name: "matching_level3c",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3d": &Sweeper{
+					Name: "matching_level3d",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2a", "matching_level2b", "matching_level3a", "matching_level3b", "matching_level3c", "matching_level3d"},
+		},
+		{
+			Name: "no parents one level",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level2",
+			ExpectedSweepers: []string{"matching_level2", "matching_level3"},
+		},
+		{
+			Name: "no parents multiple level",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2": &Sweeper{
+					Name:         "matching_level2",
+					Dependencies: []string{"matching_level3"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3": &Sweeper{
+					Name: "matching_level3",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level3",
+			ExpectedSweepers: []string{"matching_level3"},
+		},
+	}
+
+	for _, tc := range cases {
+		// reset sweepers
+		sweeperFuncs = map[string]*Sweeper{}
+
+		t.Run(tc.Name, func(t *testing.T) {
+			actualSweepers := filterSweeperWithDependencies(tc.StartingSweeper, tc.Sweepers)
 
 			var keys []string
 			for k, _ := range actualSweepers {
