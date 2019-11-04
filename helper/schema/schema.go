@@ -14,6 +14,10 @@ package schema
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/mitchellh/copystructure"
+	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
 	"regexp"
@@ -21,11 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/mitchellh/copystructure"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Name of ENV variable which (if not empty) prefers panic over error
@@ -1390,12 +1389,12 @@ func (m schemaMap) validate(
 		ok = raw != nil
 	}
 
-	err := validateExactlyOneAttributes(k, schema, c)
+	err := validateExactlyOneAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	err = validateAtLeastOneAttributes(k, schema, c)
+	err = validateAtLeastOneAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1494,7 +1493,7 @@ func removeDuplicates(elements []string) []string {
 	return result
 }
 
-func validateExactlyOneAttributes(
+func validateExactlyOneAttribute(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
@@ -1506,18 +1505,20 @@ func validateExactlyOneAttributes(
 	allKeys := removeDuplicates(append(schema.ExactlyOneOf, k))
 	sort.Strings(allKeys)
 	specified := make([]string, 0)
+	unknownVariableValueCount := 0
 	for _, exactlyOneOfKey := range allKeys {
 		if raw, ok := c.Get(exactlyOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
 				// An unknown value might become unset (null) once known, so
 				// we must defer validation until it's known.
+				unknownVariableValueCount++
 				continue
 			}
 			specified = append(specified, exactlyOneOfKey)
 		}
 	}
 
-	if len(specified) == 0 {
+	if len(specified) == 0 && unknownVariableValueCount == 0 {
 		return fmt.Errorf("%q: one of `%s` must be specified", k, strings.Join(allKeys, ","))
 	}
 
@@ -1528,7 +1529,7 @@ func validateExactlyOneAttributes(
 	return nil
 }
 
-func validateAtLeastOneAttributes(
+func validateAtLeastOneAttribute(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
@@ -1539,13 +1540,11 @@ func validateAtLeastOneAttributes(
 
 	allKeys := removeDuplicates(append(schema.AtLeastOneOf, k))
 	sort.Strings(allKeys)
+
 	for _, atLeastOneOfKey := range allKeys {
-		if raw, ok := c.Get(atLeastOneOfKey); ok {
-			if raw == hcl2shim.UnknownVariableValue {
-				// An unknown value might become unset (null) once known, so
-				// we must defer validation until it's known.
-				continue
-			}
+		if _, ok := c.Get(atLeastOneOfKey); ok {
+			// We can ignore hcl2shim.UnknownVariable by assuming it's been set and additional validation elsewhere
+			// will uncover this if it is in fact null.
 			return nil
 		}
 	}

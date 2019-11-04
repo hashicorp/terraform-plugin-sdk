@@ -5684,13 +5684,94 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Config: map[string]interface{}{},
 			Err:    true,
 		},
+
+		"Only Unknown Variable Value": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"purplelist": hcl2shim.UnknownVariableValue,
+			},
+			Err:    false,
+		},
+
+		"Unknown Variable Value and Known Value": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"purplelist": hcl2shim.UnknownVariableValue,
+				"whitelist": true,
+			},
+			Err:    false,
+		},
+
+		"Unknown Variable Value and 2 Known Value": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"purplelist": hcl2shim.UnknownVariableValue,
+				"whitelist": true,
+				"blacklist": true,
+			},
+			Err:    true,
+		},
 	}
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			err := validateExactlyOneAttributes(tc.Key, tc.Schema[tc.Key], c)
+			err := validateExactlyOneAttribute(tc.Key, tc.Schema[tc.Key], c)
 			if err == nil && tc.Err {
 				t.Fatalf("expected error")
 			}
@@ -5858,21 +5939,76 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 			Config: map[string]interface{}{},
 			Err:    true,
 		},
+
+		"Only Unknown Variable Value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": hcl2shim.UnknownVariableValue,
+			},
+
+			Err: false,
+		},
+
+		"Unknown Variable Value and Known Value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": hcl2shim.UnknownVariableValue,
+				"blacklist": true,
+			},
+
+			Err: false,
+		},
 	}
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
+			_, es := schemaMap(tc.Schema).Validate(c)
+			if len(es) > 0 != tc.Err {
+				if len(es) == 0 {
+					t.Fatalf("expected error")
+				}
 
-			err := validateAtLeastOneAttributes(tc.Key, tc.Schema[tc.Key], c)
-			if err == nil && tc.Err {
-				t.Fatalf("expected error")
-			}
+				for _, e := range es {
+					t.Fatalf("didn't expect error, got error: %+v", e)
+				}
 
-			if err != nil && !tc.Err {
-				t.Fatalf("didn't expect error, got error: %+v", err)
+				t.FailNow()
 			}
 		})
 	}
-
 }
