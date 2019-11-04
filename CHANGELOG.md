@@ -1,8 +1,16 @@
 # 1.3.0 (Unreleased)
 
+NOTES:
+
+* The internalized version of Terraform that exists for the acceptance test framework has received several cherry picks in an effort to keep it in sync with how Terraform behaves. This process is performed on a best effort basis.
+
 FEATURES: 
 
-* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes ([#225](https://github.com/hashicorp/terraform-plugin-sdk/issues/225))
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes [GH-225]
+
+BUG FIXES:
+
+* helper/resource: Ensure dependent sweepers are all added. [GH-213]
 
 # 1.2.0 (October 25, 2019)
 
