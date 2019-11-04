@@ -1,3 +1,9 @@
+# 1.3.0 (Unreleased)
+
+FEATURES: 
+
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes ([#225](https://github.com/hashicorp/terraform-plugin-sdk/issues/225))
+
 # 1.2.0 (October 25, 2019)
 
 FEATURES:
