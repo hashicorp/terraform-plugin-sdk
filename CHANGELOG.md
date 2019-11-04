@@ -3,6 +3,7 @@
 FEATURES:
 
 * helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures [GH-198]
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes [GH-225]
 
 # 1.1.1 (October 03, 2019)
 
