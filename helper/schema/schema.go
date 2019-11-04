@@ -14,10 +14,6 @@ package schema
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/mitchellh/copystructure"
-	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
 	"regexp"
@@ -25,6 +21,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/mitchellh/copystructure"
+	"github.com/mitchellh/mapstructure"
 )
 
 // Name of ENV variable which (if not empty) prefers panic over error
@@ -1509,8 +1510,8 @@ func validateExactlyOneAttribute(
 	for _, exactlyOneOfKey := range allKeys {
 		if raw, ok := c.Get(exactlyOneOfKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
-				// An unknown value might become unset (null) once known, so
-				// we must defer validation until it's known.
+				// This aims to do a best effort check that at least one value is specified whether
+				// it's known or not.
 				unknownVariableValueCount++
 				continue
 			}

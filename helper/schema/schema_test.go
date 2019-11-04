@@ -5708,7 +5708,7 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			Config: map[string]interface{}{
 				"purplelist": hcl2shim.UnknownVariableValue,
 			},
-			Err:    false,
+			Err: false,
 		},
 
 		"Unknown Variable Value and Known Value": {
@@ -5733,9 +5733,9 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 
 			Config: map[string]interface{}{
 				"purplelist": hcl2shim.UnknownVariableValue,
-				"whitelist": true,
+				"whitelist":  true,
 			},
-			Err:    false,
+			Err: false,
 		},
 
 		"Unknown Variable Value and 2 Known Value": {
@@ -5760,10 +5760,10 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 
 			Config: map[string]interface{}{
 				"purplelist": hcl2shim.UnknownVariableValue,
-				"whitelist": true,
-				"blacklist": true,
+				"whitelist":  true,
+				"blacklist":  true,
 			},
-			Err:    true,
+			Err: true,
 		},
 	}
 
