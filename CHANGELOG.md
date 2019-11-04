@@ -6,7 +6,7 @@ NOTES:
 
 FEATURES: 
 
-* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes [GH-225]
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against schema attributes [GH-225]
 
 BUG FIXES:
 
