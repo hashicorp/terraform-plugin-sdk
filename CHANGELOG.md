@@ -1,9 +1,9 @@
-# 1.2.0 (Unreleased)
+# 1.2.0 (October 25, 2019)
 
 FEATURES:
 
-* helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures [GH-198]
-* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes [GH-225]
+* helper/resource: Introduce sweeper flag `-sweep-allow-failures` to continue other sweepers after failures ([#198](https://github.com/hashicorp/terraform-plugin-sdk/issues/198))
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against shcema attributes ([#225](https://github.com/hashicorp/terraform-plugin-sdk/issues/225))
 
 # 1.1.1 (October 03, 2019)
 

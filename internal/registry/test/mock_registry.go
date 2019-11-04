@@ -10,11 +10,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/regsrc"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/registry/response"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost/auth"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/svchost/disco"
+	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
+	"github.com/hashicorp/terraform-svchost"
+	"github.com/hashicorp/terraform-svchost/auth"
+	"github.com/hashicorp/terraform-svchost/disco"
 )
 
 // Disco return a *disco.Disco mapping registry.terraform.io, localhost,
@@ -27,6 +29,7 @@ func Disco(s *httptest.Server) *disco.Disco {
 		"providers.v1": fmt.Sprintf("%s/v1/providers", s.URL),
 	}
 	d := disco.NewWithCredentialsSource(credsSrc)
+	d.SetUserAgent(httpclient.TerraformUserAgent(tfversion.String()))
 
 	d.ForceHostServices(svchost.Hostname("registry.terraform.io"), services)
 	d.ForceHostServices(svchost.Hostname("localhost"), services)
