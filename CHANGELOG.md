@@ -1,4 +1,4 @@
-# 1.3.0 (Unreleased)
+# 1.3.0 (November 06, 2019)
 
 NOTES:
 
@@ -6,12 +6,12 @@ NOTES:
 
 FEATURES: 
 
-* helper/validation: Add `StringDoesNotContainAny` validation function [GH-212]
-* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against schema attributes [GH-225]
+* helper/validation: Add `StringDoesNotContainAny` validation function ([#212](https://github.com/hashicorp/terraform-plugin-sdk/issues/212))
+* helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against schema attributes ([#225](https://github.com/hashicorp/terraform-plugin-sdk/issues/225))
 
 BUG FIXES:
 
-* helper/resource: Ensure dependent sweepers are all added. [GH-213]
+* helper/resource: Ensure dependent sweepers are all added. ([#213](https://github.com/hashicorp/terraform-plugin-sdk/issues/213))
 
 # 1.2.0 (October 25, 2019)
 
