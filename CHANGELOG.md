@@ -6,6 +6,7 @@ NOTES:
 
 FEATURES: 
 
+* helper/validation: Add `StringDoesNotContainAny` validation function [GH-212]
 * helper/schema: Introduce `ExactlyOneOf` and `AtLeastOneOf` validation checks against schema attributes [GH-225]
 
 BUG FIXES:
