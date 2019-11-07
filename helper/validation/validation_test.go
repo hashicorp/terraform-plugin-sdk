@@ -427,36 +427,7 @@ func TestValidationNoZeroValues(t *testing.T) {
 	})
 }
 
-func runTestCases(t *testing.T, cases []testCase) {
-	matchErr := func(errs []error, r *regexp.Regexp) bool {
-		// err must match one provided
-		for _, err := range errs {
-			if r.MatchString(err.Error()) {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	for i, tc := range cases {
-		_, errs := tc.f(tc.val, "test_property")
-
-		if len(errs) == 0 && tc.expectedErr == nil {
-			continue
-		}
-
-		if len(errs) != 0 && tc.expectedErr == nil {
-			t.Fatalf("expected test case %d to produce no errors, got %v", i, errs)
-		}
-
-		if !matchErr(errs, tc.expectedErr) {
-			t.Fatalf("expected test case %d to produce error matching \"%s\", got %v", i, tc.expectedErr, errs)
-		}
-	}
-}
-
-func TestFloatBetween(t *testing.T) {
+func TestValidateFloatBetween(t *testing.T) {
 	cases := map[string]struct {
 		Value                  interface{}
 		ValidateFunc           schema.SchemaValidateFunc
@@ -499,6 +470,52 @@ func TestFloatBetween(t *testing.T) {
 	}
 }
 
+func TestValidateFloatAtLeast(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: 2.5,
+			f:   FloatAtLeast(1.5),
+		},
+		{
+			val: -1.0,
+			f:   FloatAtLeast(-1.5),
+		},
+		{
+			val:         1.5,
+			f:           FloatAtLeast(2.5),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to be at least \\(2\\.5\\d*\\), got 1\\.5\\d*"),
+		},
+		{
+			val:         "2.5",
+			f:           FloatAtLeast(1.5),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be float"),
+		},
+	})
+}
+
+func TestValidateFloatAtMost(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: 2.5,
+			f:   FloatAtMost(3.5),
+		},
+		{
+			val: -1.0,
+			f:   FloatAtMost(-0.5),
+		},
+		{
+			val:         2.5,
+			f:           FloatAtMost(1.5),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to be at most \\(1\\.5\\d*\\), got 2\\.5\\d*"),
+		},
+		{
+			val:         "2.5",
+			f:           FloatAtMost(3.5),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be float"),
+		},
+	})
+}
+
 func TestStringDoesNotContainAny(t *testing.T) {
 	chars := "|:/"
 
@@ -523,6 +540,35 @@ func TestStringDoesNotContainAny(t *testing.T) {
 		_, errors := StringDoesNotContainAny(chars)(v, "name")
 		if len(errors) == 0 {
 			t.Fatalf("%q should contain one of %q", v, chars)
+		}
+	}
+}
+
+func runTestCases(t *testing.T, cases []testCase) {
+	matchErr := func(errs []error, r *regexp.Regexp) bool {
+		// err must match one provided
+		for _, err := range errs {
+			if r.MatchString(err.Error()) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	for i, tc := range cases {
+		_, errs := tc.f(tc.val, "test_property")
+
+		if len(errs) == 0 && tc.expectedErr == nil {
+			continue
+		}
+
+		if len(errs) != 0 && tc.expectedErr == nil {
+			t.Fatalf("expected test case %d to produce no errors, got %v", i, errs)
+		}
+
+		if !matchErr(errs, tc.expectedErr) {
+			t.Fatalf("expected test case %d to produce error matching \"%s\", got %v", i, tc.expectedErr, errs)
 		}
 	}
 }
