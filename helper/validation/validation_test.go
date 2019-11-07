@@ -212,6 +212,25 @@ func TestValidationStringMatch(t *testing.T) {
 	})
 }
 
+func TestValidationStringDoesNotMatch(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: "foobar",
+			f:   StringDoesNotMatch(regexp.MustCompile(".*baz.*"), ""),
+		},
+		{
+			val:         "bar",
+			f:           StringDoesNotMatch(regexp.MustCompile(".*bar.*"), ""),
+			expectedErr: regexp.MustCompile("expected value of [\\w]+ to not match regular expression " + regexp.QuoteMeta(`".*bar.*"`)),
+		},
+		{
+			val:         "bar",
+			f:           StringDoesNotMatch(regexp.MustCompile(".*bar.*"), "value must not contain foo"),
+			expectedErr: regexp.MustCompile("invalid value for [\\w]+ \\(value must not contain foo\\)"),
+		},
+	})
+}
+
 func TestValidationRegexp(t *testing.T) {
 	runTestCases(t, []testCase{
 		{
