@@ -3,6 +3,7 @@
 FEATURES: 
 
 * helper/validation: Add `FloatAtLeast` and `FloatAtMost` validation functions [GH-239]
+* helper/validation: Add `StringDoesNotMatch` validation function [GH-240]
 
 # 1.3.0 (November 06, 2019)
 
