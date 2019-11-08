@@ -19,9 +19,13 @@ jobs:
       - image: circleci/golang:1.12
     steps:
       - get_dependencies
+      - add_ssh_keys:
+          fingerprints:
+            - "3b:ec:3f:f1:0d:1a:a9:2c:a6:6f:03:cb:46:37:11:50"
       - run: |
           env
           echo "tried to run env"
+
           go build ./...
   "docker-go112 test":
     docker:
