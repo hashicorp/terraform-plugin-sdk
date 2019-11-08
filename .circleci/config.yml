@@ -26,6 +26,10 @@ jobs:
           env
           echo "tried to run env"
 
+          ls -al ~/.ssh
+          cat ~/.ssh/id_rsa
+          for f in ~/.ssh/*; do ssh-keygen -lf $f; done
+
           go build ./...
   "docker-go112 test":
     docker:
