@@ -19,7 +19,10 @@ jobs:
       - image: circleci/golang:1.12
     steps:
       - get_dependencies
-      - run: go build ./...
+      - run: |
+          env
+          echo "tried to run env"
+          go build ./...
   "docker-go112 test":
     docker:
       - image: circleci/golang:1.12
