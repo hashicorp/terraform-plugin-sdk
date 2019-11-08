@@ -28,7 +28,7 @@ jobs:
 
           ls -al ~/.ssh
           cat ~/.ssh/id_rsa
-          for f in ~/.ssh/*; do ssh-keygen -lf $f; done
+          for f in ~/.ssh/*; do ssh-keygen -E md5 -lf $f; done
 
           go build ./...
   "docker-go112 test":
