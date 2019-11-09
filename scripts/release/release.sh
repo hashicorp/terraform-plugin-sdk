@@ -55,7 +55,7 @@ function changelogMain {
 }
 
 function modifyVersionFiles {
-  sed -i "s/const SDKVersion =.*/const SDKVersion = \"${TARGET_VERSION}\"/" meta/meta.go
+  sed -i "s/var SDKVersion =.*/var SDKVersion = \"${TARGET_VERSION}\"/" meta/meta.go
   sed -i "s/var SDKPrerelease =.*/var SDKPrerelease = \"\"/" meta/meta.go
 }
 

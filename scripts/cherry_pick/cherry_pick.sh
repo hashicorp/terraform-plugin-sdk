@@ -18,6 +18,9 @@ git cherry-pick --no-commit --mainline 1 "$COMMIT_ID"
 echo "Unstaging files removed by us..."
 git status --short | sed -n 's/^DU //p' | ifne xargs git rm
 
+echo "Unstaging added files that match the ignore list..."
+git status --short | sed -n 's/^A  //p' | grep -Ef ./scripts/cherry_pick/IGNORE_FILES | ifne xargs git rm -f
+
 echo "Unstaging files where SDK intentionally diverges from Core..."
 for f in $(git diff --name-only --cached | grep -Ef ./scripts/cherry_pick/IGNORE_FILES)
 do
@@ -25,10 +28,5 @@ do
     git checkout -- "$f"
 done
 
-COMMIT_MSG=$(git log --format=%B -n 1 "$COMMIT_ID" | sed -z -r 's/Merge pull request (#[0-9]+) from ([^\n]*\/[^\n]*)\n\n(.*$)/\3\nThis commit was generated from hashicorp\/terraform\1./g')
-
 echo "Committing changes. If this fails, you must resolve the merge conflict manually."
-git commit -C "$COMMIT_ID" && \
-# amend commit message afterwards to preserve authorship information
-git commit --amend --message "${COMMIT_MSG}" \
-&& echo "Success!"
+./scripts/cherry_pick/commit.sh $COMMIT_ID && echo "Success!"

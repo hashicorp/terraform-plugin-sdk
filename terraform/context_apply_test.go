@@ -2562,6 +2562,41 @@ func TestContext2Apply_provisionerInterpCount(t *testing.T) {
 	}
 }
 
+func TestContext2Apply_foreachVariable(t *testing.T) {
+	m := testModule(t, "plan-for-each-unknown-value")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+	ctx := testContext2(t, &ContextOpts{
+		Config: m,
+		ProviderResolver: providers.ResolverFixed(
+			map[string]providers.Factory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		Variables: InputValues{
+			"foo": &InputValue{
+				Value: cty.StringVal("hello"),
+			},
+		},
+	})
+
+	if _, diags := ctx.Plan(); diags.HasErrors() {
+		t.Fatalf("plan errors: %s", diags.Err())
+	}
+
+	state, diags := ctx.Apply()
+	if diags.HasErrors() {
+		t.Fatalf("diags: %s", diags.Err())
+	}
+
+	actual := strings.TrimSpace(state.String())
+	expected := strings.TrimSpace(testTerraformApplyForEachVariableStr)
+	if actual != expected {
+		t.Fatalf("wrong result\n\ngot:\n%s\n\nwant:\n%s", actual, expected)
+	}
+}
+
 func TestContext2Apply_moduleBasic(t *testing.T) {
 	m := testModule(t, "apply-module")
 	p := testProvider("aws")
@@ -6723,15 +6758,34 @@ func TestContext2Apply_destroyTargetWithModuleVariableAndCount(t *testing.T) {
 			},
 		})
 
-		_, err := ctx.Plan()
-		if err != nil {
-			t.Fatalf("plan err: %s", err)
+		_, diags := ctx.Plan()
+		if diags.HasErrors() {
+			t.Fatalf("plan err: %s", diags)
+		}
+		if len(diags) != 1 {
+			// Should have one warning that -target is in effect.
+			t.Fatalf("got %d diagnostics in plan; want 1", len(diags))
+		}
+		if got, want := diags[0].Severity(), tfdiags.Warning; got != want {
+			t.Errorf("wrong diagnostic severity %#v; want %#v", got, want)
+		}
+		if got, want := diags[0].Description().Summary, "Resource targeting is in effect"; got != want {
+			t.Errorf("wrong diagnostic summary %#v; want %#v", got, want)
 		}
 
 		// Destroy, targeting the module explicitly
-		state, err = ctx.Apply()
-		if err != nil {
-			t.Fatalf("destroy apply err: %s", err)
+		state, diags = ctx.Apply()
+		if diags.HasErrors() {
+			t.Fatalf("destroy apply err: %s", diags)
+		}
+		if len(diags) != 1 {
+			t.Fatalf("got %d diagnostics; want 1", len(diags))
+		}
+		if got, want := diags[0].Severity(), tfdiags.Warning; got != want {
+			t.Errorf("wrong diagnostic severity %#v; want %#v", got, want)
+		}
+		if got, want := diags[0].Description().Summary, "Applied changes may be incomplete"; got != want {
+			t.Errorf("wrong diagnostic summary %#v; want %#v", got, want)
 		}
 	}
 
@@ -8727,6 +8781,52 @@ module.child:
 	`)
 }
 
+func TestContext2Apply_targetedResourceOrphanModule(t *testing.T) {
+	m := testModule(t, "apply-targeted-resource-orphan-module")
+	p := testProvider("aws")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	// Create a state with an orphan module
+	state := MustShimLegacyState(&State{
+		Modules: []*ModuleState{
+			&ModuleState{
+				Path: []string{"root", "child"},
+				Resources: map[string]*ResourceState{
+					"aws_instance.bar": &ResourceState{
+						Type:     "aws_instance",
+						Primary:  &InstanceState{},
+						Provider: "provider.aws",
+					},
+				},
+			},
+		},
+	})
+
+	ctx := testContext2(t, &ContextOpts{
+		Config: m,
+		ProviderResolver: providers.ResolverFixed(
+			map[string]providers.Factory{
+				"aws": testProviderFuncFixed(p),
+			},
+		),
+		State: state,
+		Targets: []addrs.Targetable{
+			addrs.RootModuleInstance.Resource(
+				addrs.ManagedResourceMode, "aws_instance", "foo",
+			),
+		},
+	})
+
+	if _, diags := ctx.Plan(); diags.HasErrors() {
+		t.Fatalf("plan errors: %s", diags.Err())
+	}
+
+	if _, diags := ctx.Apply(); diags.HasErrors() {
+		t.Fatalf("apply errors: %s", diags.Err())
+	}
+}
+
 func TestContext2Apply_unknownAttribute(t *testing.T) {
 	m := testModule(t, "apply-unknown")
 	p := testProvider("aws")
@@ -10405,5 +10505,268 @@ func TestContext2Apply_issue19908(t *testing.T) {
 	}
 	if got, want := obj.AttrsJSON, []byte(`"old"`); !bytes.Contains(got, want) {
 		t.Errorf("test.foo attributes JSON doesn't contain %s after apply\ngot: %s", want, got)
+	}
+}
+
+func TestContext2Apply_invalidIndexRef(t *testing.T) {
+	p := testProvider("test")
+	p.GetSchemaReturn = &ProviderSchema{
+		ResourceTypes: map[string]*configschema.Block{
+			"test_instance": {
+				Attributes: map[string]*configschema.Attribute{
+					"value": {Type: cty.String, Optional: true, Computed: true},
+				},
+			},
+		},
+	}
+	p.DiffFn = testDiffFn
+
+	m := testModule(t, "apply-invalid-index")
+	c := testContext2(t, &ContextOpts{
+		Config: m,
+		ProviderResolver: providers.ResolverFixed(
+			map[string]providers.Factory{
+				"test": testProviderFuncFixed(p),
+			},
+		),
+	})
+
+	diags := c.Validate()
+	if diags.HasErrors() {
+		t.Fatalf("unexpected validation failure: %s", diags.Err())
+	}
+
+	wantErr := `The given key does not identify an element in this collection value`
+	_, diags = c.Plan()
+
+	if !diags.HasErrors() {
+		t.Fatalf("plan succeeded; want error")
+	}
+	gotErr := diags.Err().Error()
+
+	if !strings.Contains(gotErr, wantErr) {
+		t.Fatalf("missing expected error\ngot: %s\n\nwant: error containing %q", gotErr, wantErr)
+	}
+}
+
+func TestContext2Apply_moduleReplaceCycle(t *testing.T) {
+	for _, mode := range []string{"normal", "cbd"} {
+		var m *configs.Config
+
+		switch mode {
+		case "normal":
+			m = testModule(t, "apply-module-replace-cycle")
+		case "cbd":
+			m = testModule(t, "apply-module-replace-cycle-cbd")
+		}
+
+		p := testProvider("aws")
+		p.DiffFn = testDiffFn
+		p.ApplyFn = testApplyFn
+
+		instanceSchema := &configschema.Block{
+			Attributes: map[string]*configschema.Attribute{
+				"id":          {Type: cty.String, Computed: true},
+				"require_new": {Type: cty.String, Optional: true},
+			},
+		}
+
+		p.GetSchemaReturn = &ProviderSchema{
+			ResourceTypes: map[string]*configschema.Block{
+				"aws_instance": instanceSchema,
+			},
+		}
+
+		state := states.NewState()
+		modA := state.EnsureModule(addrs.RootModuleInstance.Child("a", addrs.NoKey))
+		modA.SetResourceInstanceCurrent(
+			addrs.Resource{
+				Mode: addrs.ManagedResourceMode,
+				Type: "aws_instance",
+				Name: "a",
+			}.Instance(addrs.NoKey),
+			&states.ResourceInstanceObjectSrc{
+				Status:    states.ObjectReady,
+				AttrsJSON: []byte(`{"id":"a","require_new":"old"}`),
+			},
+			addrs.ProviderConfig{
+				Type: "aws",
+			}.Absolute(addrs.RootModuleInstance),
+		)
+
+		modB := state.EnsureModule(addrs.RootModuleInstance.Child("b", addrs.NoKey))
+		modB.SetResourceInstanceCurrent(
+			addrs.Resource{
+				Mode: addrs.ManagedResourceMode,
+				Type: "aws_instance",
+				Name: "b",
+			}.Instance(addrs.IntKey(0)),
+			&states.ResourceInstanceObjectSrc{
+				Status:    states.ObjectReady,
+				AttrsJSON: []byte(`{"id":"b","require_new":"old"}`),
+			},
+			addrs.ProviderConfig{
+				Type: "aws",
+			}.Absolute(addrs.RootModuleInstance),
+		)
+
+		aBefore, _ := plans.NewDynamicValue(
+			cty.ObjectVal(map[string]cty.Value{
+				"id":          cty.StringVal("a"),
+				"require_new": cty.StringVal("old"),
+			}), instanceSchema.ImpliedType())
+		aAfter, _ := plans.NewDynamicValue(
+			cty.ObjectVal(map[string]cty.Value{
+				"id":          cty.UnknownVal(cty.String),
+				"require_new": cty.StringVal("new"),
+			}), instanceSchema.ImpliedType())
+		bBefore, _ := plans.NewDynamicValue(
+			cty.ObjectVal(map[string]cty.Value{
+				"id":          cty.StringVal("b"),
+				"require_new": cty.StringVal("old"),
+			}), instanceSchema.ImpliedType())
+		bAfter, _ := plans.NewDynamicValue(
+			cty.ObjectVal(map[string]cty.Value{
+				"id":          cty.UnknownVal(cty.String),
+				"require_new": cty.UnknownVal(cty.String),
+			}), instanceSchema.ImpliedType())
+
+		var aAction plans.Action
+		switch mode {
+		case "normal":
+			aAction = plans.DeleteThenCreate
+		case "cbd":
+			aAction = plans.CreateThenDelete
+		}
+
+		changes := &plans.Changes{
+			Resources: []*plans.ResourceInstanceChangeSrc{
+				{
+					Addr: addrs.Resource{
+						Mode: addrs.ManagedResourceMode,
+						Type: "aws_instance",
+						Name: "a",
+					}.Instance(addrs.NoKey).Absolute(addrs.RootModuleInstance.Child("a", addrs.NoKey)),
+					ProviderAddr: addrs.ProviderConfig{
+						Type: "aws",
+					}.Absolute(addrs.RootModuleInstance),
+					ChangeSrc: plans.ChangeSrc{
+						Action: aAction,
+						Before: aBefore,
+						After:  aAfter,
+					},
+				},
+				{
+					Addr: addrs.Resource{
+						Mode: addrs.ManagedResourceMode,
+						Type: "aws_instance",
+						Name: "b",
+					}.Instance(addrs.IntKey(0)).Absolute(addrs.RootModuleInstance.Child("b", addrs.NoKey)),
+					ProviderAddr: addrs.ProviderConfig{
+						Type: "aws",
+					}.Absolute(addrs.RootModuleInstance),
+					ChangeSrc: plans.ChangeSrc{
+						Action: plans.DeleteThenCreate,
+						Before: bBefore,
+						After:  bAfter,
+					},
+				},
+			},
+		}
+
+		ctx := testContext2(t, &ContextOpts{
+			Config: m,
+			ProviderResolver: providers.ResolverFixed(
+				map[string]providers.Factory{
+					"aws": testProviderFuncFixed(p),
+				},
+			),
+			State:   state,
+			Changes: changes,
+		})
+
+		t.Run(mode, func(t *testing.T) {
+			_, diags := ctx.Apply()
+			if diags.HasErrors() {
+				t.Fatal(diags.Err())
+			}
+		})
+	}
+}
+
+func TestContext2Apply_destroyDataCycle(t *testing.T) {
+	m, snap := testModuleWithSnapshot(t, "apply-destroy-data-cycle")
+	p := testProvider("null")
+	p.ApplyFn = testApplyFn
+	p.DiffFn = testDiffFn
+
+	state := states.NewState()
+	root := state.EnsureModule(addrs.RootModuleInstance)
+	root.SetResourceInstanceCurrent(
+		addrs.Resource{
+			Mode: addrs.ManagedResourceMode,
+			Type: "null_resource",
+			Name: "a",
+		}.Instance(addrs.IntKey(0)),
+		&states.ResourceInstanceObjectSrc{
+			Status:    states.ObjectReady,
+			AttrsJSON: []byte(`{"id":"a"}`),
+		},
+		addrs.ProviderConfig{
+			Type: "null",
+		}.Absolute(addrs.RootModuleInstance),
+	)
+	root.SetResourceInstanceCurrent(
+		addrs.Resource{
+			Mode: addrs.DataResourceMode,
+			Type: "null_data_source",
+			Name: "d",
+		}.Instance(addrs.NoKey),
+		&states.ResourceInstanceObjectSrc{
+			Status:    states.ObjectReady,
+			AttrsJSON: []byte(`{"id":"data"}`),
+		},
+		addrs.ProviderConfig{
+			Type: "null",
+		}.Absolute(addrs.RootModuleInstance),
+	)
+
+	providerResolver := providers.ResolverFixed(
+		map[string]providers.Factory{
+			"null": testProviderFuncFixed(p),
+		},
+	)
+
+	hook := &testHook{}
+	ctx := testContext2(t, &ContextOpts{
+		Config:           m,
+		ProviderResolver: providerResolver,
+		State:            state,
+		Destroy:          true,
+		Hooks:            []Hook{hook},
+	})
+
+	plan, diags := ctx.Plan()
+	diags.HasErrors()
+	if diags.HasErrors() {
+		t.Fatalf("diags: %s", diags.Err())
+	}
+
+	// We'll marshal and unmarshal the plan here, to ensure that we have
+	// a clean new context as would be created if we separately ran
+	// terraform plan -out=tfplan && terraform apply tfplan
+	ctxOpts, err := contextOptsForPlanViaFile(snap, state, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctxOpts.ProviderResolver = providerResolver
+	ctx, diags = NewContext(ctxOpts)
+	if diags.HasErrors() {
+		t.Fatalf("failed to create context for plan: %s", diags.Err())
+	}
+
+	_, diags = ctx.Apply()
+	if diags.HasErrors() {
+		t.Fatalf("diags: %s", diags.Err())
 	}
 }
