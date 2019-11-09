@@ -1412,6 +1412,113 @@ func TestResourceDataTimeout(t *testing.T) {
 	}
 }
 
+func TestResourceDataHasChanges(t *testing.T) {
+	cases := []struct {
+		Schema map[string]*Schema
+		State  *terraform.InstanceState
+		Diff   *terraform.InstanceDiff
+		Keys   []string
+		Change bool
+	}{
+		// empty call d.HasChanges()
+		{
+			Schema: map[string]*Schema{},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{},
+			},
+
+			Keys: []string{},
+
+			Change: false,
+		},
+		// neither has change
+		{
+			Schema: map[string]*Schema{
+				"a": &Schema{
+					Type: TypeString,
+				},
+				"b": &Schema{
+					Type: TypeString,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"a": "foo",
+					"b": "foo",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"a": &terraform.ResourceAttrDiff{
+						Old: "",
+						New: "foo",
+					},
+					"b": &terraform.ResourceAttrDiff{
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"a", "b"},
+
+			Change: false,
+		},
+		// one key has change
+		{
+			Schema: map[string]*Schema{
+				"a": &Schema{
+					Type: TypeString,
+				},
+				"b": &Schema{
+					Type: TypeString,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"a": "foo",
+					"b": "foo",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"a": &terraform.ResourceAttrDiff{
+						Old: "",
+						New: "bar",
+					},
+					"b": &terraform.ResourceAttrDiff{
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"a", "b"},
+
+			Change: true,
+		},
+	}
+
+	for i, tc := range cases {
+		d, err := schemaMap(tc.Schema).Data(tc.State, tc.Diff)
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		actual := d.HasChanges(tc.Keys...)
+		if actual != tc.Change {
+			t.Fatalf("Bad: %d %#v", i, actual)
+		}
+	}
+}
+
 func TestResourceDataHasChange(t *testing.T) {
 	cases := []struct {
 		Schema map[string]*Schema
@@ -1534,7 +1641,7 @@ func TestResourceDataHasChange(t *testing.T) {
 			Change: true,
 		},
 
-		// https://github.com/hashicorp/terraform-plugin-sdk/issues/927
+		// https://github.com/hashicorp/terraform/issues/927
 		{
 			Schema: map[string]*Schema{
 				"ports": &Schema{
