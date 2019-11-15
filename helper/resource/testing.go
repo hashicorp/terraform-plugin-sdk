@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,29 +8,19 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
-	"reflect"
 	"regexp"
 	"strings"
 	"syscall"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
+
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/command/format"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configload"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/initwd"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/mitchellh/colorstring"
 )
 
 // flagSweep is a flag available when running tests on the command line. It
@@ -551,7 +540,7 @@ func Test(t TestT, c TestCase) {
 	log.SetOutput(logWriter)
 
 	// We require verbose mode so that the user knows what is going on.
-	if !testTesting && !testing.Verbose() && !c.IsUnitTest {
+	if !testing.Verbose() && !c.IsUnitTest {
 		t.Fatal("Acceptance tests must be run with the -v flag on tests")
 		return
 	}
@@ -576,151 +565,6 @@ func Test(t TestT, c TestCase) {
 		// inject providers for ImportStateVerify
 		RunNewTest(t.(*testing.T), c, providers)
 		return
-	}
-
-	providerResolver, err := testProviderResolver(c)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	opts := terraform.ContextOpts{ProviderResolver: providerResolver}
-
-	// A single state variable to track the lifecycle, starting with no state
-	var state *terraform.State
-
-	// Go through each step and run it
-	var idRefreshCheck *terraform.ResourceState
-	idRefresh := c.IDRefreshName != ""
-	errored := false
-	for i, step := range c.Steps {
-		// insert the providers into the step so we can get the resources for
-		// shimming the state
-		step.providers = providers
-
-		var err error
-		log.Printf("[DEBUG] Test: Executing step %d", i)
-
-		if step.SkipFunc != nil {
-			skip, err := step.SkipFunc()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if skip {
-				log.Printf("[WARN] Skipping step %d", i)
-				continue
-			}
-		}
-
-		if step.Config == "" && !step.ImportState {
-			err = fmt.Errorf(
-				"unknown test mode for step. Please see TestStep docs\n\n%#v",
-				step)
-		} else {
-			if step.ImportState {
-				if step.Config == "" {
-					step.Config = testProviderConfig(c)
-				}
-
-				// Can optionally set step.Config in addition to
-				// step.ImportState, to provide config for the import.
-				state, err = testStepImportState(opts, state, step)
-			} else {
-				state, err = testStepConfig(opts, state, step)
-			}
-		}
-
-		// If we expected an error, but did not get one, fail
-		if err == nil && step.ExpectError != nil {
-			errored = true
-			t.Error(fmt.Sprintf(
-				"Step %d, no error received, but expected a match to:\n\n%s\n\n",
-				i, step.ExpectError))
-			break
-		}
-
-		// If there was an error, exit
-		if err != nil {
-			// Perhaps we expected an error? Check if it matches
-			if step.ExpectError != nil {
-				if !step.ExpectError.MatchString(err.Error()) {
-					errored = true
-					t.Error(fmt.Sprintf(
-						"Step %d, expected error:\n\n%s\n\nTo match:\n\n%s\n\n",
-						i, err, step.ExpectError))
-					break
-				}
-			} else {
-				errored = true
-				t.Error(fmt.Sprintf("Step %d error: %s", i, detailedErrorMessage(err)))
-				break
-			}
-		}
-
-		// If we've never checked an id-only refresh and our state isn't
-		// empty, find the first resource and test it.
-		if idRefresh && idRefreshCheck == nil && !state.Empty() {
-			// Find the first non-nil resource in the state
-			for _, m := range state.Modules {
-				if len(m.Resources) > 0 {
-					if v, ok := m.Resources[c.IDRefreshName]; ok {
-						idRefreshCheck = v
-					}
-
-					break
-				}
-			}
-
-			// If we have an instance to check for refreshes, do it
-			// immediately. We do it in the middle of another test
-			// because it shouldn't affect the overall state (refresh
-			// is read-only semantically) and we want to fail early if
-			// this fails. If refresh isn't read-only, then this will have
-			// caught a different bug.
-			if idRefreshCheck != nil {
-				log.Printf(
-					"[WARN] Test: Running ID-only refresh check on %s",
-					idRefreshCheck.Primary.ID)
-				if err := testIDOnlyRefresh(c, opts, step, idRefreshCheck); err != nil {
-					log.Printf("[ERROR] Test: ID-only test failed: %s", err)
-					t.Error(fmt.Sprintf(
-						"[ERROR] Test: ID-only test failed: %s", err))
-					break
-				}
-			}
-		}
-	}
-
-	// If we never checked an id-only refresh, it is a failure.
-	if idRefresh {
-		if !errored && len(c.Steps) > 0 && idRefreshCheck == nil {
-			t.Error("ID-only refresh check never ran.")
-		}
-	}
-
-	// If we have a state, then run the destroy
-	if state != nil {
-		lastStep := c.Steps[len(c.Steps)-1]
-		destroyStep := TestStep{
-			Config:                    lastStep.Config,
-			Check:                     c.CheckDestroy,
-			Destroy:                   true,
-			PreventDiskCleanup:        lastStep.PreventDiskCleanup,
-			PreventPostDestroyRefresh: c.PreventPostDestroyRefresh,
-			providers:                 providers,
-		}
-
-		log.Printf("[WARN] Test: Executing destroy step")
-		state, err := testStep(opts, state, destroyStep)
-		if err != nil {
-			t.Error(fmt.Sprintf(
-				"Error destroying resource! WARNING: Dangling resources\n"+
-					"may exist. The full state and error is shown below.\n\n"+
-					"Error: %s\n\nState: %s",
-				err,
-				state))
-		}
-	} else {
-		log.Printf("[WARN] Skipping destroy test since there is no state.")
 	}
 }
 
@@ -788,156 +632,6 @@ func testProviderResolver(c TestCase) (providers.Resolver, error) {
 func UnitTest(t TestT, c TestCase) {
 	c.IsUnitTest = true
 	Test(t, c)
-}
-
-func testIDOnlyRefresh(c TestCase, opts terraform.ContextOpts, step TestStep, r *terraform.ResourceState) error {
-	// TODO: We guard by this right now so master doesn't explode. We
-	// need to remove this eventually to make this part of the normal tests.
-	if os.Getenv("TF_ACC_IDONLY") == "" {
-		return nil
-	}
-
-	addr := addrs.Resource{
-		Mode: addrs.ManagedResourceMode,
-		Type: r.Type,
-		Name: "foo",
-	}.Instance(addrs.NoKey)
-	absAddr := addr.Absolute(addrs.RootModuleInstance)
-
-	// Build the state. The state is just the resource with an ID. There
-	// are no attributes. We only set what is needed to perform a refresh.
-	state := states.NewState()
-	state.RootModule().SetResourceInstanceCurrent(
-		addr,
-		&states.ResourceInstanceObjectSrc{
-			AttrsFlat: r.Primary.Attributes,
-			Status:    states.ObjectReady,
-		},
-		addrs.ProviderConfig{Type: "placeholder"}.Absolute(addrs.RootModuleInstance),
-	)
-
-	// Create the config module. We use the full config because Refresh
-	// doesn't have access to it and we may need things like provider
-	// configurations. The initial implementation of id-only checks used
-	// an empty config module, but that caused the aforementioned problems.
-	cfg, err := testConfig(opts, step)
-	if err != nil {
-		return err
-	}
-
-	// Initialize the context
-	opts.Config = cfg
-	opts.State = state
-	ctx, ctxDiags := terraform.NewContext(&opts)
-	if ctxDiags.HasErrors() {
-		return ctxDiags.Err()
-	}
-	if diags := ctx.Validate(); len(diags) > 0 {
-		if diags.HasErrors() {
-			return errwrap.Wrapf("config is invalid: {{err}}", diags.Err())
-		}
-
-		log.Printf("[WARN] Config warnings:\n%s", diags.Err().Error())
-	}
-
-	// Refresh!
-	state, refreshDiags := ctx.Refresh()
-	if refreshDiags.HasErrors() {
-		return refreshDiags.Err()
-	}
-
-	// Verify attribute equivalence.
-	actualR := state.ResourceInstance(absAddr)
-	if actualR == nil {
-		return fmt.Errorf("Resource gone!")
-	}
-	if actualR.Current == nil {
-		return fmt.Errorf("Resource has no primary instance")
-	}
-	actual := actualR.Current.AttrsFlat
-	expected := r.Primary.Attributes
-	// Remove fields we're ignoring
-	for _, v := range c.IDRefreshIgnore {
-		for k, _ := range actual {
-			if strings.HasPrefix(k, v) {
-				delete(actual, k)
-			}
-		}
-		for k, _ := range expected {
-			if strings.HasPrefix(k, v) {
-				delete(expected, k)
-			}
-		}
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		// Determine only the different attributes
-		for k, v := range expected {
-			if av, ok := actual[k]; ok && v == av {
-				delete(expected, k)
-				delete(actual, k)
-			}
-		}
-
-		spewConf := spew.NewDefaultConfig()
-		spewConf.SortKeys = true
-		return fmt.Errorf(
-			"Attributes not equivalent. Difference is shown below. Top is actual, bottom is expected."+
-				"\n\n%s\n\n%s",
-			spewConf.Sdump(actual), spewConf.Sdump(expected))
-	}
-
-	return nil
-}
-
-func testConfig(opts terraform.ContextOpts, step TestStep) (*configs.Config, error) {
-	if step.PreConfig != nil {
-		step.PreConfig()
-	}
-
-	cfgPath, err := ioutil.TempDir("", "tf-test")
-	if err != nil {
-		return nil, fmt.Errorf("Error creating temporary directory for config: %s", err)
-	}
-
-	if step.PreventDiskCleanup {
-		log.Printf("[INFO] Skipping defer os.RemoveAll call")
-	} else {
-		defer os.RemoveAll(cfgPath)
-	}
-
-	// Write the main configuration file
-	err = ioutil.WriteFile(filepath.Join(cfgPath, "main.tf"), []byte(step.Config), os.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating temporary file for config: %s", err)
-	}
-
-	// Create directory for our child modules, if any.
-	modulesDir := filepath.Join(cfgPath, ".modules")
-	err = os.Mkdir(modulesDir, os.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating child modules directory: %s", err)
-	}
-
-	inst := initwd.NewModuleInstaller(modulesDir, nil)
-	_, installDiags := inst.InstallModules(cfgPath, true, initwd.ModuleInstallHooksImpl{})
-	if installDiags.HasErrors() {
-		return nil, installDiags.Err()
-	}
-
-	loader, err := configload.NewLoader(&configload.Config{
-		ModulesDir: modulesDir,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create config loader: %s", err)
-	}
-
-	config, configDiags := loader.LoadConfig(cfgPath)
-	if configDiags.HasErrors() {
-		return nil, configDiags
-	}
-
-	return config, nil
 }
 
 func testResource(c TestStep, state *terraform.State) (*terraform.ResourceState, error) {
@@ -1324,9 +1018,6 @@ type TestT interface {
 	Parallel()
 }
 
-// This is set to true by unit tests to alter some behavior
-var testTesting = false
-
 // modulePrimaryInstanceState returns the instance state for the given resource
 // name in a ModuleState
 func modulePrimaryInstanceState(s *terraform.State, ms *terraform.ModuleState, name string) (*terraform.InstanceState, error) {
@@ -1359,48 +1050,4 @@ func modulePathPrimaryInstanceState(s *terraform.State, mp addrs.ModuleInstance,
 func primaryInstanceState(s *terraform.State, name string) (*terraform.InstanceState, error) {
 	ms := s.RootModule()
 	return modulePrimaryInstanceState(s, ms, name)
-}
-
-// operationError is a specialized implementation of error used to describe
-// failures during one of the several operations performed for a particular
-// test case.
-type operationError struct {
-	OpName string
-	Diags  tfdiags.Diagnostics
-}
-
-func newOperationError(opName string, diags tfdiags.Diagnostics) error {
-	return operationError{opName, diags}
-}
-
-// Error returns a terse error string containing just the basic diagnostic
-// messages, for situations where normal Go error behavior is appropriate.
-func (err operationError) Error() string {
-	return fmt.Sprintf("errors during %s: %s", err.OpName, err.Diags.Err().Error())
-}
-
-// ErrorDetail is like Error except it includes verbosely-rendered diagnostics
-// similar to what would come from a normal Terraform run, which include
-// additional context not included in Error().
-func (err operationError) ErrorDetail() string {
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "errors during %s:", err.OpName)
-	clr := &colorstring.Colorize{Disable: true, Colors: colorstring.DefaultColors}
-	for _, diag := range err.Diags {
-		diagStr := format.Diagnostic(diag, nil, clr, 78)
-		buf.WriteByte('\n')
-		buf.WriteString(diagStr)
-	}
-	return buf.String()
-}
-
-// detailedErrorMessage is a helper for calling ErrorDetail on an error if
-// it is an operationError or just taking Error otherwise.
-func detailedErrorMessage(err error) string {
-	switch tErr := err.(type) {
-	case operationError:
-		return tErr.ErrorDetail()
-	default:
-		return err.Error()
-	}
 }
