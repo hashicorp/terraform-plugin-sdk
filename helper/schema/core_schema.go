@@ -301,9 +301,3 @@ func (r *Resource) CoreConfigSchema() *configschema.Block {
 func (r *Resource) coreConfigSchema() *configschema.Block {
 	return schemaMap(r.Schema).CoreConfigSchema()
 }
-
-// CoreConfigSchema is a convenient shortcut for calling CoreConfigSchema
-// on the backends's schema.
-func (r *Backend) CoreConfigSchema() *configschema.Block {
-	return schemaMap(r.Schema).CoreConfigSchema()
-}
