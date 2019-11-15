@@ -25,7 +25,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.0.0
-	github.com/hashicorp/hil v0.0.0-20190212112733-ab17b08d6590
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20191115094559-17f92b0546e8
 	github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596
