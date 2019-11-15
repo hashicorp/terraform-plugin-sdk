@@ -31,9 +31,6 @@ import (
 // Name of ENV variable which (if not empty) prefers panic over error
 const PanicOnErr = "TF_SCHEMA_PANIC_ON_ERROR"
 
-// type used for schema package context keys
-type contextKey string
-
 var (
 	protoVersionMu sync.Mutex
 	protoVersion5  = false
