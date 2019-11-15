@@ -110,6 +110,11 @@ func shimStateModule(state *terraform.State, newModule *tfjson.StateModule) erro
 func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
 	state := terraform.NewState()
 	state.TFVersion = jsonState.TerraformVersion
+	if jsonState.Values == nil {
+		// the state is empty
+		return state, nil
+	}
+
 	if err := shimStateModule(state, jsonState.Values.RootModule); err != nil {
 		return nil, err
 	}
@@ -147,12 +152,26 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 	if c.IDRefreshName != "" {
 		t.Fatal("TODO: TestCase.IDRefreshName")
 	}
-	if c.CheckDestroy != nil {
-		t.Fatal("TODO: TestCase.CheckDestroy")
-	}
 
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
-	defer wd.Close()
+
+	defer func() {
+		wd.RequireDestroy(t)
+
+		if c.CheckDestroy != nil {
+			jsonStatePostDestroy := wd.RequireState(t)
+
+			statePostDestroy, err := shimTFJson(jsonStatePostDestroy)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if err := c.CheckDestroy(statePostDestroy); err != nil {
+				t.Fatal(err)
+			}
+		}
+		wd.Close()
+	}()
 
 	providerCfg := testProviderConfig(c)
 
@@ -434,10 +453,14 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := step.Check(state); err != nil {
-					t.Fatal(err)
+				if step.Check != nil {
+					if err := step.Check(state); err != nil {
+						t.Fatal(err)
+					}
 				}
+
 				appliedCfg = step.Config
+
 			}
 			continue
 		}
