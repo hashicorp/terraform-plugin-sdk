@@ -1,5 +1,10 @@
 # 1.4.0 (Unreleased)
 
+NOTES:
+
+* pruned dead code from internal pkg [GH-251]
+* bumped dependency of `terraform-config-inspect` to remove transitive dependency [GH-252]
+
 FEATURES: 
 
 * helper/validation: Add `FloatAtLeast` and `FloatAtMost` validation functions [GH-239]
