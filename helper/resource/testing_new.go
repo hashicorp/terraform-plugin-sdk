@@ -21,9 +21,7 @@ import (
 func shimAttributeValues(flatmap map[string]string, currentKey string, value interface{}) {
 	switch v := value.(type) {
 	case nil:
-		// this might not be how terraform 0.11 behaved?
-		// I wonder if we should omit the entry altogether?
-		flatmap[currentKey] = ""
+		// omit the entry altogether
 	case bool:
 		flatmap[currentKey] = strconv.FormatBool(v)
 	case float64:
