@@ -30,12 +30,6 @@ const (
 	DiffUpdate
 	DiffDestroy
 	DiffDestroyCreate
-
-	// DiffRefresh is only used in the UI for displaying diffs.
-	// Managed resource reads never appear in plan, and when data source
-	// reads appear they are represented as DiffCreate in core before
-	// transforming to DiffRefresh in the UI layer.
-	DiffRefresh // TODO: Actually use DiffRefresh in core too, for less confusion
 )
 
 // multiVal matches the index key to a flatmapped set, list or map
@@ -97,34 +91,6 @@ func (d *Diff) AddModule(path addrs.ModuleInstance) *ModuleDiff {
 	m.init()
 	d.Modules = append(d.Modules, m)
 	return m
-}
-
-// ModuleByPath is used to lookup the module diff for the given path.
-// This should be the preferred lookup mechanism as it allows for future
-// lookup optimizations.
-func (d *Diff) ModuleByPath(path addrs.ModuleInstance) *ModuleDiff {
-	if d == nil {
-		return nil
-	}
-	for _, mod := range d.Modules {
-		if mod.Path == nil {
-			panic("missing module path")
-		}
-		modPath := normalizeModulePath(mod.Path)
-		if modPath.String() == path.String() {
-			return mod
-		}
-	}
-	return nil
-}
-
-// RootModule returns the ModuleState for the root module
-func (d *Diff) RootModule() *ModuleDiff {
-	root := d.ModuleByPath(addrs.RootModuleInstance)
-	if root == nil {
-		panic("missing root module")
-	}
-	return root
 }
 
 // Empty returns true if the diff has no changes.
@@ -290,11 +256,6 @@ func (d *ModuleDiff) Instances(id string) []*InstanceDiff {
 	}
 
 	return result
-}
-
-// IsRoot says whether or not this module diff is for the root module.
-func (d *ModuleDiff) IsRoot() bool {
-	return reflect.DeepEqual(d.Path, rootModulePath)
 }
 
 // String outputs the diff in a long but command-line friendly output
@@ -958,11 +919,6 @@ type ResourceAttrDiff struct {
 	Type        DiffAttrType
 }
 
-// Empty returns true if the diff for this attr is neutral
-func (d *ResourceAttrDiff) Empty() bool {
-	return d.Old == d.New && !d.NewComputed && !d.NewRemoved
-}
-
 func (d *ResourceAttrDiff) GoString() string {
 	return fmt.Sprintf("*%#v", *d)
 }
@@ -974,12 +930,6 @@ func (d *ResourceAttrDiff) GoString() string {
 // "private_ip".
 type DiffAttrType byte
 
-const (
-	DiffAttrUnknown DiffAttrType = iota
-	DiffAttrInput
-	DiffAttrOutput
-)
-
 func (d *InstanceDiff) init() {
 	if d.Attributes == nil {
 		d.Attributes = make(map[string]*ResourceAttrDiff)
@@ -988,19 +938,6 @@ func (d *InstanceDiff) init() {
 
 func NewInstanceDiff() *InstanceDiff {
 	return &InstanceDiff{Attributes: make(map[string]*ResourceAttrDiff)}
-}
-
-func (d *InstanceDiff) Copy() (*InstanceDiff, error) {
-	if d == nil {
-		return nil, nil
-	}
-
-	dCopy, err := copystructure.Config{Lock: true}.Copy(d)
-	if err != nil {
-		return nil, err
-	}
-
-	return dCopy.(*InstanceDiff), nil
 }
 
 // ChangeType returns the DiffChangeType represented by the diff
@@ -1044,6 +981,7 @@ func (d *InstanceDiff) Empty() bool {
 // This is different from the Same comparison that is supported which
 // checks for operation equality taking into account computed values. Equal
 // instead checks for exact equality.
+// TODO: investigate why removing this unused method causes panic in tests
 func (d *InstanceDiff) Equal(d2 *InstanceDiff) bool {
 	// If one is nil, they must both be nil
 	if d == nil || d2 == nil {
@@ -1111,35 +1049,11 @@ func (d *InstanceDiff) GetDestroyDeposed() bool {
 	return d.DestroyDeposed
 }
 
-func (d *InstanceDiff) SetDestroyDeposed(b bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.DestroyDeposed = b
-}
-
-// These methods are properly locked, for use outside other InstanceDiff
-// methods but everywhere else within the terraform package.
-// TODO refactor the locking scheme
-func (d *InstanceDiff) SetTainted(b bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.DestroyTainted = b
-}
-
 func (d *InstanceDiff) GetDestroyTainted() bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	return d.DestroyTainted
-}
-
-func (d *InstanceDiff) SetDestroy(b bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.Destroy = b
 }
 
 func (d *InstanceDiff) GetDestroy() bool {
@@ -1149,32 +1063,12 @@ func (d *InstanceDiff) GetDestroy() bool {
 	return d.Destroy
 }
 
-func (d *InstanceDiff) SetAttribute(key string, attr *ResourceAttrDiff) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.Attributes[key] = attr
-}
-
-func (d *InstanceDiff) DelAttribute(key string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	delete(d.Attributes, key)
-}
-
 func (d *InstanceDiff) GetAttribute(key string) (*ResourceAttrDiff, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	attr, ok := d.Attributes[key]
 	return attr, ok
-}
-func (d *InstanceDiff) GetAttributesLen() int {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return len(d.Attributes)
 }
 
 // Safely copies the Attributes map
