@@ -11,61 +11,9 @@ import (
 	"github.com/mitchellh/reflectwalk"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 )
-
-// Resource is a legacy way to identify a particular resource instance.
-//
-// New code should use addrs.ResourceInstance instead. This is still here
-// only for codepaths that haven't been updated yet.
-type Resource struct {
-	// These are all used by the new EvalNode stuff.
-	Name       string
-	Type       string
-	CountIndex int
-
-	// These aren't really used anymore anywhere, but we keep them around
-	// since we haven't done a proper cleanup yet.
-	Id           string
-	Info         *InstanceInfo
-	Config       *ResourceConfig
-	Dependencies []string
-	Diff         *InstanceDiff
-	Provider     ResourceProvider
-	State        *InstanceState
-	Flags        ResourceFlag
-}
-
-// NewResource constructs a legacy Resource object from an
-// addrs.ResourceInstance value.
-//
-// This is provided to shim to old codepaths that haven't been updated away
-// from this type yet. Since this old type is not able to represent instances
-// that have string keys, this function will panic if given a resource address
-// that has a string key.
-func NewResource(addr addrs.ResourceInstance) *Resource {
-	ret := &Resource{
-		Name: addr.Resource.Name,
-		Type: addr.Resource.Type,
-	}
-
-	if addr.Key != addrs.NoKey {
-		switch tk := addr.Key.(type) {
-		case addrs.IntKey:
-			ret.CountIndex = int(tk)
-		default:
-			panic(fmt.Errorf("resource instance with key %#v is not supported", addr.Key))
-		}
-	}
-
-	return ret
-}
-
-// ResourceKind specifies what kind of instance we're working with, whether
-// its a primary instance, a tainted instance, or an orphan.
-type ResourceFlag byte
 
 // InstanceInfo is used to hold information about the instance and/or
 // resource being modified.
@@ -80,55 +28,6 @@ type InstanceInfo struct {
 
 	// Type is the resource type of this instance
 	Type string
-}
-
-// NewInstanceInfo constructs an InstanceInfo from an addrs.AbsResourceInstance.
-//
-// InstanceInfo is a legacy type, and uses of it should be gradually replaced
-// by direct use of addrs.AbsResource or addrs.AbsResourceInstance as
-// appropriate.
-//
-// The legacy InstanceInfo type cannot represent module instances with instance
-// keys, so this function will panic if given such a path. Uses of this type
-// should all be removed or replaced before implementing "count" and "for_each"
-// arguments on modules in order to avoid such panics.
-//
-// This legacy type also cannot represent resource instances with string
-// instance keys. It will panic if the given key is not either NoKey or an
-// IntKey.
-func NewInstanceInfo(addr addrs.AbsResourceInstance) *InstanceInfo {
-	// We need an old-style []string module path for InstanceInfo.
-	path := make([]string, len(addr.Module))
-	for i, step := range addr.Module {
-		if step.InstanceKey != addrs.NoKey {
-			panic("NewInstanceInfo cannot convert module instance with key")
-		}
-		path[i] = step.Name
-	}
-
-	// This is a funny old meaning of "id" that is no longer current. It should
-	// not be used for anything users might see. Note that it does not include
-	// a representation of the resource mode, and so it's impossible to
-	// determine from an InstanceInfo alone whether it is a managed or data
-	// resource that is being referred to.
-	id := fmt.Sprintf("%s.%s", addr.Resource.Resource.Type, addr.Resource.Resource.Name)
-	if addr.Resource.Resource.Mode == addrs.DataResourceMode {
-		id = "data." + id
-	}
-	if addr.Resource.Key != addrs.NoKey {
-		switch k := addr.Resource.Key.(type) {
-		case addrs.IntKey:
-			id = id + fmt.Sprintf(".%d", int(k))
-		default:
-			panic(fmt.Sprintf("NewInstanceInfo cannot convert resource instance with %T instance key", addr.Resource.Key))
-		}
-	}
-
-	return &InstanceInfo{
-		Id:         id,
-		ModulePath: path,
-		Type:       addr.Resource.Resource.Type,
-	}
 }
 
 // ResourceConfig is a legacy type that was formerly used to represent

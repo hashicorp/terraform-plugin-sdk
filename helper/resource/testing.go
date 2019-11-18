@@ -245,13 +245,6 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 
 const TestEnvVar = "TF_ACC"
 
-// TestProvider can be implemented by any ResourceProvider to provide custom
-// reset functionality at the start of an acceptance test.
-// The helper/schema Provider implements this interface.
-type TestProvider interface {
-	TestReset() error
-}
-
 // TestCheckFunc is the callback type used with acceptance tests to check
 // the state of a resource. The state passed in is the latest state known,
 // or in the case of being after a destroy, it is the last known state when

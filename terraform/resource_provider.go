@@ -204,23 +204,3 @@ func ResourceProviderFactoryFixed(p ResourceProvider) ResourceProviderFactory {
 		return p, nil
 	}
 }
-
-func ProviderHasResource(p ResourceProvider, n string) bool {
-	for _, rt := range p.Resources() {
-		if rt.Name == n {
-			return true
-		}
-	}
-
-	return false
-}
-
-func ProviderHasDataSource(p ResourceProvider, n string) bool {
-	for _, rt := range p.DataSources() {
-		if rt.Name == n {
-			return true
-		}
-	}
-
-	return false
-}
