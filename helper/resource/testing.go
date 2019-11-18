@@ -4,19 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/logutils"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -241,13 +236,6 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 
 const TestEnvVar = "TF_ACC"
 
-// TestProvider can be implemented by any ResourceProvider to provide custom
-// reset functionality at the start of an acceptance test.
-// The helper/schema Provider implements this interface.
-type TestProvider interface {
-	TestReset() error
-}
-
 // TestCheckFunc is the callback type used with acceptance tests to check
 // the state of a resource. The state passed in is the latest state known,
 // or in the case of being after a destroy, it is the last known state when
@@ -443,49 +431,6 @@ type TestStep struct {
 	// fields that can't be refreshed and don't matter.
 	ImportStateVerify       bool
 	ImportStateVerifyIgnore []string
-}
-
-// Set to a file mask in sprintf format where %s is test name
-const EnvLogPathMask = "TF_LOG_PATH_MASK"
-
-func LogOutput(t TestT) (logOutput io.Writer, err error) {
-	logOutput = ioutil.Discard
-
-	logLevel := logging.LogLevel()
-	if logLevel == "" {
-		return
-	}
-
-	logOutput = os.Stderr
-
-	if logPath := os.Getenv(logging.EnvLogFile); logPath != "" {
-		var err error
-		logOutput, err = os.OpenFile(logPath, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if logPathMask := os.Getenv(EnvLogPathMask); logPathMask != "" {
-		// Escape special characters which may appear if we have subtests
-		testName := strings.Replace(t.Name(), "/", "__", -1)
-
-		logPath := fmt.Sprintf(logPathMask, testName)
-		var err error
-		logOutput, err = os.OpenFile(logPath, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// This was the default since the beginning
-	logOutput = &logutils.LevelFilter{
-		Levels:   logging.ValidLevels,
-		MinLevel: logutils.LogLevel(logLevel),
-		Writer:   logOutput,
-	}
-
-	return
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency
