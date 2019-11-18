@@ -200,36 +200,3 @@ func (r BasicMapReader) Range(f func(string, string) bool) bool {
 
 	return true
 }
-
-// MultiMapReader reads over multiple maps, preferring keys that are
-// founder earlier (lower number index) vs. later (higher number index)
-type MultiMapReader []map[string]string
-
-func (r MultiMapReader) Access(k string) (string, bool) {
-	for _, m := range r {
-		if v, ok := m[k]; ok {
-			return v, ok
-		}
-	}
-
-	return "", false
-}
-
-func (r MultiMapReader) Range(f func(string, string) bool) bool {
-	done := make(map[string]struct{})
-	for _, m := range r {
-		for k, v := range m {
-			if _, ok := done[k]; ok {
-				continue
-			}
-
-			if cont := f(k, v); !cont {
-				return false
-			}
-
-			done[k] = struct{}{}
-		}
-	}
-
-	return true
-}
