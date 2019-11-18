@@ -39,16 +39,16 @@ var (
 	protoVersion5  = false
 )
 
-func isProto5() bool {
+func IsProto5() bool {
 	protoVersionMu.Lock()
 	defer protoVersionMu.Unlock()
 	return protoVersion5
-
 }
 
-// SetProto5 enables a feature flag for any internal changes required required
-// to work with the new plugin protocol.  This should not be called by
-// provider.
+// SetProto5 indicates the provider implementation only supports protocol 5
+// this plugin will not be built with support for protocol 4 (net/rpc)
+// a release of a plugin with this set to true should not publish to the
+// registry or releases site with registry support
 func SetProto5() {
 	protoVersionMu.Lock()
 	defer protoVersionMu.Unlock()
@@ -481,6 +481,7 @@ func (m schemaMap) Diff(
 	customizeDiff CustomizeDiffFunc,
 	meta interface{},
 	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
+
 	result := new(terraform.InstanceDiff)
 	result.Attributes = make(map[string]*terraform.ResourceAttrDiff)
 
@@ -1591,7 +1592,7 @@ func (m schemaMap) validateList(
 	// at this point, we're going to skip validation in the new protocol if
 	// there are any unknowns. Validate will eventually be called again once
 	// all values are known.
-	if isProto5() && !isWhollyKnown(raw) {
+	if IsProto5() && !isWhollyKnown(raw) {
 		return nil, nil
 	}
 
@@ -1877,7 +1878,7 @@ func (m schemaMap) validatePrimitive(
 		decoded = n
 	case TypeInt:
 		switch {
-		case isProto5():
+		case IsProto5():
 			// We need to verify the type precisely, because WeakDecode will
 			// decode a float as an integer.
 

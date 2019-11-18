@@ -199,7 +199,7 @@ func (s *Set) add(item interface{}, computed bool) string {
 	if computed {
 		code = "~" + code
 
-		if isProto5() {
+		if IsProto5() {
 			tmpCode := code
 			count := 0
 			for _, exists := s.m[tmpCode]; exists; _, exists = s.m[tmpCode] {

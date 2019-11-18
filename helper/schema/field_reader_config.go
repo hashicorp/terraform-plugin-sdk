@@ -94,7 +94,7 @@ func (r *ConfigFieldReader) readField(
 		}
 	}
 
-	if protoVersion5 {
+	if IsProto5() {
 		switch schema.Type {
 		case TypeList, TypeSet, TypeMap, typeObject:
 			// Check if the value itself is unknown.
