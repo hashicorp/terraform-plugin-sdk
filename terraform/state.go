@@ -16,22 +16,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/errwrap"
 	multierror "github.com/hashicorp/go-multierror"
 	uuid "github.com/hashicorp/go-uuid"
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
 	"github.com/mitchellh/copystructure"
 	"github.com/zclconf/go-cty/cty"
-	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 const (
@@ -776,57 +771,6 @@ type BackendState struct {
 	Hash      uint64          `json:"hash"`   // Hash of portion of configuration from config files
 }
 
-// Empty returns true if BackendState has no state.
-func (s *BackendState) Empty() bool {
-	return s == nil || s.Type == ""
-}
-
-// Config decodes the type-specific configuration object using the provided
-// schema and returns the result as a cty.Value.
-//
-// An error is returned if the stored configuration does not conform to the
-// given schema.
-func (s *BackendState) Config(schema *configschema.Block) (cty.Value, error) {
-	ty := schema.ImpliedType()
-	if s == nil {
-		return cty.NullVal(ty), nil
-	}
-	return ctyjson.Unmarshal(s.ConfigRaw, ty)
-}
-
-// SetConfig replaces (in-place) the type-specific configuration object using
-// the provided value and associated schema.
-//
-// An error is returned if the given value does not conform to the implied
-// type of the schema.
-func (s *BackendState) SetConfig(val cty.Value, schema *configschema.Block) error {
-	ty := schema.ImpliedType()
-	buf, err := ctyjson.Marshal(val, ty)
-	if err != nil {
-		return err
-	}
-	s.ConfigRaw = buf
-	return nil
-}
-
-// ForPlan produces an alternative representation of the reciever that is
-// suitable for storing in a plan. The current workspace must additionally
-// be provided, to be stored alongside the backend configuration.
-//
-// The backend configuration schema is required in order to properly
-// encode the backend-specific configuration settings.
-func (s *BackendState) ForPlan(schema *configschema.Block, workspaceName string) (*plans.Backend, error) {
-	if s == nil {
-		return nil, nil
-	}
-
-	configVal, err := s.Config(schema)
-	if err != nil {
-		return nil, errwrap.Wrapf("failed to decode backend config: {{err}}", err)
-	}
-	return plans.NewBackend(s.Type, configVal, schema, workspaceName)
-}
-
 // RemoteState is used to track the information about a remote
 // state store that we push/pull state to.
 type RemoteState struct {
@@ -860,24 +804,6 @@ func (r *RemoteState) Empty() bool {
 	defer r.Unlock()
 
 	return r.Type == ""
-}
-
-func (r *RemoteState) Equals(other *RemoteState) bool {
-	r.Lock()
-	defer r.Unlock()
-
-	if r.Type != other.Type {
-		return false
-	}
-	if len(r.Config) != len(other.Config) {
-		return false
-	}
-	for k, v := range r.Config {
-		if other.Config[k] != v {
-			return false
-		}
-	}
-	return true
 }
 
 // OutputState is used to track the state relevant to a single output.
@@ -1024,103 +950,6 @@ func (m *ModuleState) Equal(other *ModuleState) bool {
 	return true
 }
 
-// IsRoot says whether or not this module diff is for the root module.
-func (m *ModuleState) IsRoot() bool {
-	m.Lock()
-	defer m.Unlock()
-	return reflect.DeepEqual(m.Path, rootModulePath)
-}
-
-// IsDescendent returns true if other is a descendent of this module.
-func (m *ModuleState) IsDescendent(other *ModuleState) bool {
-	m.Lock()
-	defer m.Unlock()
-
-	i := len(m.Path)
-	return len(other.Path) > i && reflect.DeepEqual(other.Path[:i], m.Path)
-}
-
-// Orphans returns a list of keys of resources that are in the State
-// but aren't present in the configuration itself. Hence, these keys
-// represent the state of resources that are orphans.
-func (m *ModuleState) Orphans(c *configs.Module) []addrs.ResourceInstance {
-	m.Lock()
-	defer m.Unlock()
-
-	inConfig := make(map[string]struct{})
-	if c != nil {
-		for _, r := range c.ManagedResources {
-			inConfig[r.Addr().String()] = struct{}{}
-		}
-		for _, r := range c.DataResources {
-			inConfig[r.Addr().String()] = struct{}{}
-		}
-	}
-
-	var result []addrs.ResourceInstance
-	for k := range m.Resources {
-		// Since we've not yet updated state to use our new address format,
-		// we need to do some shimming here.
-		legacyAddr, err := parseResourceAddressInternal(k)
-		if err != nil {
-			// Suggests that the user tampered with the state, since we always
-			// generate valid internal addresses.
-			log.Printf("ModuleState has invalid resource key %q. Ignoring.", k)
-			continue
-		}
-
-		addr := legacyAddr.AbsResourceInstanceAddr().Resource
-		compareKey := addr.Resource.String() // compare by resource address, ignoring instance key
-		if _, exists := inConfig[compareKey]; !exists {
-			result = append(result, addr)
-		}
-	}
-	return result
-}
-
-// RemovedOutputs returns a list of outputs that are in the State but aren't
-// present in the configuration itself.
-func (s *ModuleState) RemovedOutputs(outputs map[string]*configs.Output) []addrs.OutputValue {
-	if outputs == nil {
-		// If we got no output map at all then we'll just treat our set of
-		// configured outputs as empty, since that suggests that they've all
-		// been removed by removing their containing module.
-		outputs = make(map[string]*configs.Output)
-	}
-
-	s.Lock()
-	defer s.Unlock()
-
-	var ret []addrs.OutputValue
-	for n := range s.Outputs {
-		if _, declared := outputs[n]; !declared {
-			ret = append(ret, addrs.OutputValue{
-				Name: n,
-			})
-		}
-	}
-
-	return ret
-}
-
-// View returns a view with the given resource prefix.
-func (m *ModuleState) View(id string) *ModuleState {
-	if m == nil {
-		return m
-	}
-
-	r := m.deepcopy()
-	for k, _ := range r.Resources {
-		if id == k || strings.HasPrefix(k, id+".") {
-			continue
-		}
-
-		delete(r.Resources, k)
-	}
-
-	return r
-}
-
 func (m *ModuleState) init() {
 	m.Lock()
 	defer m.Unlock()
@@ -1142,19 +971,6 @@ func (m *ModuleState) init() {
 	for _, rs := range m.Resources {
 		rs.init()
 	}
-}
-
-func (m *ModuleState) deepcopy() *ModuleState {
-	if m == nil {
-		return nil
-	}
-
-	stateCopy, err := copystructure.Config{Lock: true}.Copy(m)
-	if err != nil {
-		panic(err)
-	}
-
-	return stateCopy.(*ModuleState)
 }
 
 // prune is used to remove any resources that are no longer required
@@ -1302,10 +1118,6 @@ func (m *ModuleState) String() string {
 	}
 
 	return buf.String()
-}
-
-func (m *ModuleState) Empty() bool {
-	return len(m.Locals) == 0 && len(m.Outputs) == 0 && len(m.Resources) == 0
 }
 
 // ResourceStateKey is a structured representation of the key used for the
@@ -1857,15 +1669,6 @@ func (e *EphemeralState) init() {
 	if e.ConnInfo == nil {
 		e.ConnInfo = make(map[string]string)
 	}
-}
-
-func (e *EphemeralState) DeepCopy() *EphemeralState {
-	copy, err := copystructure.Config{Lock: true}.Copy(e)
-	if err != nil {
-		panic(err)
-	}
-
-	return copy.(*EphemeralState)
 }
 
 type jsonStateVersionIdentifier struct {
