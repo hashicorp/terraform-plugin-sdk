@@ -25,7 +25,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.0.0
-	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20191115094559-17f92b0546e8
 	github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596
@@ -33,10 +32,8 @@ require (
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mitchellh/cli v1.0.0
-	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/copystructure v1.0.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mitchellh/reflectwalk v1.0.1
 	github.com/pierrec/lz4 v2.0.5+incompatible
