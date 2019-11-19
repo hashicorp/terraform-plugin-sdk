@@ -560,6 +560,22 @@ func Test(t TestT, c TestCase) {
 	}
 }
 
+// testProviderFactories combines the fixed Providers and
+// ResourceProviderFactory functions into a single map of
+// ResourceProviderFactory functions.
+func testProviderFactories(c TestCase) map[string]terraform.ResourceProviderFactory {
+	ctxProviders := make(map[string]terraform.ResourceProviderFactory)
+	for k, pf := range c.ProviderFactories {
+		ctxProviders[k] = pf
+	}
+
+	// add any fixed providers
+	for k, p := range c.Providers {
+		ctxProviders[k] = terraform.ResourceProviderFactoryFixed(p)
+	}
+	return ctxProviders
+}
+
 // testProviderConfig takes the list of Providers in a TestCase and returns a
 // config with only empty provider blocks. This is useful for Import, where no
 // config is provided, but the providers must be defined.
