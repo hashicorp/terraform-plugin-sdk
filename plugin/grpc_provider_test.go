@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
@@ -17,6 +18,12 @@ import (
 )
 
 var _ providers.Interface = (*GRPCProvider)(nil)
+
+var (
+	equateEmpty   = cmpopts.EquateEmpty()
+	typeComparer  = cmp.Comparer(cty.Type.Equals)
+	valueComparer = cmp.Comparer(cty.Value.RawEquals)
+)
 
 func mockProviderClient(t *testing.T) *mockproto.MockProviderClient {
 	ctrl := gomock.NewController(t)
