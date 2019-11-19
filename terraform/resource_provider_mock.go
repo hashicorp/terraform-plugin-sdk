@@ -18,12 +18,6 @@ type MockResourceProvider struct {
 	GetSchemaRequest               *ProviderSchemaRequest
 	GetSchemaReturn                *ProviderSchema
 	GetSchemaReturnError           error
-	InputCalled                    bool
-	InputInput                     UIInput
-	InputConfig                    *ResourceConfig
-	InputReturnConfig              *ResourceConfig
-	InputReturnError               error
-	InputFn                        func(UIInput, *ResourceConfig) (*ResourceConfig, error)
 	ApplyCalled                    bool
 	ApplyInfo                      *InstanceInfo
 	ApplyState                     *InstanceState
@@ -105,19 +99,6 @@ func (p *MockResourceProvider) GetSchema(req *ProviderSchemaRequest) (*ProviderS
 	p.GetSchemaCalled = true
 	p.GetSchemaRequest = req
 	return p.GetSchemaReturn, p.GetSchemaReturnError
-}
-
-func (p *MockResourceProvider) Input(
-	input UIInput, c *ResourceConfig) (*ResourceConfig, error) {
-	p.Lock()
-	defer p.Unlock()
-	p.InputCalled = true
-	p.InputInput = input
-	p.InputConfig = c
-	if p.InputFn != nil {
-		return p.InputFn(input, c)
-	}
-	return p.InputReturnConfig, p.InputReturnError
 }
 
 func (p *MockResourceProvider) Validate(c *ResourceConfig) ([]string, []error) {
