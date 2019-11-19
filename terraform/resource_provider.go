@@ -23,14 +23,6 @@ type ResourceProvider interface {
 	// resource or data source has the SchemaAvailable flag set.
 	GetSchema(*ProviderSchemaRequest) (*ProviderSchema, error)
 
-	// Input was used prior to v0.12 to ask the provider to prompt the user
-	// for input to complete the configuration.
-	//
-	// From v0.12 onwards this method is never called because Terraform Core
-	// is able to handle the necessary input logic itself based on the
-	// schema returned from GetSchema.
-	Input(UIInput, *ResourceConfig) (*ResourceConfig, error)
-
 	// Validate is called once at the beginning with the raw configuration
 	// (no interpolation done) and can return a list of warnings and/or
 	// errors.
