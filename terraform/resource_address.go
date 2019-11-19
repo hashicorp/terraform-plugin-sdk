@@ -6,9 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 )
 
 // resourceAddress is a way of identifying an individual resource (or,
@@ -87,49 +84,6 @@ func (r *resourceAddress) wholeModuleAddress() *resourceAddress {
 		Index:           -1,
 		InstanceTypeSet: false,
 	}
-}
-
-// MatchesResourceConfig returns true if the receiver matches the given
-// configuration resource within the given _static_ module path. Note that
-// the module path in a resource address is a _dynamic_ module path, and
-// multiple dynamic resource paths may map to a single static path if
-// count and for_each are in use on module calls.
-//
-// Since resource configuration blocks represent all of the instances of
-// a multi-instance resource, the index of the address (if any) is not
-// considered.
-func (r *resourceAddress) matchesResourceConfig(path addrs.Module, rc *configs.Resource) bool {
-	if r.hasResourceSpec() {
-		// FIXME: Some ugliness while we are between worlds. Functionality
-		// in "addrs" should eventually replace this resourceAddress idea
-		// completely, but for now we'll need to translate to the old
-		// way of representing resource modes.
-		switch r.Mode {
-		case managedResourceMode:
-			if rc.Mode != addrs.ManagedResourceMode {
-				return false
-			}
-		case dataResourceMode:
-			if rc.Mode != addrs.DataResourceMode {
-				return false
-			}
-		}
-		if r.Type != rc.Type || r.Name != rc.Name {
-			return false
-		}
-	}
-
-	addrPath := r.Path
-
-	// normalize
-	if len(addrPath) == 0 {
-		addrPath = nil
-	}
-	if len(path) == 0 {
-		path = nil
-	}
-	rawPath := []string(path)
-	return reflect.DeepEqual(addrPath, rawPath)
 }
 
 // stateId returns the ID that this resource should be entered with
