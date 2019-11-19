@@ -12,8 +12,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/discovery"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -866,77 +864,6 @@ func mockFailingSweeperFunc(s string) error {
 
 func mockSweeperFunc(s string) error {
 	return nil
-}
-
-func TestTestProviderResolver(t *testing.T) {
-	stubProvider := func(name string) terraform.ResourceProvider {
-		return &schema.Provider{
-			Schema: map[string]*schema.Schema{
-				name: &schema.Schema{
-					Type:     schema.TypeString,
-					Required: true,
-				},
-			},
-		}
-	}
-
-	c := TestCase{
-		ProviderFactories: map[string]terraform.ResourceProviderFactory{
-			"foo": terraform.ResourceProviderFactoryFixed(stubProvider("foo")),
-			"bar": terraform.ResourceProviderFactoryFixed(stubProvider("bar")),
-		},
-		Providers: map[string]terraform.ResourceProvider{
-			"baz": stubProvider("baz"),
-			"bop": stubProvider("bop"),
-		},
-	}
-
-	resolver, err := testProviderResolver(c)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	reqd := discovery.PluginRequirements{
-		"foo": &discovery.PluginConstraints{},
-		"bar": &discovery.PluginConstraints{},
-		"baz": &discovery.PluginConstraints{},
-		"bop": &discovery.PluginConstraints{},
-	}
-
-	factories, errs := resolver.ResolveProviders(reqd)
-	if len(errs) != 0 {
-		for _, err := range errs {
-			t.Error(err)
-		}
-		t.Fatal("unexpected errors")
-	}
-
-	for name := range reqd {
-		t.Run(name, func(t *testing.T) {
-			pf, ok := factories[name]
-			if !ok {
-				t.Fatalf("no factory for %q", name)
-			}
-			p, err := pf()
-			if err != nil {
-				t.Fatal(err)
-			}
-			resp := p.GetSchema()
-			_, ok = resp.Provider.Block.Attributes[name]
-			if !ok {
-				var has string
-				for k := range resp.Provider.Block.Attributes {
-					has = k
-					break
-				}
-				if has != "" {
-					t.Errorf("provider %q does not have the expected schema attribute %q (but has %q)", name, name, has)
-				} else {
-					t.Errorf("provider %q does not have the expected schema attribute %q", name, name)
-				}
-			}
-		})
-	}
 }
 
 func TestCheckResourceAttr_empty(t *testing.T) {
