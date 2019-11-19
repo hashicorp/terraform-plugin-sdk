@@ -1,13 +1,13 @@
 package terraform
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type=InstanceType instancetype.go
+//go:generate go run golang.org/x/tools/cmd/stringer -type=instanceType instancetype.go
 
-// InstanceType is an enum of the various types of instances store in the State
-type InstanceType int
+// instanceType is an enum of the various types of instances store in the State
+type instanceType int
 
 const (
-	TypeInvalid InstanceType = iota
-	TypePrimary
-	TypeTainted
-	TypeDeposed
+	typeInvalid instanceType = iota
+	typePrimary
+	typeTainted
+	typeDeposed
 )
