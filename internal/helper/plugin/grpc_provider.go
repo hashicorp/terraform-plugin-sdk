@@ -23,16 +23,10 @@ import (
 const newExtraKey = "_new_extra_shim"
 
 // NewGRPCProviderServerShim wraps a terraform.ResourceProvider in a
-// proto.ProviderServer implementation. If the provided provider is not a
-// *schema.Provider, this will return nil,
+// proto.ProviderServer implementation.
 func NewGRPCProviderServerShim(p terraform.ResourceProvider) *GRPCProviderServer {
-	sp, ok := p.(*schema.Provider)
-	if !ok {
-		return nil
-	}
-
 	return &GRPCProviderServer{
-		provider: sp,
+		provider: p.(*schema.Provider),
 	}
 }
 
