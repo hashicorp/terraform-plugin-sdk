@@ -22,7 +22,7 @@ type resourceAddress struct {
 	InstanceTypeSet bool
 	Name            string
 	Type            string
-	Mode            resourceMode // significant only if InstanceTypeSet
+	Mode            ResourceMode // significant only if InstanceTypeSet
 }
 
 // String outputs the address that parses into this address.
@@ -33,9 +33,9 @@ func (r *resourceAddress) String() string {
 	}
 
 	switch r.Mode {
-	case managedResourceMode:
+	case ManagedResourceMode:
 		// nothing to do
-	case dataResourceMode:
+	case DataResourceMode:
 		result = append(result, "data")
 	default:
 		panic(fmt.Errorf("unsupported resource mode %s", r.Mode))
@@ -92,9 +92,9 @@ func (r *resourceAddress) wholeModuleAddress() *resourceAddress {
 func (r *resourceAddress) stateId() string {
 	result := fmt.Sprintf("%s.%s", r.Type, r.Name)
 	switch r.Mode {
-	case managedResourceMode:
+	case ManagedResourceMode:
 		// Done
-	case dataResourceMode:
+	case DataResourceMode:
 		result = fmt.Sprintf("data.%s", result)
 	default:
 		panic(fmt.Errorf("unknown resource mode: %s", r.Mode))
@@ -117,14 +117,14 @@ func parseResourceAddressInternal(s string) (*resourceAddress, error) {
 	}
 
 	// Data resource if we have at least 3 parts and the first one is data
-	mode := managedResourceMode
+	mode := ManagedResourceMode
 	if len(parts) > 2 && parts[0] == "data" {
-		mode = dataResourceMode
+		mode = DataResourceMode
 		parts = parts[1:]
 	}
 
 	// If we're not a data resource and we have more than 3, then it is an error
-	if len(parts) > 3 && mode != dataResourceMode {
+	if len(parts) > 3 && mode != DataResourceMode {
 		return nil, fmt.Errorf("Invalid internal resource address format: %s", s)
 	}
 
@@ -155,9 +155,9 @@ func parseResourceAddress(s string) (*resourceAddress, error) {
 	if err != nil {
 		return nil, err
 	}
-	mode := managedResourceMode
+	mode := ManagedResourceMode
 	if matches["data_prefix"] != "" {
-		mode = dataResourceMode
+		mode = DataResourceMode
 	}
 	resourceIndex, err := parseResourceIndex(matches["index"])
 	if err != nil {
@@ -170,7 +170,7 @@ func parseResourceAddress(s string) (*resourceAddress, error) {
 	path := parseResourcePath(matches["path"])
 
 	// not allowed to say "data." without a type following
-	if mode == dataResourceMode && matches["type"] == "" {
+	if mode == DataResourceMode && matches["type"] == "" {
 		return nil, fmt.Errorf(
 			"invalid resource address %q: must target specific data instance",
 			s,
@@ -293,7 +293,7 @@ func (addr *resourceAddress) Less(other *resourceAddress) bool {
 		return addrStr < otherStr
 
 	case addr.Mode != other.Mode:
-		return addr.Mode == dataResourceMode
+		return addr.Mode == DataResourceMode
 
 	case addr.Type != other.Type:
 		return addr.Type < other.Type

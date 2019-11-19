@@ -1122,15 +1122,15 @@ func (m *ModuleState) String() string {
 
 // ResourceStateKey is a structured representation of the key used for the
 // ModuleState.Resources mapping
-type resourceStateKey struct {
+type ResourceStateKey struct {
 	Name  string
 	Type  string
-	Mode  resourceMode
+	Mode  ResourceMode
 	Index int
 }
 
 // Equal determines whether two ResourceStateKeys are the same
-func (rsk *resourceStateKey) Equal(other *resourceStateKey) bool {
+func (rsk *ResourceStateKey) Equal(other *ResourceStateKey) bool {
 	if rsk == nil || other == nil {
 		return false
 	}
@@ -1149,15 +1149,15 @@ func (rsk *resourceStateKey) Equal(other *resourceStateKey) bool {
 	return true
 }
 
-func (rsk *resourceStateKey) String() string {
+func (rsk *ResourceStateKey) String() string {
 	if rsk == nil {
 		return ""
 	}
 	var prefix string
 	switch rsk.Mode {
-	case managedResourceMode:
+	case ManagedResourceMode:
 		prefix = ""
-	case dataResourceMode:
+	case DataResourceMode:
 		prefix = "data."
 	default:
 		panic(fmt.Errorf("unknown resource mode %s", rsk.Mode))
@@ -1172,11 +1172,11 @@ func (rsk *resourceStateKey) String() string {
 // ModuleState.Resources and returns a resource name and resource index. In the
 // state, a resource has the format "type.name.index" or "type.name". In the
 // latter case, the index is returned as -1.
-func parseResourceStateKey(k string) (*resourceStateKey, error) {
+func parseResourceStateKey(k string) (*ResourceStateKey, error) {
 	parts := strings.Split(k, ".")
-	mode := managedResourceMode
+	mode := ManagedResourceMode
 	if len(parts) > 0 && parts[0] == "data" {
-		mode = dataResourceMode
+		mode = DataResourceMode
 		// Don't need the constant "data" prefix for parsing
 		// now that we've figured out the mode.
 		parts = parts[1:]
@@ -1184,7 +1184,7 @@ func parseResourceStateKey(k string) (*resourceStateKey, error) {
 	if len(parts) < 2 || len(parts) > 3 {
 		return nil, fmt.Errorf("Malformed resource state key: %s", k)
 	}
-	rsk := &resourceStateKey{
+	rsk := &ResourceStateKey{
 		Mode:  mode,
 		Type:  parts[0],
 		Name:  parts[1],

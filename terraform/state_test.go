@@ -1664,13 +1664,13 @@ func TestWriteStateTFVersion(t *testing.T) {
 func TestParseResourceStateKey(t *testing.T) {
 	cases := []struct {
 		Input       string
-		Expected    *resourceStateKey
+		Expected    *ResourceStateKey
 		ExpectedErr bool
 	}{
 		{
 			Input: "aws_instance.foo.3",
-			Expected: &resourceStateKey{
-				Mode:  managedResourceMode,
+			Expected: &ResourceStateKey{
+				Mode:  ManagedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: 3,
@@ -1678,8 +1678,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "aws_instance.foo.0",
-			Expected: &resourceStateKey{
-				Mode:  managedResourceMode,
+			Expected: &ResourceStateKey{
+				Mode:  ManagedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: 0,
@@ -1687,8 +1687,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "aws_instance.foo",
-			Expected: &resourceStateKey{
-				Mode:  managedResourceMode,
+			Expected: &ResourceStateKey{
+				Mode:  ManagedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: -1,
@@ -1696,8 +1696,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "data.aws_ami.foo",
-			Expected: &resourceStateKey{
-				Mode:  dataResourceMode,
+			Expected: &ResourceStateKey{
+				Mode:  DataResourceMode,
 				Type:  "aws_ami",
 				Name:  "foo",
 				Index: -1,
