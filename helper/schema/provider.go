@@ -215,13 +215,6 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 	}, nil
 }
 
-// Input implementation of terraform.ResourceProvider interface.
-func (p *Provider) Input(
-	input terraform.UIInput,
-	c *terraform.ResourceConfig) (*terraform.ResourceConfig, error) {
-	return schemaMap(p.Schema).Input(input, c)
-}
-
 // Validate implementation of terraform.ResourceProvider interface.
 func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 	if err := p.InternalValidate(); err != nil {
