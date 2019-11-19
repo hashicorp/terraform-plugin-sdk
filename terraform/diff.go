@@ -20,43 +20,43 @@ import (
 	"github.com/mitchellh/copystructure"
 )
 
-// DiffChangeType is an enum with the kind of changes a diff has planned.
-type DiffChangeType byte
+// diffChangeType is an enum with the kind of changes a diff has planned.
+type diffChangeType byte
 
 const (
-	DiffInvalid DiffChangeType = iota
-	DiffNone
-	DiffCreate
-	DiffUpdate
-	DiffDestroy
-	DiffDestroyCreate
+	diffInvalid diffChangeType = iota
+	diffNone
+	diffCreate
+	diffUpdate
+	diffDestroy
+	diffDestroyCreate
 )
 
 // multiVal matches the index key to a flatmapped set, list or map
 var multiVal = regexp.MustCompile(`\.(#|%)$`)
 
-// Diff tracks the changes that are necessary to apply a configuration
+// diff tracks the changes that are necessary to apply a configuration
 // to an existing infrastructure.
-type Diff struct {
+type diff struct {
 	// Modules contains all the modules that have a diff
-	Modules []*ModuleDiff
+	Modules []*moduleDiff
 }
 
-// Prune cleans out unused structures in the diff without affecting
+// prune cleans out unused structures in the diff without affecting
 // the behavior of the diff at all.
 //
 // This is not safe to call concurrently. This is safe to call on a
-// nil Diff.
-func (d *Diff) Prune() {
+// nil diff.
+func (d *diff) prune() {
 	if d == nil {
 		return
 	}
 
-	// Prune all empty modules
-	newModules := make([]*ModuleDiff, 0, len(d.Modules))
+	// prune all empty modules
+	newModules := make([]*moduleDiff, 0, len(d.Modules))
 	for _, m := range d.Modules {
 		// If the module isn't empty, we keep it
-		if !m.Empty() {
+		if !m.empty() {
 			newModules = append(newModules, m)
 		}
 	}
@@ -66,11 +66,11 @@ func (d *Diff) Prune() {
 	d.Modules = newModules
 }
 
-// AddModule adds the module with the given path to the diff.
+// addModule adds the module with the given path to the diff.
 //
 // This should be the preferred method to add module diffs since it
 // allows us to optimize lookups later as well as control sorting.
-func (d *Diff) AddModule(path addrs.ModuleInstance) *ModuleDiff {
+func (d *diff) addModule(path addrs.ModuleInstance) *moduleDiff {
 	// Lower the new-style address into a legacy-style address.
 	// This requires that none of the steps have instance keys, which is
 	// true for all addresses at the time of implementing this because
@@ -87,20 +87,20 @@ func (d *Diff) AddModule(path addrs.ModuleInstance) *ModuleDiff {
 		legacyPath[i] = step.Name
 	}
 
-	m := &ModuleDiff{Path: legacyPath}
+	m := &moduleDiff{Path: legacyPath}
 	m.init()
 	d.Modules = append(d.Modules, m)
 	return m
 }
 
-// Empty returns true if the diff has no changes.
-func (d *Diff) Empty() bool {
+// empty returns true if the diff has no changes.
+func (d *diff) empty() bool {
 	if d == nil {
 		return true
 	}
 
 	for _, m := range d.Modules {
-		if !m.Empty() {
+		if !m.empty() {
 			return false
 		}
 	}
@@ -108,12 +108,12 @@ func (d *Diff) Empty() bool {
 	return true
 }
 
-// Equal compares two diffs for exact equality.
+// equal compares two diffs for exact equality.
 //
 // This is different from the Same comparison that is supported which
 // checks for operation equality taking into account computed values. Equal
 // instead checks for exact equality.
-func (d *Diff) Equal(d2 *Diff) bool {
+func (d *diff) equal(d2 *diff) bool {
 	// If one is nil, they must both be nil
 	if d == nil || d2 == nil {
 		return d == d2
@@ -126,8 +126,8 @@ func (d *Diff) Equal(d2 *Diff) bool {
 	// Copy since we have to modify the module destroy flag to false so
 	// we don't compare that. TODO: delete this when we get rid of the
 	// destroy flag on modules.
-	dCopy := d.DeepCopy()
-	d2Copy := d2.DeepCopy()
+	dCopy := d.deepCopy()
+	d2Copy := d2.deepCopy()
 	for _, m := range dCopy.Modules {
 		m.Destroy = false
 	}
@@ -139,22 +139,22 @@ func (d *Diff) Equal(d2 *Diff) bool {
 	return reflect.DeepEqual(dCopy, d2Copy)
 }
 
-// DeepCopy performs a deep copy of all parts of the Diff, making the
-// resulting Diff safe to use without modifying this one.
-func (d *Diff) DeepCopy() *Diff {
+// deepCopy performs a deep copy of all parts of the diff, making the
+// resulting diff safe to use without modifying this one.
+func (d *diff) deepCopy() *diff {
 	copy, err := copystructure.Config{Lock: true}.Copy(d)
 	if err != nil {
 		panic(err)
 	}
 
-	return copy.(*Diff)
+	return copy.(*diff)
 }
 
-func (d *Diff) String() string {
+func (d *diff) String() string {
 	var buf bytes.Buffer
 
 	keys := make([]string, 0, len(d.Modules))
-	lookup := make(map[string]*ModuleDiff)
+	lookup := make(map[string]*moduleDiff)
 	for _, m := range d.Modules {
 		addr := normalizeModulePath(m.Path)
 		key := addr.String()
@@ -184,15 +184,15 @@ func (d *Diff) String() string {
 	return strings.TrimSpace(buf.String())
 }
 
-// ModuleDiff tracks the differences between resources to apply within
+// moduleDiff tracks the differences between resources to apply within
 // a single module.
-type ModuleDiff struct {
+type moduleDiff struct {
 	Path      []string
 	Resources map[string]*InstanceDiff
 	Destroy   bool // Set only by the destroy plan
 }
 
-func (d *ModuleDiff) init() {
+func (d *moduleDiff) init() {
 	if d.Resources == nil {
 		d.Resources = make(map[string]*InstanceDiff)
 	}
@@ -201,31 +201,31 @@ func (d *ModuleDiff) init() {
 	}
 }
 
-// ChangeType returns the type of changes that the diff for this
+// changeType returns the type of changes that the diff for this
 // module includes.
 //
-// At a module level, this will only be DiffNone, DiffUpdate, DiffDestroy, or
-// DiffCreate. If an instance within the module has a DiffDestroyCreate
-// then this will register as a DiffCreate for a module.
-func (d *ModuleDiff) ChangeType() DiffChangeType {
-	result := DiffNone
+// At a module level, this will only be diffNone, diffUpdate, diffDestroy, or
+// diffCreate. If an instance within the module has a diffDestroyCreate
+// then this will register as a diffCreate for a module.
+func (d *moduleDiff) changeType() diffChangeType {
+	result := diffNone
 	for _, r := range d.Resources {
 		change := r.ChangeType()
 		switch change {
-		case DiffCreate, DiffDestroy:
-			if result == DiffNone {
+		case diffCreate, diffDestroy:
+			if result == diffNone {
 				result = change
 			}
-		case DiffDestroyCreate, DiffUpdate:
-			result = DiffUpdate
+		case diffDestroyCreate, diffUpdate:
+			result = diffUpdate
 		}
 	}
 
 	return result
 }
 
-// Empty returns true if the diff has no changes within this module.
-func (d *ModuleDiff) Empty() bool {
+// empty returns true if the diff has no changes within this module.
+func (d *moduleDiff) empty() bool {
 	if d.Destroy {
 		return false
 	}
@@ -243,9 +243,9 @@ func (d *ModuleDiff) Empty() bool {
 	return true
 }
 
-// Instances returns the instance diffs for the id given. This can return
+// instances returns the instance diffs for the id given. This can return
 // multiple instance diffs if there are counts within the resource.
-func (d *ModuleDiff) Instances(id string) []*InstanceDiff {
+func (d *moduleDiff) instances(id string) []*InstanceDiff {
 	var result []*InstanceDiff
 	for k, diff := range d.Resources {
 		if k == id || strings.HasPrefix(k, id+".") {
@@ -260,7 +260,7 @@ func (d *ModuleDiff) Instances(id string) []*InstanceDiff {
 
 // String outputs the diff in a long but command-line friendly output
 // format that users can read to quickly inspect a diff.
-func (d *ModuleDiff) String() string {
+func (d *moduleDiff) String() string {
 	var buf bytes.Buffer
 
 	names := make([]string, 0, len(d.Resources))
@@ -916,7 +916,7 @@ type ResourceAttrDiff struct {
 	NewExtra    interface{} // Extra information for the provider
 	RequiresNew bool        // True if change requires new resource
 	Sensitive   bool        // True if the data should not be displayed in UI output
-	Type        DiffAttrType
+	Type        diffAttrType
 }
 
 func (d *ResourceAttrDiff) GoString() string {
@@ -928,7 +928,7 @@ func (d *ResourceAttrDiff) GoString() string {
 // output attribute (comes as a result of applying the configuration). An
 // example input would be "ami" for AWS and an example output would be
 // "private_ip".
-type DiffAttrType byte
+type diffAttrType byte
 
 func (d *InstanceDiff) init() {
 	if d.Attributes == nil {
@@ -940,26 +940,26 @@ func NewInstanceDiff() *InstanceDiff {
 	return &InstanceDiff{Attributes: make(map[string]*ResourceAttrDiff)}
 }
 
-// ChangeType returns the DiffChangeType represented by the diff
+// ChangeType returns the diffChangeType represented by the diff
 // for this single instance.
-func (d *InstanceDiff) ChangeType() DiffChangeType {
+func (d *InstanceDiff) ChangeType() diffChangeType {
 	if d.Empty() {
-		return DiffNone
+		return diffNone
 	}
 
 	if d.RequiresNew() && (d.GetDestroy() || d.GetDestroyTainted()) {
-		return DiffDestroyCreate
+		return diffDestroyCreate
 	}
 
 	if d.GetDestroy() || d.GetDestroyDeposed() {
-		return DiffDestroy
+		return diffDestroy
 	}
 
 	if d.RequiresNew() {
-		return DiffCreate
+		return diffCreate
 	}
 
-	return DiffUpdate
+	return diffUpdate
 }
 
 // Empty returns true if this diff encapsulates no changes.
@@ -1317,7 +1317,7 @@ func (d *InstanceDiff) Same(d2 *InstanceDiff) (bool, string) {
 }
 
 // moduleDiffSort implements sort.Interface to sort module diffs by path.
-type moduleDiffSort []*ModuleDiff
+type moduleDiffSort []*moduleDiff
 
 func (s moduleDiffSort) Len() int      { return len(s) }
 func (s moduleDiffSort) Swap(i, j int) { s[i], s[j] = s[j], s[i] }

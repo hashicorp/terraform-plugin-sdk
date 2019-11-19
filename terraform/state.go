@@ -31,7 +31,7 @@ import (
 
 const (
 	// StateVersion is the current version for our state file
-	StateVersion = 3
+	stateVersion = 3
 )
 
 // rootModulePath is the path of the root module
@@ -332,8 +332,8 @@ func (s *State) Remove(addr ...string) error {
 	defer s.Unlock()
 
 	// Filter out what we need to delete
-	filter := &StateFilter{State: s}
-	results, err := filter.Filter(addr...)
+	filter := &stateFilter{State: s}
+	results, err := filter.filter(addr...)
 	if err != nil {
 		return err
 	}
@@ -513,13 +513,13 @@ func (s *State) MarshalEqual(other *State) bool {
 	recvBuf := &bytes.Buffer{}
 	otherBuf := &bytes.Buffer{}
 
-	err := WriteState(s, recvBuf)
+	err := writeState(s, recvBuf)
 	if err != nil {
 		// should never happen, since we're writing to a buffer
 		panic(err)
 	}
 
-	err = WriteState(other, otherBuf)
+	err = writeState(other, otherBuf)
 	if err != nil {
 		// should never happen, since we're writing to a buffer
 		panic(err)
@@ -633,7 +633,7 @@ func (s *State) Init() {
 
 func (s *State) init() {
 	if s.Version == 0 {
-		s.Version = StateVersion
+		s.Version = stateVersion
 	}
 
 	if s.moduleByPath(addrs.RootModuleInstance) == nil {
@@ -1122,15 +1122,15 @@ func (m *ModuleState) String() string {
 
 // ResourceStateKey is a structured representation of the key used for the
 // ModuleState.Resources mapping
-type ResourceStateKey struct {
+type resourceStateKey struct {
 	Name  string
 	Type  string
-	Mode  ResourceMode
+	Mode  resourceMode
 	Index int
 }
 
 // Equal determines whether two ResourceStateKeys are the same
-func (rsk *ResourceStateKey) Equal(other *ResourceStateKey) bool {
+func (rsk *resourceStateKey) Equal(other *resourceStateKey) bool {
 	if rsk == nil || other == nil {
 		return false
 	}
@@ -1149,15 +1149,15 @@ func (rsk *ResourceStateKey) Equal(other *ResourceStateKey) bool {
 	return true
 }
 
-func (rsk *ResourceStateKey) String() string {
+func (rsk *resourceStateKey) String() string {
 	if rsk == nil {
 		return ""
 	}
 	var prefix string
 	switch rsk.Mode {
-	case ManagedResourceMode:
+	case managedResourceMode:
 		prefix = ""
-	case DataResourceMode:
+	case dataResourceMode:
 		prefix = "data."
 	default:
 		panic(fmt.Errorf("unknown resource mode %s", rsk.Mode))
@@ -1172,11 +1172,11 @@ func (rsk *ResourceStateKey) String() string {
 // ModuleState.Resources and returns a resource name and resource index. In the
 // state, a resource has the format "type.name.index" or "type.name". In the
 // latter case, the index is returned as -1.
-func ParseResourceStateKey(k string) (*ResourceStateKey, error) {
+func parseResourceStateKey(k string) (*resourceStateKey, error) {
 	parts := strings.Split(k, ".")
-	mode := ManagedResourceMode
+	mode := managedResourceMode
 	if len(parts) > 0 && parts[0] == "data" {
-		mode = DataResourceMode
+		mode = dataResourceMode
 		// Don't need the constant "data" prefix for parsing
 		// now that we've figured out the mode.
 		parts = parts[1:]
@@ -1184,7 +1184,7 @@ func ParseResourceStateKey(k string) (*ResourceStateKey, error) {
 	if len(parts) < 2 || len(parts) > 3 {
 		return nil, fmt.Errorf("Malformed resource state key: %s", k)
 	}
-	rsk := &ResourceStateKey{
+	rsk := &resourceStateKey{
 		Mode:  mode,
 		Type:  parts[0],
 		Name:  parts[1],
@@ -1694,23 +1694,23 @@ func testForV0State(buf *bufio.Reader) error {
 	return nil
 }
 
-// ErrNoState is returned by ReadState when the io.Reader contains no data
-var ErrNoState = errors.New("no state")
+// errNoState is returned by ReadState when the io.Reader contains no data
+var errNoState = errors.New("no state")
 
-// ReadState reads a state structure out of a reader in the format that
+// readState reads a state structure out of a reader in the format that
 // was written by WriteState.
-func ReadState(src io.Reader) (*State, error) {
+func readState(src io.Reader) (*State, error) {
 	// check for a nil file specifically, since that produces a platform
 	// specific error if we try to use it in a bufio.Reader.
 	if f, ok := src.(*os.File); ok && f == nil {
-		return nil, ErrNoState
+		return nil, errNoState
 	}
 
 	buf := bufio.NewReader(src)
 
 	if _, err := buf.Peek(1); err != nil {
 		if err == io.EOF {
-			return nil, ErrNoState
+			return nil, errNoState
 		}
 		return nil, err
 	}
@@ -1736,7 +1736,7 @@ func ReadState(src io.Reader) (*State, error) {
 	case 0:
 		return nil, fmt.Errorf("State version 0 is not supported as JSON.")
 	case 1:
-		v1State, err := ReadStateV1(jsonBytes)
+		v1State, err := readStateV1(jsonBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -1755,7 +1755,7 @@ func ReadState(src io.Reader) (*State, error) {
 		v3State.Serial++
 		result = v3State
 	case 2:
-		v2State, err := ReadStateV2(jsonBytes)
+		v2State, err := readStateV2(jsonBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -1767,7 +1767,7 @@ func ReadState(src io.Reader) (*State, error) {
 		v3State.Serial++
 		result = v3State
 	case 3:
-		v3State, err := ReadStateV3(jsonBytes)
+		v3State, err := readStateV3(jsonBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -1795,7 +1795,7 @@ func ReadState(src io.Reader) (*State, error) {
 	return result, nil
 }
 
-func ReadStateV1(jsonBytes []byte) (*stateV1, error) {
+func readStateV1(jsonBytes []byte) (*stateV1, error) {
 	v1State := &stateV1{}
 	if err := json.Unmarshal(jsonBytes, v1State); err != nil {
 		return nil, fmt.Errorf("Decoding state file failed: %v", err)
@@ -1809,7 +1809,7 @@ func ReadStateV1(jsonBytes []byte) (*stateV1, error) {
 	return v1State, nil
 }
 
-func ReadStateV2(jsonBytes []byte) (*State, error) {
+func readStateV2(jsonBytes []byte) (*State, error) {
 	state := &State{}
 	if err := json.Unmarshal(jsonBytes, state); err != nil {
 		return nil, fmt.Errorf("Decoding state file failed: %v", err)
@@ -1817,7 +1817,7 @@ func ReadStateV2(jsonBytes []byte) (*State, error) {
 
 	// Check the version, this to ensure we don't read a future
 	// version that we don't understand
-	if state.Version > StateVersion {
+	if state.Version > stateVersion {
 		return nil, fmt.Errorf("Terraform %s does not support state version %d, please update.",
 			tfversion.SemVer.String(), state.Version)
 	}
@@ -1844,7 +1844,7 @@ func ReadStateV2(jsonBytes []byte) (*State, error) {
 	return state, nil
 }
 
-func ReadStateV3(jsonBytes []byte) (*State, error) {
+func readStateV3(jsonBytes []byte) (*State, error) {
 	state := &State{}
 	if err := json.Unmarshal(jsonBytes, state); err != nil {
 		return nil, fmt.Errorf("Decoding state file failed: %v", err)
@@ -1852,7 +1852,7 @@ func ReadStateV3(jsonBytes []byte) (*State, error) {
 
 	// Check the version, this to ensure we don't read a future
 	// version that we don't understand
-	if state.Version > StateVersion {
+	if state.Version > stateVersion {
 		return nil, fmt.Errorf("Terraform %s does not support state version %d, please update.",
 			tfversion.SemVer.String(), state.Version)
 	}
@@ -1880,7 +1880,7 @@ func ReadStateV3(jsonBytes []byte) (*State, error) {
 	// If our state is now written out differently, bump the serial number to
 	// prevent conflicts.
 	var buf bytes.Buffer
-	err := WriteState(state, &buf)
+	err := writeState(state, &buf)
 	if err != nil {
 		return nil, err
 	}
@@ -1893,8 +1893,8 @@ func ReadStateV3(jsonBytes []byte) (*State, error) {
 	return state, nil
 }
 
-// WriteState writes a state somewhere in a binary format.
-func WriteState(d *State, dst io.Writer) error {
+// writeState writes a state somewhere in a binary format.
+func writeState(d *State, dst io.Writer) error {
 	// writing a nil state is a noop.
 	if d == nil {
 		return nil
@@ -1907,7 +1907,7 @@ func WriteState(d *State, dst io.Writer) error {
 	d.sort()
 
 	// Ensure the version is set
-	d.Version = StateVersion
+	d.Version = stateVersion
 
 	// If the TFVersion is set, verify it. We used to just set the version
 	// here, but this isn't safe since it changes the MD5 sum on some remote

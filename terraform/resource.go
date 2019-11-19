@@ -360,6 +360,8 @@ type unknownCheckWalker struct {
 	Unknown bool
 }
 
+// TODO: investigate why deleting this causes odd runtime test failures
+// must be some kind of interface implementation
 func (w *unknownCheckWalker) Primitive(v reflect.Value) error {
 	if v.Interface() == hcl2shim.UnknownVariableValue {
 		w.Unknown = true
