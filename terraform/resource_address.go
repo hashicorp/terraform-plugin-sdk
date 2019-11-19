@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs"
 )
 
-// ResourceAddress is a way of identifying an individual resource (or,
+// resourceAddress is a way of identifying an individual resource (or,
 // eventually, a subset of resources) within the state. It is used for Targets.
-type ResourceAddress struct {
+type resourceAddress struct {
 	// Addresses a resource falling somewhere in the module path
 	// When specified alone, addresses all resources within a module path
 	Path []string
@@ -21,24 +21,24 @@ type ResourceAddress struct {
 	// Addresses a specific resource that occurs in a list
 	Index int
 
-	InstanceType    InstanceType
+	InstanceType    instanceType
 	InstanceTypeSet bool
 	Name            string
 	Type            string
-	Mode            ResourceMode // significant only if InstanceTypeSet
+	Mode            resourceMode // significant only if InstanceTypeSet
 }
 
 // String outputs the address that parses into this address.
-func (r *ResourceAddress) String() string {
+func (r *resourceAddress) String() string {
 	var result []string
 	for _, p := range r.Path {
 		result = append(result, "module", p)
 	}
 
 	switch r.Mode {
-	case ManagedResourceMode:
+	case managedResourceMode:
 		// nothing to do
-	case DataResourceMode:
+	case dataResourceMode:
 		result = append(result, "data")
 	default:
 		panic(fmt.Errorf("unsupported resource mode %s", r.Mode))
@@ -52,11 +52,11 @@ func (r *ResourceAddress) String() string {
 		name := r.Name
 		if r.InstanceTypeSet {
 			switch r.InstanceType {
-			case TypePrimary:
+			case typePrimary:
 				name += ".primary"
-			case TypeDeposed:
+			case typeDeposed:
 				name += ".deposed"
-			case TypeTainted:
+			case typeTainted:
 				name += ".tainted"
 			}
 		}
@@ -70,19 +70,19 @@ func (r *ResourceAddress) String() string {
 	return strings.Join(result, ".")
 }
 
-// HasResourceSpec returns true if the address has a resource spec, as
+// hasResourceSpec returns true if the address has a resource spec, as
 // defined in the documentation:
 //    https://www.terraform.io/docs/internals/resource-addressing.html
 // In particular, this returns false if the address contains only
 // a module path, thus addressing the entire module.
-func (r *ResourceAddress) HasResourceSpec() bool {
+func (r *resourceAddress) hasResourceSpec() bool {
 	return r.Type != "" && r.Name != ""
 }
 
 // WholeModuleAddress returns the resource address that refers to all
 // resources in the same module as the receiver address.
-func (r *ResourceAddress) WholeModuleAddress() *ResourceAddress {
-	return &ResourceAddress{
+func (r *resourceAddress) wholeModuleAddress() *resourceAddress {
+	return &resourceAddress{
 		Path:            r.Path,
 		Index:           -1,
 		InstanceTypeSet: false,
@@ -98,18 +98,18 @@ func (r *ResourceAddress) WholeModuleAddress() *ResourceAddress {
 // Since resource configuration blocks represent all of the instances of
 // a multi-instance resource, the index of the address (if any) is not
 // considered.
-func (r *ResourceAddress) MatchesResourceConfig(path addrs.Module, rc *configs.Resource) bool {
-	if r.HasResourceSpec() {
+func (r *resourceAddress) matchesResourceConfig(path addrs.Module, rc *configs.Resource) bool {
+	if r.hasResourceSpec() {
 		// FIXME: Some ugliness while we are between worlds. Functionality
-		// in "addrs" should eventually replace this ResourceAddress idea
+		// in "addrs" should eventually replace this resourceAddress idea
 		// completely, but for now we'll need to translate to the old
 		// way of representing resource modes.
 		switch r.Mode {
-		case ManagedResourceMode:
+		case managedResourceMode:
 			if rc.Mode != addrs.ManagedResourceMode {
 				return false
 			}
-		case DataResourceMode:
+		case dataResourceMode:
 			if rc.Mode != addrs.DataResourceMode {
 				return false
 			}
@@ -135,12 +135,12 @@ func (r *ResourceAddress) MatchesResourceConfig(path addrs.Module, rc *configs.R
 // stateId returns the ID that this resource should be entered with
 // in the state. This is also used for diffs. In the future, we'd like to
 // move away from this string field so I don't export this.
-func (r *ResourceAddress) stateId() string {
+func (r *resourceAddress) stateId() string {
 	result := fmt.Sprintf("%s.%s", r.Type, r.Name)
 	switch r.Mode {
-	case ManagedResourceMode:
+	case managedResourceMode:
 		// Done
-	case DataResourceMode:
+	case dataResourceMode:
 		result = fmt.Sprintf("data.%s", result)
 	default:
 		panic(fmt.Errorf("unknown resource mode: %s", r.Mode))
@@ -154,7 +154,7 @@ func (r *ResourceAddress) stateId() string {
 
 // parseResourceAddressInternal parses the somewhat bespoke resource
 // identifier used in states and diffs, such as "instance.name.0".
-func parseResourceAddressInternal(s string) (*ResourceAddress, error) {
+func parseResourceAddressInternal(s string) (*resourceAddress, error) {
 	// Split based on ".". Every resource address should have at least two
 	// elements (type and name).
 	parts := strings.Split(s, ".")
@@ -163,23 +163,23 @@ func parseResourceAddressInternal(s string) (*ResourceAddress, error) {
 	}
 
 	// Data resource if we have at least 3 parts and the first one is data
-	mode := ManagedResourceMode
+	mode := managedResourceMode
 	if len(parts) > 2 && parts[0] == "data" {
-		mode = DataResourceMode
+		mode = dataResourceMode
 		parts = parts[1:]
 	}
 
 	// If we're not a data resource and we have more than 3, then it is an error
-	if len(parts) > 3 && mode != DataResourceMode {
+	if len(parts) > 3 && mode != dataResourceMode {
 		return nil, fmt.Errorf("Invalid internal resource address format: %s", s)
 	}
 
 	// Build the parts of the resource address that are guaranteed to exist
-	addr := &ResourceAddress{
+	addr := &resourceAddress{
 		Type:         parts[0],
 		Name:         parts[1],
 		Index:        -1,
-		InstanceType: TypePrimary,
+		InstanceType: typePrimary,
 		Mode:         mode,
 	}
 
@@ -196,34 +196,34 @@ func parseResourceAddressInternal(s string) (*ResourceAddress, error) {
 	return addr, nil
 }
 
-func ParseResourceAddress(s string) (*ResourceAddress, error) {
+func parseResourceAddress(s string) (*resourceAddress, error) {
 	matches, err := tokenizeResourceAddress(s)
 	if err != nil {
 		return nil, err
 	}
-	mode := ManagedResourceMode
+	mode := managedResourceMode
 	if matches["data_prefix"] != "" {
-		mode = DataResourceMode
+		mode = dataResourceMode
 	}
-	resourceIndex, err := ParseResourceIndex(matches["index"])
+	resourceIndex, err := parseResourceIndex(matches["index"])
 	if err != nil {
 		return nil, err
 	}
-	instanceType, err := ParseInstanceType(matches["instance_type"])
+	instanceType, err := parseInstanceType(matches["instance_type"])
 	if err != nil {
 		return nil, err
 	}
-	path := ParseResourcePath(matches["path"])
+	path := parseResourcePath(matches["path"])
 
 	// not allowed to say "data." without a type following
-	if mode == DataResourceMode && matches["type"] == "" {
+	if mode == dataResourceMode && matches["type"] == "" {
 		return nil, fmt.Errorf(
 			"invalid resource address %q: must target specific data instance",
 			s,
 		)
 	}
 
-	return &ResourceAddress{
+	return &resourceAddress{
 		Path:            path,
 		Index:           resourceIndex,
 		InstanceType:    instanceType,
@@ -240,7 +240,7 @@ func ParseResourceAddress(s string) (*ResourceAddress, error) {
 // Containment is defined in terms of the module and resource heirarchy:
 // a resource is contained within its module and any ancestor modules,
 // an indexed resource instance is contained with the unindexed resource, etc.
-func (addr *ResourceAddress) Contains(other *ResourceAddress) bool {
+func (addr *resourceAddress) contains(other *resourceAddress) bool {
 	ourPath := addr.Path
 	givenPath := other.Path
 	if len(givenPath) < len(ourPath) {
@@ -254,7 +254,7 @@ func (addr *ResourceAddress) Contains(other *ResourceAddress) bool {
 
 	// If the receiver is a whole-module address then the path prefix
 	// matching is all we need.
-	if !addr.HasResourceSpec() {
+	if !addr.hasResourceSpec() {
 		return true
 	}
 
@@ -281,8 +281,8 @@ func (addr *ResourceAddress) Contains(other *ResourceAddress) bool {
 //
 // See also Contains, which takes a more heirarchical approach to comparing
 // addresses.
-func (addr *ResourceAddress) Equals(raw interface{}) bool {
-	other, ok := raw.(*ResourceAddress)
+func (addr *resourceAddress) equals(raw interface{}) bool {
+	other, ok := raw.(*resourceAddress)
 	if !ok {
 		return false
 	}
@@ -322,7 +322,7 @@ func (addr *ResourceAddress) Equals(raw interface{}) bool {
 // This sort uses lexicographic sorting for most components, but uses
 // numeric sort for indices, thus causing index 10 to sort after
 // index 9, rather than after index 1.
-func (addr *ResourceAddress) Less(other *ResourceAddress) bool {
+func (addr *resourceAddress) Less(other *resourceAddress) bool {
 
 	switch {
 
@@ -339,7 +339,7 @@ func (addr *ResourceAddress) Less(other *ResourceAddress) bool {
 		return addrStr < otherStr
 
 	case addr.Mode != other.Mode:
-		return addr.Mode == DataResourceMode
+		return addr.Mode == dataResourceMode
 
 	case addr.Type != other.Type:
 		return addr.Type < other.Type
@@ -368,14 +368,14 @@ func (addr *ResourceAddress) Less(other *ResourceAddress) bool {
 	}
 }
 
-func ParseResourceIndex(s string) (int, error) {
+func parseResourceIndex(s string) (int, error) {
 	if s == "" {
 		return -1, nil
 	}
 	return strconv.Atoi(s)
 }
 
-func ParseResourcePath(s string) []string {
+func parseResourcePath(s string) []string {
 	if s == "" {
 		return nil
 	}
@@ -392,16 +392,16 @@ func ParseResourcePath(s string) []string {
 	return path
 }
 
-func ParseInstanceType(s string) (InstanceType, error) {
+func parseInstanceType(s string) (instanceType, error) {
 	switch s {
 	case "", "primary":
-		return TypePrimary, nil
+		return typePrimary, nil
 	case "deposed":
-		return TypeDeposed, nil
+		return typeDeposed, nil
 	case "tainted":
-		return TypeTainted, nil
+		return typeTainted, nil
 	default:
-		return TypeInvalid, fmt.Errorf("Unexpected value for InstanceType field: %q", s)
+		return typeInvalid, fmt.Errorf("Unexpected value for instanceType field: %q", s)
 	}
 }
 

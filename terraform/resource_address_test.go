@@ -12,16 +12,16 @@ import (
 func TestParseResourceAddressInternal(t *testing.T) {
 	cases := map[string]struct {
 		Input    string
-		Expected *ResourceAddress
+		Expected *resourceAddress
 		Output   string
 	}{
 		"basic resource": {
 			"aws_instance.foo",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"aws_instance.foo",
@@ -29,11 +29,11 @@ func TestParseResourceAddressInternal(t *testing.T) {
 
 		"basic resource with count": {
 			"aws_instance.foo.1",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        1,
 			},
 			"aws_instance.foo[1]",
@@ -41,11 +41,11 @@ func TestParseResourceAddressInternal(t *testing.T) {
 
 		"data resource": {
 			"data.aws_ami.foo",
-			&ResourceAddress{
-				Mode:         DataResourceMode,
+			&resourceAddress{
+				Mode:         dataResourceMode,
 				Type:         "aws_ami",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"data.aws_ami.foo",
@@ -53,11 +53,11 @@ func TestParseResourceAddressInternal(t *testing.T) {
 
 		"data resource with count": {
 			"data.aws_ami.foo.1",
-			&ResourceAddress{
-				Mode:         DataResourceMode,
+			&resourceAddress{
+				Mode:         dataResourceMode,
 				Type:         "aws_ami",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        1,
 			},
 			"data.aws_ami.foo[1]",
@@ -95,7 +95,7 @@ func TestParseResourceAddressInternal(t *testing.T) {
 
 			// Compare equality because the internal parse is used
 			// to compare equality to equal inputs.
-			if !out.Equals(tc.Expected) {
+			if !out.equals(tc.Expected) {
 				t.Fatalf("expected equality:\n\n%#v\n\n%#v", out, tc.Expected)
 			}
 		})
@@ -105,17 +105,17 @@ func TestParseResourceAddressInternal(t *testing.T) {
 func TestParseResourceAddress(t *testing.T) {
 	cases := map[string]struct {
 		Input    string
-		Expected *ResourceAddress
+		Expected *resourceAddress
 		Output   string
 		Err      bool
 	}{
 		"implicit primary managed instance, no specific index": {
 			"aws_instance.foo",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -123,11 +123,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"implicit primary data instance, no specific index": {
 			"data.aws_instance.foo",
-			&ResourceAddress{
-				Mode:         DataResourceMode,
+			&resourceAddress{
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -135,11 +135,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"implicit primary, explicit index": {
 			"aws_instance.foo[2]",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        2,
 			},
 			"",
@@ -147,11 +147,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"implicit primary, explicit index over ten": {
 			"aws_instance.foo[12]",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        12,
 			},
 			"",
@@ -159,11 +159,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"explicit primary, explicit index": {
 			"aws_instance.foo.primary[2]",
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				InstanceTypeSet: true,
 				Index:           2,
 			},
@@ -172,11 +172,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"tainted": {
 			"aws_instance.foo.tainted",
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
-				InstanceType:    TypeTainted,
+				InstanceType:    typeTainted,
 				InstanceTypeSet: true,
 				Index:           -1,
 			},
@@ -185,11 +185,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"deposed": {
 			"aws_instance.foo.deposed",
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
-				InstanceType:    TypeDeposed,
+				InstanceType:    typeDeposed,
 				InstanceTypeSet: true,
 				Index:           -1,
 			},
@@ -198,11 +198,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"with a hyphen": {
 			"aws_instance.foo-bar",
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo-bar",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -210,12 +210,12 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"managed in a module": {
 			"module.child.aws_instance.foo",
-			&ResourceAddress{
+			&resourceAddress{
 				Path:         []string{"child"},
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -223,12 +223,12 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"data in a module": {
 			"module.child.data.aws_instance.foo",
-			&ResourceAddress{
+			&resourceAddress{
 				Path:         []string{"child"},
-				Mode:         DataResourceMode,
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -236,12 +236,12 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"nested modules": {
 			"module.a.module.b.module.forever.aws_instance.foo",
-			&ResourceAddress{
+			&resourceAddress{
 				Path:         []string{"a", "b", "forever"},
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -249,11 +249,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"just a module": {
 			"module.a",
-			&ResourceAddress{
+			&resourceAddress{
 				Path:         []string{"a"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -261,11 +261,11 @@ func TestParseResourceAddress(t *testing.T) {
 		},
 		"just a nested module": {
 			"module.a.module.b",
-			&ResourceAddress{
+			&resourceAddress{
 				Path:         []string{"a", "b"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"",
@@ -281,7 +281,7 @@ func TestParseResourceAddress(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			out, err := ParseResourceAddress(tc.Input)
+			out, err := parseResourceAddress(tc.Input)
 			if (err != nil) != tc.Err {
 				t.Fatalf("%s: unexpected err: %#v", tn, err)
 			}
@@ -306,89 +306,75 @@ func TestParseResourceAddress(t *testing.T) {
 
 func TestResourceAddressContains(t *testing.T) {
 	tests := []struct {
-		Address *ResourceAddress
-		Other   *ResourceAddress
+		Address *resourceAddress
+		Other   *resourceAddress
 		Want    bool
 	}{
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
 			true,
 		},
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
 				Index:           0,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
 			true,
 		},
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
 			true,
 		},
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
-				Type:            "aws_instance",
-				Name:            "foo",
-				InstanceTypeSet: false,
-				Index:           -1,
-			},
-			true,
-		},
-		{
-			&ResourceAddress{
-				InstanceTypeSet: false,
-				Index:           -1,
-			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -397,13 +383,27 @@ func TestResourceAddressContains(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
+				Mode:            managedResourceMode,
+				Type:            "aws_instance",
+				Name:            "foo",
+				InstanceTypeSet: false,
+				Index:           -1,
+			},
+			true,
+		},
+		{
+			&resourceAddress{
+				InstanceTypeSet: false,
+				Index:           -1,
+			},
+			&resourceAddress{
 				Path:            []string{"bar"},
-				Mode:            ManagedResourceMode,
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -412,30 +412,30 @@ func TestResourceAddressContains(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
-				Path:            []string{"bar"},
-				InstanceTypeSet: false,
-				Index:           -1,
-			},
-			&ResourceAddress{
-				Path:            []string{"bar"},
-				Mode:            ManagedResourceMode,
-				Type:            "aws_instance",
-				Name:            "foo",
-				InstanceTypeSet: false,
-				Index:           -1,
-			},
-			true,
-		},
-		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
+				Path:            []string{"bar"},
+				Mode:            managedResourceMode,
+				Type:            "aws_instance",
+				Name:            "foo",
+				InstanceTypeSet: false,
+				Index:           -1,
+			},
+			true,
+		},
+		{
+			&resourceAddress{
+				Path:            []string{"bar"},
+				InstanceTypeSet: false,
+				Index:           -1,
+			},
+			&resourceAddress{
 				Path:            []string{"bar", "baz"},
-				Mode:            ManagedResourceMode,
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -444,12 +444,12 @@ func TestResourceAddressContains(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar", "baz"},
 				InstanceTypeSet: false,
 				Index:           -1,
@@ -457,12 +457,12 @@ func TestResourceAddressContains(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar", "baz", "foo", "pizza"},
 				InstanceTypeSet: false,
 				Index:           -1,
@@ -471,52 +471,52 @@ func TestResourceAddressContains(t *testing.T) {
 		},
 
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "bar",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
 			false,
 		},
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
-			&ResourceAddress{
-				Mode:            DataResourceMode,
+			&resourceAddress{
+				Mode:            dataResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"baz"},
-				Mode:            ManagedResourceMode,
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -525,14 +525,14 @@ func TestResourceAddressContains(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"baz", "bar"},
-				Mode:            ManagedResourceMode,
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -541,16 +541,16 @@ func TestResourceAddressContains(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: true,
-				InstanceType:    TypePrimary,
+				InstanceType:    typePrimary,
 				Index:           0,
 			},
-			&ResourceAddress{
-				Mode:            ManagedResourceMode,
+			&resourceAddress{
+				Mode:            managedResourceMode,
 				Type:            "aws_instance",
 				Name:            "foo",
 				InstanceTypeSet: false,
@@ -559,12 +559,12 @@ func TestResourceAddressContains(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar", "baz"},
 				InstanceTypeSet: false,
 				Index:           -1,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Path:            []string{"bar"},
 				InstanceTypeSet: false,
 				Index:           -1,
@@ -572,19 +572,19 @@ func TestResourceAddressContains(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Type:         "aws_instance",
 				Name:         "foo",
 				Index:        1,
-				InstanceType: TypePrimary,
-				Mode:         ManagedResourceMode,
+				InstanceType: typePrimary,
+				Mode:         managedResourceMode,
 			},
-			&ResourceAddress{
+			&resourceAddress{
 				Type:         "aws_instance",
 				Name:         "foo",
 				Index:        -1,
-				InstanceType: TypePrimary,
-				Mode:         ManagedResourceMode,
+				InstanceType: typePrimary,
+				Mode:         managedResourceMode,
 			},
 			false,
 		},
@@ -592,7 +592,7 @@ func TestResourceAddressContains(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s contains %s", test.Address, test.Other), func(t *testing.T) {
-			got := test.Address.Contains(test.Other)
+			got := test.Address.contains(test.Other)
 			if got != test.Want {
 				t.Errorf(
 					"wrong result\nrecv:  %s\ngiven: %s\ngot:   %#v\nwant:  %#v",
@@ -606,267 +606,267 @@ func TestResourceAddressContains(t *testing.T) {
 
 func TestResourceAddressEquals(t *testing.T) {
 	cases := map[string]struct {
-		Address *ResourceAddress
+		Address *resourceAddress
 		Other   interface{}
 		Expect  bool
 	}{
 		"basic match": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: true,
 		},
 		"address does not set index": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        3,
 			},
 			Expect: true,
 		},
 		"other does not set index": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        3,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			Expect: true,
 		},
 		"neither sets index": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			Expect: true,
 		},
 		"index over ten": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        1,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        13,
 			},
 			Expect: false,
 		},
 		"different type": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_vpc",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"different mode": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         DataResourceMode,
+			Other: &resourceAddress{
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"different name": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "bar",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"different instance type": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypeTainted,
+				InstanceType: typeTainted,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"different index": {
-			Address: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Address: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
-			Other: &ResourceAddress{
-				Mode:         ManagedResourceMode,
+			Other: &resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        1,
 			},
 			Expect: false,
 		},
 		"module address matches address of managed resource inside module": {
-			Address: &ResourceAddress{
+			Address: &resourceAddress{
 				Path:         []string{"a", "b"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
+			Other: &resourceAddress{
 				Path:         []string{"a", "b"},
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: true,
 		},
 		"module address matches address of data resource inside module": {
-			Address: &ResourceAddress{
+			Address: &resourceAddress{
 				Path:         []string{"a", "b"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
+			Other: &resourceAddress{
 				Path:         []string{"a", "b"},
-				Mode:         DataResourceMode,
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: true,
 		},
 		"module address doesn't match managed resource outside module": {
-			Address: &ResourceAddress{
+			Address: &resourceAddress{
 				Path:         []string{"a", "b"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
+			Other: &resourceAddress{
 				Path:         []string{"a"},
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"module address doesn't match data resource outside module": {
-			Address: &ResourceAddress{
+			Address: &resourceAddress{
 				Path:         []string{"a", "b"},
 				Type:         "",
 				Name:         "",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
+			Other: &resourceAddress{
 				Path:         []string{"a"},
-				Mode:         DataResourceMode,
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: false,
 		},
 		"nil path vs empty path should match": {
-			Address: &ResourceAddress{
+			Address: &resourceAddress{
 				Path:         []string{},
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
-			Other: &ResourceAddress{
+			Other: &resourceAddress{
 				Path:         nil,
-				Mode:         ManagedResourceMode,
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        0,
 			},
 			Expect: true,
@@ -874,7 +874,7 @@ func TestResourceAddressEquals(t *testing.T) {
 	}
 
 	for tn, tc := range cases {
-		actual := tc.Address.Equals(tc.Other)
+		actual := tc.Address.equals(tc.Other)
 		if actual != tc.Expect {
 			t.Fatalf("%q: expected equals: %t, got %t for:\n%#v\n%#v",
 				tn, tc.Expect, actual, tc.Address, tc.Other)
@@ -884,37 +884,37 @@ func TestResourceAddressEquals(t *testing.T) {
 
 func TestResourceAddressStateId(t *testing.T) {
 	cases := map[string]struct {
-		Input    *ResourceAddress
+		Input    *resourceAddress
 		Expected string
 	}{
 		"basic resource": {
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"aws_instance.foo",
 		},
 
 		"basic resource with index": {
-			&ResourceAddress{
-				Mode:         ManagedResourceMode,
+			&resourceAddress{
+				Mode:         managedResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        2,
 			},
 			"aws_instance.foo.2",
 		},
 
 		"data resource": {
-			&ResourceAddress{
-				Mode:         DataResourceMode,
+			&resourceAddress{
+				Mode:         dataResourceMode,
 				Type:         "aws_instance",
 				Name:         "foo",
-				InstanceType: TypePrimary,
+				InstanceType: typePrimary,
 				Index:        -1,
 			},
 			"data.aws_instance.foo",
@@ -976,11 +976,11 @@ func TestResourceAddressHasResourceSpec(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Input, func(t *testing.T) {
-			addr, err := ParseResourceAddress(test.Input)
+			addr, err := parseResourceAddress(test.Input)
 			if err != nil {
 				t.Fatalf("error parsing address: %s", err)
 			}
-			got := addr.HasResourceSpec()
+			got := addr.hasResourceSpec()
 			if got != test.Want {
 				t.Fatalf("%q: wrong result %#v; want %#v", test.Input, got, test.Want)
 			}
@@ -1033,11 +1033,11 @@ func TestResourceAddressWholeModuleAddress(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Input, func(t *testing.T) {
-			addr, err := ParseResourceAddress(test.Input)
+			addr, err := parseResourceAddress(test.Input)
 			if err != nil {
 				t.Fatalf("error parsing address: %s", err)
 			}
-			gotAddr := addr.WholeModuleAddress()
+			gotAddr := addr.wholeModuleAddress()
 			got := gotAddr.String()
 			if got != test.Want {
 				t.Fatalf("%q: wrong result %#v; want %#v", test.Input, got, test.Want)
@@ -1053,14 +1053,14 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 	irrelevant := []string{"irrelevant"}
 
 	tests := []struct {
-		Addr       *ResourceAddress
+		Addr       *resourceAddress
 		ModulePath []string
 		Resource   *configs.Resource
 		Want       bool
 	}{
 		{
-			&ResourceAddress{
-				Mode:  ManagedResourceMode,
+			&resourceAddress{
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1074,9 +1074,9 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child"},
-				Mode:  ManagedResourceMode,
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1090,9 +1090,9 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child", "grandchild"},
-				Mode:  ManagedResourceMode,
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1106,7 +1106,7 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child"},
 				Index: -1,
 			},
@@ -1119,7 +1119,7 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child", "grandchild"},
 				Index: -1,
 			},
@@ -1132,8 +1132,8 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			true,
 		},
 		{
-			&ResourceAddress{
-				Mode:  DataResourceMode,
+			&resourceAddress{
+				Mode:  dataResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1147,8 +1147,8 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
-				Mode:  ManagedResourceMode,
+			&resourceAddress{
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1162,8 +1162,8 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
-				Mode:  ManagedResourceMode,
+			&resourceAddress{
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1177,9 +1177,9 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child", "grandchild"},
-				Mode:  ManagedResourceMode,
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1193,9 +1193,9 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 			false,
 		},
 		{
-			&ResourceAddress{
+			&resourceAddress{
 				Path:  []string{"child"},
-				Mode:  ManagedResourceMode,
+				Mode:  managedResourceMode,
 				Type:  "null_resource",
 				Name:  "baz",
 				Index: -1,
@@ -1212,7 +1212,7 @@ func TestResourceAddressMatchesResourceConfig(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("%02d-%s", i, test.Addr), func(t *testing.T) {
-			got := test.Addr.MatchesResourceConfig(test.ModulePath, test.Resource)
+			got := test.Addr.matchesResourceConfig(test.ModulePath, test.Resource)
 			if got != test.Want {
 				t.Errorf(
 					"wrong result\naddr: %s\nmod:  %#v\nrsrc: %#v\ngot:  %#v\nwant: %#v",
@@ -1293,11 +1293,11 @@ func TestResourceAddressLess(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s < %s", test.A, test.B), func(t *testing.T) {
-			addrA, err := ParseResourceAddress(test.A)
+			addrA, err := parseResourceAddress(test.A)
 			if err != nil {
 				t.Fatal(err)
 			}
-			addrB, err := ParseResourceAddress(test.B)
+			addrB, err := parseResourceAddress(test.B)
 			if err != nil {
 				t.Fatal(err)
 			}
