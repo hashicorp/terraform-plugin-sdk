@@ -117,38 +117,6 @@ func TestStateAddModule(t *testing.T) {
 	}
 }
 
-func TestStateOutputTypeRoundTrip(t *testing.T) {
-	state := &State{
-		Modules: []*ModuleState{
-			&ModuleState{
-				Path: []string{"root"},
-				Outputs: map[string]*OutputState{
-					"string_output": &OutputState{
-						Value: "String Value",
-						Type:  "string",
-					},
-				},
-			},
-		},
-	}
-	state.init()
-
-	buf := new(bytes.Buffer)
-	if err := WriteState(state, buf); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	roundTripped, err := ReadState(buf)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(state, roundTripped) {
-		t.Logf("expected:\n%#v", state)
-		t.Fatalf("got:\n%#v", roundTripped)
-	}
-}
-
 func TestStateDeepCopy(t *testing.T) {
 	cases := []struct {
 		State *State
@@ -680,8 +648,8 @@ func TestStateMarshalEqual(t *testing.T) {
 				t.Errorf("wrong result %#v; want %#v", got, test.Want)
 				s1Buf := &bytes.Buffer{}
 				s2Buf := &bytes.Buffer{}
-				_ = WriteState(test.S1, s1Buf)
-				_ = WriteState(test.S2, s2Buf)
+				_ = writeState(test.S1, s1Buf)
+				_ = writeState(test.S2, s2Buf)
 				t.Logf("\nState 1: %s\nState 2: %s", s1Buf.Bytes(), s2Buf.Bytes())
 			}
 		})
@@ -1540,16 +1508,16 @@ func TestReadWriteState(t *testing.T) {
 	state.init()
 
 	buf := new(bytes.Buffer)
-	if err := WriteState(state, buf); err != nil {
+	if err := writeState(state, buf); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 
 	// Verify that the version and serial are set
-	if state.Version != StateVersion {
+	if state.Version != stateVersion {
 		t.Fatalf("bad version number: %d", state.Version)
 	}
 
-	actual, err := ReadState(buf)
+	actual, err := readState(buf)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1570,12 +1538,12 @@ func TestReadStateNewVersion(t *testing.T) {
 		Version int
 	}
 
-	buf, err := json.Marshal(&out{StateVersion + 1})
+	buf, err := json.Marshal(&out{stateVersion + 1})
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
 
-	s, err := ReadState(bytes.NewReader(buf))
+	s, err := readState(bytes.NewReader(buf))
 	if s != nil {
 		t.Fatalf("unexpected: %#v", s)
 	}
@@ -1586,14 +1554,14 @@ func TestReadStateNewVersion(t *testing.T) {
 
 func TestReadStateEmptyOrNilFile(t *testing.T) {
 	var emptyState bytes.Buffer
-	_, err := ReadState(&emptyState)
-	if err != ErrNoState {
+	_, err := readState(&emptyState)
+	if err != errNoState {
 		t.Fatal("expected ErrNostate, got", err)
 	}
 
 	var nilFile *os.File
-	_, err = ReadState(nilFile)
-	if err != ErrNoState {
+	_, err = readState(nilFile)
+	if err != errNoState {
 		t.Fatal("expected ErrNostate, got", err)
 	}
 }
@@ -1635,7 +1603,7 @@ func TestReadStateTFVersion(t *testing.T) {
 			t.Fatalf("err: %v", err)
 		}
 
-		s, err := ReadState(bytes.NewReader(buf))
+		s, err := readState(bytes.NewReader(buf))
 		if (err != nil) != tc.Err {
 			t.Fatalf("%s: err: %s", tc.Written, err)
 		}
@@ -1674,7 +1642,7 @@ func TestWriteStateTFVersion(t *testing.T) {
 
 	for _, tc := range cases {
 		var buf bytes.Buffer
-		err := WriteState(&State{TFVersion: tc.Write}, &buf)
+		err := writeState(&State{TFVersion: tc.Write}, &buf)
 		if (err != nil) != tc.Err {
 			t.Fatalf("%s: err: %s", tc.Write, err)
 		}
@@ -1682,7 +1650,7 @@ func TestWriteStateTFVersion(t *testing.T) {
 			continue
 		}
 
-		s, err := ReadState(&buf)
+		s, err := readState(&buf)
 		if err != nil {
 			t.Fatalf("%s: err: %s", tc.Write, err)
 		}
@@ -1696,13 +1664,13 @@ func TestWriteStateTFVersion(t *testing.T) {
 func TestParseResourceStateKey(t *testing.T) {
 	cases := []struct {
 		Input       string
-		Expected    *ResourceStateKey
+		Expected    *resourceStateKey
 		ExpectedErr bool
 	}{
 		{
 			Input: "aws_instance.foo.3",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
+			Expected: &resourceStateKey{
+				Mode:  managedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: 3,
@@ -1710,8 +1678,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "aws_instance.foo.0",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
+			Expected: &resourceStateKey{
+				Mode:  managedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: 0,
@@ -1719,8 +1687,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "aws_instance.foo",
-			Expected: &ResourceStateKey{
-				Mode:  ManagedResourceMode,
+			Expected: &resourceStateKey{
+				Mode:  managedResourceMode,
 				Type:  "aws_instance",
 				Name:  "foo",
 				Index: -1,
@@ -1728,8 +1696,8 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 		{
 			Input: "data.aws_ami.foo",
-			Expected: &ResourceStateKey{
-				Mode:  DataResourceMode,
+			Expected: &resourceStateKey{
+				Mode:  dataResourceMode,
 				Type:  "aws_ami",
 				Name:  "foo",
 				Index: -1,
@@ -1749,7 +1717,7 @@ func TestParseResourceStateKey(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		rsk, err := ParseResourceStateKey(tc.Input)
+		rsk, err := parseResourceStateKey(tc.Input)
 		if rsk != nil && tc.Expected != nil && !rsk.Equal(tc.Expected) {
 			t.Fatalf("%s: expected %s, got %s", tc.Input, tc.Expected, rsk)
 		}
@@ -1769,11 +1737,11 @@ func TestReadState_prune(t *testing.T) {
 	state.init()
 
 	buf := new(bytes.Buffer)
-	if err := WriteState(state, buf); err != nil {
+	if err := writeState(state, buf); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 
-	actual, err := ReadState(buf)
+	actual, err := readState(buf)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1823,11 +1791,11 @@ func TestReadState_pruneDependencies(t *testing.T) {
 	state.init()
 
 	buf := new(bytes.Buffer)
-	if err := WriteState(state, buf); err != nil {
+	if err := writeState(state, buf); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 
-	actual, err := ReadState(buf)
+	actual, err := readState(buf)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1849,7 +1817,7 @@ func TestReadState_bigHash(t *testing.T) {
 	expected := uint64(14885267135666261723)
 	s := strings.NewReader(`{"version": 3, "backend":{"hash":14885267135666261723}}`)
 
-	actual, err := ReadState(s)
+	actual, err := readState(s)
 	if err != nil {
 		t.Fatal(err)
 	}

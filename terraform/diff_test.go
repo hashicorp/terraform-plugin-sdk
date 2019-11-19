@@ -11,17 +11,17 @@ import (
 )
 
 func TestDiffEmpty(t *testing.T) {
-	var diff *Diff
-	if !diff.Empty() {
+	var d *diff
+	if !d.empty() {
 		t.Fatal("should be empty")
 	}
 
-	diff = new(Diff)
-	if !diff.Empty() {
+	d = new(diff)
+	if !d.empty() {
 		t.Fatal("should be empty")
 	}
 
-	mod := diff.AddModule(addrs.RootModuleInstance)
+	mod := d.addModule(addrs.RootModuleInstance)
 	mod.Resources["nodeA"] = &InstanceDiff{
 		Attributes: map[string]*ResourceAttrDiff{
 			"foo": &ResourceAttrDiff{
@@ -31,66 +31,66 @@ func TestDiffEmpty(t *testing.T) {
 		},
 	}
 
-	if diff.Empty() {
+	if d.empty() {
 		t.Fatal("should not be empty")
 	}
 }
 
 func TestDiffEmpty_taintedIsNotEmpty(t *testing.T) {
-	diff := new(Diff)
+	diff := new(diff)
 
-	mod := diff.AddModule(addrs.RootModuleInstance)
+	mod := diff.addModule(addrs.RootModuleInstance)
 	mod.Resources["nodeA"] = &InstanceDiff{
 		DestroyTainted: true,
 	}
 
-	if diff.Empty() {
+	if diff.empty() {
 		t.Fatal("should not be empty, since DestroyTainted was set")
 	}
 }
 
 func TestDiffEqual(t *testing.T) {
 	cases := map[string]struct {
-		D1, D2 *Diff
+		D1, D2 *diff
 		Equal  bool
 	}{
 		"nil": {
 			nil,
-			new(Diff),
+			new(diff),
 			false,
 		},
 
 		"empty": {
-			new(Diff),
-			new(Diff),
+			new(diff),
+			new(diff),
 			true,
 		},
 
 		"different module order": {
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}},
-					&ModuleDiff{Path: []string{"root", "bar"}},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}},
+					&moduleDiff{Path: []string{"root", "bar"}},
 				},
 			},
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "bar"}},
-					&ModuleDiff{Path: []string{"root", "foo"}},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "bar"}},
+					&moduleDiff{Path: []string{"root", "foo"}},
 				},
 			},
 			true,
 		},
 
 		"different module diff destroys": {
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}, Destroy: true},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}, Destroy: true},
 				},
 			},
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}, Destroy: false},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}, Destroy: false},
 				},
 			},
 			true,
@@ -99,7 +99,7 @@ func TestDiffEqual(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			actual := tc.D1.Equal(tc.D2)
+			actual := tc.D1.equal(tc.D2)
 			if actual != tc.Equal {
 				t.Fatalf("expected: %v\n\n%#v\n\n%#v", tc.Equal, tc.D1, tc.D2)
 			}
@@ -109,7 +109,7 @@ func TestDiffEqual(t *testing.T) {
 
 func TestDiffPrune(t *testing.T) {
 	cases := map[string]struct {
-		D1, D2 *Diff
+		D1, D2 *diff
 	}{
 		"nil": {
 			nil,
@@ -117,28 +117,28 @@ func TestDiffPrune(t *testing.T) {
 		},
 
 		"empty": {
-			new(Diff),
-			new(Diff),
+			new(diff),
+			new(diff),
 		},
 
 		"empty module": {
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}},
 				},
 			},
-			&Diff{},
+			&diff{},
 		},
 
 		"destroy module": {
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}, Destroy: true},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}, Destroy: true},
 				},
 			},
-			&Diff{
-				Modules: []*ModuleDiff{
-					&ModuleDiff{Path: []string{"root", "foo"}, Destroy: true},
+			&diff{
+				Modules: []*moduleDiff{
+					&moduleDiff{Path: []string{"root", "foo"}, Destroy: true},
 				},
 			},
 		},
@@ -146,8 +146,8 @@ func TestDiffPrune(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			tc.D1.Prune()
-			if !tc.D1.Equal(tc.D2) {
+			tc.D1.prune()
+			if !tc.D1.equal(tc.D2) {
 				t.Fatalf("bad:\n\n%#v\n\n%#v", tc.D1, tc.D2)
 			}
 		})
@@ -156,23 +156,23 @@ func TestDiffPrune(t *testing.T) {
 
 func TestModuleDiff_ChangeType(t *testing.T) {
 	cases := []struct {
-		Diff   *ModuleDiff
-		Result DiffChangeType
+		diff   *moduleDiff
+		Result diffChangeType
 	}{
 		{
-			&ModuleDiff{},
-			DiffNone,
+			&moduleDiff{},
+			diffNone,
 		},
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo": &InstanceDiff{Destroy: true},
 				},
 			},
-			DiffDestroy,
+			diffDestroy,
 		},
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo": &InstanceDiff{
 						Attributes: map[string]*ResourceAttrDiff{
@@ -184,10 +184,10 @@ func TestModuleDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffUpdate,
+			diffUpdate,
 		},
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo": &InstanceDiff{
 						Attributes: map[string]*ResourceAttrDiff{
@@ -200,10 +200,10 @@ func TestModuleDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffCreate,
+			diffCreate,
 		},
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo": &InstanceDiff{
 						Destroy: true,
@@ -217,12 +217,12 @@ func TestModuleDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffUpdate,
+			diffUpdate,
 		},
 	}
 
 	for i, tc := range cases {
-		actual := tc.Diff.ChangeType()
+		actual := tc.diff.changeType()
 		if actual != tc.Result {
 			t.Fatalf("%d: %#v", i, actual)
 		}
@@ -230,12 +230,12 @@ func TestModuleDiff_ChangeType(t *testing.T) {
 }
 
 func TestDiff_DeepCopy(t *testing.T) {
-	cases := map[string]*Diff{
-		"empty": &Diff{},
+	cases := map[string]*diff{
+		"empty": &diff{},
 
-		"basic diff": &Diff{
-			Modules: []*ModuleDiff{
-				&ModuleDiff{
+		"basic diff": &diff{
+			Modules: []*moduleDiff{
+				&moduleDiff{
 					Path: []string{"root"},
 					Resources: map[string]*InstanceDiff{
 						"aws_instance.foo": &InstanceDiff{
@@ -254,7 +254,7 @@ func TestDiff_DeepCopy(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			dup := tc.DeepCopy()
+			dup := tc.deepCopy()
 			if !reflect.DeepEqual(dup, tc) {
 				t.Fatalf("\n%#v\n\n%#v", dup, tc)
 			}
@@ -263,8 +263,8 @@ func TestDiff_DeepCopy(t *testing.T) {
 }
 
 func TestModuleDiff_Empty(t *testing.T) {
-	diff := new(ModuleDiff)
-	if !diff.Empty() {
+	diff := new(moduleDiff)
+	if !diff.empty() {
 		t.Fatal("should be empty")
 	}
 
@@ -272,7 +272,7 @@ func TestModuleDiff_Empty(t *testing.T) {
 		"nodeA": &InstanceDiff{},
 	}
 
-	if !diff.Empty() {
+	if !diff.empty() {
 		t.Fatal("should be empty")
 	}
 
@@ -283,20 +283,20 @@ func TestModuleDiff_Empty(t *testing.T) {
 		},
 	}
 
-	if diff.Empty() {
+	if diff.empty() {
 		t.Fatal("should not be empty")
 	}
 
 	diff.Resources["nodeA"].Attributes = nil
 	diff.Resources["nodeA"].Destroy = true
 
-	if diff.Empty() {
+	if diff.empty() {
 		t.Fatal("should not be empty")
 	}
 }
 
 func TestModuleDiff_String(t *testing.T) {
-	diff := &ModuleDiff{
+	diff := &moduleDiff{
 		Resources: map[string]*InstanceDiff{
 			"nodeA": &InstanceDiff{
 				Attributes: map[string]*ResourceAttrDiff{
@@ -332,16 +332,16 @@ func TestModuleDiff_String(t *testing.T) {
 
 func TestInstanceDiff_ChangeType(t *testing.T) {
 	cases := []struct {
-		Diff   *InstanceDiff
-		Result DiffChangeType
+		diff   *InstanceDiff
+		Result diffChangeType
 	}{
 		{
 			&InstanceDiff{},
-			DiffNone,
+			diffNone,
 		},
 		{
 			&InstanceDiff{Destroy: true},
-			DiffDestroy,
+			diffDestroy,
 		},
 		{
 			&InstanceDiff{
@@ -352,7 +352,7 @@ func TestInstanceDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffUpdate,
+			diffUpdate,
 		},
 		{
 			&InstanceDiff{
@@ -364,7 +364,7 @@ func TestInstanceDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffCreate,
+			diffCreate,
 		},
 		{
 			&InstanceDiff{
@@ -377,7 +377,7 @@ func TestInstanceDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffDestroyCreate,
+			diffDestroyCreate,
 		},
 		{
 			&InstanceDiff{
@@ -390,12 +390,12 @@ func TestInstanceDiff_ChangeType(t *testing.T) {
 					},
 				},
 			},
-			DiffDestroyCreate,
+			diffDestroyCreate,
 		},
 	}
 
 	for i, tc := range cases {
-		actual := tc.Diff.ChangeType()
+		actual := tc.diff.ChangeType()
 		if actual != tc.Result {
 			t.Fatalf("%d: %#v", i, actual)
 		}
@@ -439,12 +439,12 @@ func TestModuleDiff_Instances(t *testing.T) {
 	noDiff := &InstanceDiff{Destroy: true, DestroyTainted: true}
 
 	cases := []struct {
-		Diff   *ModuleDiff
+		diff   *moduleDiff
 		Id     string
 		Result []*InstanceDiff
 	}{
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo": yesDiff,
 					"bar": noDiff,
@@ -457,7 +457,7 @@ func TestModuleDiff_Instances(t *testing.T) {
 		},
 
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo":   yesDiff,
 					"foo.0": yesDiff,
@@ -472,7 +472,7 @@ func TestModuleDiff_Instances(t *testing.T) {
 		},
 
 		{
-			&ModuleDiff{
+			&moduleDiff{
 				Resources: map[string]*InstanceDiff{
 					"foo":     yesDiff,
 					"foo.0":   yesDiff,
@@ -489,7 +489,7 @@ func TestModuleDiff_Instances(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		actual := tc.Diff.Instances(tc.Id)
+		actual := tc.diff.instances(tc.Id)
 		if !reflect.DeepEqual(actual, tc.Result) {
 			t.Fatalf("%d: %#v", i, actual)
 		}

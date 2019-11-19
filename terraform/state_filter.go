@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-// StateFilter is responsible for filtering and searching a state.
+// stateFilter is responsible for filtering and searching a state.
 //
 // This is a separate struct from State rather than a method on State
 // because StateFilter might create sidecar data structures to optimize
@@ -15,18 +15,18 @@ import (
 // Reset should be called or a new one should be allocated. StateFilter
 // will not watch State for changes and do this for you. If you filter after
 // changing the State without calling Reset, the behavior is not defined.
-type StateFilter struct {
+type stateFilter struct {
 	State *State
 }
 
 // Filter takes the addresses specified by fs and finds all the matches.
 // The values of fs are resource addressing syntax that can be parsed by
-// ParseResourceAddress.
-func (f *StateFilter) Filter(fs ...string) ([]*StateFilterResult, error) {
+// parseResourceAddress.
+func (f *stateFilter) filter(fs ...string) ([]*stateFilterResult, error) {
 	// Parse all the addresses
-	as := make([]*ResourceAddress, len(fs))
+	as := make([]*resourceAddress, len(fs))
 	for i, v := range fs {
-		a, err := ParseResourceAddress(v)
+		a, err := parseResourceAddress(v)
 		if err != nil {
 			return nil, fmt.Errorf("Error parsing address '%s': %s", v, err)
 		}
@@ -36,12 +36,12 @@ func (f *StateFilter) Filter(fs ...string) ([]*StateFilterResult, error) {
 
 	// If we weren't given any filters, then we list all
 	if len(fs) == 0 {
-		as = append(as, &ResourceAddress{Index: -1})
+		as = append(as, &resourceAddress{Index: -1})
 	}
 
 	// Filter each of the address. We keep track of this in a map to
 	// strip duplicates.
-	resultSet := make(map[string]*StateFilterResult)
+	resultSet := make(map[string]*stateFilterResult)
 	for _, a := range as {
 		for _, r := range f.filterSingle(a) {
 			resultSet[r.String()] = r
@@ -49,19 +49,19 @@ func (f *StateFilter) Filter(fs ...string) ([]*StateFilterResult, error) {
 	}
 
 	// Make the result list
-	results := make([]*StateFilterResult, 0, len(resultSet))
+	results := make([]*stateFilterResult, 0, len(resultSet))
 	for _, v := range resultSet {
 		results = append(results, v)
 	}
 
 	// Sort them and return
-	sort.Sort(StateFilterResultSlice(results))
+	sort.Sort(stateFilterResultSlice(results))
 	return results, nil
 }
 
-func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
+func (f *stateFilter) filterSingle(a *resourceAddress) []*stateFilterResult {
 	// The slice to keep track of results
-	var results []*StateFilterResult
+	var results []*stateFilterResult
 
 	// Go through modules first.
 	modules := make([]*ModuleState, 0, len(f.State.Modules))
@@ -72,9 +72,9 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 			// Only add the module to the results if we haven't specified a type.
 			// We also ignore the root module.
 			if a.Type == "" && len(m.Path) > 1 {
-				results = append(results, &StateFilterResult{
+				results = append(results, &stateFilterResult{
 					Path:    m.Path[1:],
-					Address: (&ResourceAddress{Path: m.Path[1:]}).String(),
+					Address: (&resourceAddress{Path: m.Path[1:]}).String(),
 					Value:   m,
 				})
 			}
@@ -86,7 +86,7 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 	for _, m := range modules {
 		for n, r := range m.Resources {
 			// The name in the state contains valuable information. Parse.
-			key, err := ParseResourceStateKey(n)
+			key, err := parseResourceStateKey(n)
 			if err != nil {
 				// If we get an error parsing, then just ignore it
 				// out of the state.
@@ -116,7 +116,7 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 				}
 
 				// Build the address for this resource
-				addr := &ResourceAddress{
+				addr := &resourceAddress{
 					Path:  m.Path[1:],
 					Name:  key.Name,
 					Type:  key.Type,
@@ -124,7 +124,7 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 				}
 
 				// Add the resource level result
-				resourceResult := &StateFilterResult{
+				resourceResult := &stateFilterResult{
 					Path:    addr.Path,
 					Address: addr.String(),
 					Value:   r,
@@ -135,9 +135,9 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 
 				// Add the instances
 				if r.Primary != nil {
-					addr.InstanceType = TypePrimary
+					addr.InstanceType = typePrimary
 					addr.InstanceTypeSet = false
-					results = append(results, &StateFilterResult{
+					results = append(results, &stateFilterResult{
 						Path:    addr.Path,
 						Address: addr.String(),
 						Parent:  resourceResult,
@@ -147,9 +147,9 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 
 				for _, instance := range r.Deposed {
 					if f.relevant(a, instance) {
-						addr.InstanceType = TypeDeposed
+						addr.InstanceType = typeDeposed
 						addr.InstanceTypeSet = true
-						results = append(results, &StateFilterResult{
+						results = append(results, &stateFilterResult{
 							Path:    addr.Path,
 							Address: addr.String(),
 							Parent:  resourceResult,
@@ -165,7 +165,7 @@ func (f *StateFilter) filterSingle(a *ResourceAddress) []*StateFilterResult {
 }
 
 // relevant checks for relevance of this address against the given value.
-func (f *StateFilter) relevant(addr *ResourceAddress, raw interface{}) bool {
+func (f *stateFilter) relevant(addr *resourceAddress, raw interface{}) bool {
 	switch v := raw.(type) {
 	case *ModuleState:
 		path := v.Path[1:]
@@ -202,10 +202,10 @@ func (f *StateFilter) relevant(addr *ResourceAddress, raw interface{}) bool {
 	}
 }
 
-// StateFilterResult is a single result from a filter operation. Filter
+// stateFilterResult is a single result from a filter operation. Filter
 // can match multiple things within a state (module, resource, instance, etc.)
 // and this unifies that.
-type StateFilterResult struct {
+type stateFilterResult struct {
 	// Module path of the result
 	Path []string
 
@@ -215,7 +215,7 @@ type StateFilterResult struct {
 	// Parent, if non-nil, is a parent of this result. For instances, the
 	// parent would be a resource. For resources, the parent would be
 	// a module. For modules, this is currently nil.
-	Parent *StateFilterResult
+	Parent *stateFilterResult
 
 	// Value is the actual value. This must be type switched on. It can be
 	// any data structures that `State` can hold: `ModuleState`,
@@ -223,11 +223,11 @@ type StateFilterResult struct {
 	Value interface{}
 }
 
-func (r *StateFilterResult) String() string {
+func (r *stateFilterResult) String() string {
 	return fmt.Sprintf("%T: %s", r.Value, r.Address)
 }
 
-func (r *StateFilterResult) sortedType() int {
+func (r *stateFilterResult) sortedType() int {
 	switch r.Value.(type) {
 	case *ModuleState:
 		return 0
@@ -240,19 +240,19 @@ func (r *StateFilterResult) sortedType() int {
 	}
 }
 
-// StateFilterResultSlice is a slice of results that implements
+// stateFilterResultSlice is a slice of results that implements
 // sort.Interface. The sorting goal is what is most appealing to
 // human output.
-type StateFilterResultSlice []*StateFilterResult
+type stateFilterResultSlice []*stateFilterResult
 
-func (s StateFilterResultSlice) Len() int      { return len(s) }
-func (s StateFilterResultSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s StateFilterResultSlice) Less(i, j int) bool {
+func (s stateFilterResultSlice) Len() int      { return len(s) }
+func (s stateFilterResultSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s stateFilterResultSlice) Less(i, j int) bool {
 	a, b := s[i], s[j]
 
 	// if these address contain an index, we want to sort by index rather than name
-	addrA, errA := ParseResourceAddress(a.Address)
-	addrB, errB := ParseResourceAddress(b.Address)
+	addrA, errA := parseResourceAddress(a.Address)
+	addrB, errB := parseResourceAddress(b.Address)
 	if errA == nil && errB == nil && addrA.Name == addrB.Name && addrA.Index != addrB.Index {
 		return addrA.Index < addrB.Index
 	}
