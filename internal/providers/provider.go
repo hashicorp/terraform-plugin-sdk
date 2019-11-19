@@ -4,7 +4,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
@@ -322,24 +321,6 @@ type ImportedResource struct {
 	// Private is an opaque blob that will be stored in state along with the
 	// resource. It is intended only for interpretation by the provider itself.
 	Private []byte
-}
-
-// AsInstanceObject converts the receiving ImportedObject into a
-// ResourceInstanceObject that has status ObjectReady.
-//
-// The returned object does not know its own resource type, so the caller must
-// retain the ResourceType value from the source object if this information is
-// needed.
-//
-// The returned object also has no dependency addresses, but the caller may
-// freely modify the direct fields of the returned object without affecting
-// the receiver.
-func (ir ImportedResource) AsInstanceObject() *states.ResourceInstanceObject {
-	return &states.ResourceInstanceObject{
-		Status:  states.ObjectReady,
-		Value:   ir.State,
-		Private: ir.Private,
-	}
 }
 
 type ReadDataSourceRequest struct {

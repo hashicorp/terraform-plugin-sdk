@@ -182,11 +182,3 @@ type DataSource struct {
 // ResourceProviderFactory is a function type that creates a new instance
 // of a resource provider.
 type ResourceProviderFactory func() (ResourceProvider, error)
-
-// ResourceProviderFactoryFixed is a helper that creates a
-// ResourceProviderFactory that just returns some fixed provider.
-func ResourceProviderFactoryFixed(p ResourceProvider) ResourceProviderFactory {
-	return func() (ResourceProvider, error) {
-		return p, nil
-	}
-}
