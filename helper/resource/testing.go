@@ -19,7 +19,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -571,52 +570,6 @@ func testProviderConfig(c TestCase) string {
 	}
 
 	return strings.Join(lines, "")
-}
-
-// testProviderFactories combines the fixed Providers and
-// ResourceProviderFactory functions into a single map of
-// ResourceProviderFactory functions.
-func testProviderFactories(c TestCase) map[string]terraform.ResourceProviderFactory {
-	ctxProviders := make(map[string]terraform.ResourceProviderFactory)
-	for k, pf := range c.ProviderFactories {
-		ctxProviders[k] = pf
-	}
-
-	// add any fixed providers
-	for k, p := range c.Providers {
-		ctxProviders[k] = terraform.ResourceProviderFactoryFixed(p)
-	}
-	return ctxProviders
-}
-
-// testProviderResolver is a helper to build a ResourceProviderResolver
-// with pre instantiated ResourceProviders, so that we can reset them for the
-// test, while only calling the factory function once.
-// Any errors are stored so that they can be returned by the factory in
-// terraform to match non-test behavior.
-func testProviderResolver(c TestCase) (providers.Resolver, error) {
-	ctxProviders := testProviderFactories(c)
-
-	// wrap the old provider factories in the test grpc server so they can be
-	// called from terraform.
-	newProviders := make(map[string]providers.Factory)
-
-	for k, pf := range ctxProviders {
-		factory := pf // must copy to ensure each closure sees its own value
-		newProviders[k] = func() (providers.Interface, error) {
-			p, err := factory()
-			if err != nil {
-				return nil, err
-			}
-
-			// The provider is wrapped in a GRPCTestProvider so that it can be
-			// passed back to terraform core as a providers.Interface, rather
-			// than the legacy ResourceProvider.
-			return GRPCTestProvider(p), nil
-		}
-	}
-
-	return providers.ResolverFixed(newProviders), nil
 }
 
 // UnitTest is a helper to force the acceptance testing harness to run in the
