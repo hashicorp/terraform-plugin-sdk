@@ -1,15 +1,15 @@
-# 1.4.0 (Unreleased)
+# 1.4.0 (November 20, 2019)
 
 NOTES:
 
-* pruned dead code from internal pkg [GH-251]
-* bumped dependency of `terraform-config-inspect` to remove transitive dependency [GH-252]
+* pruned dead code from internal pkg ([#251](https://github.com/hashicorp/terraform-plugin-sdk/issues/251))
+* bumped dependency of `terraform-config-inspect` to remove transitive dependency ([#252](https://github.com/hashicorp/terraform-plugin-sdk/issues/252))
 
 FEATURES: 
 
-* helper/validation: Add `FloatAtLeast` and `FloatAtMost` validation functions [GH-239]
-* helper/validation: Add `StringDoesNotMatch` validation function [GH-240]
-* ResourceData: Add `HasChanges` variadic method [GH-241]
+* helper/validation: Add `FloatAtLeast` and `FloatAtMost` validation functions ([#239](https://github.com/hashicorp/terraform-plugin-sdk/issues/239))
+* helper/validation: Add `StringDoesNotMatch` validation function ([#240](https://github.com/hashicorp/terraform-plugin-sdk/issues/240))
+* ResourceData: Add `HasChanges` variadic method ([#241](https://github.com/hashicorp/terraform-plugin-sdk/issues/241))
 
 # 1.3.0 (November 06, 2019)
 
