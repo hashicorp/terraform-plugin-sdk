@@ -4907,6 +4907,83 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 		},
 
+		"Conflicting subelements": {
+			Schema: map[string]*Schema{
+				"items": &Schema{
+					Type:     TypeList,
+					Required: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"blacklist": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"..greenlist"},
+							},
+							"greenlist": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"..blacklist"},
+							},
+						},
+					},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"items": []interface{}{
+					map[string]interface{}{
+						"blacklist": "black-val",
+						"greenlist": "green-val",
+					},
+					map[string]interface{}{
+						"blacklist": "black-val",
+					},
+				},
+			},
+
+			Err: true,
+			Errors: []error{
+				fmt.Errorf("\"items.0.blacklist\": conflicts with items.0.greenlist"),
+				fmt.Errorf("\"items.0.greenlist\": conflicts with items.0.blacklist"),
+			},
+		},
+
+		"Non-conflicting subelements": {
+			Schema: map[string]*Schema{
+				"items": &Schema{
+					Type:     TypeList,
+					Required: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"blacklist": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"..greenlist"},
+							},
+							"greenlist": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"..blacklist"},
+							},
+						},
+					},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"items": []interface{}{
+					map[string]interface{}{
+						"greenlist": "green-val",
+					},
+					map[string]interface{}{
+						"blacklist": "black-val",
+					},
+				},
+			},
+
+			Err: false,
+		},
+
 		"Required attribute & undefined conflicting optional are good": {
 			Schema: map[string]*Schema{
 				"required_att": &Schema{

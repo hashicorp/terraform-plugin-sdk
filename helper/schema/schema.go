@@ -1466,18 +1466,26 @@ func validateConflictingAttributes(
 	}
 
 	for _, conflictingKey := range schema.ConflictsWith {
-		if raw, ok := c.Get(conflictingKey); ok {
+		resolvedKey := resolveKey(k, conflictingKey)
+		if raw, ok := c.Get(resolvedKey); ok {
 			if raw == hcl2shim.UnknownVariableValue {
 				// An unknown value might become unset (null) once known, so
 				// we must defer validation until it's known.
 				continue
 			}
 			return fmt.Errorf(
-				"%q: conflicts with %s", k, conflictingKey)
+				"%q: conflicts with %s", k, resolvedKey)
 		}
 	}
 
 	return nil
+}
+
+func resolveKey(rootKey string, key string) string {
+	if strings.HasPrefix(key, "..") && strings.Contains(rootKey, ".") {
+		return rootKey[:strings.LastIndex(rootKey, ".")+1] + key[2:]
+	}
+	return key
 }
 
 func removeDuplicates(elements []string) []string {
