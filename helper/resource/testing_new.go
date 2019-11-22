@@ -142,11 +142,9 @@ func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
 }
 
 func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
-
+	spewConf := spew.NewDefaultConfig()
+	spewConf.SortKeys = true
 	// TODOS
-	if c.PreventPostDestroyRefresh {
-		t.Fatal("TODO: TestCase.PreventPostDestroyRefresh")
-	}
 	if c.IDRefreshName != "" {
 		t.Fatal("TODO: TestCase.IDRefreshName")
 	}
@@ -154,6 +152,9 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
 
 	defer func() {
+		// destroy step
+		// TODO probably better to combine this with TestStep.Destroy implementation as in old framework
+
 		wd.RequireDestroy(t)
 
 		if c.CheckDestroy != nil {
@@ -176,13 +177,6 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 	wd.RequireSetConfig(t, providerCfg)
 	wd.RequireInit(t)
 
-	defer func() {
-		// destroy if state exists
-		if wd.RequireState(t).Values != nil {
-			wd.RequireDestroy(t)
-		}
-	}()
-
 	// use this to track last step succesfully applied
 	// acts as default for import tests
 	var appliedCfg string
@@ -194,14 +188,8 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 		}
 
 		// TODOs
-		if len(step.Taint) > 0 {
-			t.Fatal("TODO: TestStep.Taint")
-		}
 		if step.Destroy {
 			t.Fatal("TODO: TestStep.Destroy")
-		}
-		if step.ExpectNonEmptyPlan {
-			t.Fatal("TODO: TestStep.ExpectNonEmptyPlan")
 		}
 		if step.PlanOnly {
 			t.Fatal("TODO: TestStep.PlanOnly")
@@ -225,7 +213,6 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 		}
 
 		if step.ImportState {
-
 			if step.ResourceName == "" {
 				t.Fatal("ResourceName is required for an import state test")
 			}
@@ -315,6 +302,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 
 				new := importState.RootModule().Resources
 				old := state.RootModule().Resources
+
 				for _, r := range new {
 					// Find the existing resource
 					var oldR *terraform.ResourceState
@@ -417,8 +405,6 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 							}
 						}
 
-						spewConf := spew.NewDefaultConfig()
-						spewConf.SortKeys = true
 						t.Fatalf(
 							"ImportStateVerify attributes not equivalent. Difference is shown below. Top is actual, bottom is expected."+
 								"\n\n%s\n\n%s",
@@ -432,6 +418,17 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 		}
 
 		if step.Config != "" {
+			if !step.Destroy {
+				jsonState := wd.RequireState(t)
+				state, err := shimTFJson(jsonState)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := testStepTaint(state, step); err != nil {
+					t.Fatalf("Error when tainting resources: %s", err)
+				}
+			}
+
 			wd.RequireSetConfig(t, step.Config)
 			err := wd.Apply()
 
@@ -457,12 +454,60 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 					}
 				}
 
+				// do a plan
+				wd.RequireCreatePlan(t)
+				plan := wd.RequireSavedPlan(t)
+
+				if !planIsEmpty(plan) {
+					if step.ExpectNonEmptyPlan {
+						t.Log("[INFO] Got non-empty plan, as expected")
+					} else {
+
+						t.Fatalf("After applying this step, the plan was not empty. %s", spewConf.Sdump(plan)) // TODO error message
+					}
+				}
+
+				// do a refresh
+				if !c.PreventPostDestroyRefresh {
+					wd.RequireRefresh(t)
+				}
+
+				// TODO deal with the data resources instantiated during refresh
+
+				// do another plan
+				wd.RequireCreatePlan(t)
+				plan = wd.RequireSavedPlan(t)
+				t.Log("second plan:")
+				t.Logf("%+v", plan)
+
+				// check if plan is empty
+				if !planIsEmpty(plan) {
+					if step.ExpectNonEmptyPlan {
+						t.Log("[INFO] Got non-empty plan, as expected")
+					} else {
+
+						t.Fatalf("After applying this step, the plan was not empty. %s", spewConf.Sdump(plan)) // TODO error message
+					}
+				}
+
 				appliedCfg = step.Config
 
 			}
+
 			continue
 		}
 
 		t.Fatal("Unsupported test mode")
 	}
+}
+
+func planIsEmpty(plan *tfjson.Plan) bool {
+	for _, rc := range plan.ResourceChanges {
+		for _, a := range rc.Change.Actions {
+			if a != tfjson.ActionNoop {
+				return false
+			}
+		}
+	}
+	return true
 }
