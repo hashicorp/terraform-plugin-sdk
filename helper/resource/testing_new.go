@@ -323,13 +323,17 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 					// to find the schema then we won't ignore them and so the test
 					// will need to rely on explicit ImportStateVerifyIgnore, though
 					// this shouldn't happen in any reasonable case.
+					// KEM CHANGE FROM OLD FRAMEWORK: Fail test if this happens.
 					var rsrcSchema *schema.Resource
-					if providerAddr, diags := addrs.ParseAbsProviderConfigStr(r.Provider); !diags.HasErrors() {
-						providerType := providerAddr.ProviderConfig.Type
-						if provider, ok := step.providers[providerType]; ok {
-							if provider, ok := provider.(*schema.Provider); ok {
-								rsrcSchema = provider.ResourcesMap[r.Type]
-							}
+					providerAddr, diags := addrs.ParseAbsProviderConfigStr("provider." + r.Provider + "." + r.Type)
+					if diags.HasErrors() {
+						t.Fatalf("Failed to find schema for resource with ID %s", r.Primary)
+					}
+
+					providerType := providerAddr.ProviderConfig.Type
+					if provider, ok := step.providers[providerType]; ok {
+						if provider, ok := provider.(*schema.Provider); ok {
+							rsrcSchema = provider.ResourcesMap[r.Type]
 						}
 					}
 
