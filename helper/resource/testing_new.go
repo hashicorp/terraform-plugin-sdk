@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	tftest "github.com/apparentlymart/terraform-plugin-test"
 	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
@@ -141,6 +142,15 @@ func shimTFJson(jsonState *tfjson.State) (*terraform.State, error) {
 	return state, nil
 }
 
+func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
+	jsonState := wd.RequireState(t)
+	state, err := shimTFJson(jsonState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return state
+}
+
 func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
@@ -158,12 +168,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 		wd.RequireDestroy(t)
 
 		if c.CheckDestroy != nil {
-			jsonStatePostDestroy := wd.RequireState(t)
-
-			statePostDestroy, err := shimTFJson(jsonStatePostDestroy)
-			if err != nil {
-				t.Fatal(err)
-			}
+			statePostDestroy := getState(t, wd)
 
 			if err := c.CheckDestroy(statePostDestroy); err != nil {
 				t.Fatal(err)
@@ -218,11 +223,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 			}
 
 			// get state from check sequence
-			jsonState := wd.RequireState(t)
-			state, err := shimTFJson(jsonState)
-			if err != nil {
-				t.Fatal(err)
-			}
+			state := getState(t, wd)
 
 			// Determine the ID to import
 			var importId string
@@ -272,11 +273,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 			importWd.RequireSetConfig(t, step.Config)
 			importWd.RequireInit(t)
 			importWd.RequireImport(t, step.ResourceName, importId)
-			importStateJson := importWd.RequireState(t)
-			importState, err := shimTFJson(importStateJson)
-			if err != nil {
-				t.Fatal(err)
-			}
+			importState := getState(t, wd)
 
 			// Go through the imported state and verify
 			if step.ImportStateCheck != nil {
@@ -423,11 +420,7 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 
 		if step.Config != "" {
 			if !step.Destroy {
-				jsonState := wd.RequireState(t)
-				state, err := shimTFJson(jsonState)
-				if err != nil {
-					t.Fatal(err)
-				}
+				state := getState(t, wd)
 				if err := testStepTaint(state, step); err != nil {
 					t.Fatalf("Error when tainting resources: %s", err)
 				}
