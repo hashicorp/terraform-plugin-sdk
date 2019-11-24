@@ -154,12 +154,10 @@ func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
 func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
-	// TODOS
-	if c.IDRefreshName != "" {
-		t.Fatal("TODO: TestCase.IDRefreshName")
-	}
-
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
+
+	var idRefreshCheck *terraform.ResourceState
+	idRefresh := c.IDRefreshName != ""
 
 	defer func() {
 		// destroy step
@@ -440,16 +438,48 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 				if err != nil {
 					t.Fatal(err)
 				}
-				jsonState := wd.RequireState(t)
-				state, err := shimTFJson(jsonState)
-				if err != nil {
-					t.Fatal(err)
-				}
+				state := getState(t, wd)
 				if step.Check != nil {
 					if err := step.Check(state); err != nil {
 						t.Fatal(err)
 					}
 				}
+
+				// ID-ONLY REFRESH
+				// id-only refresh
+				// If we've never checked an id-only refresh and our state isn't
+				// empty, find the first resource and test it.
+				if idRefresh && idRefreshCheck == nil && !state.Empty() {
+					// Find the first non-nil resource in the state
+					for _, m := range state.Modules {
+						if len(m.Resources) > 0 {
+							if v, ok := m.Resources[c.IDRefreshName]; ok {
+								idRefreshCheck = v
+							}
+
+							break
+						}
+					}
+
+					// If we have an instance to check for refreshes, do it
+					// immediately. We do it in the middle of another test
+					// because it shouldn't affect the overall state (refresh
+					// is read-only semantically) and we want to fail early if
+					// this fails. If refresh isn't read-only, then this will have
+					// caught a different bug.
+					if idRefreshCheck != nil {
+						t.Logf(
+							"[WARN] Test: Running ID-only refresh check on %s",
+							idRefreshCheck.Primary.ID)
+						if err := testIDRefresh(c, t, wd, step, idRefreshCheck); err != nil {
+							t.Fatalf(
+								"[ERROR] Test: ID-only test failed: %s", err)
+							break
+						}
+					}
+				}
+
+				// DESTROY / CLEANUP
 
 				// do a plan
 				wd.RequireCreatePlan(t)
@@ -474,8 +504,6 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 				// do another plan
 				wd.RequireCreatePlan(t)
 				plan = wd.RequireSavedPlan(t)
-				t.Log("second plan:")
-				t.Logf("%+v", plan)
 
 				// check if plan is empty
 				if !planIsEmpty(plan) {
@@ -496,6 +524,13 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 
 		t.Fatal("Unsupported test mode")
 	}
+	// If we never checked an id-only refresh, it is a failure.
+	// TODO KEM: why is this here? does this ever happen?
+	if idRefresh {
+		if len(c.Steps) > 0 && idRefreshCheck == nil {
+			t.Error("ID-only refresh check never ran.")
+		}
+	}
 }
 
 func planIsEmpty(plan *tfjson.Plan) bool {
@@ -507,4 +542,68 @@ func planIsEmpty(plan *tfjson.Plan) bool {
 		}
 	}
 	return true
+}
+
+func testIDRefresh(c TestCase, t *testing.T, wd *tftest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
+	spewConf := spew.NewDefaultConfig()
+	spewConf.SortKeys = true
+
+	// Build the state. The state is just the resource with an ID. There
+	// are no attributes. We only set what is needed to perform a refresh.
+	state := terraform.NewState()
+	state.RootModule().Resources = make(map[string]*terraform.ResourceState)
+	state.RootModule().Resources[c.IDRefreshName] = &terraform.ResourceState{}
+
+	// Temporarily set the config to a minimal provider config for the refresh
+	// test. After the refresh we can reset it.
+	cfg := testProviderConfig(c)
+	wd.RequireSetConfig(t, cfg)
+	defer wd.RequireSetConfig(t, step.Config)
+
+	// Refresh!
+	wd.RequireRefresh(t)
+	state = getState(t, wd)
+
+	// Verify attribute equivalence.
+	actualR := state.RootModule().Resources[c.IDRefreshName]
+	if actualR == nil {
+		return fmt.Errorf("Resource gone!")
+	}
+	if actualR.Primary == nil {
+		return fmt.Errorf("Resource has no primary instance")
+	}
+	actual := actualR.Primary.Attributes
+	expected := r.Primary.Attributes
+	// Remove fields we're ignoring
+	for _, v := range c.IDRefreshIgnore {
+		for k, _ := range actual {
+			if strings.HasPrefix(k, v) {
+				delete(actual, k)
+			}
+		}
+		for k, _ := range expected {
+			if strings.HasPrefix(k, v) {
+				delete(expected, k)
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		// Determine only the different attributes
+		for k, v := range expected {
+			if av, ok := actual[k]; ok && v == av {
+				delete(expected, k)
+				delete(actual, k)
+			}
+		}
+
+		spewConf := spew.NewDefaultConfig()
+		spewConf.SortKeys = true
+		return fmt.Errorf(
+			"Attributes not equivalent. Difference is shown below. Top is actual, bottom is expected."+
+				"\n\n%s\n\n%s",
+			spewConf.Sdump(actual), spewConf.Sdump(expected))
+	}
+
+	return nil
 }
