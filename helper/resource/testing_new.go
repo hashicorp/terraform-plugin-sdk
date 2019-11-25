@@ -191,9 +191,6 @@ func RunLegacyTest(t *testing.T, c TestCase, providers map[string]terraform.Reso
 		if step.Destroy {
 			t.Fatal("TODO: TestStep.Destroy")
 		}
-		if step.PreventDiskCleanup {
-			t.Fatal("TODO: TestStep.PreventDiskCleanup")
-		}
 
 		if step.SkipFunc != nil {
 			skip, err := step.SkipFunc()
