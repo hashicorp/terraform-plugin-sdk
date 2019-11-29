@@ -882,7 +882,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		}
 	}
 
-	respChan := schema.ApplyResourceChange(priorState.ID, plannedStateVal)
+	respChan := schema.ApplyResourceChange(info.Type, priorState.ID, plannedStateVal)
 	newInstanceState, err := s.provider.Apply(info, priorState, diff)
 	// we record the error here, but continue processing any returned state.
 	if err != nil {

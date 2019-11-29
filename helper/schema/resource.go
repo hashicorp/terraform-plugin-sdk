@@ -213,18 +213,22 @@ var applyResoureChangeRequests map[string]chan applyResourceChangeRequest = make
 
 // ApplyResourceChange passes the planned state to the correct channel
 // it returns a channel for the new state to be passed back to the caller
-func ApplyResourceChange(id string, state cty.Value) <-chan cty.Value {
-	if applyResoureChangeRequests[id] == nil {
+func ApplyResourceChange(resourceType string, id string, state cty.Value) <-chan cty.Value {
+	i := resourceType
+	if id != "" {
+		i = i + "." + id
+	}
+	if applyResoureChangeRequests[i] == nil {
 		size := 1
 		// the empty id channel should have a large buffer
 		// so we can process many parallel create funcs
 		if id == "" {
 			size = 1000
 		}
-		applyResoureChangeRequests[id] = make(chan applyResourceChangeRequest, size)
+		applyResoureChangeRequests[i] = make(chan applyResourceChangeRequest, size)
 	}
 	resp := make(chan cty.Value, 1)
-	applyResoureChangeRequests[id] <- applyResourceChangeRequest{
+	applyResoureChangeRequests[i] <- applyResourceChangeRequest{
 		plannedState: state,
 		resp:         resp,
 	}
@@ -233,9 +237,13 @@ func ApplyResourceChange(id string, state cty.Value) <-chan cty.Value {
 
 type ExperimentalCRUDFunc func(state cty.Value, meta interface{}) (cty.Value, error)
 
-func ExperimentalCRUD(f ExperimentalCRUDFunc) CreateFunc {
+func ExperimentalCRUD(resourceType string, f ExperimentalCRUDFunc) CreateFunc {
 	return func(d *ResourceData, meta interface{}) error {
-		req := <-applyResoureChangeRequests[d.Id()]
+		id := resourceType
+		if d.Id() != "" {
+			id = id + "." + d.Id()
+		}
+		req := <-applyResoureChangeRequests[id]
 		newState, err := f(req.plannedState, meta)
 		req.resp <- newState
 		return err
