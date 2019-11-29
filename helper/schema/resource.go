@@ -195,6 +195,53 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 	return s, nil
 }
 
+// this type could also carry user config and prior state
+// should we want that exposed to the CRUD methods
+// there are potential issues that could arise from decisions
+// based on that data during the apply step (CRUD funcs)
+// (Core team explains this best)
+type applyResourceChangeRequest struct {
+	plannedState cty.Value
+	resp         chan<- cty.Value
+}
+
+// due to the potentially concurrent nature of the grpc server
+// create unique channels for each instance ID
+// to be created instances (id == "") should push to a large buffer chan
+// as seen in SetPlannedState
+var applyResoureChangeRequests map[string]chan applyResourceChangeRequest = make(map[string]chan applyResourceChangeRequest)
+
+// ApplyResourceChange passes the planned state to the correct channel
+// it returns a channel for the new state to be passed back to the caller
+func ApplyResourceChange(id string, state cty.Value) <-chan cty.Value {
+	if applyResoureChangeRequests[id] == nil {
+		size := 1
+		// the empty id channel should have a large buffer
+		// so we can process many parallel create funcs
+		if id == "" {
+			size = 1000
+		}
+		applyResoureChangeRequests[id] = make(chan applyResourceChangeRequest, size)
+	}
+	resp := make(chan cty.Value, 1)
+	applyResoureChangeRequests[id] <- applyResourceChangeRequest{
+		plannedState: state,
+		resp:         resp,
+	}
+	return resp
+}
+
+type ExperimentalCRUDFunc func(state cty.Value, meta interface{}) (cty.Value, error)
+
+func ExperimentalCRUD(f ExperimentalCRUDFunc) CreateFunc {
+	return func(d *ResourceData, meta interface{}) error {
+		req := <-applyResoureChangeRequests[d.Id()]
+		newState, err := f(req.plannedState, meta)
+		req.resp <- newState
+		return err
+	}
+}
+
 // See Resource documentation.
 type CreateFunc func(*ResourceData, interface{}) error
 

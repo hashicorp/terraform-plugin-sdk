@@ -882,12 +882,20 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		}
 	}
 
+	respChan := schema.ApplyResourceChange(priorState.ID, plannedStateVal)
 	newInstanceState, err := s.provider.Apply(info, priorState, diff)
 	// we record the error here, but continue processing any returned state.
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 	}
-	newStateVal := cty.NullVal(schemaBlock.ImpliedType())
+	var newStateVal cty.Value
+
+	select {
+	case newStateVal = <-respChan:
+		// newState returned by experimental CRUD function
+	default:
+		newStateVal = cty.NullVal(schemaBlock.ImpliedType())
+	}
 
 	// Always return a null value for destroy.
 	// While this is usually indicated by a nil state, check for missing ID or
