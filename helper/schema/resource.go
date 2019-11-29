@@ -208,7 +208,7 @@ type applyResourceChangeRequest struct {
 // due to the potentially concurrent nature of the grpc server
 // create unique channels for each instance ID
 // to be created instances (id == "") should push to a large buffer chan
-// as seen in SetPlannedState
+// as seen below
 var applyResoureChangeRequests map[string]chan applyResourceChangeRequest = make(map[string]chan applyResourceChangeRequest)
 
 // ApplyResourceChange passes the planned state to the correct channel
