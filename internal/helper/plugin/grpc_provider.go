@@ -889,13 +889,16 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 	}
 	var newStateVal cty.Value
-
+	var setByExperimentalFunc bool
 	select {
 	case newStateVal = <-respChan:
-		// newState returned by experimental CRUD function
+		setByExperimentalFunc = true
 	default:
 		newStateVal = cty.NullVal(schemaBlock.ImpliedType())
 	}
+
+	// TODO: should this early exit logic change if newStateVal was set by
+	// new experimental func?
 
 	// Always return a null value for destroy.
 	// While this is usually indicated by a nil state, check for missing ID or
@@ -912,13 +915,20 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		return resp, nil
 	}
 
-	// We keep the null val if we destroyed the resource, otherwise build the
-	// entire object, even if the new state was nil.
-	newStateVal, err = schema.StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
-	if err != nil {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
-		return resp, nil
+	// Hope my PoC is correct, if newStateVal was set by the new CRUD methods
+	// then we cannot trust newInstanceState as a source of truth
+	// none of the old d.Set() calls ran
+	if !setByExperimentalFunc {
+		// We keep the null val if we destroyed the resource, otherwise build the
+		// entire object, even if the new state was nil.
+		newStateVal, err = schema.StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+			return resp, nil
+		}
 	}
+
+	// TODO: are either of these normalizations needed if setByExperimentalFunc is true?
 
 	newStateVal = normalizeNullValues(newStateVal, plannedStateVal, true)
 
@@ -933,6 +943,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		Msgpack: newStateMP,
 	}
 
+	// TODO: Can we trust that this meta object is okay if newInstanceState
+	// did not receive any d.Set() calls?
 	meta, err := json.Marshal(newInstanceState.Meta)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
