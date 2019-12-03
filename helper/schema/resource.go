@@ -212,46 +212,32 @@ type ApplyResourceChangeResponse struct {
 	NewState cty.Value
 }
 
-// due to the potentially concurrent nature of the grpc server
-// create unique channels for each instance ID
-// to be created instances (id == "") should push to a large buffer chan
-// as seen below
+// due to the concurrent nature of the grpc server
+// create unique channels for each resourceType and instance ID
 var applyResourceChangeRequests map[string]chan *ApplyResourceChangeRequest = make(map[string]chan *ApplyResourceChangeRequest)
 var applyResourceChangeRequestsMu *sync.Mutex = &sync.Mutex{}
 
-// ApplyResourceChange passes the planned state to the correct channel
-// it returns a channel for the new state to be passed back to the caller
+// ApplyResourceChange passes the request to the correct channel
+// for an experimental CRUD func to process
 func ApplyResourceChange(id string, req *ApplyResourceChangeRequest) {
-	i := req.TypeName
-	if id != "" {
-		i = i + "." + id
-	}
+	id = req.TypeName + "." + id
+
 	applyResourceChangeRequestsMu.Lock()
-	if applyResourceChangeRequests[i] == nil {
-		size := 1
-		// the empty id channel should have a large buffer
-		// so we can process many parallel create funcs
-		if id == "" {
-			size = 1000
-		}
-		applyResourceChangeRequests[i] = make(chan *ApplyResourceChangeRequest, size)
+	if applyResourceChangeRequests[id] == nil {
+		applyResourceChangeRequests[id] = make(chan *ApplyResourceChangeRequest, 1)
 	}
 	applyResourceChangeRequestsMu.Unlock()
 
-	applyResourceChangeRequests[i] <- req
+	applyResourceChangeRequests[id] <- req
 }
 
-type ExperimentalCRUDFunc func(*ApplyResourceChangeRequest, interface{}) (cty.Value, error)
+type ExperimentalCRUDFunc func(*ApplyResourceChangeRequest, interface{}) (*ApplyResourceChangeResponse, error)
 
 func ExperimentalCRUD(resourceType string, f ExperimentalCRUDFunc) CreateFunc {
 	return func(d *ResourceData, meta interface{}) error {
-		id := resourceType
-		if d.Id() != "" {
-			id = id + "." + d.Id()
-		}
-		req := <-applyResourceChangeRequests[id]
-		newState, err := f(req, meta)
-		req.response.NewState = newState
+		req := <-applyResourceChangeRequests[resourceType+"."+d.Id()]
+		resp, err := f(req, meta)
+		req.response = resp
 		return err
 	}
 }
