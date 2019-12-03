@@ -634,6 +634,14 @@ func TestApplyResourceChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	configVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"foo": cty.NumberIntVal(0),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	config, err := msgpack.Marshal(configVal, schema.ImpliedType())
+
 	testReq := &proto.ApplyResourceChange_Request{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
@@ -641,6 +649,9 @@ func TestApplyResourceChange(t *testing.T) {
 		},
 		PlannedState: &proto.DynamicValue{
 			Msgpack: plannedState,
+		},
+		Config: &proto.DynamicValue{
+			Msgpack: config,
 		},
 	}
 

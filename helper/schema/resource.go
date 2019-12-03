@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/zclconf/go-cty/cty"
@@ -195,47 +196,52 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 	return s, nil
 }
 
-// this type could also carry user config and prior state
-// should we want that exposed to the CRUD methods
-// there are potential issues that could arise from decisions
-// based on that data during the apply step (CRUD funcs)
-// (Core team explains this best)
-type applyResourceChangeRequest struct {
-	plannedState cty.Value
-	resp         chan<- cty.Value
+type ApplyResourceChangeRequest struct {
+	TypeName     string
+	PriorState   cty.Value
+	PlannedState cty.Value
+	Config       cty.Value
+	response     *ApplyResourceChangeResponse
+}
+
+func (r ApplyResourceChangeRequest) GetResponse() *ApplyResourceChangeResponse {
+	return r.response
+}
+
+type ApplyResourceChangeResponse struct {
+	NewState cty.Value
 }
 
 // due to the potentially concurrent nature of the grpc server
 // create unique channels for each instance ID
 // to be created instances (id == "") should push to a large buffer chan
 // as seen below
-var applyResoureChangeRequests map[string]chan applyResourceChangeRequest = make(map[string]chan applyResourceChangeRequest)
+var applyResourceChangeRequests map[string]chan *ApplyResourceChangeRequest = make(map[string]chan *ApplyResourceChangeRequest)
+var applyResourceChangeRequestsMu *sync.Mutex = &sync.Mutex{}
 
 // ApplyResourceChange passes the planned state to the correct channel
 // it returns a channel for the new state to be passed back to the caller
-func ApplyResourceChange(resourceType string, id string, state cty.Value) <-chan cty.Value {
-	i := resourceType
+func ApplyResourceChange(id string, req *ApplyResourceChangeRequest) {
+	i := req.TypeName
 	if id != "" {
 		i = i + "." + id
 	}
-	if applyResoureChangeRequests[i] == nil {
+	applyResourceChangeRequestsMu.Lock()
+	if applyResourceChangeRequests[i] == nil {
 		size := 1
 		// the empty id channel should have a large buffer
 		// so we can process many parallel create funcs
 		if id == "" {
 			size = 1000
 		}
-		applyResoureChangeRequests[i] = make(chan applyResourceChangeRequest, size)
+		applyResourceChangeRequests[i] = make(chan *ApplyResourceChangeRequest, size)
 	}
-	resp := make(chan cty.Value, 1)
-	applyResoureChangeRequests[i] <- applyResourceChangeRequest{
-		plannedState: state,
-		resp:         resp,
-	}
-	return resp
+	applyResourceChangeRequestsMu.Unlock()
+
+	applyResourceChangeRequests[i] <- req
 }
 
-type ExperimentalCRUDFunc func(state cty.Value, meta interface{}) (cty.Value, error)
+type ExperimentalCRUDFunc func(*ApplyResourceChangeRequest, interface{}) (cty.Value, error)
 
 func ExperimentalCRUD(resourceType string, f ExperimentalCRUDFunc) CreateFunc {
 	return func(d *ResourceData, meta interface{}) error {
@@ -243,9 +249,9 @@ func ExperimentalCRUD(resourceType string, f ExperimentalCRUDFunc) CreateFunc {
 		if d.Id() != "" {
 			id = id + "." + d.Id()
 		}
-		req := <-applyResoureChangeRequests[id]
-		newState, err := f(req.plannedState, meta)
-		req.resp <- newState
+		req := <-applyResourceChangeRequests[id]
+		newState, err := f(req, meta)
+		req.response.NewState = newState
 		return err
 	}
 }

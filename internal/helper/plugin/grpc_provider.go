@@ -805,6 +805,12 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		return resp, nil
 	}
 
+	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+		return resp, nil
+	}
+
 	info := &terraform.InstanceInfo{
 		Type: req.TypeName,
 	}
@@ -882,19 +888,25 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		}
 	}
 
-	respChan := schema.ApplyResourceChange(info.Type, priorState.ID, plannedStateVal)
+	schemaReq := schema.ApplyResourceChangeRequest{
+		TypeName:     req.TypeName,
+		PriorState:   priorStateVal,
+		PlannedState: plannedStateVal,
+		Config:       configVal,
+	}
+	schema.ApplyResourceChange(priorState.ID, &schemaReq)
 	newInstanceState, err := s.provider.Apply(info, priorState, diff)
 	// we record the error here, but continue processing any returned state.
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 	}
-	var newStateVal cty.Value
+
+	newStateVal := cty.NullVal(schemaBlock.ImpliedType())
 	var setByExperimentalFunc bool
-	select {
-	case newStateVal = <-respChan:
+
+	if schemaResp := schemaReq.GetResponse(); schemaResp != nil {
+		newStateVal = schemaResp.NewState
 		setByExperimentalFunc = true
-	default:
-		newStateVal = cty.NullVal(schemaBlock.ImpliedType())
 	}
 
 	// TODO: should this early exit logic change if newStateVal was set by
