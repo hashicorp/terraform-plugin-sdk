@@ -1,4 +1,4 @@
-GOFMT_FILES?=$$(find . -name '*.go')
+GOFMT_FILES?=$$(find . -not -path "./vendor/*" -name '*.go')
 
 default: test
 
