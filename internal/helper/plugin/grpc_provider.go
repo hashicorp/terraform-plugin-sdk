@@ -490,7 +490,7 @@ func (s *GRPCProviderServer) Configure(_ context.Context, req *proto.Configure_R
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ReadResource(_ context.Context, req *proto.ReadResource_Request) (*proto.ReadResource_Response, error) {
+func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadResource_Request) (*proto.ReadResource_Response, error) {
 	resp := &proto.ReadResource_Response{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
@@ -522,7 +522,7 @@ func (s *GRPCProviderServer) ReadResource(_ context.Context, req *proto.ReadReso
 	}
 	instanceState.Meta = private
 
-	newInstanceState, err := res.RefreshWithoutUpgrade(instanceState, s.provider.Meta())
+	newInstanceState, err := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -784,7 +784,7 @@ func (s *GRPCProviderServer) PlanResourceChange(_ context.Context, req *proto.Pl
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.ApplyResourceChange_Request) (*proto.ApplyResourceChange_Response, error) {
+func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto.ApplyResourceChange_Request) (*proto.ApplyResourceChange_Response, error) {
 	resp := &proto.ApplyResourceChange_Response{
 		// Start with the existing state as a fallback
 		NewState: req.PriorState,
@@ -803,10 +803,6 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
-	}
-
-	info := &terraform.InstanceInfo{
-		Type: req.TypeName,
 	}
 
 	priorState, err := res.ShimInstanceStateFromValue(priorStateVal)
@@ -882,7 +878,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(_ context.Context, req *proto.A
 		}
 	}
 
-	newInstanceState, err := s.provider.Apply(info, priorState, diff)
+	newInstanceState, err := res.Apply(ctx, priorState, diff, s.provider.Meta())
 	// we record the error here, but continue processing any returned state.
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
@@ -1001,7 +997,7 @@ func (s *GRPCProviderServer) ImportResourceState(_ context.Context, req *proto.I
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ReadDataSource(_ context.Context, req *proto.ReadDataSource_Request) (*proto.ReadDataSource_Response, error) {
+func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.ReadDataSource_Request) (*proto.ReadDataSource_Response, error) {
 	resp := &proto.ReadDataSource_Response{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
@@ -1033,7 +1029,8 @@ func (s *GRPCProviderServer) ReadDataSource(_ context.Context, req *proto.ReadDa
 	}
 
 	// now we can get the new complete data source
-	newInstanceState, err := s.provider.ReadDataApply(info, diff)
+	res := s.provider.DataSourcesMap[req.TypeName]
+	newInstanceState, err := res.ReadDataApply(ctx, diff, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil

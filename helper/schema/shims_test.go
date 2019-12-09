@@ -147,7 +147,7 @@ func TestShimResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(nil, s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -226,7 +226,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(nil, s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -318,7 +318,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Apply(s, actual, nil)
+	applied, err := r.Apply(nil, s, actual, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +377,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(nil, s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -449,7 +449,7 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(nil, s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

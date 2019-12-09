@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -123,6 +124,13 @@ type Resource struct {
 	Delete DeleteFunc
 	Exists ExistsFunc
 
+	// CRUD functions with passed context
+	CreateContext CreateContextFunc
+	ReadContext   ReadContextFunc
+	UpdateContext UpdateContextFunc
+	DeleteContext DeleteContextFunc
+	ExistsContext ExistsContextFunc
+
 	// CustomizeDiff is a custom function for working with the diff that
 	// Terraform has created for this resource - it can be used to customize the
 	// diff that has been created, diff values not controlled by configuration,
@@ -211,6 +219,21 @@ type DeleteFunc func(*ResourceData, interface{}) error
 type ExistsFunc func(*ResourceData, interface{}) (bool, error)
 
 // See Resource documentation.
+type CreateContextFunc func(context.Context, *ResourceData, interface{}) error
+
+// See Resource documentation.
+type ReadContextFunc func(context.Context, *ResourceData, interface{}) error
+
+// See Resource documentation.
+type UpdateContextFunc func(context.Context, *ResourceData, interface{}) error
+
+// See Resource documentation.
+type DeleteContextFunc func(context.Context, *ResourceData, interface{}) error
+
+// See Resource documentation.
+type ExistsContextFunc func(context.Context, *ResourceData, interface{}) (bool, error)
+
+// See Resource documentation.
 type StateMigrateFunc func(
 	int, *terraform.InstanceState, interface{}) (*terraform.InstanceState, error)
 
@@ -240,6 +263,7 @@ type CustomizeDiffFunc func(*ResourceDiff, interface{}) error
 
 // Apply creates, updates, and/or deletes a resource.
 func (r *Resource) Apply(
+	ctx context.Context,
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff,
 	meta interface{}) (*terraform.InstanceState, error) {
@@ -275,7 +299,15 @@ func (r *Resource) Apply(
 	if d.Destroy || d.RequiresNew() {
 		if s.ID != "" {
 			// Destroy the resource since it is created
-			if err := r.Delete(data, meta); err != nil {
+			var err error
+			if r.DeleteContext != nil {
+				ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutDelete))
+				defer cancel()
+				err = r.DeleteContext(ctx, data, meta)
+			} else {
+				err = r.Delete(data, meta)
+			}
+			if err != nil {
 				return r.recordCurrentSchemaVersion(data.State()), err
 			}
 
@@ -302,13 +334,24 @@ func (r *Resource) Apply(
 	if data.Id() == "" {
 		// We're creating, it is a new resource.
 		data.MarkNewResource()
-		err = r.Create(data, meta)
+		if r.CreateContext != nil {
+			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutCreate))
+			defer cancel()
+			err = r.CreateContext(ctx, data, meta)
+		} else {
+			err = r.Create(data, meta)
+		}
 	} else {
-		if r.Update == nil {
+		if r.Update == nil && r.UpdateContext == nil {
 			return s, fmt.Errorf("doesn't support update")
 		}
-
-		err = r.Update(data, meta)
+		if r.UpdateContext != nil {
+			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutUpdate))
+			defer cancel()
+			err = r.UpdateContext(ctx, data, meta)
+		} else {
+			err = r.Update(data, meta)
+		}
 	}
 
 	return r.recordCurrentSchemaVersion(data.State()), err
@@ -385,6 +428,7 @@ func (r *Resource) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 // ReadDataApply loads the data for a data source, given a diff that
 // describes the configuration arguments and desired computed attributes.
 func (r *Resource) ReadDataApply(
+	ctx context.Context,
 	d *terraform.InstanceDiff,
 	meta interface{},
 ) (*terraform.InstanceState, error) {
@@ -395,7 +439,14 @@ func (r *Resource) ReadDataApply(
 		return nil, err
 	}
 
-	err = r.Read(data, meta)
+	if r.ReadContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
+		defer cancel()
+		err = r.ReadContext(ctx, data, meta)
+	} else {
+		err = r.Read(data, meta)
+	}
+
 	state := data.State()
 	if state != nil && state.ID == "" {
 		// Data sources can set an ID if they want, but they aren't
@@ -413,6 +464,7 @@ func (r *Resource) ReadDataApply(
 // separate API call.
 // RefreshWithoutUpgrade is part of the new plugin shims.
 func (r *Resource) RefreshWithoutUpgrade(
+	ctx context.Context,
 	s *terraform.InstanceState,
 	meta interface{}) (*terraform.InstanceState, error) {
 	// If the ID is already somehow blank, it doesn't exist
@@ -427,7 +479,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	if r.Exists != nil {
+	if r.Exists != nil || r.ExistsContext != nil {
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
@@ -437,7 +489,16 @@ func (r *Resource) RefreshWithoutUpgrade(
 			return s, err
 		}
 
-		exists, err := r.Exists(data, meta)
+		var exists bool
+		if r.ExistsContext != nil {
+			// TODO: should exists call receive the Read timeout? or default?
+			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
+			defer cancel()
+			exists, err = r.ExistsContext(ctx, data, meta)
+		} else if r.Exists != nil {
+			exists, err = r.Exists(data, meta)
+		}
+
 		if err != nil {
 			return s, err
 		}
@@ -452,7 +513,14 @@ func (r *Resource) RefreshWithoutUpgrade(
 		return s, err
 	}
 
-	err = r.Read(data, meta)
+	if r.ReadContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
+		defer cancel()
+		err = r.ReadContext(ctx, data, meta)
+	} else {
+		err = r.Read(data, meta)
+	}
+
 	state := data.State()
 	if state != nil && state.ID == "" {
 		state = nil
@@ -463,6 +531,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 
 // Refresh refreshes the state of the resource.
 func (r *Resource) Refresh(
+	ctx context.Context,
 	s *terraform.InstanceState,
 	meta interface{}) (*terraform.InstanceState, error) {
 	// If the ID is already somehow blank, it doesn't exist
@@ -477,7 +546,7 @@ func (r *Resource) Refresh(
 		}
 	}
 
-	if r.Exists != nil {
+	if r.Exists != nil || r.ExistsContext != nil {
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
@@ -487,7 +556,16 @@ func (r *Resource) Refresh(
 			return s, err
 		}
 
-		exists, err := r.Exists(data, meta)
+		var exists bool
+		if r.ExistsContext != nil {
+			// TODO: should exists call receive the Read timeout? or default?
+			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
+			defer cancel()
+			exists, err = r.ExistsContext(ctx, data, meta)
+		} else if r.Exists != nil {
+			exists, err = r.Exists(data, meta)
+		}
+
 		if err != nil {
 			return s, err
 		}
@@ -508,7 +586,13 @@ func (r *Resource) Refresh(
 		return s, err
 	}
 
-	err = r.Read(data, meta)
+	if r.ReadContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
+		defer cancel()
+		err = r.ReadContext(ctx, data, meta)
+	} else {
+		err = r.Read(data, meta)
+	}
 	state := data.State()
 	if state != nil && state.ID == "" {
 		state = nil
@@ -598,7 +682,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 	}
 
 	if !writable {
-		if r.Create != nil || r.Update != nil || r.Delete != nil {
+		if r.Create != nil || r.Update != nil || r.Delete != nil || r.CreateContext != nil || r.UpdateContext != nil || r.DeleteContext != nil {
 			return fmt.Errorf("must not implement Create, Update or Delete")
 		}
 
@@ -640,10 +724,10 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 		tsm = schemaMap(r.Schema)
 
 		// Destroy, and Read are required
-		if r.Read == nil {
+		if r.Read == nil && r.ReadContext == nil {
 			return fmt.Errorf("Read must be implemented")
 		}
-		if r.Delete == nil {
+		if r.Delete == nil && r.DeleteContext == nil {
 			return fmt.Errorf("Delete must be implemented")
 		}
 
@@ -772,7 +856,7 @@ func (r *Resource) SchemasForFlatmapPath(path string) []*Schema {
 // Returns true if the resource is "top level" i.e. not a sub-resource.
 func (r *Resource) isTopLevel() bool {
 	// TODO: This is a heuristic; replace with a definitive attribute?
-	return (r.Create != nil || r.Read != nil)
+	return (r.Create != nil || r.Read != nil || r.CreateContext != nil || r.ReadContext != nil)
 }
 
 // Determines if a given InstanceState needs to be migrated by checking the
