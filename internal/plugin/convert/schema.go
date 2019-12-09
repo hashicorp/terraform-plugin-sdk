@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 )
 
@@ -66,14 +65,6 @@ func protoSchemaNestedBlock(name string, b *configschema.NestedBlock) *proto.Sch
 		Nesting:  nesting,
 		MinItems: int64(b.MinItems),
 		MaxItems: int64(b.MaxItems),
-	}
-}
-
-// ProtoToProviderSchema takes a proto.Schema and converts it to a providers.Schema.
-func ProtoToProviderSchema(s *proto.Schema) providers.Schema {
-	return providers.Schema{
-		Version: s.Version,
-		Block:   ProtoToConfigSchema(s.Block),
 	}
 }
 
