@@ -284,7 +284,7 @@ func (p *Provider) Apply(
 		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
 	}
 
-	return r.Apply(s, d, p.meta)
+	return r.Apply(nil, s, d, p.meta)
 }
 
 // Diff implementation of terraform.ResourceProvider interface.
@@ -323,7 +323,7 @@ func (p *Provider) Refresh(
 		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
 	}
 
-	return r.Refresh(s, p.meta)
+	return r.Refresh(nil, s, p.meta)
 }
 
 // Resources implementation of terraform.ResourceProvider interface.
@@ -441,7 +441,7 @@ func (p *Provider) ReadDataApply(
 		return nil, fmt.Errorf("unknown data source: %s", info.Type)
 	}
 
-	return r.ReadDataApply(d, p.meta)
+	return r.ReadDataApply(nil, d, p.meta)
 }
 
 // DataSources implementation of terraform.ResourceProvider interface.
