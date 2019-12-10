@@ -696,7 +696,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 
 	if r.isTopLevel() && writable {
 		// All non-Computed attributes must be ForceNew if Update is not defined
-		if r.Update == nil {
+		if r.Update == nil && r.UpdateContext == nil {
 			nonForceNewAttrs := make([]string, 0)
 			for k, v := range r.Schema {
 				if !v.ForceNew && !v.Computed {
@@ -920,6 +920,12 @@ func (r *Resource) recordCurrentSchemaVersion(
 // Noop is a convenience implementation of resource function which takes
 // no action and returns no error.
 func Noop(*ResourceData, interface{}) error {
+	return nil
+}
+
+// NoopContext is a convenience implementation of context aware resource function which takes
+// no action and returns no error.
+func NoopContext(context.Context, *ResourceData, interface{}) error {
 	return nil
 }
 
