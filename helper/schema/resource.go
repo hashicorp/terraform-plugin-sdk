@@ -780,6 +780,23 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 		}
 	}
 
+	// Validate CRUD and Context aware CRUD funcs are never dually set
+	if r.ExistsContext != nil && r.Exists != nil {
+		return fmt.Errorf("only ExistsContext or Exists should be implemented, not both.")
+	}
+	if r.CreateContext != nil && r.Create != nil {
+		return fmt.Errorf("only CreateContext or Create should be implemented, not both.")
+	}
+	if r.ReadContext != nil && r.Read != nil {
+		return fmt.Errorf("only ReadContext or Read should be implemented, not both.")
+	}
+	if r.UpdateContext != nil && r.Update != nil {
+		return fmt.Errorf("only UpdateContext or Update should be implemented, not both.")
+	}
+	if r.DeleteContext != nil && r.Delete != nil {
+		return fmt.Errorf("only DeleteContext or Delete should be implemented, not both.")
+	}
+
 	return schemaMap(r.Schema).InternalValidate(tsm)
 }
 
