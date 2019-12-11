@@ -302,8 +302,8 @@ func (r *Resource) Apply(
 			var err error
 			if r.DeleteContext != nil {
 				ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutDelete))
-				defer cancel()
 				err = r.DeleteContext(ctx, data, meta)
+				cancel()
 			} else {
 				err = r.Delete(data, meta)
 			}
@@ -336,8 +336,8 @@ func (r *Resource) Apply(
 		data.MarkNewResource()
 		if r.CreateContext != nil {
 			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutCreate))
-			defer cancel()
 			err = r.CreateContext(ctx, data, meta)
+			cancel()
 		} else {
 			err = r.Create(data, meta)
 		}
@@ -347,8 +347,8 @@ func (r *Resource) Apply(
 		}
 		if r.UpdateContext != nil {
 			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutUpdate))
-			defer cancel()
 			err = r.UpdateContext(ctx, data, meta)
+			cancel()
 		} else {
 			err = r.Update(data, meta)
 		}
@@ -441,8 +441,8 @@ func (r *Resource) ReadDataApply(
 
 	if r.ReadContext != nil {
 		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-		defer cancel()
 		err = r.ReadContext(ctx, data, meta)
+		cancel()
 	} else {
 		err = r.Read(data, meta)
 	}
@@ -493,8 +493,8 @@ func (r *Resource) RefreshWithoutUpgrade(
 		if r.ExistsContext != nil {
 			// TODO: should exists call receive the Read timeout? or default?
 			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-			defer cancel()
 			exists, err = r.ExistsContext(ctx, data, meta)
+			cancel()
 		} else if r.Exists != nil {
 			exists, err = r.Exists(data, meta)
 		}
@@ -515,8 +515,8 @@ func (r *Resource) RefreshWithoutUpgrade(
 
 	if r.ReadContext != nil {
 		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-		defer cancel()
 		err = r.ReadContext(ctx, data, meta)
+		cancel()
 	} else {
 		err = r.Read(data, meta)
 	}
@@ -560,8 +560,8 @@ func (r *Resource) Refresh(
 		if r.ExistsContext != nil {
 			// TODO: should exists call receive the Read timeout? or default?
 			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-			defer cancel()
 			exists, err = r.ExistsContext(ctx, data, meta)
+			cancel()
 		} else if r.Exists != nil {
 			exists, err = r.Exists(data, meta)
 		}
@@ -588,8 +588,8 @@ func (r *Resource) Refresh(
 
 	if r.ReadContext != nil {
 		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-		defer cancel()
 		err = r.ReadContext(ctx, data, meta)
+		cancel()
 	} else {
 		err = r.Read(data, meta)
 	}
