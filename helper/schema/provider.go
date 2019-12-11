@@ -279,12 +279,7 @@ func (p *Provider) Apply(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Apply(nil, s, d, p.meta)
+	panic("This should never be called")
 }
 
 // Diff implementation of terraform.ResourceProvider interface.
@@ -318,12 +313,7 @@ func (p *Provider) SimpleDiff(
 func (p *Provider) Refresh(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState) (*terraform.InstanceState, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Refresh(nil, s, p.meta)
+	panic("This should never be called")
 }
 
 // Resources implementation of terraform.ResourceProvider interface.
@@ -431,17 +421,11 @@ func (p *Provider) ReadDataDiff(
 	return r.Diff(nil, c, p.meta)
 }
 
-// RefreshData implementation of terraform.ResourceProvider interface.
+// ReadDataApply implementation of terraform.ResourceProvider interface.
 func (p *Provider) ReadDataApply(
 	info *terraform.InstanceInfo,
 	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-
-	r, ok := p.DataSourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown data source: %s", info.Type)
-	}
-
-	return r.ReadDataApply(nil, d, p.meta)
+	panic("This should never be called")
 }
 
 // DataSources implementation of terraform.ResourceProvider interface.

@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -147,7 +148,71 @@ func TestShimResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(nil, s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if !called {
+		t.Fatal("not called")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"id":  "foo",
+			"foo": "42",
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "2",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+
+	// Shim
+	// now that we have our diff and desired state, see if we can reproduce
+	// that with the shim
+	// we're not testing Resource.Create, so we need to start with the "created" state
+	createdState := &terraform.InstanceState{
+		ID:         "foo",
+		Attributes: map[string]string{"id": "foo"},
+	}
+
+	testApplyDiff(t, r, createdState, expected, d)
+}
+
+func TestShimResourceApply_createContext(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"foo": &Schema{
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	called := false
+	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
+		called = true
+		d.SetId("foo")
+		return nil
+	}
+
+	var s *terraform.InstanceState = nil
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": &terraform.ResourceAttrDiff{
+				New: "42",
+			},
+		},
+	}
+
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -226,7 +291,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(nil, s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -318,7 +383,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Apply(nil, s, actual, nil)
+	applied, err := r.Apply(context.Background(), s, actual, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +442,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(nil, s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -449,7 +514,100 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(nil, s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if !change {
+		t.Fatal("should have change")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"id":        "foo",
+			"foo":       "42",
+			"tags.%":    "1",
+			"tags.Name": "foo",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		cmp.Diff(actual, expected)
+	}
+
+	// Shim
+	// now that we have our diff and desired state, see if we can reproduce
+	// that with the shim
+	// we're not testing Resource.Create, so we need to start with the "created" state
+	createdState := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"id":        "foo",
+			"foo":       "7",
+			"tags.%":    "1",
+			"tags.Name": "foo",
+		},
+	}
+
+	testApplyDiff(t, r, createdState, expected, d)
+}
+
+func TestShimResourceApply_destroyCreateContext(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": &Schema{
+				Type:     TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+
+			"tags": &Schema{
+				Type:     TypeMap,
+				Optional: true,
+				Computed: true,
+			},
+		},
+	}
+
+	change := false
+	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
+		change = d.HasChange("tags")
+		d.SetId("foo")
+		return nil
+	}
+	r.Delete = func(d *ResourceData, m interface{}) error {
+		return nil
+	}
+
+	var s *terraform.InstanceState = &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"foo":       "7",
+			"tags.Name": "foo",
+		},
+	}
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"id": &terraform.ResourceAttrDiff{
+				New: "foo",
+			},
+			"foo": &terraform.ResourceAttrDiff{
+				Old:         "7",
+				New:         "42",
+				RequiresNew: true,
+			},
+			"tags.Name": &terraform.ResourceAttrDiff{
+				Old:         "foo",
+				New:         "foo",
+				RequiresNew: true,
+			},
+		},
+	}
+
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
