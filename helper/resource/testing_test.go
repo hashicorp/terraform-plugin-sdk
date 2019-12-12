@@ -1213,6 +1213,64 @@ func TestFilterSweeperWithDependencies(t *testing.T) {
 			StartingSweeper:  "matching_level3",
 			ExpectedSweepers: []string{"matching_level3"},
 		},
+		{
+			Name: "one level missing dependency",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2a", "matching_level2c"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2a": &Sweeper{
+					Name: "matching_level2a",
+					F:    mockSweeperFunc,
+				},
+				"matching_level2b": &Sweeper{
+					Name: "matching_level2b",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2a"},
+		},
+		{
+			Name: "multiple level missing dependencies",
+			Sweepers: map[string]*Sweeper{
+				"matching_level1": &Sweeper{
+					Name:         "matching_level1",
+					Dependencies: []string{"matching_level2a", "matching_level2b", "matching_level2c"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2a": &Sweeper{
+					Name:         "matching_level2a",
+					Dependencies: []string{"matching_level3a", "matching_level3e"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level2b": &Sweeper{
+					Name:         "matching_level2b",
+					Dependencies: []string{"matching_level3c", "matching_level3f"},
+					F:            mockSweeperFunc,
+				},
+				"matching_level3a": &Sweeper{
+					Name: "matching_level3a",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3b": &Sweeper{
+					Name: "matching_level3b",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3c": &Sweeper{
+					Name: "matching_level3c",
+					F:    mockSweeperFunc,
+				},
+				"matching_level3d": &Sweeper{
+					Name: "matching_level3d",
+					F:    mockSweeperFunc,
+				},
+			},
+			StartingSweeper:  "matching_level1",
+			ExpectedSweepers: []string{"matching_level1", "matching_level2a", "matching_level2b", "matching_level3a", "matching_level3c"},
+		},
 	}
 
 	for _, tc := range cases {
