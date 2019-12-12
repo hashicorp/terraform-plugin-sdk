@@ -1,3 +1,9 @@
+# 1.4.1 (Unreleased)
+
+BUG FIXES:
+
+* helper/resource: Don't crash when dependent test sweeper is missing [GH-279]
+
 # 1.4.0 (November 20, 2019)
 
 NOTES:
