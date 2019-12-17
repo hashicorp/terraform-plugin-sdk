@@ -7,7 +7,7 @@ require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/apparentlymart/go-cidr v1.0.1
 	github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0
-	github.com/apparentlymart/terraform-plugin-test v0.0.0-20191121142809-1a5ef8b7b084
+	github.com/apparentlymart/terraform-plugin-test v0.0.0-20191212003532-7d7375efcc66
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.25.3 // indirect
 	github.com/davecgh/go-spew v1.1.1
@@ -44,7 +44,7 @@ require (
 	github.com/posener/complete v1.2.1 // indirect
 	github.com/spf13/afero v1.2.2
 	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
-	github.com/zclconf/go-cty v1.1.0
+	github.com/zclconf/go-cty v1.2.0
 	github.com/zclconf/go-cty-yaml v1.0.1
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
 	golang.org/x/net v0.0.0-20191009170851-d66e71096ffb
