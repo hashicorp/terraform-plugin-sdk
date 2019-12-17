@@ -108,6 +108,9 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 	} else {
+		if acctest.TestHelper != nil {
+			defer acctest.TestHelper.Close()
+		}
 		os.Exit(m.Run())
 	}
 }
