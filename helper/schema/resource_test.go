@@ -17,45 +17,6 @@ import (
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
-func TestResource_ContextTimeout(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-		Timeouts: &ResourceTimeout{
-			Create: DefaultTimeout(40 * time.Minute),
-		},
-	}
-
-	var deadlineSet bool
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		d.SetId("foo")
-		_, deadlineSet = ctx.Deadline()
-		return nil
-	}
-
-	var s *terraform.InstanceState = nil
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "42",
-			},
-		},
-	}
-
-	if _, err := r.Apply(context.Background(), s, d, nil); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !deadlineSet {
-		t.Fatal("context does not have timeout")
-	}
-}
-
 func TestResourceApply_create(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
@@ -84,60 +45,7 @@ func TestResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !called {
-		t.Fatal("not called")
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "42",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "2",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceApply_createContext(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 2,
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	called := false
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		called = true
-		d.SetId("foo")
-		return nil
-	}
-
-	var s *terraform.InstanceState = nil
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "42",
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -205,7 +113,7 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -271,62 +179,7 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !called {
-		t.Fatal("delete not called")
-	}
-
-	if *timeouts.Delete != delTimeout {
-		t.Fatalf("timeouts don't match, expected (%#v), got (%#v)", timeouts.Delete, delTimeout)
-	}
-
-	if actual != nil {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceApply_Timeout_destroyContext(t *testing.T) {
-	timeouts := &ResourceTimeout{
-		Create: DefaultTimeout(40 * time.Minute),
-		Update: DefaultTimeout(80 * time.Minute),
-		Delete: DefaultTimeout(40 * time.Minute),
-	}
-
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-		Timeouts: timeouts,
-	}
-
-	called := false
-	var delTimeout time.Duration
-	r.DeleteContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		delTimeout = d.Timeout(TimeoutDelete)
-		called = true
-		return nil
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-	}
-
-	if err := timeouts.StateEncode(s); err != nil {
-		t.Fatalf("Error encoding to state: %s", err)
-	}
-
-	d := &terraform.InstanceDiff{
-		Destroy: true,
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -374,7 +227,7 @@ func TestResourceDiff_Timeout_diff(t *testing.T) {
 	)
 	var s *terraform.InstanceState
 
-	actual, err := r.Diff(s, conf, nil)
+	actual, err := r.Contextify().Diff(context.Background(), s, conf, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -427,7 +280,7 @@ func TestResourceDiff_CustomizeFunc(t *testing.T) {
 
 	var s *terraform.InstanceState
 
-	_, err := r.Diff(s, conf, nil)
+	_, err := r.Contextify().Diff(context.Background(), s, conf, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -461,7 +314,7 @@ func TestResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -523,79 +376,7 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !change {
-		t.Fatal("should have change")
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":        "foo",
-			"foo":       "42",
-			"tags.%":    "1",
-			"tags.Name": "foo",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceApply_destroyCreateContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-
-			"tags": &Schema{
-				Type:     TypeMap,
-				Optional: true,
-				Computed: true,
-			},
-		},
-	}
-
-	change := false
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		change = d.HasChange("tags")
-		d.SetId("foo")
-		return nil
-	}
-	r.Delete = func(d *ResourceData, m interface{}) error {
-		return nil
-	}
-
-	var s *terraform.InstanceState = &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"foo":       "bar",
-			"tags.Name": "foo",
-		},
-	}
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New:         "42",
-				RequiresNew: true,
-			},
-			"tags.Name": &terraform.ResourceAttrDiff{
-				Old:         "foo",
-				New:         "foo",
-				RequiresNew: true,
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -646,7 +427,7 @@ func TestResourceApply_destroyPartial(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err == nil {
 		t.Fatal("should error")
 	}
@@ -697,55 +478,7 @@ func TestResourceApply_update(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "42",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceApply_updateContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.UpdateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		d.Set("foo", 42)
-		return nil
-	}
-
-	s := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"foo": "12",
-		},
-	}
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "13",
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -790,51 +523,7 @@ func TestResourceApply_updateNoCallback(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err == nil {
-		t.Fatal("should error")
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"foo": "12",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceApply_updateNoCallbackContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.UpdateContext = nil
-
-	s := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"foo": "12",
-		},
-	}
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "13",
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err == nil {
 		t.Fatal("should error")
 	}
@@ -886,7 +575,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 	// positive test
 	var s *terraform.InstanceState = nil
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -913,88 +602,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 		},
 	}
 
-	actual, err = r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected = &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "updated",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("actual: %#v\nexpected: %#v",
-			actual, expected)
-	}
-}
-
-func TestResourceApply_isNewResourceContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeString,
-				Optional: true,
-			},
-		},
-	}
-
-	updateFuncContext := func(ctx context.Context, d *ResourceData, m interface{}) error {
-		d.Set("foo", "updated")
-		if d.IsNewResource() {
-			d.Set("foo", "new-resource")
-		}
-		return nil
-	}
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		d.SetId("foo")
-		d.Set("foo", "created")
-		return updateFuncContext(ctx, d, m)
-	}
-	r.UpdateContext = updateFuncContext
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "bla-blah",
-			},
-		},
-	}
-
-	// positive test
-	var s *terraform.InstanceState = nil
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "new-resource",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("actual: %#v\nexpected: %#v",
-			actual, expected)
-	}
-
-	// negative test
-	s = &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "new-resource",
-		},
-	}
-
-	actual, err = r.Apply(context.Background(), s, d, nil)
+	actual, err = r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1043,7 +651,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		// Update undefined for non-ForceNew field
 		2: {
 			&Resource{
-				Create: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"boo": &Schema{
 						Type:     TypeInt,
@@ -1058,8 +666,8 @@ func TestResourceInternalValidate(t *testing.T) {
 		// Update defined for ForceNew field
 		3: {
 			&Resource{
-				Create: Noop,
-				Update: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1089,7 +697,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		// non-writable *must not* have Create
 		5: {
 			&Resource{
-				Create: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1104,9 +712,9 @@ func TestResourceInternalValidate(t *testing.T) {
 		// writable must have Read
 		6: {
 			&Resource{
-				Create: Noop,
-				Update: Noop,
-				Delete: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1121,9 +729,9 @@ func TestResourceInternalValidate(t *testing.T) {
 		// writable must have Delete
 		7: {
 			&Resource{
-				Create: Noop,
-				Read:   Noop,
-				Update: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Read:   func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1137,10 +745,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		8: { // Reserved name at root should be disallowed
 			&Resource{
-				Create: Noop,
-				Read:   Noop,
-				Update: Noop,
-				Delete: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Read:   func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"count": {
 						Type:     TypeInt,
@@ -1154,10 +762,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		9: { // Reserved name at nested levels should be allowed
 			&Resource{
-				Create: Noop,
-				Read:   Noop,
-				Update: Noop,
-				Delete: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Read:   func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"parent_list": &Schema{
 						Type:     TypeString,
@@ -1179,10 +787,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		10: { // Provider reserved name should be allowed in resource
 			&Resource{
-				Create: Noop,
-				Read:   Noop,
-				Update: Noop,
-				Delete: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Read:   func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"alias": &Schema{
 						Type:     TypeString,
@@ -1196,7 +804,7 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		11: { // ID should be allowed in data source
 			&Resource{
-				Read: Noop,
+				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"id": &Schema{
 						Type:     TypeString,
@@ -1210,10 +818,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		12: { // Deprecated ID should be allowed in resource
 			&Resource{
-				Create: Noop,
-				Read:   Noop,
-				Update: Noop,
-				Delete: Noop,
+				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Read:   func(d *ResourceData, meta interface{}) error { return nil },
+				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"id": &Schema{
 						Type:       TypeString,
@@ -1228,7 +836,7 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		13: { // non-writable must not define CustomizeDiff
 			&Resource{
-				Read: Noop,
+				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1242,7 +850,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		},
 		14: { // Deprecated resource
 			&Resource{
-				Read: Noop,
+				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -1250,153 +858,6 @@ func TestResourceInternalValidate(t *testing.T) {
 					},
 				},
 				DeprecationMessage: "This resource has been deprecated.",
-			},
-			true,
-			true,
-		},
-		// Context Aware CRUD funcs
-		15: { // Exists and ExistsContext cannot both be set
-			&Resource{
-				Create:        Noop,
-				Read:          Noop,
-				Update:        Noop,
-				Delete:        Noop,
-				Exists:        func(d *ResourceData, meta interface{}) (bool, error) { return false, nil },
-				ExistsContext: func(ctx context.Context, d *ResourceData, meta interface{}) (bool, error) { return false, nil },
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		16: { // Create and CreateContext cannot both be set
-			&Resource{
-				Create:        Noop,
-				CreateContext: NoopContext,
-				Read:          Noop,
-				Update:        Noop,
-				Delete:        Noop,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		17: { // Read and ReadContext cannot both be set
-			&Resource{
-				Create:      Noop,
-				Read:        Noop,
-				ReadContext: NoopContext,
-				Update:      Noop,
-				Delete:      Noop,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		18: { // Update and UpdateContext cannot both be set
-			&Resource{
-				Create:        Noop,
-				Read:          Noop,
-				Update:        Noop,
-				UpdateContext: NoopContext,
-				Delete:        Noop,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		19: { // Delete and DeleteContext cannot both be set
-			&Resource{
-				Create:        Noop,
-				Read:          Noop,
-				Update:        Noop,
-				Delete:        Noop,
-				DeleteContext: NoopContext,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		20: { // UpdateContext defined for ForceNew field
-			&Resource{
-				Create:        Noop,
-				UpdateContext: NoopContext,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-						ForceNew: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-		21: { // non-writable *must not* have CreateContext
-			&Resource{
-				CreateContext: NoopContext,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			false,
-			true,
-		},
-
-		22: { // writable must have Read
-			&Resource{
-				CreateContext: NoopContext,
-				UpdateContext: NoopContext,
-				DeleteContext: NoopContext,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
-
-		23: { // writable must have Delete
-			&Resource{
-				CreateContext: NoopContext,
-				ReadContext:   NoopContext,
-				UpdateContext: NoopContext,
-				Schema: map[string]*Schema{
-					"goo": &Schema{
-						Type:     TypeInt,
-						Optional: true,
-					},
-				},
 			},
 			true,
 			true,
@@ -1409,7 +870,6 @@ func TestResourceInternalValidate(t *testing.T) {
 			if tc.In != nil {
 				sm = schemaMap(tc.In.Schema)
 			}
-
 			err := tc.In.InternalValidate(sm, tc.Writable)
 			if err != nil && !tc.Err {
 				t.Fatalf("%d: expected validation to pass: %s", i, err)
@@ -1458,7 +918,7 @@ func TestResourceRefresh(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1488,7 +948,7 @@ func TestResourceRefresh_blankId(t *testing.T) {
 		Attributes: map[string]string{},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1519,7 +979,7 @@ func TestResourceRefresh_delete(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1554,41 +1014,7 @@ func TestResourceRefresh_existsError(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
-	if err == nil {
-		t.Fatalf("should error")
-	}
-	if !reflect.DeepEqual(actual, s) {
-		t.Fatalf("bad: %#v", actual)
-	}
-}
-
-func TestResourceRefresh_existsContextError(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.ExistsContext = func(context.Context, *ResourceData, interface{}) (bool, error) {
-		return false, fmt.Errorf("error")
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		panic("shouldn't be called")
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"foo": "12",
-		},
-	}
-
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err == nil {
 		t.Fatalf("should error")
 	}
@@ -1622,41 +1048,7 @@ func TestResourceRefresh_noExists(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	if actual != nil {
-		t.Fatalf("should have no state")
-	}
-}
-
-func TestResourceRefresh_noExistsContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.ExistsContext = func(context.Context, *ResourceData, interface{}) (bool, error) {
-		return false, nil
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		panic("shouldn't be called")
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"foo": "12",
-		},
-	}
-
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1717,7 +1109,7 @@ func TestResourceRefresh_needsMigration(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.Contextify().Refresh(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1771,7 +1163,7 @@ func TestResourceRefresh_noMigrationNeeded(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, nil)
+	actual, err := r.Contextify().Refresh(context.Background(), s, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1823,7 +1215,7 @@ func TestResourceRefresh_stateSchemaVersionUnset(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, nil)
+	actual, err := r.Contextify().Refresh(context.Background(), s, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1874,7 +1266,7 @@ func TestResourceRefresh_migrateStateErr(t *testing.T) {
 		},
 	}
 
-	_, err := r.Refresh(context.Background(), s, nil)
+	_, err := r.Contextify().Refresh(context.Background(), s, nil)
 	if err == nil {
 		t.Fatal("expected error, but got none!")
 	}
@@ -2271,7 +1663,7 @@ func TestResource_migrateAndUpgrade(t *testing.T) {
 
 	for i, s := range testStates {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			newState, err := r.Refresh(context.Background(), s, nil)
+			newState, err := r.Contextify().Refresh(context.Background(), s, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2291,5 +1683,44 @@ func TestResource_migrateAndUpgrade(t *testing.T) {
 				t.Fatal(cmp.Diff(expected, newState, equateEmpty))
 			}
 		})
+	}
+}
+
+func TestResource_ContextTimeout(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": &Schema{
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: &ResourceTimeout{
+			Create: DefaultTimeout(40 * time.Minute),
+		},
+	}
+
+	var deadlineSet bool
+	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
+		d.SetId("foo")
+		_, deadlineSet = ctx.Deadline()
+		return nil
+	}
+
+	var s *terraform.InstanceState = nil
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": &terraform.ResourceAttrDiff{
+				New: "42",
+			},
+		},
+	}
+
+	if _, err := r.Apply(context.Background(), s, d, nil); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if !deadlineSet {
+		t.Fatal("context does not have timeout")
 	}
 }

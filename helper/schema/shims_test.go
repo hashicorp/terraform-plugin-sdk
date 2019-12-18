@@ -148,71 +148,7 @@ func TestShimResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !called {
-		t.Fatal("not called")
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":  "foo",
-			"foo": "42",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "2",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
-	}
-
-	// Shim
-	// now that we have our diff and desired state, see if we can reproduce
-	// that with the shim
-	// we're not testing Resource.Create, so we need to start with the "created" state
-	createdState := &terraform.InstanceState{
-		ID:         "foo",
-		Attributes: map[string]string{"id": "foo"},
-	}
-
-	testApplyDiff(t, r, createdState, expected, d)
-}
-
-func TestShimResourceApply_createContext(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 2,
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	called := false
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		called = true
-		d.SetId("foo")
-		return nil
-	}
-
-	var s *terraform.InstanceState = nil
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
-				New: "42",
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -291,7 +227,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -354,7 +290,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 	})
 	var s *terraform.InstanceState
 
-	actual, err := r.Diff(s, conf, nil)
+	actual, err := r.Contextify().Diff(context.Background(), s, conf, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -383,7 +319,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Apply(context.Background(), s, actual, nil)
+	applied, err := r.Contextify().Apply(context.Background(), s, actual, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -409,7 +345,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, err := DiffFromValues(initialVal, appliedVal, r)
+	d, err := DiffFromValues(context.Background(), initialVal, appliedVal, r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +378,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -514,100 +450,7 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !change {
-		t.Fatal("should have change")
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":        "foo",
-			"foo":       "42",
-			"tags.%":    "1",
-			"tags.Name": "foo",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		cmp.Diff(actual, expected)
-	}
-
-	// Shim
-	// now that we have our diff and desired state, see if we can reproduce
-	// that with the shim
-	// we're not testing Resource.Create, so we need to start with the "created" state
-	createdState := &terraform.InstanceState{
-		ID: "foo",
-		Attributes: map[string]string{
-			"id":        "foo",
-			"foo":       "7",
-			"tags.%":    "1",
-			"tags.Name": "foo",
-		},
-	}
-
-	testApplyDiff(t, r, createdState, expected, d)
-}
-
-func TestShimResourceApply_destroyCreateContext(t *testing.T) {
-	r := &Resource{
-		Schema: map[string]*Schema{
-			"foo": &Schema{
-				Type:     TypeInt,
-				Optional: true,
-				ForceNew: true,
-			},
-
-			"tags": &Schema{
-				Type:     TypeMap,
-				Optional: true,
-				Computed: true,
-			},
-		},
-	}
-
-	change := false
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
-		change = d.HasChange("tags")
-		d.SetId("foo")
-		return nil
-	}
-	r.Delete = func(d *ResourceData, m interface{}) error {
-		return nil
-	}
-
-	var s *terraform.InstanceState = &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"foo":       "7",
-			"tags.Name": "foo",
-		},
-	}
-
-	d := &terraform.InstanceDiff{
-		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"id": &terraform.ResourceAttrDiff{
-				New: "foo",
-			},
-			"foo": &terraform.ResourceAttrDiff{
-				Old:         "7",
-				New:         "42",
-				RequiresNew: true,
-			},
-			"tags.Name": &terraform.ResourceAttrDiff{
-				Old:         "foo",
-				New:         "foo",
-				RequiresNew: true,
-			},
-		},
-	}
-
-	actual, err := r.Apply(context.Background(), s, d, nil)
+	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -653,7 +496,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 		Schema        map[string]*Schema
 		State         *terraform.InstanceState
 		Config        map[string]interface{}
-		CustomizeDiff CustomizeDiffFunc
+		CustomizeDiff CustomizeDiffContextFunc
 		Diff          *terraform.InstanceDiff
 		Err           bool
 	}{
@@ -3159,7 +3002,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3200,7 +3043,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3241,7 +3084,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3280,7 +3123,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"ami_id": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("instance_id", "bar"); err != nil {
 					return err
 				}
@@ -3331,7 +3174,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"ports": []interface{}{5, 2, 6},
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("ports", []interface{}{5, 2, 1}); err != nil {
 					return err
 				}
@@ -3380,7 +3223,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return errors.New("diff customization should not have run")
 			},
 
@@ -3418,7 +3261,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"etag": "bar",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
 					d.SetNewComputed("version_id")
 				}
@@ -3463,7 +3306,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"foo": "baz",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return fmt.Errorf("diff vetoed")
 			},
 
@@ -3525,7 +3368,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"stream_enabled":   false,
 				"stream_view_type": "",
 			},
-			CustomizeDiff: func(diff *ResourceDiff, v interface{}) error {
+			CustomizeDiff: func(_ context.Context, diff *ResourceDiff, v interface{}) error {
 				v, ok := diff.GetOk("unrelated_set")
 				if ok {
 					return fmt.Errorf("Didn't expect unrelated_set: %#v", v)
@@ -3548,7 +3391,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
 			{
-				d, err := schemaMap(tc.Schema).Diff(tc.State, c, tc.CustomizeDiff, nil, false)
+				d, err := schemaMap(tc.Schema).Diff(context.Background(), tc.State, c, tc.CustomizeDiff, nil, false)
 				if err != nil != tc.Err {
 					t.Fatalf("err: %s", err)
 				}
@@ -3596,7 +3439,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			res := &Resource{Schema: tc.Schema}
 
-			d, err := diffFromValues(stateVal, configVal, res, tc.CustomizeDiff)
+			d, err := diffFromValues(context.Background(), stateVal, configVal, res, tc.CustomizeDiff)
 			if err != nil {
 				if !tc.Err {
 					t.Fatal(err)

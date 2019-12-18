@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -131,7 +132,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 		Schema        map[string]*Schema
 		State         *terraform.InstanceState
 		Config        map[string]interface{}
-		CustomizeDiff CustomizeDiffFunc
+		CustomizeDiff CustomizeDiffContextFunc
 		Diff          *terraform.InstanceDiff
 		Err           bool
 	}{
@@ -2745,7 +2746,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -2786,7 +2787,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -2827,7 +2828,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -2866,7 +2867,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"ami_id": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("instance_id", "bar"); err != nil {
 					return err
 				}
@@ -2916,7 +2917,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"ports": []interface{}{5, 2, 6},
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("ports", []interface{}{5, 2, 1}); err != nil {
 					return err
 				}
@@ -2968,7 +2969,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return errors.New("diff customization should not have run")
 			},
 
@@ -3005,7 +3006,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"etag": "bar",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
 					d.SetNewComputed("version_id")
 				}
@@ -3047,7 +3048,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				d.SetNewComputed("foo")
 				return nil
 			},
@@ -3083,7 +3084,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"foo": "baz",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return fmt.Errorf("diff vetoed")
 			},
 
@@ -3145,7 +3146,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 				"stream_enabled":   false,
 				"stream_view_type": "",
 			},
-			CustomizeDiff: func(diff *ResourceDiff, v interface{}) error {
+			CustomizeDiff: func(_ context.Context, diff *ResourceDiff, v interface{}) error {
 				v, ok := diff.GetOk("unrelated_set")
 				if ok {
 					return fmt.Errorf("Didn't expect unrelated_set: %#v", v)
@@ -3167,7 +3168,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.Name), func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			d, err := schemaMap(tc.Schema).Diff(tc.State, c, tc.CustomizeDiff, nil, true)
+			d, err := schemaMap(tc.Schema).Diff(context.Background(), tc.State, c, tc.CustomizeDiff, nil, true)
 			if err != nil != tc.Err {
 				t.Fatalf("err: %s", err)
 			}
@@ -3851,7 +3852,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			d, err := schemaMap(tc.Schema).Diff(tc.State, c, nil, nil, true)
+			d, err := schemaMap(tc.Schema).Diff(context.Background(), tc.State, c, nil, nil, true)
 			if err != nil != tc.Err {
 				t.Fatalf("#%q err: %s", tn, err)
 			}

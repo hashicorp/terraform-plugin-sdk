@@ -601,7 +601,7 @@ func TestApplyResourceChange(t *testing.T) {
 				Optional: true,
 			},
 		},
-		Create: func(rd *schema.ResourceData, _ interface{}) error {
+		CreateContext: func(_ context.Context, rd *schema.ResourceData, _ interface{}) error {
 			rd.SetId("bar")
 			return nil
 		},

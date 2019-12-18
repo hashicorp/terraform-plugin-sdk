@@ -561,7 +561,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) PlanResourceChange(_ context.Context, req *proto.PlanResourceChange_Request) (*proto.PlanResourceChange_Response, error) {
+func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.PlanResourceChange_Request) (*proto.PlanResourceChange_Response, error) {
 	resp := &proto.PlanResourceChange_Response{}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
@@ -596,10 +596,6 @@ func (s *GRPCProviderServer) PlanResourceChange(_ context.Context, req *proto.Pl
 		return resp, nil
 	}
 
-	info := &terraform.InstanceInfo{
-		Type: req.TypeName,
-	}
-
 	priorState, err := res.ShimInstanceStateFromValue(priorStateVal)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
@@ -624,7 +620,7 @@ func (s *GRPCProviderServer) PlanResourceChange(_ context.Context, req *proto.Pl
 	// turn the proposed state into a legacy configuration
 	cfg := terraform.NewResourceConfigShimmed(proposedNewStateVal, schemaBlock)
 
-	diff, err := s.provider.SimpleDiff(info, priorState, cfg)
+	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -825,7 +821,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 			Destroy:    true,
 		}
 	} else {
-		diff, err = schema.DiffFromValues(priorStateVal, plannedStateVal, stripResourceModifiers(res))
+		diff, err = schema.DiffFromValues(ctx, priorStateVal, plannedStateVal, stripResourceModifiers(res))
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -1002,10 +998,6 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 		return resp, nil
 	}
 
-	info := &terraform.InstanceInfo{
-		Type: req.TypeName,
-	}
-
 	// Ensure there are no nulls that will cause helper/schema to panic.
 	if err := validateConfigNulls(configVal, nil); err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
@@ -1016,14 +1008,14 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 
 	// we need to still build the diff separately with the Read method to match
 	// the old behavior
-	diff, err := s.provider.ReadDataDiff(info, config)
+	res := s.provider.DataSourcesMap[req.TypeName]
+	diff, err := res.Diff(ctx, nil, config, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
 	}
 
 	// now we can get the new complete data source
-	res := s.provider.DataSourcesMap[req.TypeName]
 	newInstanceState, err := res.ReadDataApply(ctx, diff, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)

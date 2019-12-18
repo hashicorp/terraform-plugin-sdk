@@ -6,14 +6,14 @@ import (
 )
 
 func testProvider(s map[string]*schema.Schema, cd schema.CustomizeDiffFunc) terraform.ResourceProvider {
-	return &schema.Provider{
+	return (&schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"test": {
 				Schema:        s,
 				CustomizeDiff: cd,
 			},
 		},
-	}
+	}).Contextify()
 }
 
 func testDiff(provider terraform.ResourceProvider, old, new map[string]string) (*terraform.InstanceDiff, error) {

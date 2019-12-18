@@ -80,6 +80,16 @@ type Provider struct {
 // structure, etc.
 type ConfigureFunc func(*ResourceData) (interface{}, error)
 
+func (p *Provider) Contextify() *Provider {
+	for _, r := range p.ResourcesMap {
+		r.Contextify()
+	}
+	for _, d := range p.DataSourcesMap {
+		d.Contextify()
+	}
+	return p
+}
+
 // InternalValidate should be called to validate the structure
 // of the provider.
 //
@@ -240,6 +250,8 @@ func (p *Provider) ValidateResource(
 }
 
 // Configure implementation of terraform.ResourceProvider interface.
+// This method should likely have Context pulled through it
+// However it will involve breaking the terraform.ResourceProvider interface
 func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 	// No configuration
 	if p.ConfigureFunc == nil {
@@ -250,7 +262,7 @@ func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 
 	// Get a ResourceData for this configuration. To do this, we actually
 	// generate an intermediary "diff" although that is never exposed.
-	diff, err := sm.Diff(nil, c, nil, p.meta, true)
+	diff, err := sm.Diff(context.TODO(), nil, c, nil, p.meta, true)
 	if err != nil {
 		return err
 	}
@@ -283,6 +295,7 @@ func (p *Provider) Apply(
 }
 
 // Diff implementation of terraform.ResourceProvider interface.
+// This should not be called, however some tests still rely on this codepath
 func (p *Provider) Diff(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,
@@ -292,21 +305,7 @@ func (p *Provider) Diff(
 		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
 	}
 
-	return r.Diff(s, c, p.meta)
-}
-
-// SimpleDiff is used by the new protocol wrappers to get a diff that doesn't
-// attempt to calculate ignore_changes.
-func (p *Provider) SimpleDiff(
-	info *terraform.InstanceInfo,
-	s *terraform.InstanceState,
-	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.simpleDiff(s, c, p.meta)
+	return r.Diff(context.TODO(), s, c, p.meta)
 }
 
 // Refresh implementation of terraform.ResourceProvider interface.
@@ -412,13 +411,7 @@ func (p *Provider) ValidateDataSource(
 func (p *Provider) ReadDataDiff(
 	info *terraform.InstanceInfo,
 	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-
-	r, ok := p.DataSourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown data source: %s", info.Type)
-	}
-
-	return r.Diff(nil, c, p.meta)
+	panic("This should never be called")
 }
 
 // ReadDataApply implementation of terraform.ResourceProvider interface.

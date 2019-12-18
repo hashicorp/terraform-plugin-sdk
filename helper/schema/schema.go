@@ -12,6 +12,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -472,9 +473,10 @@ func (m *schemaMap) DeepCopy() schemaMap {
 // Diff returns the diff for a resource given the schema map,
 // state, and configuration.
 func (m schemaMap) Diff(
+	ctx context.Context,
 	s *terraform.InstanceState,
 	c *terraform.ResourceConfig,
-	customizeDiff CustomizeDiffFunc,
+	customizeDiff CustomizeDiffContextFunc,
 	meta interface{},
 	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
 	result := new(terraform.InstanceDiff)
@@ -511,7 +513,7 @@ func (m schemaMap) Diff(
 	if !result.DestroyTainted && customizeDiff != nil {
 		mc := m.DeepCopy()
 		rd := newResourceDiff(mc, c, s, result)
-		if err := customizeDiff(rd, meta); err != nil {
+		if err := customizeDiff(ctx, rd, meta); err != nil {
 			return nil, err
 		}
 		for _, k := range rd.UpdatedKeys() {
@@ -552,7 +554,7 @@ func (m schemaMap) Diff(
 			if !result2.DestroyTainted && customizeDiff != nil {
 				mc := m.DeepCopy()
 				rd := newResourceDiff(mc, c, d.state, result2)
-				if err := customizeDiff(rd, meta); err != nil {
+				if err := customizeDiff(ctx, rd, meta); err != nil {
 					return nil, err
 				}
 				for _, k := range rd.UpdatedKeys() {
