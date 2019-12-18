@@ -1,8 +1,8 @@
-# 1.4.1 (Unreleased)
+# 1.4.1 (December 18, 2019)
 
 BUG FIXES:
 
-* helper/resource: Don't crash when dependent test sweeper is missing [GH-279]
+* helper/resource: Don't crash when dependent test sweeper is missing ([#279](https://github.com/hashicorp/terraform-plugin-sdk/issues/279))
 
 # 1.4.0 (November 20, 2019)
 
