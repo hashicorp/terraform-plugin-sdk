@@ -72,13 +72,11 @@ func TestUpgradeState_jsonState(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: &schema.Provider{
-			ResourcesMap: map[string]*schema.Resource{
-				"test": r,
-			},
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
 		},
-	}
+	})
 
 	req := &proto.UpgradeResourceState_Request{
 		TypeName: "test",
@@ -176,9 +174,7 @@ func TestUpgradeState_removedAttr(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: p,
-	}
+	server := NewGRPCProviderServer(p)
 
 	for _, tc := range []struct {
 		name     string
@@ -334,13 +330,11 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: &schema.Provider{
-			ResourcesMap: map[string]*schema.Resource{
-				"test": r,
-			},
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
 		},
-	}
+	})
 
 	testReqs := []*proto.UpgradeResourceState_Request{
 		{
@@ -460,13 +454,11 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: &schema.Provider{
-			ResourcesMap: map[string]*schema.Resource{
-				"test": r,
-			},
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
 		},
-	}
+	})
 
 	testReqs := []*proto.UpgradeResourceState_Request{
 		{
@@ -540,13 +532,11 @@ func TestPlanResourceChange(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: &schema.Provider{
-			ResourcesMap: map[string]*schema.Resource{
-				"test": r,
-			},
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
 		},
-	}
+	})
 
 	schema := r.CoreConfigSchema()
 	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
@@ -607,13 +597,11 @@ func TestApplyResourceChange(t *testing.T) {
 		},
 	}
 
-	server := &GRPCProviderServer{
-		provider: &schema.Provider{
-			ResourcesMap: map[string]*schema.Resource{
-				"test": r,
-			},
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
 		},
-	}
+	})
 
 	schema := r.CoreConfigSchema()
 	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
@@ -801,11 +789,9 @@ func TestPrepareProviderConfig(t *testing.T) {
 		},
 	} {
 		t.Run(tc.Name, func(t *testing.T) {
-			server := &GRPCProviderServer{
-				provider: &schema.Provider{
-					Schema: tc.Schema,
-				},
-			}
+			server := NewGRPCProviderServer(&schema.Provider{
+				Schema: tc.Schema,
+			})
 
 			block := schema.InternalMap(tc.Schema).CoreConfigSchema()
 
