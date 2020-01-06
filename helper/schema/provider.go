@@ -68,16 +68,6 @@ type Provider struct {
 // structure, etc.
 type ConfigureFunc func(*ResourceData) (interface{}, error)
 
-func (p *Provider) Contextify() *Provider {
-	for _, r := range p.ResourcesMap {
-		r.Contextify()
-	}
-	for _, d := range p.DataSourcesMap {
-		d.Contextify()
-	}
-	return p
-}
-
 // InternalValidate should be called to validate the structure
 // of the provider.
 //
@@ -238,6 +228,7 @@ func (p *Provider) Apply(
 
 // Diff implementation of terraform.ResourceProvider interface.
 // This should not be called, however some tests still rely on this codepath
+// namely helper/customdiff/testing_test.go
 func (p *Provider) Diff(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,

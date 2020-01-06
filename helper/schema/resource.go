@@ -185,7 +185,7 @@ type Resource struct {
 
 // Contextify upgrades all set non-context funcs (CRUD, Exists, CustomizeDiff) to the
 // context aware counterparts.
-func (r *Resource) Contextify() *Resource {
+func (r *Resource) contextify() *Resource {
 	if r == nil {
 		return nil
 	}
@@ -696,7 +696,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 	}
 
 	// ensure functions have been upgraded
-	r.Contextify()
+	r.contextify()
 
 	if !writable {
 		if r.CreateContext != nil || r.UpdateContext != nil || r.DeleteContext != nil {

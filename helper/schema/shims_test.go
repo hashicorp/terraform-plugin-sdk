@@ -148,7 +148,7 @@ func TestShimResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
+	actual, err := r.contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -227,7 +227,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
+	actual, err := r.contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -290,7 +290,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 	})
 	var s *terraform.InstanceState
 
-	actual, err := r.Contextify().Diff(context.Background(), s, conf, nil)
+	actual, err := r.contextify().Diff(context.Background(), s, conf, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -319,7 +319,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Contextify().Apply(context.Background(), s, actual, nil)
+	applied, err := r.contextify().Apply(context.Background(), s, actual, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +378,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
+	actual, err := r.contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -450,7 +450,7 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Contextify().Apply(context.Background(), s, d, nil)
+	actual, err := r.contextify().Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

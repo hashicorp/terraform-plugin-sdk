@@ -1,6 +1,8 @@
 package customdiff
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -9,11 +11,13 @@ func testProvider(s map[string]*schema.Schema, cd schema.CustomizeDiffFunc) terr
 	return (&schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"test": {
-				Schema:        s,
-				CustomizeDiff: cd,
+				Schema: s,
+				CustomizeDiffContext: func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+					return cd(d, meta)
+				},
 			},
 		},
-	}).Contextify()
+	})
 }
 
 func testDiff(provider terraform.ResourceProvider, old, new map[string]string) (*terraform.InstanceDiff, error) {
