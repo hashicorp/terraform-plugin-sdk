@@ -4854,6 +4854,29 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Err: false,
 		},
 
+		"Conflicting list attributes okay when unknown 1": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"blacklist": &Schema{
+					Type:          TypeList,
+					Optional:      true,
+					Elem:          &Schema{Type: TypeString},
+					ConflictsWith: []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": []interface{}{"white-val"},
+				"blacklist": []interface{}{hcl2shim.UnknownVariableValue},
+			},
+
+			Err: false,
+		},
+
 		"Conflicting attributes okay when unknown 2": {
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
