@@ -6566,6 +6566,29 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 			Err: false,
 		},
 
+		"only unknown list value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": []interface{}{hcl2shim.UnknownVariableValue},
+			},
+
+			Err: false,
+		},
+
 		"Unknown Variable Value and Known Value": {
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
