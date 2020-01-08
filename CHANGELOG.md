@@ -1,3 +1,9 @@
+# 1.4.2 (Unreleased)
+
+BUG FIXES:
+
+* schema/ExactlyOneOf: Fix handling of unknowns in complex types [GH-287]
+
 # 1.4.1 (December 18, 2019)
 
 BUG FIXES:
