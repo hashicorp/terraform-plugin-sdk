@@ -31,7 +31,7 @@ See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) secti
    - (Create, Read, Update, Delete, Import, Validate) a Resource
    - Read a Data Source
  - tests domain-specific logic via provided acceptance test framework
- - providers **Core** updated state of a resource or data source and/or appropriate feedback in the form of validation or other errors
+ - provides **Core** updated state of a resource or data source and/or appropriate feedback in the form of validation or other errors
 
 ## Migrating to SDK v1 from built-in SDK
 
