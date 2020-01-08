@@ -4854,6 +4854,29 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Err: false,
 		},
 
+		"Conflicting list attributes okay when unknown 1": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"blacklist": &Schema{
+					Type:          TypeList,
+					Optional:      true,
+					Elem:          &Schema{Type: TypeString},
+					ConflictsWith: []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": []interface{}{"white-val"},
+				"blacklist": []interface{}{hcl2shim.UnknownVariableValue},
+			},
+
+			Err: false,
+		},
+
 		"Conflicting attributes okay when unknown 2": {
 			Schema: map[string]*Schema{
 				"whitelist": &Schema{
@@ -5765,6 +5788,583 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 			},
 			Err: true,
 		},
+
+		"unknown list values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": hcl2shim.UnknownVariableValue,
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": hcl2shim.UnknownVariableValue,
+				}},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		// This should probably fail, but we let it pass and rely on 2nd
+		// validation phase when unknowns become known, which will then fail.
+		"partially known list values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": "TCP",
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": "TCP",
+				}},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		"known list values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    []interface{}{"80"},
+					"protocol": "TCP",
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    []interface{}{"80"},
+					"protocol": "TCP",
+				}},
+			},
+			Err: true,
+		},
+
+		"wholly unknown set values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": hcl2shim.UnknownVariableValue,
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": hcl2shim.UnknownVariableValue,
+				}},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		// This should probably fail, but we let it pass and rely on 2nd
+		// validation phase when unknowns become known, which will then fail.
+		"partially known set values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": "TCP",
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    hcl2shim.UnknownVariableValue,
+					"protocol": "UDP",
+				}},
+			},
+			Err: false,
+		},
+
+		"known set values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"protocol": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"ports": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+							},
+						},
+					},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{map[string]interface{}{
+					"ports":    []interface{}{"80"},
+					"protocol": "TCP",
+				}},
+				"deny": []interface{}{map[string]interface{}{
+					"ports":    []interface{}{"80"},
+					"protocol": "TCP",
+				}},
+			},
+			Err: true,
+		},
+
+		"wholly unknown simple lists": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{
+					hcl2shim.UnknownVariableValue,
+					hcl2shim.UnknownVariableValue,
+				},
+				"deny": []interface{}{
+					hcl2shim.UnknownVariableValue,
+					hcl2shim.UnknownVariableValue,
+				},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		// This should probably fail, but we let it pass and rely on 2nd
+		// validation phase when unknowns become known, which will then fail.
+		"partially known simple lists": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{
+					hcl2shim.UnknownVariableValue,
+					"known",
+				},
+				"deny": []interface{}{
+					hcl2shim.UnknownVariableValue,
+					"known",
+				},
+			},
+			Err: false,
+		},
+
+		"known simple lists": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": []interface{}{
+					"blah",
+					"known",
+				},
+				"deny": []interface{}{
+					"known",
+				},
+			},
+			Err: true,
+		},
+
+		"wholly unknown map keys and values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeMap,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": map[string]interface{}{
+					hcl2shim.UnknownVariableValue: hcl2shim.UnknownVariableValue,
+				},
+				"deny": map[string]interface{}{
+					hcl2shim.UnknownVariableValue: hcl2shim.UnknownVariableValue,
+				},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		// This should probably fail, but we let it pass and rely on 2nd
+		// validation phase when unknowns become known, which will then fail.
+		"wholly unknown map values": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeMap,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": map[string]interface{}{
+					"key": hcl2shim.UnknownVariableValue,
+				},
+				"deny": map[string]interface{}{
+					"key": hcl2shim.UnknownVariableValue,
+				},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		// This should probably fail, but we let it pass and rely on 2nd
+		// validation phase when unknowns become known, which will then fail.
+		"partially known maps": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeMap,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": map[string]interface{}{
+					"first":  "value",
+					"second": hcl2shim.UnknownVariableValue,
+				},
+				"deny": map[string]interface{}{
+					"first":  "value",
+					"second": hcl2shim.UnknownVariableValue,
+				},
+				"purplelist": "blah",
+			},
+			Err: false,
+		},
+
+		"known maps": {
+			Key: "allow",
+			Schema: map[string]*Schema{
+				"allow": &Schema{
+					Type:         TypeMap,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+				"deny": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					ExactlyOneOf: []string{"allow", "deny"},
+				},
+			},
+			Config: map[string]interface{}{
+				"allow": map[string]interface{}{
+					"first":  "value",
+					"second": "blah",
+				},
+				"deny": map[string]interface{}{
+					"first":  "value",
+					"second": "boo",
+				},
+			},
+			Err: true,
+		},
 	}
 
 	for tn, tc := range cases {
@@ -5961,6 +6561,29 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 
 			Config: map[string]interface{}{
 				"whitelist": hcl2shim.UnknownVariableValue,
+			},
+
+			Err: false,
+		},
+
+		"only unknown list value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					AtLeastOneOf: []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": []interface{}{hcl2shim.UnknownVariableValue},
 			},
 
 			Err: false,
