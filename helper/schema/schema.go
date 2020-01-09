@@ -476,7 +476,7 @@ func (m schemaMap) Diff(
 	ctx context.Context,
 	s *terraform.InstanceState,
 	c *terraform.ResourceConfig,
-	customizeDiff CustomizeDiffContextFunc,
+	customizeDiff CustomizeDiffFunc,
 	meta interface{},
 	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
 	result := new(terraform.InstanceDiff)

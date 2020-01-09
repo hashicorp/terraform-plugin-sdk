@@ -160,8 +160,7 @@ type Resource struct {
 	// function.
 	//
 	// This function is only allowed on regular resources (not data sources).
-	CustomizeDiff        CustomizeDiffFunc
-	CustomizeDiffContext CustomizeDiffContextFunc
+	CustomizeDiff CustomizeDiffFunc
 
 	// Importer is the ResourceImporter implementation for this resource.
 	// If this is nil, then this resource does not support importing. If
@@ -181,51 +180,6 @@ type Resource struct {
 	// actions (Create, Read, Update, Delete, Default) to the Resource struct, and
 	// accessing them in the matching methods.
 	Timeouts *ResourceTimeout
-}
-
-// Contextify upgrades all set non-context funcs (CRUD, Exists, CustomizeDiff) to the
-// context aware counterparts.
-func (r *Resource) contextify() *Resource {
-	if r == nil {
-		return nil
-	}
-	if r.CreateContext == nil && r.Create != nil {
-		r.CreateContext = func(_ context.Context, d *ResourceData, meta interface{}) error {
-			return r.Create(d, meta)
-		}
-	}
-
-	if r.ReadContext == nil && r.Read != nil {
-		r.ReadContext = func(_ context.Context, d *ResourceData, meta interface{}) error {
-			return r.Read(d, meta)
-		}
-	}
-
-	if r.UpdateContext == nil && r.Update != nil {
-		r.UpdateContext = func(_ context.Context, d *ResourceData, meta interface{}) error {
-			return r.Update(d, meta)
-		}
-	}
-
-	if r.DeleteContext == nil && r.Delete != nil {
-		r.DeleteContext = func(_ context.Context, d *ResourceData, meta interface{}) error {
-			return r.Delete(d, meta)
-		}
-	}
-
-	if r.ExistsContext == nil && r.Exists != nil {
-		r.ExistsContext = func(_ context.Context, d *ResourceData, meta interface{}) (bool, error) {
-			return r.Exists(d, meta)
-		}
-	}
-
-	if r.CustomizeDiffContext == nil && r.CustomizeDiff != nil {
-		r.CustomizeDiffContext = func(_ context.Context, d *ResourceDiff, meta interface{}) error {
-			return r.CustomizeDiff(d, meta)
-		}
-	}
-
-	return r
 }
 
 // ShimInstanceStateFromValue converts a cty.Value to a
@@ -305,8 +259,52 @@ type StateUpgrader struct {
 type StateUpgradeFunc func(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
 
 // See Resource documentation.
-type CustomizeDiffFunc func(*ResourceDiff, interface{}) error
-type CustomizeDiffContextFunc func(context.Context, *ResourceDiff, interface{}) error
+type CustomizeDiffFunc func(context.Context, *ResourceDiff, interface{}) error
+
+func (r *Resource) create(ctx context.Context, d *ResourceData, meta interface{}) error {
+	if r.CreateContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutCreate))
+		defer cancel()
+		return r.CreateContext(ctx, d, meta)
+	}
+	return r.Create(d, meta)
+}
+
+func (r *Resource) read(ctx context.Context, d *ResourceData, meta interface{}) error {
+	if r.ReadContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
+		defer cancel()
+		return r.ReadContext(ctx, d, meta)
+	}
+	return r.Read(d, meta)
+}
+
+func (r *Resource) update(ctx context.Context, d *ResourceData, meta interface{}) error {
+	if r.UpdateContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutUpdate))
+		defer cancel()
+		return r.UpdateContext(ctx, d, meta)
+	}
+	return r.Update(d, meta)
+}
+
+func (r *Resource) delete(ctx context.Context, d *ResourceData, meta interface{}) error {
+	if r.DeleteContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutDelete))
+		defer cancel()
+		return r.DeleteContext(ctx, d, meta)
+	}
+	return r.Delete(d, meta)
+}
+
+func (r *Resource) exists(ctx context.Context, d *ResourceData, meta interface{}) (bool, error) {
+	if r.ExistsContext != nil {
+		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
+		defer cancel()
+		return r.ExistsContext(ctx, d, meta)
+	}
+	return r.Exists(d, meta)
+}
 
 // Apply creates, updates, and/or deletes a resource.
 func (r *Resource) Apply(
@@ -346,9 +344,7 @@ func (r *Resource) Apply(
 	if d.Destroy || d.RequiresNew() {
 		if s.ID != "" {
 			// Destroy the resource since it is created
-			ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutDelete))
-			err := r.DeleteContext(ctx, data, meta)
-			cancel()
+			err := r.delete(ctx, data, meta)
 
 			if err != nil {
 				return r.recordCurrentSchemaVersion(data.State()), err
@@ -377,16 +373,12 @@ func (r *Resource) Apply(
 	if data.Id() == "" {
 		// We're creating, it is a new resource.
 		data.MarkNewResource()
-		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutCreate))
-		err = r.CreateContext(ctx, data, meta)
-		cancel()
+		err = r.create(ctx, data, meta)
 	} else {
-		if r.UpdateContext == nil {
+		if !r.updateFuncSet() {
 			return s, fmt.Errorf("doesn't support update")
 		}
-		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutUpdate))
-		err = r.UpdateContext(ctx, data, meta)
-		cancel()
+		err = r.update(ctx, data, meta)
 	}
 
 	return r.recordCurrentSchemaVersion(data.State()), err
@@ -406,7 +398,7 @@ func (r *Resource) Diff(
 		return nil, fmt.Errorf("[ERR] Error decoding timeout: %s", err)
 	}
 
-	instanceDiff, err := schemaMap(r.Schema).Diff(ctx, s, c, r.CustomizeDiffContext, meta, true)
+	instanceDiff, err := schemaMap(r.Schema).Diff(ctx, s, c, r.CustomizeDiff, meta, true)
 	if err != nil {
 		return instanceDiff, err
 	}
@@ -428,7 +420,7 @@ func (r *Resource) SimpleDiff(
 	c *terraform.ResourceConfig,
 	meta interface{}) (*terraform.InstanceDiff, error) {
 
-	instanceDiff, err := schemaMap(r.Schema).Diff(ctx, s, c, r.CustomizeDiffContext, meta, false)
+	instanceDiff, err := schemaMap(r.Schema).Diff(ctx, s, c, r.CustomizeDiff, meta, false)
 	if err != nil {
 		return instanceDiff, err
 	}
@@ -476,9 +468,7 @@ func (r *Resource) ReadDataApply(
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-	err = r.ReadContext(ctx, data, meta)
-	cancel()
+	err = r.read(ctx, data, meta)
 
 	state := data.State()
 	if state != nil && state.ID == "" {
@@ -512,7 +502,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	if r.ExistsContext != nil {
+	if r.existsFuncSet() {
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
@@ -522,9 +512,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 			return s, err
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-		exists, err := r.ExistsContext(ctx, data, meta)
-		cancel()
+		exists, err := r.exists(ctx, data, meta)
 
 		if err != nil {
 			return s, err
@@ -540,9 +528,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 		return s, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-	err = r.ReadContext(ctx, data, meta)
-	cancel()
+	err = r.read(ctx, data, meta)
 
 	state := data.State()
 	if state != nil && state.ID == "" {
@@ -569,7 +555,7 @@ func (r *Resource) Refresh(
 		}
 	}
 
-	if r.ExistsContext != nil {
+	if r.existsFuncSet() {
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
@@ -579,9 +565,7 @@ func (r *Resource) Refresh(
 			return s, err
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-		exists, err := r.ExistsContext(ctx, data, meta)
-		cancel()
+		exists, err := r.exists(ctx, data, meta)
 
 		if err != nil {
 			return s, err
@@ -603,9 +587,7 @@ func (r *Resource) Refresh(
 		return s, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, data.Timeout(TimeoutRead))
-	err = r.ReadContext(ctx, data, meta)
-	cancel()
+	err = r.read(ctx, data, meta)
 
 	state := data.State()
 	if state != nil && state.ID == "" {
@@ -680,6 +662,26 @@ func (r *Resource) upgradeState(s *terraform.InstanceState, meta interface{}) (*
 	return r.ShimInstanceStateFromValue(stateVal)
 }
 
+func (r *Resource) createFuncSet() bool {
+	return (r.Create != nil || r.CreateContext != nil)
+}
+
+func (r *Resource) readFuncSet() bool {
+	return (r.Read != nil || r.ReadContext != nil)
+}
+
+func (r *Resource) updateFuncSet() bool {
+	return (r.Update != nil || r.UpdateContext != nil)
+}
+
+func (r *Resource) deleteFuncSet() bool {
+	return (r.Delete != nil || r.DeleteContext != nil)
+}
+
+func (r *Resource) existsFuncSet() bool {
+	return (r.Exists != nil || r.ExistsContext != nil)
+}
+
 // InternalValidate should be called to validate the structure
 // of the resource.
 //
@@ -695,16 +697,13 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 		return errors.New("resource is nil")
 	}
 
-	// ensure functions have been upgraded
-	r.contextify()
-
 	if !writable {
-		if r.CreateContext != nil || r.UpdateContext != nil || r.DeleteContext != nil {
+		if r.createFuncSet() || r.updateFuncSet() || r.deleteFuncSet() {
 			return fmt.Errorf("must not implement Create, Update or Delete")
 		}
 
 		// CustomizeDiff cannot be defined for read-only resources
-		if r.CustomizeDiffContext != nil {
+		if r.CustomizeDiff != nil {
 			return fmt.Errorf("cannot implement CustomizeDiff")
 		}
 	}
@@ -713,7 +712,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 
 	if r.isTopLevel() && writable {
 		// All non-Computed attributes must be ForceNew if Update is not defined
-		if r.UpdateContext == nil {
+		if !r.updateFuncSet() {
 			nonForceNewAttrs := make([]string, 0)
 			for k, v := range r.Schema {
 				if !v.ForceNew && !v.Computed {
@@ -741,10 +740,10 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 		tsm = schemaMap(r.Schema)
 
 		// Destroy, and Read are required
-		if r.ReadContext == nil {
+		if !r.readFuncSet() {
 			return fmt.Errorf("Read must be implemented")
 		}
-		if r.DeleteContext == nil {
+		if !r.deleteFuncSet() {
 			return fmt.Errorf("Delete must be implemented")
 		}
 
@@ -873,7 +872,7 @@ func (r *Resource) SchemasForFlatmapPath(path string) []*Schema {
 // Returns true if the resource is "top level" i.e. not a sub-resource.
 func (r *Resource) isTopLevel() bool {
 	// TODO: This is a heuristic; replace with a definitive attribute?
-	return (r.CreateContext != nil || r.ReadContext != nil)
+	return (r.createFuncSet() || r.readFuncSet())
 }
 
 // Determines if a given InstanceState needs to be migrated by checking the

@@ -24,7 +24,7 @@ func DiffFromValues(ctx context.Context, prior, planned cty.Value, res *Resource
 // test fixtures from the legacy tests. In the new provider protocol the diff
 // only needs to be created for the apply operation, and any customizations
 // have already been done.
-func diffFromValues(ctx context.Context, prior, planned cty.Value, res *Resource, cust CustomizeDiffContextFunc) (*terraform.InstanceDiff, error) {
+func diffFromValues(ctx context.Context, prior, planned cty.Value, res *Resource, cust CustomizeDiffFunc) (*terraform.InstanceDiff, error) {
 	instanceState, err := res.ShimInstanceStateFromValue(prior)
 	if err != nil {
 		return nil, err

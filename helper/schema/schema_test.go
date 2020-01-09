@@ -132,7 +132,7 @@ func TestSchemaMap_Diff(t *testing.T) {
 		Schema        map[string]*Schema
 		State         *terraform.InstanceState
 		Config        map[string]interface{}
-		CustomizeDiff CustomizeDiffContextFunc
+		CustomizeDiff CustomizeDiffFunc
 		Diff          *terraform.InstanceDiff
 		Err           bool
 	}{
