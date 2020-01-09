@@ -182,9 +182,12 @@ func (p *Provider) ValidateResource(
 }
 
 // Configure implementation of terraform.ResourceProvider interface.
-// This method should likely have Context pulled through it
-// However it will involve breaking the terraform.ResourceProvider interface
 func (p *Provider) Configure(c *terraform.ResourceConfig) error {
+	panic("This should never be called")
+}
+
+// Context Aware Configure implementation.
+func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceConfig) error {
 	// No configuration
 	if p.ConfigureFunc == nil {
 		return nil
@@ -194,7 +197,7 @@ func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 
 	// Get a ResourceData for this configuration. To do this, we actually
 	// generate an intermediary "diff" although that is never exposed.
-	diff, err := sm.Diff(context.TODO(), nil, c, nil, p.meta, true)
+	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
 		return err
 	}
@@ -222,18 +225,11 @@ func (p *Provider) Apply(
 }
 
 // Diff implementation of terraform.ResourceProvider interface.
-// This should not be called, however some tests still rely on this codepath
-// namely helper/customdiff/testing_test.go
 func (p *Provider) Diff(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,
 	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Diff(context.TODO(), s, c, p.meta)
+	panic("This should never be called")
 }
 
 // Refresh implementation of terraform.ResourceProvider interface.

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -153,7 +154,7 @@ func TestProviderConfigure(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		err := tc.P.Configure(c)
+		err := tc.P.ConfigureContext(context.Background(), c)
 		if err != nil != tc.Err {
 			t.Fatalf("%d: %s", i, err)
 		}
@@ -291,12 +292,11 @@ func TestProviderDiff_legacyTimeoutType(t *testing.T) {
 		},
 	}
 	ic := terraform.NewResourceConfigRaw(invalidCfg)
-	_, err := p.Diff(
-		&terraform.InstanceInfo{
-			Type: "blah",
-		},
+	_, err := p.ResourcesMap["blah"].Diff(
+		context.Background(),
 		nil,
 		ic,
+		p.Meta(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -327,12 +327,11 @@ func TestProviderDiff_timeoutInvalidValue(t *testing.T) {
 		},
 	}
 	ic := terraform.NewResourceConfigRaw(invalidCfg)
-	_, err := p.Diff(
-		&terraform.InstanceInfo{
-			Type: "blah",
-		},
+	_, err := p.ResourcesMap["blah"].Diff(
+		context.Background(),
 		nil,
 		ic,
+		p.Meta(),
 	)
 	if err == nil {
 		t.Fatal("Expected provider.Diff to fail with invalid timeout value")

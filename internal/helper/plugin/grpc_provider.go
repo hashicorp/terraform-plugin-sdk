@@ -481,7 +481,8 @@ func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*pr
 	return &proto.Stop_Response{}, nil
 }
 
-func (s *GRPCProviderServer) Configure(_ context.Context, req *proto.Configure_Request) (*proto.Configure_Response, error) {
+func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure_Request) (*proto.Configure_Response, error) {
+	ctx = s.stopContext(ctx)
 	resp := &proto.Configure_Response{}
 
 	schemaBlock := s.getProviderSchemaBlock()
@@ -501,7 +502,7 @@ func (s *GRPCProviderServer) Configure(_ context.Context, req *proto.Configure_R
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
-	err = s.provider.Configure(config)
+	err = s.provider.ConfigureContext(ctx, config)
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 
 	return resp, nil
