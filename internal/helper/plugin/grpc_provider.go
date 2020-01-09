@@ -31,7 +31,7 @@ func NewGRPCProviderServerShim(p terraform.ResourceProvider) *GRPCProviderServer
 func NewGRPCProviderServer(p *schema.Provider) *GRPCProviderServer {
 	// This single shared context will be passed (directly or indirectly) to
 	// each provider method that can make network requests and cancelled if
-	// the Terraform operation recieves an interrupt request.
+	// the Terraform operation receives an interrupt request.
 	ctx, cancel := context.WithCancel(context.Background())
 	return &GRPCProviderServer{
 		provider: p,
@@ -44,17 +44,19 @@ func NewGRPCProviderServer(p *schema.Provider) *GRPCProviderServer {
 type GRPCProviderServer struct {
 	provider *schema.Provider
 	ctx      context.Context
-	stop     func()
+	stop     context.CancelFunc
 }
 
-// stopContext derives a new context from the global/server context
+// stopContext derives a new context from the root server context
 // this function then creates a goroutine and waits on the passed in context
 // when that context is cancelled we use the derived cancel func to signal cancellation
-// through to the SDK funcs. If the Stop handler is called the global cancel
+// through to the SDK funcs. If the Stop handler is called the root cancel
 // will also propagate through to the SDK funcs. Essentially we have merged
-// the cancellation signal of the global and GRPC request scoped context
+// the cancellation signal of the root server and GRPC request context
 func (s *GRPCProviderServer) stopContext(ctx context.Context) context.Context {
 	stoppable, cancel := context.WithCancel(s.ctx)
+	// in the future, we may want to copy metadata from the passed context
+	// onto stoppable
 	go func() {
 		<-ctx.Done()
 		cancel()
