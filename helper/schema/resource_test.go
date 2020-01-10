@@ -651,7 +651,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		// Update undefined for non-ForceNew field
 		2: {
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
 				Schema: map[string]*Schema{
 					"boo": &Schema{
 						Type:     TypeInt,
@@ -666,8 +666,8 @@ func TestResourceInternalValidate(t *testing.T) {
 		// Update defined for ForceNew field
 		3: {
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Update: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -697,7 +697,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		// non-writable *must not* have Create
 		5: {
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -712,9 +712,9 @@ func TestResourceInternalValidate(t *testing.T) {
 		// writable must have Read
 		6: {
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
-				Delete: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Update: Noop,
+				Delete: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -729,9 +729,9 @@ func TestResourceInternalValidate(t *testing.T) {
 		// writable must have Delete
 		7: {
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Read:   func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -745,10 +745,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		8: { // Reserved name at root should be disallowed
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Read:   func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
-				Delete: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
 				Schema: map[string]*Schema{
 					"count": {
 						Type:     TypeInt,
@@ -762,10 +762,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		9: { // Reserved name at nested levels should be allowed
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Read:   func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
-				Delete: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
 				Schema: map[string]*Schema{
 					"parent_list": &Schema{
 						Type:     TypeString,
@@ -787,10 +787,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		10: { // Provider reserved name should be allowed in resource
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Read:   func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
-				Delete: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
 				Schema: map[string]*Schema{
 					"alias": &Schema{
 						Type:     TypeString,
@@ -804,7 +804,7 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		11: { // ID should be allowed in data source
 			&Resource{
-				Read: func(d *ResourceData, meta interface{}) error { return nil },
+				Read: Noop,
 				Schema: map[string]*Schema{
 					"id": &Schema{
 						Type:     TypeString,
@@ -818,10 +818,10 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		12: { // Deprecated ID should be allowed in resource
 			&Resource{
-				Create: func(d *ResourceData, meta interface{}) error { return nil },
-				Read:   func(d *ResourceData, meta interface{}) error { return nil },
-				Update: func(d *ResourceData, meta interface{}) error { return nil },
-				Delete: func(d *ResourceData, meta interface{}) error { return nil },
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
 				Schema: map[string]*Schema{
 					"id": &Schema{
 						Type:       TypeString,
@@ -836,7 +836,7 @@ func TestResourceInternalValidate(t *testing.T) {
 
 		13: { // non-writable must not define CustomizeDiff
 			&Resource{
-				Read: func(d *ResourceData, meta interface{}) error { return nil },
+				Read: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -850,7 +850,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		},
 		14: { // Deprecated resource
 			&Resource{
-				Read: func(d *ResourceData, meta interface{}) error { return nil },
+				Read: Noop,
 				Schema: map[string]*Schema{
 					"goo": &Schema{
 						Type:     TypeInt,
@@ -858,6 +858,92 @@ func TestResourceInternalValidate(t *testing.T) {
 					},
 				},
 				DeprecationMessage: "This resource has been deprecated.",
+			},
+			true,
+			true,
+		},
+		15: { // Create and CreateContext should not both be set
+			&Resource{
+				Create:        Noop,
+				CreateContext: NoopContext,
+				Read:          Noop,
+				Update:        Noop,
+				Delete:        Noop,
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		16: { // Read and ReadContext should not both be set
+			&Resource{
+				Create:      Noop,
+				Read:        Noop,
+				ReadContext: NoopContext,
+				Update:      Noop,
+				Delete:      Noop,
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		17: { // Update and UpdateContext should not both be set
+			&Resource{
+				Create:        Noop,
+				Read:          Noop,
+				Update:        Noop,
+				UpdateContext: NoopContext,
+				Delete:        Noop,
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		18: { // Delete and DeleteContext should not both be set
+			&Resource{
+				Create:        Noop,
+				Read:          Noop,
+				Update:        Noop,
+				Delete:        Noop,
+				DeleteContext: NoopContext,
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		19: { // Exists and ExistsContext should not both be set
+			&Resource{
+				Create:        Noop,
+				Read:          Noop,
+				Update:        Noop,
+				Delete:        Noop,
+				Exists:        func(*ResourceData, interface{}) (bool, error) { return false, nil },
+				ExistsContext: func(context.Context, *ResourceData, interface{}) (bool, error) { return false, nil },
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeString,
+						Required: true,
+					},
+				},
 			},
 			true,
 			true,

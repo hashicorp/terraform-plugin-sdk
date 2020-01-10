@@ -96,8 +96,8 @@ type Resource struct {
 
 	// The functions below are the CRUD operations for this resource.
 	//
-	// The only optional operation is Update. If Update is not implemented,
-	// then updates will not be supported for this resource.
+	// The only optional operation is Update and Exists. If Update is not
+	// implemented, then updates will not be supported for this resource.
 	//
 	// The ResourceData parameter in the functions below are used to
 	// query configuration and changes for the resource as well as to set
@@ -262,48 +262,48 @@ type StateUpgradeFunc func(rawState map[string]interface{}, meta interface{}) (m
 type CustomizeDiffFunc func(context.Context, *ResourceDiff, interface{}) error
 
 func (r *Resource) create(ctx context.Context, d *ResourceData, meta interface{}) error {
-	if r.CreateContext != nil {
-		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutCreate))
-		defer cancel()
-		return r.CreateContext(ctx, d, meta)
+	if r.Create != nil {
+		return r.Create(d, meta)
 	}
-	return r.Create(d, meta)
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutCreate))
+	defer cancel()
+	return r.CreateContext(ctx, d, meta)
 }
 
 func (r *Resource) read(ctx context.Context, d *ResourceData, meta interface{}) error {
-	if r.ReadContext != nil {
-		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
-		defer cancel()
-		return r.ReadContext(ctx, d, meta)
+	if r.Read != nil {
+		return r.Read(d, meta)
 	}
-	return r.Read(d, meta)
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
+	defer cancel()
+	return r.ReadContext(ctx, d, meta)
 }
 
 func (r *Resource) update(ctx context.Context, d *ResourceData, meta interface{}) error {
-	if r.UpdateContext != nil {
-		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutUpdate))
-		defer cancel()
-		return r.UpdateContext(ctx, d, meta)
+	if r.Update != nil {
+		return r.Update(d, meta)
 	}
-	return r.Update(d, meta)
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutUpdate))
+	defer cancel()
+	return r.UpdateContext(ctx, d, meta)
 }
 
 func (r *Resource) delete(ctx context.Context, d *ResourceData, meta interface{}) error {
-	if r.DeleteContext != nil {
-		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutDelete))
-		defer cancel()
-		return r.DeleteContext(ctx, d, meta)
+	if r.Delete != nil {
+		return r.Delete(d, meta)
 	}
-	return r.Delete(d, meta)
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutDelete))
+	defer cancel()
+	return r.DeleteContext(ctx, d, meta)
 }
 
 func (r *Resource) exists(ctx context.Context, d *ResourceData, meta interface{}) (bool, error) {
-	if r.ExistsContext != nil {
-		ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
-		defer cancel()
-		return r.ExistsContext(ctx, d, meta)
+	if r.Exists != nil {
+		return r.Exists(d, meta)
 	}
-	return r.Exists(d, meta)
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
+	defer cancel()
+	return r.ExistsContext(ctx, d, meta)
 }
 
 // Apply creates, updates, and/or deletes a resource.
@@ -794,6 +794,23 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 				return fmt.Errorf("%s is a reserved field name", k)
 			}
 		}
+	}
+
+	// check context funcs are not set alongside their nonctx counterparts
+	if r.CreateContext != nil && r.Create != nil {
+		return fmt.Errorf("CreateContext and Create should not both be set")
+	}
+	if r.ReadContext != nil && r.Read != nil {
+		return fmt.Errorf("ReadContext and Read should not both be set")
+	}
+	if r.UpdateContext != nil && r.Update != nil {
+		return fmt.Errorf("UpdateContext and Update should not both be set")
+	}
+	if r.DeleteContext != nil && r.Delete != nil {
+		return fmt.Errorf("DeleteContext and Delete should not both be set")
+	}
+	if r.ExistsContext != nil && r.Exists != nil {
+		return fmt.Errorf("ExistsContext and Exists should not both be set")
 	}
 
 	return schemaMap(r.Schema).InternalValidate(tsm)
