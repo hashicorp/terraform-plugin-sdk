@@ -64,12 +64,6 @@ type Resource struct {
 	// their Versioning at any integer >= 1
 	SchemaVersion int
 
-	// MigrateState is deprecated and any new changes to a resource's schema
-	// should be handled by StateUpgraders. Existing MigrateState implementations
-	// should remain for compatibility with existing state. MigrateState will
-	// still be called if the stored SchemaVersion is less than the
-	// first version of the StateUpgraders.
-	//
 	// MigrateState is responsible for updating an InstanceState with an old
 	// version to the format expected by the current version of the Schema.
 	//
@@ -80,6 +74,12 @@ type Resource struct {
 	// the InstanceState that needs updating, as well as the configured
 	// provider's configured meta interface{}, in case the migration process
 	// needs to make any remote API calls.
+	//
+	// Deprecated: MigrateState is deprecated and any new changes to a resource's schema
+	// should be handled by StateUpgraders. Existing MigrateState implementations
+	// should remain for compatibility with existing state. MigrateState will
+	// still be called if the stored SchemaVersion is less than the
+	// first version of the StateUpgraders.
 	MigrateState StateMigrateFunc
 
 	// StateUpgraders contains the functions responsible for upgrading an
@@ -93,6 +93,26 @@ type Resource struct {
 	// for legacy schemas that weren't recorded and can be handled by
 	// MigrateState.
 	StateUpgraders []StateUpgrader
+
+	// Deprecated: Create is deprecated in favor of its context aware
+	// equivalent CreateContext. Only one of the two functions can bet set.
+	Create CreateFunc
+
+	// Deprecated: Read is deprecated in favor of its context aware
+	// equivalent ReadContext. Only one of the two functions can bet set.
+	Read ReadFunc
+
+	// Deprecated: Update is deprecated in favor of its context aware
+	// equivalent UpdateContext. Only one of the two functions can bet set.
+	Update UpdateFunc
+
+	// Deprecated: Delete is deprecated in favor of its context aware
+	// equivalent DeleteContext. Only one of the two functions can bet set.
+	Delete DeleteFunc
+
+	// Deprecated: Exists is deprecated in favor of its context aware
+	// equivalent ExistsContext. Only one of the two functions can bet set.
+	Exists ExistsFunc
 
 	// The functions below are the CRUD operations for this resource.
 	//
@@ -118,13 +138,6 @@ type Resource struct {
 	// can also signal existence in the Read method by calling d.SetId("")
 	// if the Resource is no longer present and should be removed from state.
 	// The *ResourceData passed to Exists should _not_ be modified.
-	Create CreateFunc
-	Read   ReadFunc
-	Update UpdateFunc
-	Delete DeleteFunc
-	Exists ExistsFunc
-
-	// CRUD functions with passed context
 	CreateContext CreateContextFunc
 	ReadContext   ReadContextFunc
 	UpdateContext UpdateContextFunc
