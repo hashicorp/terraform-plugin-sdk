@@ -314,13 +314,12 @@ type TestCase struct {
 	// same state. Each step can have its own check to verify correctness.
 	Steps []TestStep
 
-	// The settings below control the "ID-only refresh test." This is
-	// an enabled-by-default test that tests that a refresh can be
-	// refreshed with only an ID to result in the same attributes.
-	// This validates completeness of Refresh.
+	// The settings below control the "ID-only refresh test.", which
+	// tests that a refresh can be refreshed with only an ID to result
+	// in the same attributes. This validates completeness of Refresh.
 	//
 	// IDRefreshName is the name of the resource to check. This will
-	// default to the first non-nil primary resource in the state.
+	// direct to the first non-nil primary resource in the state.
 	//
 	// IDRefreshIgnore is a list of configuration keys that will be ignored.
 	IDRefreshName   string
