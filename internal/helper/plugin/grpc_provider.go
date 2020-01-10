@@ -47,18 +47,13 @@ type GRPCProviderServer struct {
 	stop     context.CancelFunc
 }
 
-// stopContext derives a new context from the root server context
-// this function then creates a goroutine and waits on the passed in context
-// when that context is cancelled we use the derived cancel func to signal cancellation
-// through to the SDK funcs. If the Stop handler is called the root cancel
-// will also propagate through to the SDK funcs. Essentially we have merged
-// the cancellation signal of the root server and GRPC request context
-func (s *GRPCProviderServer) stopContext(ctx context.Context) context.Context {
-	stoppable, cancel := context.WithCancel(s.ctx)
-	// in the future, we may want to copy metadata from the passed context
-	// onto stoppable
+// StopContext derives a new context from the passed in grpc context.
+// It creates a goroutine to wait for the server stop and propagates cancellation
+// to the derived grpc context.
+func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
+	stoppable, cancel := context.WithCancel(ctx)
 	go func() {
-		<-ctx.Done()
+		<-s.ctx.Done()
 		cancel()
 	}()
 	return stoppable
@@ -482,7 +477,6 @@ func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*pr
 }
 
 func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure_Request) (*proto.Configure_Response, error) {
-	ctx = s.stopContext(ctx)
 	resp := &proto.Configure_Response{}
 
 	schemaBlock := s.getProviderSchemaBlock()
@@ -509,7 +503,6 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 }
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadResource_Request) (*proto.ReadResource_Response, error) {
-	ctx = s.stopContext(ctx)
 	resp := &proto.ReadResource_Response{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
@@ -587,7 +580,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 }
 
 func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.PlanResourceChange_Request) (*proto.PlanResourceChange_Response, error) {
-	ctx = s.stopContext(ctx)
 	resp := &proto.PlanResourceChange_Response{}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
@@ -801,7 +793,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 }
 
 func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto.ApplyResourceChange_Request) (*proto.ApplyResourceChange_Response, error) {
-	ctx = s.stopContext(ctx)
 	resp := &proto.ApplyResourceChange_Response{
 		// Start with the existing state as a fallback
 		NewState: req.PriorState,
@@ -1015,7 +1006,6 @@ func (s *GRPCProviderServer) ImportResourceState(_ context.Context, req *proto.I
 }
 
 func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.ReadDataSource_Request) (*proto.ReadDataSource_Response, error) {
-	ctx = s.stopContext(ctx)
 	resp := &proto.ReadDataSource_Response{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
