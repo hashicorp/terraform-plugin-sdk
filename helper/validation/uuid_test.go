@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestUUID(t *testing.T) {
+func TestValidationUUID(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -44,7 +44,7 @@ func TestUUID(t *testing.T) {
 	}
 }
 
-func TestUUIDorEmpty(t *testing.T) {
+func TestValidationUUIDorEmpty(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool

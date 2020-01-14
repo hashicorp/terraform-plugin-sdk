@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestStringIsNotEmpty(t *testing.T) {
+func TestValidationStringIsNotEmpty(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -81,7 +81,7 @@ func TestStringIsNotEmpty(t *testing.T) {
 	}
 }
 
-func TestStringIsBase64(t *testing.T) {
+func TestValidationStringIsBase64(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
