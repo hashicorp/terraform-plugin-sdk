@@ -33,12 +33,12 @@ func TestGUID(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := StringIsBase64(tc.Value, tn)
+			_, errors := GUID(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("%s: GUID(%s) produced an unexpected error", tn, errors)
+				t.Errorf("GUID(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("%s: GUID(%s) did not error", tn, errors)
+				t.Errorf("GUID(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -51,11 +51,11 @@ func TestGUIDorEmpty(t *testing.T) {
 	}{
 		"NotString": {
 			Value: 7,
-			Error: false,
+			Error: true,
 		},
 		"Empty": {
 			Value: "",
-			Error: true,
+			Error: false,
 		},
 		"InvalidGuid": {
 			Value: "00000000-0000-123-0000-000000000000",
@@ -73,12 +73,12 @@ func TestGUIDorEmpty(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := StringIsBase64(tc.Value, tn)
+			_, errors := GUIDOrEmpty(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("%s: GUIDOrEmpty(%s) produced an unexpected error", tn, errors)
+				t.Errorf("GUIDOrEmpty(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("%s: GUIDOrEmpty(%s) did not error", tn, errors)
+				t.Errorf("GUIDOrEmpty(%s) did not error", tc.Value)
 			}
 		})
 	}

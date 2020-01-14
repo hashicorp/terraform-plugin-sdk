@@ -73,9 +73,9 @@ func TestStringIsNotEmpty(t *testing.T) {
 			_, errors := StringIsNotEmpty(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("%s: StringIsNotEmpty(%s) produced an unexpected error", tn, errors)
+				t.Errorf("StringIsNotEmpty(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("%s: StringIsNotEmpty(%s) did not error", tn, errors)
+				t.Errorf("StringIsNotEmpty(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -109,9 +109,9 @@ func TestStringIsBase64(t *testing.T) {
 			_, errors := StringIsBase64(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("%s: StringIsBase64(%s) produced an unexpected error", tn, errors)
+				t.Errorf("StringIsBase64(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("%s: StringIsBase64(%s) did not error", tn, errors)
+				t.Errorf("StringIsBase64(%s) did not error", tc.Value)
 			}
 		})
 	}
