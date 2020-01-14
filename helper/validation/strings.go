@@ -29,7 +29,7 @@ func StringIsBase64(i interface{}, k string) (warnings []string, errors []error)
 	// NoEmptyStrings checks it is a string
 	v, _ := i.(string)
 	if _, err := base64.StdEncoding.DecodeString(v); err != nil {
-		errors = append(errors, fmt.Errorf("expected %w to be a base64 string, got %v", k, v))
+		errors = append(errors, fmt.Errorf("expected %q to be a base64 string, got %v", k, v))
 	}
 
 	return
