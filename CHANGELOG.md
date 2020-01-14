@@ -1,4 +1,8 @@
-# 1.4.2 (Unreleased)
+# 1.5.0 (Unreleased)
+
+FEATURES: 
+
+* helper/validation: Add `StringIsEmpty`, `StringIsNotEmpty`, `StringIsWhiteSpace`, `StringIsNotWhiteSpace`, and `UUID` validation functions [GH-294]
 
 BUG FIXES:
 
