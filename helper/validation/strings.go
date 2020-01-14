@@ -1,13 +1,13 @@
 package validation
 
 import (
-	`encoding/base64`
+	"encoding/base64"
 	"fmt"
-	`regexp`
+	"regexp"
 	"strings"
 
-	`github.com/hashicorp/terraform-plugin-sdk/helper/schema`
-	`github.com/hashicorp/terraform-plugin-sdk/helper/structure`
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/structure"
 )
 
 // StringIsNotEmpty is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
@@ -164,7 +164,6 @@ func StringDoesNotContainAny(chars string) schema.SchemaValidateFunc {
 		return
 	}
 }
-
 
 // StringIsBase64 is a ValidateFunc that ensures a string can be parsed as Base64
 func StringIsBase64(i interface{}, k string) (warnings []string, errors []error) {

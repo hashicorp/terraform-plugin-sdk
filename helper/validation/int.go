@@ -1,9 +1,9 @@
 package validation
 
 import (
-	`fmt`
+	"fmt"
 
-	`github.com/hashicorp/terraform-plugin-sdk/helper/schema`
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 // IntBetween returns a SchemaValidateFunc which tests if the provided value

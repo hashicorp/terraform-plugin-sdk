@@ -1,10 +1,10 @@
 package validation
 
 import (
-	`regexp`
-	`testing`
+	"regexp"
+	"testing"
 
-	`github.com/hashicorp/terraform-plugin-sdk/helper/schema`
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type testCase struct {
@@ -12,7 +12,6 @@ type testCase struct {
 	f           schema.SchemaValidateFunc
 	expectedErr *regexp.Regexp
 }
-
 
 func runTestCases(t *testing.T, cases []testCase) {
 	matchErr := func(errs []error, r *regexp.Regexp) bool {

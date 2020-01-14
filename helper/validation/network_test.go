@@ -1,8 +1,8 @@
 package validation
 
 import (
-	`regexp`
-	`testing`
+	"regexp"
+	"testing"
 )
 
 func TestValidationSingleIP(t *testing.T) {

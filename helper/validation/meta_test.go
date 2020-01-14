@@ -1,10 +1,9 @@
 package validation
 
 import (
-	`regexp`
-	`testing`
+	"regexp"
+	"testing"
 )
-
 
 func TestValidationNoZeroValues(t *testing.T) {
 	runTestCases(t, []testCase{

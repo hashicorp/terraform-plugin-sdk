@@ -1,7 +1,7 @@
 package validation
 
 import (
-	`regexp`
+	"regexp"
 	"testing"
 )
 
@@ -343,7 +343,6 @@ func TestValidationStringDoesNotMatch(t *testing.T) {
 	})
 }
 
-
 func TestValidateJsonString(t *testing.T) {
 	type testCases struct {
 		Value    string
@@ -417,7 +416,6 @@ func TestValidateListUniqueStrings(t *testing.T) {
 		},
 	})
 }
-
 
 func TestStringDoesNotContainAny(t *testing.T) {
 	chars := "|:/"

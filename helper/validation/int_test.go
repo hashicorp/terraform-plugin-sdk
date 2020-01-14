@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func TestValidationIntBetween(t *testing.T) {
 	runTestCases(t, []testCase{
 		{
