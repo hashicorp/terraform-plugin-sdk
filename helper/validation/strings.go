@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// NoEmptyStrings validates that the string is not just whitespace characters (equal to [\r\n\t\f\v ])
+// StringIsNotEmpty is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
 func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -20,6 +20,7 @@ func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
+// StringIsBase64 is a ValidateFunc that ensures a string can be parsed as Base64
 func StringIsBase64(i interface{}, k string) (warnings []string, errors []error) {
 	// Empty string is not allowed
 	if warnings, errors = StringIsNotEmpty(i, k); len(errors) > 0 {

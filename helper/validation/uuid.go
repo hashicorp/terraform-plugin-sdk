@@ -7,8 +7,10 @@ import (
 	"github.com/hashicorp/go-uuid"
 )
 
+// UUIDRegExp is a Regular Expression that can be used to validate UUIDs
 var UUIDRegExp = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
 
+// UUID is a ValidateFunc that ensures a string can be parsed as UUID
 func UUID(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -23,6 +25,7 @@ func UUID(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
+// UUID is a ValidateFunc that ensures a string is empty or can be parsed as UUID
 func UUIDOrEmpty(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
