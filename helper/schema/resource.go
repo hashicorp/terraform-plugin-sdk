@@ -216,19 +216,19 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 	return s, nil
 }
 
-// See Resource documentation.
+// Deprecated: Please use the context aware equivalent CreateContextFunc.
 type CreateFunc func(*ResourceData, interface{}) error
 
-// See Resource documentation.
+// Deprecated: Please use the context aware equivalent ReadContextFunc.
 type ReadFunc func(*ResourceData, interface{}) error
 
-// See Resource documentation.
+// Deprecated: Please use the context aware equivalent UpdateContextFunc.
 type UpdateFunc func(*ResourceData, interface{}) error
 
-// See Resource documentation.
+// Deprecated: Please use the context aware equivalent DeleteContextFunc.
 type DeleteFunc func(*ResourceData, interface{}) error
 
-// See Resource documentation.
+// Deprecated: Please use the context aware equivalent ExistsContextFunc.
 type ExistsFunc func(*ResourceData, interface{}) (bool, error)
 
 // See Resource documentation.
