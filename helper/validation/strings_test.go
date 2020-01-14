@@ -37,7 +37,6 @@ func TestValidationStringIsNotEmpty(t *testing.T) {
 			Value: "Hello kt's sentence.",
 			Error: false,
 		},
-
 		"StartsWithWhitespace": {
 			Value: "  7",
 			Error: false,
