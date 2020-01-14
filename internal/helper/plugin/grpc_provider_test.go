@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1364,4 +1365,129 @@ func TestValidateNulls(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestContextCancel_grpc(t *testing.T) {
+	r := &schema.Resource{
+		SchemaVersion: 4,
+		Schema: map[string]*schema.Schema{
+			"foo": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+		},
+		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) error {
+			<-ctx.Done()
+			rd.SetId("bar")
+			return nil
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
+		},
+	})
+
+	schema := r.CoreConfigSchema()
+	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"id": cty.UnknownVal(cty.String),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testReq := &proto.ApplyResourceChange_Request{
+		TypeName: "test",
+		PriorState: &proto.DynamicValue{
+			Msgpack: priorState,
+		},
+		PlannedState: &proto.DynamicValue{
+			Msgpack: plannedState,
+		},
+	}
+
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
+			t.Fatal(err)
+		}
+		wg.Done()
+	}()
+	// GRPC request cancel
+	cancel()
+	wg.Wait()
+}
+
+func TestContextCancel_stop(t *testing.T) {
+	r := &schema.Resource{
+		SchemaVersion: 4,
+		Schema: map[string]*schema.Schema{
+			"foo": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+		},
+		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) error {
+			<-ctx.Done()
+			rd.SetId("bar")
+			return nil
+		},
+	}
+
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
+		},
+	})
+
+	schema := r.CoreConfigSchema()
+	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"id": cty.UnknownVal(cty.String),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testReq := &proto.ApplyResourceChange_Request{
+		TypeName: "test",
+		PriorState: &proto.DynamicValue{
+			Msgpack: priorState,
+		},
+		PlannedState: &proto.DynamicValue{
+			Msgpack: plannedState,
+		},
+	}
+
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		if _, err := server.ApplyResourceChange(server.StopContext(context.Background()), testReq); err != nil {
+			t.Fatal(err)
+		}
+		wg.Done()
+	}()
+	server.Stop(context.Background(), &proto.Stop_Request{})
+	wg.Wait()
 }
