@@ -13,8 +13,50 @@ func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 		return nil, []error{fmt.Errorf("expected type of %q to be string", k)}
 	}
 
+	if v == "" {
+		return nil, []error{fmt.Errorf("expected %q to not be an empty string", k)}
+	}
+
+	return nil, nil
+}
+
+// StringIsNotEmpty is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
+func StringIsNotWhiteSpace(i interface{}, k string) ([]string, []error) {
+	v, ok := i.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("expected type of %q to be string", k)}
+	}
+
 	if strings.TrimSpace(v) == "" {
-		return nil, []error{fmt.Errorf("expected %q it not be an empty string (whitespace not allowed)", k)}
+		return nil, []error{fmt.Errorf("expected %q to not be an empty string or whitespace", k)}
+	}
+
+	return nil, nil
+}
+
+// StringIsEmpty is a ValidateFunc that ensures a string has no characters
+func StringIsEmpty(i interface{}, k string) ([]string, []error) {
+	v, ok := i.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("expected type of %q to be string", k)}
+	}
+
+	if v != "" {
+		return nil, []error{fmt.Errorf("expected %q to be an empty string: got %v", k, v)}
+	}
+
+	return nil, nil
+}
+
+// StringIsEmpty is a ValidateFunc that ensures a string is composed of entirly Wh
+func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
+	v, ok := i.(string)
+	if !ok {
+		return nil, []error{fmt.Errorf("expected type of %q to be string", k)}
+	}
+
+	if strings.TrimSpace(v) != "" {
+		return nil, []error{fmt.Errorf("expected %q to be an empty string or whitespace: got %v", k, v)}
 	}
 
 	return nil, nil

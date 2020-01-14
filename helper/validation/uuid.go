@@ -24,18 +24,3 @@ func UUID(i interface{}, k string) (warnings []string, errors []error) {
 
 	return warnings, errors
 }
-
-// UUID is a ValidateFunc that ensures a string is empty or can be parsed as UUID
-func UUIDOrEmpty(i interface{}, k string) (warnings []string, errors []error) {
-	v, ok := i.(string)
-	if !ok {
-		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
-		return
-	}
-
-	if v == "" {
-		return
-	}
-
-	return UUID(i, k)
-}
