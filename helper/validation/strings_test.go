@@ -447,10 +447,6 @@ func TestStringDoesNotContainAny(t *testing.T) {
 	}
 }
 
-
-
-
-
 func TestValidationRegexp(t *testing.T) {
 	runTestCases(t, []testCase{
 		{

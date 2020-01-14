@@ -2,10 +2,7 @@ package validation
 
 import (
 	"fmt"
-	"reflect"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 
