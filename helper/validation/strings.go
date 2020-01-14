@@ -48,7 +48,7 @@ func StringIsEmpty(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
-// StringIsEmpty is a ValidateFunc that ensures a string is composed of entirly Wh
+// StringIsEmpty is a ValidateFunc that ensures a string is composed of entirely whitespace
 func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
 	v, ok := i.(string)
 	if !ok {
