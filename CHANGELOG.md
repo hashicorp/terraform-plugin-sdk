@@ -2,7 +2,11 @@
 
 FEATURES: 
 
-* helper/validation: Add `StringIsEmpty`, `StringIsNotEmpty`, `StringIsWhiteSpace`, `StringIsNotWhiteSpace`, and `UUID` validation functions [GH-294]
+* helper/validation: `StringIsEmpty` [GH-294]
+* helper/validation: `StringIsNotEmpty` [GH-294]
+* helper/validation: `StringIsWhiteSpace` [GH-294]
+* helper/validation: `StringIsNotWhiteSpace` [GH-294]
+* helper/validation: `UUID` [GH-294]
 
 BUG FIXES:
 
