@@ -57,12 +57,12 @@ func TestValidationStringIsRFC3339Time(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := StringIsRFC3339Time(tc.Value, tn)
+			_, errors := IsRFC3339Time(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("StringIsRFC3339Time(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsRFC3339Time(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("StringIsRFC3339Time(%s) did not error", tc.Value)
+				t.Errorf("IsRFC3339Time(%s) did not error", tc.Value)
 			}
 		})
 	}

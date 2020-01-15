@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func StringIsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
+func IsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
 	return StringInSlice([]string{
 		"Monday",
 		"Tuesday",
@@ -19,7 +19,7 @@ func StringIsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
 	}, ignoreCase)
 }
 
-func StringIsMonth(ignoreCase bool) schema.SchemaValidateFunc {
+func IsMonth(ignoreCase bool) schema.SchemaValidateFunc {
 	return StringInSlice([]string{
 		"January",
 		"February",
@@ -37,7 +37,7 @@ func StringIsMonth(ignoreCase bool) schema.SchemaValidateFunc {
 }
 
 // ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses as time.RFC3339 format
-func StringIsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) {
+func IsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
@@ -53,7 +53,7 @@ func StringIsRFC3339Time(i interface{}, k string) (warnings []string, errors []e
 
 // ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses as time.RFC3339 format
 //
-// Deprecated: use StringIsRFC3339Time() instead
+// Deprecated: use IsRFC3339Time() instead
 func ValidateRFC3339TimeString(v interface{}, k string) (ws []string, errors []error) {
-	return StringIsRFC3339Time(v, k)
+	return IsRFC3339Time(v, k)
 }
