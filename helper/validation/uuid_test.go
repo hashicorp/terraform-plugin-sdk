@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestValidationUUID(t *testing.T) {
+func TestValidationIsUUID(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -36,9 +36,9 @@ func TestValidationUUID(t *testing.T) {
 			_, errors := IsUUID(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("UUID(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsUUID(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("UUID(%s) did not error", tc.Value)
+				t.Errorf("IsUUID(%s) did not error", tc.Value)
 			}
 		})
 	}
