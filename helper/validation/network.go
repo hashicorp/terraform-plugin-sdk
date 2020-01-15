@@ -27,7 +27,7 @@ func SingleIP() schema.SchemaValidateFunc {
 	}
 }
 
-func IPv6Address(i interface{}, k string) (warnings []string, errors []error) {
+func IsIPv6Address(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
@@ -42,7 +42,7 @@ func IPv6Address(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
-func IPv4Address(i interface{}, k string) (warnings []string, errors []error) {
+func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
@@ -83,7 +83,7 @@ func IPRange() schema.SchemaValidateFunc {
 	}
 }
 
-func CIDR(i interface{}, k string) (warnings []string, errors []error) {
+func IsCIDR(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
@@ -132,7 +132,7 @@ func CIDRNetwork(min, max int) schema.SchemaValidateFunc {
 	}
 }
 
-func MACAddress(i interface{}, k string) (warnings []string, errors []error) {
+func IsMACAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
@@ -146,7 +146,7 @@ func MACAddress(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
-func PortNumber(i interface{}, k string) (warnings []string, errors []error) {
+func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be int", k))
@@ -160,7 +160,7 @@ func PortNumber(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
-func PortNumberOrZero(i interface{}, k string) (warnings []string, errors []error) {
+func IsPortNumberOrZero(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be int", k))

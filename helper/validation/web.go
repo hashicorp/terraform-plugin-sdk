@@ -9,14 +9,14 @@ import (
 )
 
 func URLIsHTTPS(i interface{}, k string) (_ []string, errors []error) {
-	return URLWithScheme([]string{"https"})(i, k)
+	return IsURLWithScheme([]string{"https"})(i, k)
 }
 
 func URLIsHTTPOrHTTPS(i interface{}, k string) (_ []string, errors []error) {
-	return URLWithScheme([]string{"http", "https"})(i, k)
+	return IsURLWithScheme([]string{"http", "https"})(i, k)
 }
 
-func URLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
+func IsURLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (_ []string, errors []error) {
 		v, ok := i.(string)
 		if !ok {

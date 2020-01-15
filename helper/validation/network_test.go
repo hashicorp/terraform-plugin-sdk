@@ -38,18 +38,18 @@ func TestValidateCIDR(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := CIDR(tc.Value, tn)
+			_, errors := IsCIDR(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("CIDR(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsCIDR(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("CIDR(%s) did not error", tc.Value)
+				t.Errorf("IsCIDR(%s) did not error", tc.Value)
 			}
 		})
 	}
 }
 
-func TestValidateIPv6Address(t *testing.T) {
+func TestValidateIsIPv6Address(t *testing.T) {
 	cases := map[string]struct {
 		Value string
 		Error bool
@@ -94,18 +94,18 @@ func TestValidateIPv6Address(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := IPv6Address(tc.Value, tn)
+			_, errors := IsIPv6Address(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("IPv6Address(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsIPv6Address(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("IPv6Address(%s) did not error", tc.Value)
+				t.Errorf("IsIPv6Address(%s) did not error", tc.Value)
 			}
 		})
 	}
 }
 
-func TestValidateIPv4Address(t *testing.T) {
+func TestValidateIsIPv4Address(t *testing.T) {
 	cases := map[string]struct {
 		Value string
 		Error bool
@@ -150,12 +150,12 @@ func TestValidateIPv4Address(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := IPv4Address(tc.Value, tn)
+			_, errors := IsIPv4Address(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("IPv4Address(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsIPv4Address(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("IPv4Address(%s) did not error", tc.Value)
+				t.Errorf("IsIPv4Address(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -245,12 +245,12 @@ func TestValidationMACAddress(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := MACAddress(tc.Value, tn)
+			_, errors := IsMACAddress(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("MACAddress(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsMACAddress(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("MACAddress(%s) did not error", tc.Value)
+				t.Errorf("IsMACAddress(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -297,12 +297,12 @@ func TestValidationPortNumber(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := PortNumber(tc.Value, tn)
+			_, errors := IsPortNumber(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("PortNumber(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsPortNumber(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("PortNumber(%s) did not error", tc.Value)
+				t.Errorf("IsPortNumber(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -349,12 +349,12 @@ func TestValidationPortNumberOrZero(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := PortNumberOrZero(tc.Value, tn)
+			_, errors := IsPortNumberOrZero(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("PortNumberOrZero(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsPortNumberOrZero(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("PortNumberOrZero(%s) did not error", tc.Value)
+				t.Errorf("IsPortNumberOrZero(%s) did not error", tc.Value)
 			}
 		})
 	}
