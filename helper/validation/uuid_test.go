@@ -33,7 +33,7 @@ func TestValidationUUID(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := IsValidUUID(tc.Value, tn)
+			_, errors := IsUUID(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
 				t.Errorf("UUID(%s) produced an unexpected error", tc.Value)
