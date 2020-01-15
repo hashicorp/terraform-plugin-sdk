@@ -273,6 +273,13 @@ func (p *Provider) Resources() []terraform.ResourceType {
 func (p *Provider) ImportState(
 	info *terraform.InstanceInfo,
 	id string) ([]*terraform.InstanceState, error) {
+	panic("This should never be called")
+}
+
+func (p *Provider) ImportStateContext(
+	ctx context.Context,
+	info *terraform.InstanceInfo,
+	id string) ([]*terraform.InstanceState, error) {
 	// Find the resource
 	r, ok := p.ResourcesMap[info.Type]
 	if !ok {
