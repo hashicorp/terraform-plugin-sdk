@@ -6,7 +6,7 @@ FEATURES:
 * helper/validation: `StringIsNotEmpty` [GH-294]
 * helper/validation: `StringIsWhiteSpace` [GH-294]
 * helper/validation: `StringIsNotWhiteSpace` [GH-294]
-* helper/validation: `UUID` [GH-294]
+* helper/validation: `IsUUID` [GH-294][GH-297]
 
 BUG FIXES:
 
