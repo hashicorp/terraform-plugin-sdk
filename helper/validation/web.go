@@ -8,14 +8,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func URLIsHTTPS(i interface{}, k string) (_ []string, errors []error) {
+// IsURLWithHTTPS is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
+func IsURLWithHTTPS(i interface{}, k string) (_ []string, errors []error) {
 	return IsURLWithScheme([]string{"https"})(i, k)
 }
 
-func URLIsHTTPOrHTTPS(i interface{}, k string) (_ []string, errors []error) {
+// IsURLWithHTTPorHTTPS is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
+func IsURLWithHTTPorHTTPS(i interface{}, k string) (_ []string, errors []error) {
 	return IsURLWithScheme([]string{"http", "https"})(i, k)
 }
 
+// IsURLWithScheme is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
 func IsURLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (_ []string, errors []error) {
 		v, ok := i.(string)

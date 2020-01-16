@@ -26,7 +26,7 @@ func SingleIP() schema.SchemaValidateFunc {
 		return
 	}
 }
-
+// IsIPv6Address is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
 func IsIPv6Address(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -42,6 +42,7 @@ func IsIPv6Address(i interface{}, k string) (warnings []string, errors []error) 
 	return warnings, errors
 }
 
+// IsIPv4Address is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv4 address
 func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -57,8 +58,7 @@ func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) 
 	return warnings, errors
 }
 
-// IPRange returns a SchemaValidateFunc which tests if the provided value
-// is of type string, and in valid Value range notation
+// IPRange returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
 func IPRange() schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (s []string, es []error) {
 		v, ok := i.(string)
@@ -83,6 +83,7 @@ func IPRange() schema.SchemaValidateFunc {
 	}
 }
 
+// IsCIDR is a SchemaValidateFunc which tests if the provided value is of type string and a valid CIDR
 func IsCIDR(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -132,6 +133,7 @@ func CIDRNetwork(min, max int) schema.SchemaValidateFunc {
 	}
 }
 
+// IsMACAddress is a SchemaValidateFunc which tests if the provided value is of type string and a valid MAC address
 func IsMACAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -146,6 +148,7 @@ func IsMACAddress(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
+// IsPortNumber is a SchemaValidateFunc which tests if the provided value is of type string and a valid TCP Port Number
 func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {
@@ -160,6 +163,7 @@ func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 	return warnings, errors
 }
 
+// IsPortNumberOrZero is a SchemaValidateFunc which tests if the provided value is of type string and a valid TCP Port Number or zero
 func IsPortNumberOrZero(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {

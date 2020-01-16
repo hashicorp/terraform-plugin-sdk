@@ -41,12 +41,12 @@ func TestURLIsHTTPS(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := URLIsHTTPS(tc.Value, tn)
+			_, errors := IsURLWithHTTPS(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("URLIsHTTPS(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsURLWithHTTPS(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("URLIsHTTPS(%s) did not error", tc.Value)
+				t.Errorf("IsURLWithHTTPS(%s) did not error", tc.Value)
 			}
 		})
 	}
@@ -89,12 +89,12 @@ func TestURLIsHTTPOrHTTPS(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := URLIsHTTPOrHTTPS(tc.Value, tn)
+			_, errors := IsURLWithHTTPorHTTPS(tc.Value, tn)
 
 			if len(errors) > 0 && !tc.Error {
-				t.Errorf("URLIsHTTPOrHTTPS(%s) produced an unexpected error", tc.Value)
+				t.Errorf("IsURLWithHTTPorHTTPS(%s) produced an unexpected error", tc.Value)
 			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("URLIsHTTPOrHTTPS(%s) did not error", tc.Value)
+				t.Errorf("IsURLWithHTTPorHTTPS(%s) did not error", tc.Value)
 			}
 		})
 	}

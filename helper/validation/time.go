@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+// IsDayOfTheWeek id a SchemaValidateFunc which tests if the provided value is of type string and a valid english day of the week
 func IsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
 	return StringInSlice([]string{
 		"Monday",
@@ -19,6 +20,7 @@ func IsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
 	}, ignoreCase)
 }
 
+// IsMonth id a SchemaValidateFunc which tests if the provided value is of type string and a valid english month
 func IsMonth(ignoreCase bool) schema.SchemaValidateFunc {
 	return StringInSlice([]string{
 		"January",
@@ -36,7 +38,7 @@ func IsMonth(ignoreCase bool) schema.SchemaValidateFunc {
 	}, ignoreCase)
 }
 
-// ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses as time.RFC3339 format
+// IsRFC3339Time is a SchemaValidateFunc which tests if the provided value is of type string and a valid RFC33349Time
 func IsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
