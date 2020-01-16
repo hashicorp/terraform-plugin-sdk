@@ -6,7 +6,7 @@ FEATURES:
 * helper/validation: `StringIsNotEmpty` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
 * helper/validation: `StringIsWhiteSpace` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
 * helper/validation: `StringIsNotWhiteSpace` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
-* helper/validation: `IsUUID` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294)][[#297](https://github.com/hashicorp/terraform-plugin-sdk/issues/297))
+* helper/validation: `IsUUID` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294)] ([#297](https://github.com/hashicorp/terraform-plugin-sdk/issues/297))
 
 BUG FIXES:
 
