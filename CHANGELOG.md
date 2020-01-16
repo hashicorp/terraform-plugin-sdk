@@ -1,3 +1,22 @@
+# 1.6.0 (Unreleased)
+
+FEATURES:
+
+* helper/validation: `IntDivisibleBy` [GH-296]
+* helper/validation: `IntNotInSlice` [GH-296]
+* helper/validation: `IsIPv6Address` [GH-296]
+* helper/validation: `IsIPv4Address` [GH-296]
+* helper/validation: `IsCIDR` [GH-296]
+* helper/validation: `IsMACAddress` [GH-296]
+* helper/validation: `IsPortNumber` [GH-296]
+* helper/validation: `IsPortNumberOrZero` [GH-296]
+* helper/validation: `IsDayOfTheWeek` [GH-296]
+* helper/validation: `IsMonth` [GH-296]
+* helper/validation: `IsRFC3339Time` [GH-296]
+* helper/validation: `IsURLWithHTTPS` [GH-296]
+* helper/validation: `IsURLWithHTTPorHTTPS` [GH-296]
+* helper/validation: `IsURLWithScheme` [GH-296]
+
 # 1.5.0 (January 16, 2020)
 
 FEATURES: 
