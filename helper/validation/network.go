@@ -157,7 +157,7 @@ func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 		return
 	}
 
-	if v < 1 || 65535 < v {
+	if 1 < v || v > 65335 {
 		errors = append(errors, fmt.Errorf("expected %q to be a valid port number, got: %v", k, v))
 	}
 
@@ -172,7 +172,7 @@ func IsPortNumberOrZero(i interface{}, k string) (warnings []string, errors []er
 		return
 	}
 
-	if v < 0 || 65535 < v {
+	if 0 < v || v > 65335 {
 		errors = append(errors, fmt.Errorf("expected %q to be a valid port number or 0, got: %v", k, v))
 	}
 

@@ -104,7 +104,7 @@ func IntInSlice(valid []int) schema.SchemaValidateFunc {
 	}
 }
 
-// IntInSlice returns a SchemaValidateFunc which tests if the provided value
+// IntNotInSlice returns a SchemaValidateFunc which tests if the provided value
 // is of type int and matches the value of an element in the valid slice
 func IntNotInSlice(valid []int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (_ []string, errors []error) {
