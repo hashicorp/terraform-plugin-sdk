@@ -1,16 +1,16 @@
-# 1.5.0 (Unreleased)
+# 1.5.0 (January 16, 2020)
 
 FEATURES: 
 
-* helper/validation: `StringIsEmpty` [GH-294]
-* helper/validation: `StringIsNotEmpty` [GH-294]
-* helper/validation: `StringIsWhiteSpace` [GH-294]
-* helper/validation: `StringIsNotWhiteSpace` [GH-294]
-* helper/validation: `IsUUID` [GH-294][GH-297]
+* helper/validation: `StringIsEmpty` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
+* helper/validation: `StringIsNotEmpty` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
+* helper/validation: `StringIsWhiteSpace` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
+* helper/validation: `StringIsNotWhiteSpace` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294))
+* helper/validation: `IsUUID` ([#294](https://github.com/hashicorp/terraform-plugin-sdk/issues/294)][[#297](https://github.com/hashicorp/terraform-plugin-sdk/issues/297))
 
 BUG FIXES:
 
-* schema/ExactlyOneOf: Fix handling of unknowns in complex types [GH-287]
+* schema/ExactlyOneOf: Fix handling of unknowns in complex types ([#287](https://github.com/hashicorp/terraform-plugin-sdk/issues/287))
 
 # 1.4.1 (December 18, 2019)
 
