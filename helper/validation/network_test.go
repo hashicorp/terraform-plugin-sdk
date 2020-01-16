@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestValidateCIDR(t *testing.T) {
+func TestValidateIsCIDR(t *testing.T) {
 	cases := map[string]struct {
 		Value string
 		Error bool
@@ -204,7 +204,7 @@ func TestValidationIPRange(t *testing.T) {
 	})
 }
 
-func TestValidationMACAddress(t *testing.T) {
+func TestValidationIsMACAddress(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -256,7 +256,7 @@ func TestValidationMACAddress(t *testing.T) {
 	}
 }
 
-func TestValidationPortNumber(t *testing.T) {
+func TestValidationIsPortNumber(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -308,7 +308,7 @@ func TestValidationPortNumber(t *testing.T) {
 	}
 }
 
-func TestValidationPortNumberOrZero(t *testing.T) {
+func TestValidationIsPortNumberOrZero(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool

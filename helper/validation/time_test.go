@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestValidationStringIsRFC3339Time(t *testing.T) {
+func TestValidationIsRFC3339Time(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool

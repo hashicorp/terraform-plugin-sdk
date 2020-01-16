@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestURLIsHTTPS(t *testing.T) {
+func TestValidationIsURLWithHTTPS(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
@@ -52,7 +52,7 @@ func TestURLIsHTTPS(t *testing.T) {
 	}
 }
 
-func TestURLIsHTTPOrHTTPS(t *testing.T) {
+func TestValidationIsURLWithHTTPorHTTPS(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
 		Error bool
