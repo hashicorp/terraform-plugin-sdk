@@ -26,6 +26,7 @@ func SingleIP() schema.SchemaValidateFunc {
 		return
 	}
 }
+
 // IsIPv6Address is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
 func IsIPv6Address(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
