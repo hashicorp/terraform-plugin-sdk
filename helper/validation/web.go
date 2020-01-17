@@ -28,18 +28,18 @@ func IsURLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
 		}
 
 		if v == "" {
-			errors = append(errors, fmt.Errorf("expected %q url to not be empty", k))
+			errors = append(errors, fmt.Errorf("expected %q url to not be empty, got %v", k, i))
 			return
 		}
 
 		u, err := url.Parse(v)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("%q url is in an invalid format: %q (%+v)", k, v, err))
+			errors = append(errors, fmt.Errorf("expected %q to be a valid url, got %v: %+v", k, v, err))
 			return
 		}
 
 		if u.Host == "" {
-			errors = append(errors, fmt.Errorf("%q url has no host: %q", k, v))
+			errors = append(errors, fmt.Errorf("expected %q to have a host, got %v", k, v))
 			return
 		}
 
@@ -49,7 +49,7 @@ func IsURLWithScheme(validSchemes []string) schema.SchemaValidateFunc {
 			}
 		}
 
-		errors = append(errors, fmt.Errorf("expected %q url %q to have a schema of: %q", k, v, strings.Join(validSchemes, ",")))
+		errors = append(errors, fmt.Errorf("expected %q to have a url with schema of: %q, got %v", k, strings.Join(validSchemes, ","), v))
 		return
 	}
 }
