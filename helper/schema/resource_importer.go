@@ -62,7 +62,7 @@ func ImportStatePassthrough(d *ResourceData, m interface{}) ([]*ResourceData, er
 	return []*ResourceData{d}, nil
 }
 
-// ImportStatePassthroughContext is an implementation of StateFunc that can be
+// ImportStatePassthroughContext is an implementation of StateContextFunc that can be
 // used to simply pass the ID directly through. This should be used only
 // in the case that an ID-only refresh is possible.
 func ImportStatePassthroughContext(ctx context.Context, d *ResourceData, m interface{}) ([]*ResourceData, error) {
