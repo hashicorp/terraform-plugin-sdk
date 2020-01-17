@@ -1473,7 +1473,7 @@ func TestResource_UpgradeState(t *testing.T) {
 				"id":     cty.String,
 				"oldfoo": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 
 				oldfoo, ok := m["oldfoo"].(float64)
 				if !ok {
@@ -1509,7 +1509,7 @@ func TestResource_UpgradeState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := r.StateUpgraders[0].Upgrade(m, nil)
+	actual, err := r.StateUpgraders[0].Upgrade(context.Background(), m, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1544,7 +1544,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 		Type: cty.Object(map[string]cty.Type{
 			"id": cty.String,
 		}),
-		Upgrade: func(m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+		Upgrade: func(ctx context.Context, m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 			return m, nil
 		},
 	})
@@ -1566,7 +1566,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 	if err := r.InternalValidate(nil, true); err == nil {
 		t.Fatal("StateUpgrader must have an Upgrade func")
 	}
-	r.StateUpgraders[0].Upgrade = func(m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+	r.StateUpgraders[0].Upgrade = func(ctx context.Context, m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 		return m, nil
 	}
 
@@ -1577,7 +1577,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 		Type: cty.Object(map[string]cty.Type{
 			"id": cty.String,
 		}),
-		Upgrade: func(m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+		Upgrade: func(ctx context.Context, m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 			return m, nil
 		},
 	})
@@ -1591,7 +1591,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 		Type: cty.Object(map[string]cty.Type{
 			"id": cty.String,
 		}),
-		Upgrade: func(m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+		Upgrade: func(ctx context.Context, m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 			return m, nil
 		},
 	})
@@ -1610,7 +1610,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 		Type: cty.Object(map[string]cty.Type{
 			"id": cty.String,
 		}),
-		Upgrade: func(m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
+		Upgrade: func(ctx context.Context, m map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 			return m, nil
 		},
 	})
@@ -1666,7 +1666,7 @@ func TestResource_migrateAndUpgrade(t *testing.T) {
 				"id":  cty.String,
 				"two": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["two"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("two not found in %#v", m)
@@ -1682,7 +1682,7 @@ func TestResource_migrateAndUpgrade(t *testing.T) {
 				"id":    cty.String,
 				"three": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["three"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("three not found in %#v", m)

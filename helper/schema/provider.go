@@ -298,9 +298,13 @@ func (p *Provider) ImportStateContext(
 
 	// Call the import function
 	results := []*ResourceData{data}
-	if r.Importer.State != nil {
+	if r.Importer.State != nil || r.Importer.StateContext != nil {
 		var err error
-		results, err = r.Importer.State(data, p.meta)
+		if r.Importer.StateContext != nil {
+			results, err = r.Importer.StateContext(ctx, data, p.meta)
+		} else {
+			results, err = r.Importer.State(data, p.meta)
+		}
 		if err != nil {
 			return nil, err
 		}

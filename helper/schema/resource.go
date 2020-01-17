@@ -269,7 +269,7 @@ type StateUpgrader struct {
 }
 
 // See StateUpgrader
-type StateUpgradeFunc func(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
+type StateUpgradeFunc func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
 
 // See Resource documentation.
 type CustomizeDiffFunc func(context.Context, *ResourceDiff, interface{}) error
@@ -589,7 +589,7 @@ func (r *Resource) Refresh(
 	}
 
 	// there may be new StateUpgraders that need to be run
-	s, err := r.upgradeState(s, meta)
+	s, err := r.upgradeState(ctx, s, meta)
 	if err != nil {
 		return s, err
 	}
@@ -610,7 +610,7 @@ func (r *Resource) Refresh(
 	return r.recordCurrentSchemaVersion(state), err
 }
 
-func (r *Resource) upgradeState(s *terraform.InstanceState, meta interface{}) (*terraform.InstanceState, error) {
+func (r *Resource) upgradeState(ctx context.Context, s *terraform.InstanceState, meta interface{}) (*terraform.InstanceState, error) {
 	var err error
 
 	needsMigration, stateSchemaVersion := r.checkSchemaVersion(s)
@@ -659,7 +659,7 @@ func (r *Resource) upgradeState(s *terraform.InstanceState, meta interface{}) (*
 			continue
 		}
 
-		jsonState, err = upgrader.Upgrade(jsonState, meta)
+		jsonState, err = upgrader.Upgrade(ctx, jsonState, meta)
 		if err != nil {
 			return nil, err
 		}

@@ -252,7 +252,7 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *pr
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) UpgradeResourceState(_ context.Context, req *proto.UpgradeResourceState_Request) (*proto.UpgradeResourceState_Response, error) {
+func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *proto.UpgradeResourceState_Request) (*proto.UpgradeResourceState_Response, error) {
 	resp := &proto.UpgradeResourceState_Response{}
 
 	res := s.provider.ResourcesMap[req.TypeName]
@@ -267,7 +267,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(_ context.Context, req *proto.
 	// We first need to upgrade a flatmap state if it exists.
 	// There should never be both a JSON and Flatmap state in the request.
 	case len(req.RawState.Flatmap) > 0:
-		jsonMap, version, err = s.upgradeFlatmapState(version, req.RawState.Flatmap, res)
+		jsonMap, version, err = s.upgradeFlatmapState(ctx, version, req.RawState.Flatmap, res)
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -285,7 +285,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(_ context.Context, req *proto.
 	}
 
 	// complete the upgrade of the JSON states
-	jsonMap, err = s.upgradeJSONState(version, jsonMap, res)
+	jsonMap, err = s.upgradeJSONState(ctx, version, jsonMap, res)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -329,7 +329,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(_ context.Context, req *proto.
 // map[string]interface{}.
 // upgradeFlatmapState returns the json map along with the corresponding schema
 // version.
-func (s *GRPCProviderServer) upgradeFlatmapState(version int, m map[string]string, res *schema.Resource) (map[string]interface{}, int, error) {
+func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version int, m map[string]string, res *schema.Resource) (map[string]interface{}, int, error) {
 	// this will be the version we've upgraded so, defaulting to the given
 	// version in case no migration was called.
 	upgradedVersion := version
@@ -402,7 +402,7 @@ func (s *GRPCProviderServer) upgradeFlatmapState(version int, m map[string]strin
 	return jsonMap, upgradedVersion, err
 }
 
-func (s *GRPCProviderServer) upgradeJSONState(version int, m map[string]interface{}, res *schema.Resource) (map[string]interface{}, error) {
+func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, m map[string]interface{}, res *schema.Resource) (map[string]interface{}, error) {
 	var err error
 
 	for _, upgrader := range res.StateUpgraders {
@@ -410,7 +410,7 @@ func (s *GRPCProviderServer) upgradeJSONState(version int, m map[string]interfac
 			continue
 		}
 
-		m, err = upgrader.Upgrade(m, s.provider.Meta())
+		m, err = upgrader.Upgrade(ctx, m, s.provider.Meta())
 		if err != nil {
 			return nil, err
 		}
@@ -947,14 +947,14 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ImportResourceState(_ context.Context, req *proto.ImportResourceState_Request) (*proto.ImportResourceState_Response, error) {
+func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto.ImportResourceState_Request) (*proto.ImportResourceState_Response, error) {
 	resp := &proto.ImportResourceState_Response{}
 
 	info := &terraform.InstanceInfo{
 		Type: req.TypeName,
 	}
 
-	newInstanceStates, err := s.provider.ImportState(info, req.Id)
+	newInstanceStates, err := s.provider.ImportStateContext(ctx, info, req.Id)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil

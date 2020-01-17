@@ -45,7 +45,7 @@ func TestUpgradeState_jsonState(t *testing.T) {
 				"id":   cty.String,
 				"zero": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["zero"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("zero not found in %#v", m)
@@ -61,7 +61,7 @@ func TestUpgradeState_jsonState(t *testing.T) {
 				"id":  cty.String,
 				"one": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["one"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("one not found in %#v", m)
@@ -303,7 +303,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 				"id":  cty.String,
 				"two": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["two"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("two not found in %#v", m)
@@ -319,7 +319,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 				"id":    cty.String,
 				"three": cty.Number,
 			}),
-			Upgrade: func(m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
 				_, ok := m["three"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("three not found in %#v", m)

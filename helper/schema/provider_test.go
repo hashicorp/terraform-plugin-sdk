@@ -388,7 +388,7 @@ func TestProviderImportState_default(t *testing.T) {
 		},
 	}
 
-	states, err := p.ImportState(&terraform.InstanceInfo{
+	states, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -420,7 +420,7 @@ func TestProviderImportState_setsId(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportState(&terraform.InstanceInfo{
+	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -450,7 +450,7 @@ func TestProviderImportState_setsType(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportState(&terraform.InstanceInfo{
+	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
