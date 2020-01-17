@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestRandIntRange(t *testing.T) {
+	v := RandInt()
+	if vv := RandIntRange(v, v+1); vv != v {
+		t.Errorf("expected RandIntRange(%d, %d) to return %d, got %d", v, v+1, v, vv)
+	}
+}
+
 func TestRandIpAddress(t *testing.T) {
 	testCases := []struct {
 		s           string
