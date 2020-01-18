@@ -18,7 +18,7 @@ func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 	}
 
 	if v == "" {
-		return nil, []error{fmt.Errorf("expected %q to not be an empty string", k)}
+		return nil, []error{fmt.Errorf("expected %q to not be an empty string, got %v", k, i)}
 	}
 
 	return nil, nil
@@ -99,7 +99,7 @@ func StringMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
 				return nil, []error{fmt.Errorf("invalid value for %s (%s)", k, message)}
 
 			}
-			return nil, []error{fmt.Errorf("expected value of %s to match regular expression %q", k, r)}
+			return nil, []error{fmt.Errorf("expected value of %s to match regular expression %q, got %v", k, r, i)}
 		}
 		return nil, nil
 	}
@@ -120,7 +120,7 @@ func StringDoesNotMatch(r *regexp.Regexp, message string) schema.SchemaValidateF
 				return nil, []error{fmt.Errorf("invalid value for %s (%s)", k, message)}
 
 			}
-			return nil, []error{fmt.Errorf("expected value of %s to not match regular expression %q", k, r)}
+			return nil, []error{fmt.Errorf("expected value of %s to not match regular expression %q, got %v", k, r, i)}
 		}
 		return nil, nil
 	}
@@ -159,7 +159,7 @@ func StringDoesNotContainAny(chars string) schema.SchemaValidateFunc {
 		}
 
 		if strings.ContainsAny(v, chars) {
-			errors = append(errors, fmt.Errorf("expected value of %s to not contain any of %q", k, chars))
+			es = append(es, fmt.Errorf("expected value of %s to not contain any of %q, got %v", k, chars, i))
 			return warnings, errors
 		}
 
