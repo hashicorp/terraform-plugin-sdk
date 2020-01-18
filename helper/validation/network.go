@@ -11,20 +11,26 @@ import (
 
 // SingleIP returns a SchemaValidateFunc which tests if the provided value
 // is of type string, and in valid single Value notation
+//
+// Deprecated: use IsIPAddress instead
 func SingleIP() schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-		v, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
+	return IsIPAddress
+}
 
-		ip := net.ParseIP(v)
-		if ip == nil {
-			es = append(es, fmt.Errorf("expected %s to contain a valid IP, got: %s", k, v))
-		}
-		return
+// SingleIP returns a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
+func IsIPAddress(i interface{}, k string) (warnings []string, errors []error) {
+	v, ok := i.(string)
+	if !ok {
+		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
+		return warnings, errors
 	}
+
+	ip := net.ParseIP(v)
+	if ip == nil {
+		errors = append(errors, fmt.Errorf("expected %s to contain a valid IP, got: %s", k, v))
+	}
+
+	return warnings, errors
 }
 
 // IsIPv6Address is a SchemaValidateFunc which tests if the provided value is of type string and a valid IPv6 address
@@ -32,7 +38,7 @@ func IsIPv6Address(i interface{}, k string) (warnings []string, errors []error) 
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
-		return
+		return warnings, errors
 	}
 
 	ip := net.ParseIP(v)
@@ -48,7 +54,7 @@ func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) 
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
-		return
+		return warnings, errors
 	}
 
 	ip := net.ParseIP(v)
@@ -60,28 +66,33 @@ func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) 
 }
 
 // IPRange returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
+//
+// Deprecated: use IsIPv4Range instead
 func IPRange() schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-		v, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
+	return IsIPv4Range
+}
 
-		ips := strings.Split(v, "-")
-		if len(ips) != 2 {
-			es = append(es, fmt.Errorf(
-				"expected %s to contain a valid IP range, got: %s", k, v))
-			return
-		}
-		ip1 := net.ParseIP(ips[0])
-		ip2 := net.ParseIP(ips[1])
-		if ip1 == nil || ip2 == nil || bytes.Compare(ip1, ip2) > 0 {
-			es = append(es, fmt.Errorf(
-				"expected %s to contain a valid IP range, got: %s", k, v))
-		}
-		return
+// IPRange returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
+func IsIPv4Range(i interface{}, k string) (warnings []string, errors []error) {
+	v, ok := i.(string)
+	if !ok {
+		errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
+		return warnings, errors
 	}
+
+	ips := strings.Split(v, "-")
+	if len(ips) != 2 {
+		errors = append(errors, fmt.Errorf("expected %s to contain a valid IP range, got: %s", k, v))
+		return warnings, errors
+	}
+
+	ip1 := net.ParseIP(ips[0])
+	ip2 := net.ParseIP(ips[1])
+	if ip1 == nil || ip2 == nil || bytes.Compare(ip1, ip2) > 0 {
+		errors = append(errors, fmt.Errorf("expected %s to contain a valid IP range, got: %s", k, v))
+	}
+
+	return warnings, errors
 }
 
 // IsCIDR is a SchemaValidateFunc which tests if the provided value is of type string and a valid CIDR
@@ -89,11 +100,10 @@ func IsCIDR(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
-		return
+		return warnings, errors
 	}
 
-	_, _, err := net.ParseCIDR(v)
-	if err != nil {
+	if _, _, err := net.ParseCIDR(v); err != nil {
 		errors = append(errors, fmt.Errorf("expected %q to be a valid IPv4 Value, got %v: %v", k, i, err))
 	}
 
@@ -102,35 +112,39 @@ func IsCIDR(i interface{}, k string) (warnings []string, errors []error) {
 
 // CIDRNetwork returns a SchemaValidateFunc which tests if the provided value
 // is of type string, is in valid Value network notation, and has significant bits between min and max (inclusive)
+//
+// Deprecated: use IsCIDRNetwork instead
 func CIDRNetwork(min, max int) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
+	return IsCIDRNetwork(min, max)
+}
+
+// CIDRNetwork returns a SchemaValidateFunc which tests if the provided value
+// is of type string, is in valid Value network notation, and has significant bits between min and max (inclusive)
+func IsCIDRNetwork(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (warnings []string, errors []error) {
 		v, ok := i.(string)
 		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
+			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
+			return warnings, errors
 		}
 
 		_, ipnet, err := net.ParseCIDR(v)
 		if err != nil {
-			es = append(es, fmt.Errorf(
-				"expected %s to contain a valid Value, got: %s with err: %s", k, v, err))
-			return
+			errors = append(errors, fmt.Errorf("expected %s to contain a valid Value, got: %s with err: %s", k, v, err))
+			return warnings, errors
 		}
 
 		if ipnet == nil || v != ipnet.String() {
-			es = append(es, fmt.Errorf(
-				"expected %s to contain a valid network Value, expected %s, got %s",
+			errors = append(errors, fmt.Errorf("expected %s to contain a valid network Value, expected %s, got %s",
 				k, ipnet, v))
 		}
 
 		sigbits, _ := ipnet.Mask.Size()
 		if sigbits < min || sigbits > max {
-			es = append(es, fmt.Errorf(
-				"expected %q to contain a network Value with between %d and %d significant bits, got: %d",
-				k, min, max, sigbits))
+			errors = append(errors, fmt.Errorf("expected %q to contain a network Value with between %d and %d significant bits, got: %d", k, min, max, sigbits))
 		}
 
-		return
+		return warnings, errors
 	}
 }
 
@@ -139,7 +153,7 @@ func IsMACAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
-		return
+		return warnings, errors
 	}
 
 	if _, err := net.ParseMAC(v); err != nil {
@@ -153,8 +167,8 @@ func IsMACAddress(i interface{}, k string) (warnings []string, errors []error) {
 func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {
-		errors = append(errors, fmt.Errorf("expected type of %q to be int", k))
-		return
+		errors = append(errors, fmt.Errorf("expected type of %q to be integer", k))
+		return warnings, errors
 	}
 
 	if 1 > v || v > 65535 {
@@ -168,8 +182,8 @@ func IsPortNumber(i interface{}, k string) (warnings []string, errors []error) {
 func IsPortNumberOrZero(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(int)
 	if !ok {
-		errors = append(errors, fmt.Errorf("expected type of %q to be int", k))
-		return
+		errors = append(errors, fmt.Errorf("expected type of %q to be integer", k))
+		return warnings, errors
 	}
 
 	if 0 > v || v > 65535 {

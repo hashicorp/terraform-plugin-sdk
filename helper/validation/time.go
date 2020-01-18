@@ -43,7 +43,7 @@ func IsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) 
 	v, ok := i.(string)
 	if !ok {
 		errors = append(errors, fmt.Errorf("expected type of %q to be string", k))
-		return
+		return warnings, errors
 	}
 
 	if _, err := time.Parse(time.RFC3339, v); err != nil {
@@ -56,6 +56,6 @@ func IsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) 
 // ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses as time.RFC3339 format
 //
 // Deprecated: use IsRFC3339Time() instead
-func ValidateRFC3339TimeString(v interface{}, k string) (ws []string, errors []error) {
-	return IsRFC3339Time(v, k)
+func ValidateRFC3339TimeString(i interface{}, k string) (warnings []string, errors []error) {
+	return IsRFC3339Time(i, k)
 }

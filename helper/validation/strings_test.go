@@ -398,25 +398,6 @@ func TestValidateJsonString(t *testing.T) {
 	}
 }
 
-func TestValidateListUniqueStrings(t *testing.T) {
-	runTestCases(t, []testCase{
-		{
-			val: []interface{}{"foo", "bar"},
-			f:   ValidateListUniqueStrings,
-		},
-		{
-			val:         []interface{}{"foo", "bar", "foo"},
-			f:           ValidateListUniqueStrings,
-			expectedErr: regexp.MustCompile("duplicate entry - foo"),
-		},
-		{
-			val:         []interface{}{"foo", "bar", "foo", "baz", "bar"},
-			f:           ValidateListUniqueStrings,
-			expectedErr: regexp.MustCompile("duplicate entry - (?:foo|bar)"),
-		},
-	})
-}
-
 func TestStringDoesNotContainAny(t *testing.T) {
 	chars := "|:/"
 

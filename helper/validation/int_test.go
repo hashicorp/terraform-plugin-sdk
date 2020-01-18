@@ -23,7 +23,7 @@ func TestValidationIntBetween(t *testing.T) {
 		{
 			val:         "1",
 			f:           IntBetween(2, 3),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be int"),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be integer"),
 		},
 	})
 }
@@ -46,7 +46,7 @@ func TestValidationIntAtLeast(t *testing.T) {
 		{
 			val:         "1",
 			f:           IntAtLeast(2),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be int"),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be integer"),
 		},
 	})
 }
@@ -69,7 +69,7 @@ func TestValidationIntAtMost(t *testing.T) {
 		{
 			val:         "1",
 			f:           IntAtMost(0),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be int"),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be integer"),
 		},
 	})
 }
@@ -124,7 +124,7 @@ func TestValidationIntInSlice(t *testing.T) {
 		{
 			val:         "InvalidValue",
 			f:           IntInSlice([]int{10, 20}),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be an integer"),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be integer"),
 		},
 	})
 }
