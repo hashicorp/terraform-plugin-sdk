@@ -159,7 +159,7 @@ func StringDoesNotContainAny(chars string) schema.SchemaValidateFunc {
 		}
 
 		if strings.ContainsAny(v, chars) {
-			es = append(es, fmt.Errorf("expected value of %s to not contain any of %q, got %v", k, chars, i))
+			errors = append(errors, fmt.Errorf("expected value of %s to not contain any of %q, got %v", k, chars, i))
 			return warnings, errors
 		}
 
