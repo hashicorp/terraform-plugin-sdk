@@ -49,13 +49,16 @@ func mergeStop(stopCh chan struct{}, cancel context.CancelFunc) {
 }
 
 // StopContext derives a new context from the passed in grpc context.
-// It creates a goroutine to wait for the server stop and propagates cancellation
-// to the derived grpc context.
+// It creates a goroutine to wait for the server stop and propagates
+// cancellation to the derived grpc context.
 func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
 	stoppable, cancel := context.WithCancel(ctx)
+	// It's important to pass the reference to the current stopCh.
+	// Closing over with an anonymous function and referencing s.stopCh
+	// across a goroutine is unsafe, given a new stopCh is set in Stop()
 	go mergeStop(s.stopCh, cancel)
 	return stoppable
 }
@@ -256,7 +259,11 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *pr
 func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *proto.UpgradeResourceState_Request) (*proto.UpgradeResourceState_Response, error) {
 	resp := &proto.UpgradeResourceState_Response{}
 
-	res := s.provider.ResourcesMap[req.TypeName]
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
 	version := int(req.Version)
@@ -518,7 +525,11 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 		Private: req.Private,
 	}
 
-	res := s.provider.ResourcesMap[req.TypeName]
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
 	stateVal, err := msgpack.Unmarshal(req.CurrentState.Msgpack, schemaBlock.ImpliedType())
@@ -598,7 +609,11 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 	// confusing downstream errors.
 	resp.LegacyTypeSystem = true
 
-	res := s.provider.ResourcesMap[req.TypeName]
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
 	priorStateVal, err := msgpack.Unmarshal(req.PriorState.Msgpack, schemaBlock.ImpliedType())
@@ -806,7 +821,11 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 		NewState: req.PriorState,
 	}
 
-	res := s.provider.ResourcesMap[req.TypeName]
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
 	priorStateVal, err := msgpack.Unmarshal(req.PriorState.Msgpack, schemaBlock.ImpliedType())
@@ -1034,7 +1053,11 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 
 	// we need to still build the diff separately with the Read method to match
 	// the old behavior
-	res := s.provider.DataSourcesMap[req.TypeName]
+	res, ok := s.provider.DataSourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("unknown data source: %s", req.TypeName))
+		return resp, nil
+	}
 	diff, err := res.Diff(ctx, nil, config, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
