@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 
 	"github.com/zclconf/go-cty/cty"
 	ctyconvert "github.com/zclconf/go-cty/cty/convert"
@@ -29,33 +30,33 @@ func NewGRPCProviderServerShim(p terraform.ResourceProvider) *GRPCProviderServer
 }
 
 func NewGRPCProviderServer(p *schema.Provider) *GRPCProviderServer {
-	// This single shared context will be passed (directly or indirectly) to
-	// each provider method that can make network requests and cancelled if
-	// the Terraform operation receives an interrupt request.
-	ctx, cancel := context.WithCancel(context.Background())
 	return &GRPCProviderServer{
 		provider: p,
-		ctx:      ctx,
-		stop:     cancel,
+		stopCh:   make(chan struct{}),
 	}
 }
 
 // GRPCProviderServer handles the server, or plugin side of the rpc connection.
 type GRPCProviderServer struct {
 	provider *schema.Provider
-	ctx      context.Context
-	stop     context.CancelFunc
+	stopCh   chan struct{}
+	stopMu   sync.Mutex
+}
+
+func mergeStop(stopCh chan struct{}, cancel context.CancelFunc) {
+	<-stopCh
+	cancel()
 }
 
 // StopContext derives a new context from the passed in grpc context.
 // It creates a goroutine to wait for the server stop and propagates cancellation
 // to the derived grpc context.
 func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
+	s.stopMu.Lock()
+	defer s.stopMu.Unlock()
+
 	stoppable, cancel := context.WithCancel(ctx)
-	go func() {
-		<-s.ctx.Done()
-		cancel()
-	}()
+	go mergeStop(s.stopCh, cancel)
 	return stoppable
 }
 
@@ -472,7 +473,14 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 }
 
 func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*proto.Stop_Response, error) {
-	s.stop()
+	s.stopMu.Lock()
+	defer s.stopMu.Unlock()
+
+	// stop
+	close(s.stopCh)
+	// reset the stop signal
+	s.stopCh = make(chan struct{})
+
 	return &proto.Stop_Response{}, nil
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -1383,8 +1382,6 @@ func TestContextCancel_grpc(t *testing.T) {
 		},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	server := NewGRPCProviderServer(&schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
 			"test": r,
@@ -1417,18 +1414,22 @@ func TestContextCancel_grpc(t *testing.T) {
 			Msgpack: plannedState,
 		},
 	}
-
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = server.StopContext(ctx)
+	doneCh := make(chan struct{})
 	go func() {
 		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
 			t.Fatal(err)
 		}
-		wg.Done()
+		close(doneCh)
 	}()
 	// GRPC request cancel
 	cancel()
-	wg.Wait()
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("context cancel did not propagate")
+	}
 }
 
 func TestContextCancel_stop(t *testing.T) {
@@ -1480,14 +1481,18 @@ func TestContextCancel_stop(t *testing.T) {
 		},
 	}
 
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
+	ctx := server.StopContext(context.Background())
+	doneCh := make(chan struct{})
 	go func() {
-		if _, err := server.ApplyResourceChange(server.StopContext(context.Background()), testReq); err != nil {
+		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
 			t.Fatal(err)
 		}
-		wg.Done()
+		close(doneCh)
 	}()
 	server.Stop(context.Background(), &proto.Stop_Request{})
-	wg.Wait()
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Stop message did not cancel request context")
+	}
 }
