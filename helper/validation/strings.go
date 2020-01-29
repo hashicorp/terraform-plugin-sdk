@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/structure"
 )
 
-// StringIsNotEmpty is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
+// StringIsNotEmpty is a ValidateFunc that ensures a string is not empty
 func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -24,7 +24,7 @@ func StringIsNotEmpty(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
-// StringIsNotEmpty is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
+// StringIsNotWhiteSpace is a ValidateFunc that ensures a string is not empty or consisting entirely of whitespace characters
 func StringIsNotWhiteSpace(i interface{}, k string) ([]string, []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -52,7 +52,7 @@ func StringIsEmpty(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
-// StringIsEmpty is a ValidateFunc that ensures a string is composed of entirely whitespace
+// StringIsWhiteSpace is a ValidateFunc that ensures a string is composed of entirely whitespace
 func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
 	v, ok := i.(string)
 	if !ok {
