@@ -11,7 +11,7 @@ func ValidateListUniqueStrings(i interface{}, k string) (warnings []string, erro
 	return ListOfUniqueStrings(i, k)
 }
 
-// ValidateListUniqueStrings is a ValidateFunc that ensures a list has no
+// ListOfUniqueStrings is a ValidateFunc that ensures a list has no
 // duplicate items in it. It's useful for when a list is needed over a set
 // because order matters, yet the items still need to be unique.
 func ListOfUniqueStrings(i interface{}, k string) (warnings []string, errors []error) {

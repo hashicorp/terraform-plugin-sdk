@@ -17,7 +17,7 @@ func SingleIP() schema.SchemaValidateFunc {
 	return IsIPAddress
 }
 
-// IsIPAddress returns a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
+// IsIPAddress is a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
 func IsIPAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -72,7 +72,7 @@ func IPRange() schema.SchemaValidateFunc {
 	return IsIPv4Range
 }
 
-// IsIPv4Range returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
+// IsIPv4Range is a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
 func IsIPv4Range(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
