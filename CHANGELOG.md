@@ -1,7 +1,14 @@
 # 1.6.0 (Unreleased)
 
-NOTES:
-* helper/validation: A variety of validation functions have been deprecated in favor of ones with more consistent naming. [GH-301]
+DEPRECATED:
+
+* helper/validation: `ValidateListUniqueStrings` [GH-301]
+* helper/validation: `SingleIP` [GH-301]
+* helper/validation: `IPRange` [GH-301]
+* helper/validation: `CIDRNetwork` [GH-301]
+* helper/validation: `ValidateJsonString` [GH-301]
+* helper/validation: `ValidateRegexp` [GH-301]
+* helper/validation: `ValidateRFC3339TimeString` [GH-296]
 
 FEATURES:
 
@@ -19,6 +26,12 @@ FEATURES:
 * helper/validation: `IsURLWithHTTPS` [GH-296]
 * helper/validation: `IsURLWithHTTPorHTTPS` [GH-296]
 * helper/validation: `IsURLWithScheme` [GH-296]
+* helper/validation: `ListOfUniqueStrings` [GH-301]
+* helper/validation: `IsIPAddress` [GH-301]
+* helper/validation: `IsIPv4Range` [GH-301]
+* helper/validation: `IsCIDRNetwork` [GH-301]
+* helper/validation: `StringIsJSON` [GH-301]
+* helper/validation: `StringIsValidRegExp` [GH-301]
 
 # 1.5.0 (January 16, 2020)
 
