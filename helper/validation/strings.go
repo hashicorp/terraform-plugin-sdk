@@ -192,7 +192,7 @@ func ValidateJsonString(i interface{}, k string) (warnings []string, errors []er
 	return StringIsJSON(i, k)
 }
 
-// ValidateJsonString is a SchemaValidateFunc which tests to make sure the supplied string is valid JSON.
+// StringIsJSON is a SchemaValidateFunc which tests to make sure the supplied string is valid JSON.
 func StringIsJSON(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
