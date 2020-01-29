@@ -1,37 +1,37 @@
-# 1.6.0 (Unreleased)
+# 1.6.0 (January 29, 2020)
 
 DEPRECATED:
 
-* helper/validation: `ValidateListUniqueStrings` [GH-301]
-* helper/validation: `SingleIP` [GH-301]
-* helper/validation: `IPRange` [GH-301]
-* helper/validation: `CIDRNetwork` [GH-301]
-* helper/validation: `ValidateJsonString` [GH-301]
-* helper/validation: `ValidateRegexp` [GH-301]
-* helper/validation: `ValidateRFC3339TimeString` [GH-296]
+* helper/validation: `ValidateListUniqueStrings` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `SingleIP` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `IPRange` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `CIDRNetwork` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `ValidateJsonString` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `ValidateRegexp` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `ValidateRFC3339TimeString` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
 
 FEATURES:
 
-* helper/validation: `IntDivisibleBy` [GH-296]
-* helper/validation: `IntNotInSlice` [GH-296]
-* helper/validation: `IsIPv6Address` [GH-296]
-* helper/validation: `IsIPv4Address` [GH-296]
-* helper/validation: `IsCIDR` [GH-296]
-* helper/validation: `IsMACAddress` [GH-296]
-* helper/validation: `IsPortNumber` [GH-296]
-* helper/validation: `IsPortNumberOrZero` [GH-296]
-* helper/validation: `IsDayOfTheWeek` [GH-296]
-* helper/validation: `IsMonth` [GH-296]
-* helper/validation: `IsRFC3339Time` [GH-296]
-* helper/validation: `IsURLWithHTTPS` [GH-296]
-* helper/validation: `IsURLWithHTTPorHTTPS` [GH-296]
-* helper/validation: `IsURLWithScheme` [GH-296]
-* helper/validation: `ListOfUniqueStrings` [GH-301]
-* helper/validation: `IsIPAddress` [GH-301]
-* helper/validation: `IsIPv4Range` [GH-301]
-* helper/validation: `IsCIDRNetwork` [GH-301]
-* helper/validation: `StringIsJSON` [GH-301]
-* helper/validation: `StringIsValidRegExp` [GH-301]
+* helper/validation: `IntDivisibleBy` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IntNotInSlice` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsIPv6Address` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsIPv4Address` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsCIDR` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsMACAddress` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsPortNumber` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsPortNumberOrZero` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsDayOfTheWeek` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsMonth` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsRFC3339Time` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsURLWithHTTPS` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsURLWithHTTPorHTTPS` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `IsURLWithScheme` ([#296](https://github.com/hashicorp/terraform-plugin-sdk/issues/296))
+* helper/validation: `ListOfUniqueStrings` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `IsIPAddress` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `IsIPv4Range` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `IsCIDRNetwork` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `StringIsJSON` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
+* helper/validation: `StringIsValidRegExp` ([#301](https://github.com/hashicorp/terraform-plugin-sdk/issues/301))
 
 # 1.5.0 (January 16, 2020)
 
