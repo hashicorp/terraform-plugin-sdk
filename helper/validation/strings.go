@@ -209,11 +209,13 @@ func StringIsJSON(i interface{}, k string) (warnings []string, errors []error) {
 
 // ValidateRegexp returns a SchemaValidateFunc which tests to make sure the
 // supplied string is a valid regular expression.
+//
+// Deprecated: use StringIsValidRegExp instead
 func ValidateRegexp(i interface{}, k string) (warnings []string, errors []error) {
 	return StringIsValidRegExp(i, k)
 }
 
-// ValidateRegexp returns a SchemaValidateFunc which tests to make sure the supplied string is a valid regular expression.
+// StringIsValidRegExp returns a SchemaValidateFunc which tests to make sure the supplied string is a valid regular expression.
 func StringIsValidRegExp(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {

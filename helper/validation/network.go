@@ -17,7 +17,7 @@ func SingleIP() schema.SchemaValidateFunc {
 	return IsIPAddress
 }
 
-// SingleIP returns a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
+// IsIPAddress returns a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
 func IsIPAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -72,7 +72,7 @@ func IPRange() schema.SchemaValidateFunc {
 	return IsIPv4Range
 }
 
-// IPRange returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
+// IsIPv4Range returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
 func IsIPv4Range(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {
@@ -118,7 +118,7 @@ func CIDRNetwork(min, max int) schema.SchemaValidateFunc {
 	return IsCIDRNetwork(min, max)
 }
 
-// CIDRNetwork returns a SchemaValidateFunc which tests if the provided value
+// IsCIDRNetwork returns a SchemaValidateFunc which tests if the provided value
 // is of type string, is in valid Value network notation, and has significant bits between min and max (inclusive)
 func IsCIDRNetwork(min, max int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (warnings []string, errors []error) {
