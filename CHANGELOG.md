@@ -1,5 +1,8 @@
 # 1.6.0 (Unreleased)
 
+NOTES:
+* helper/validation: A variety of validation functions have been deprecated in favor of ones with more consistent naming. [GH-301]
+
 FEATURES:
 
 * helper/validation: `IntDivisibleBy` [GH-296]
