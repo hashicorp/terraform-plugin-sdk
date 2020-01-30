@@ -14,8 +14,11 @@ import (
 // resource and bringing it under Terraform management. This can include
 // updating Terraform state, generating Terraform configuration, etc.
 type ResourceImporter struct {
-	// Deprecated: State is deprecated in favor of its context aware
-	// equivalent StateContext. Only one of the two functions can bet set.
+	// State is called to convert an ID to one or more InstanceState to
+	// insert into the Terraform state.
+	//
+	// Deprecated: State is deprecated in favor of StateContext.
+	// Only one of the two functions can bet set.
 	State StateFunc
 
 	// StateContext is called to convert an ID to one or more InstanceState to
@@ -24,6 +27,8 @@ type ResourceImporter struct {
 	StateContext StateContextFunc
 }
 
+// StateFunc is the function called to import a resource into the Terraform state.
+//
 // Deprecated: Please use the context aware equivalent StateContextFunc.
 type StateFunc func(*ResourceData, interface{}) ([]*ResourceData, error)
 
@@ -57,6 +62,9 @@ func (r *ResourceImporter) InternalValidate() error {
 	return nil
 }
 
+// ImportStatePassthrough is an implementation of StateContextFunc that can be
+// used to simply pass the ID directly through.
+//
 // Deprecated: Please use the context aware ImportStatePassthroughContext instead
 func ImportStatePassthrough(d *ResourceData, m interface{}) ([]*ResourceData, error) {
 	return []*ResourceData{d}, nil

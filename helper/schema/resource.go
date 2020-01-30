@@ -94,24 +94,14 @@ type Resource struct {
 	// MigrateState.
 	StateUpgraders []StateUpgrader
 
-	// Deprecated: Create is deprecated in favor of its context aware
-	// equivalent CreateContext. Only one of the two functions can bet set.
+	// The functions below are the CRUD operations for this resource.
+	//
+	// Deprecated: Please use the context aware equivalents instead. Only one of
+	// the operations or context aware equivalent can be set, not both.
 	Create CreateFunc
-
-	// Deprecated: Read is deprecated in favor of its context aware
-	// equivalent ReadContext. Only one of the two functions can bet set.
-	Read ReadFunc
-
-	// Deprecated: Update is deprecated in favor of its context aware
-	// equivalent UpdateContext. Only one of the two functions can bet set.
+	Read   ReadFunc
 	Update UpdateFunc
-
-	// Deprecated: Delete is deprecated in favor of its context aware
-	// equivalent DeleteContext. Only one of the two functions can bet set.
 	Delete DeleteFunc
-
-	// Deprecated: Exists is deprecated in favor of its context aware
-	// equivalent ExistsContext. Only one of the two functions can bet set.
 	Exists ExistsFunc
 
 	// The functions below are the CRUD operations for this resource.
@@ -216,19 +206,13 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 	return s, nil
 }
 
-// Deprecated: Please use the context aware equivalent CreateContextFunc.
+// The following function types are of the legacy CRUD operations.
+//
+// Deprecated: Please use the context aware equivalents instead.
 type CreateFunc func(*ResourceData, interface{}) error
-
-// Deprecated: Please use the context aware equivalent ReadContextFunc.
 type ReadFunc func(*ResourceData, interface{}) error
-
-// Deprecated: Please use the context aware equivalent UpdateContextFunc.
 type UpdateFunc func(*ResourceData, interface{}) error
-
-// Deprecated: Please use the context aware equivalent DeleteContextFunc.
 type DeleteFunc func(*ResourceData, interface{}) error
-
-// Deprecated: Please use the context aware equivalent ExistsContextFunc.
 type ExistsFunc func(*ResourceData, interface{}) (bool, error)
 
 // See Resource documentation.
