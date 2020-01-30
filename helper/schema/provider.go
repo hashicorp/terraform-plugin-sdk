@@ -52,8 +52,12 @@ type Provider struct {
 	// ConfigureFunc is a function for configuring the provider. If the
 	// provider doesn't need to be configured, this can be omitted.
 	//
-	// See the ConfigureFunc documentation for more information.
+	// Deprecated: Please use ConfigureContextFunc instead.
 	ConfigureFunc ConfigureFunc
+
+	// ConfigureContextFunc is a function for configuring the provider. If the
+	// provider doesn't need to be configured, this can be omitted.
+	ConfigureContextFunc ConfigureContextFunc
 
 	meta interface{}
 
@@ -62,11 +66,16 @@ type Provider struct {
 
 // ConfigureFunc is the function used to configure a Provider.
 //
+// Deprecated: Please use ConfigureContextFunc
+type ConfigureFunc func(*ResourceData) (interface{}, error)
+
+// ConfigureContextFunc is the function used to configure a Provider.
+//
 // The interface{} value returned by this function is stored and passed into
 // the subsequent resources as the meta parameter. This return value is
 // usually used to pass along a configured API client, a configuration
 // structure, etc.
-type ConfigureFunc func(*ResourceData) (interface{}, error)
+type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, error)
 
 // InternalValidate should be called to validate the structure
 // of the provider.
@@ -189,7 +198,7 @@ func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 // Context Aware Configure implementation.
 func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceConfig) error {
 	// No configuration
-	if p.ConfigureFunc == nil {
+	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
 		return nil
 	}
 
@@ -207,7 +216,12 @@ func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceCo
 		return err
 	}
 
-	meta, err := p.ConfigureFunc(data)
+	var meta interface{}
+	if p.ConfigureContextFunc != nil {
+		meta, err = p.ConfigureContextFunc(ctx, data)
+	} else {
+		meta, err = p.ConfigureFunc(data)
+	}
 	if err != nil {
 		return err
 	}
