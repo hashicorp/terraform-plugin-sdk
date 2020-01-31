@@ -1,6 +1,7 @@
 package customdiff
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -22,7 +23,7 @@ func TestComputedIf(t *testing.T) {
 					Computed: true,
 				},
 			},
-			ComputedIf("comp", func(d *schema.ResourceDiff, meta interface{}) bool {
+			ComputedIf("comp", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				// When we set "ForceNew", our CustomizeDiff function is actually
 				// called a second time to construct the "create" portion of
 				// the replace diff. On the second call, the old value is masked
@@ -83,7 +84,7 @@ func TestComputedIf(t *testing.T) {
 					Computed: true,
 				},
 			},
-			ComputedIf("comp", func(d *schema.ResourceDiff, meta interface{}) bool {
+			ComputedIf("comp", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				condCalls++
 				old, new := d.GetChange("foo")
 				gotOld = old.(string)

@@ -1,6 +1,7 @@
 package customdiff
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -20,14 +21,14 @@ func TestIf(t *testing.T) {
 				},
 			},
 			If(
-				func(d *schema.ResourceDiff, meta interface{}) bool {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 					condCalled = true
 					old, new := d.GetChange("foo")
 					gotOld = old.(string)
 					gotNew = new.(string)
 					return true
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},
@@ -78,14 +79,14 @@ func TestIf(t *testing.T) {
 				},
 			},
 			If(
-				func(d *schema.ResourceDiff, meta interface{}) bool {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 					condCalled = true
 					old, new := d.GetChange("foo")
 					gotOld = old.(string)
 					gotNew = new.(string)
 					return false
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},
@@ -137,13 +138,13 @@ func TestIfValueChange(t *testing.T) {
 			},
 			IfValueChange(
 				"foo",
-				func(old, new, meta interface{}) bool {
+				func(_ context.Context, old, new, meta interface{}) bool {
 					condCalled = true
 					gotOld = old.(string)
 					gotNew = new.(string)
 					return true
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},
@@ -195,13 +196,13 @@ func TestIfValueChange(t *testing.T) {
 			},
 			IfValueChange(
 				"foo",
-				func(old, new, meta interface{}) bool {
+				func(_ context.Context, old, new, meta interface{}) bool {
 					condCalled = true
 					gotOld = old.(string)
 					gotNew = new.(string)
 					return false
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},
@@ -253,12 +254,12 @@ func TestIfValue(t *testing.T) {
 			},
 			IfValue(
 				"foo",
-				func(value, meta interface{}) bool {
+				func(_ context.Context, value, meta interface{}) bool {
 					condCalled = true
 					gotValue = value.(string)
 					return true
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},
@@ -307,12 +308,12 @@ func TestIfValue(t *testing.T) {
 			},
 			IfValue(
 				"foo",
-				func(value, meta interface{}) bool {
+				func(_ context.Context, value, meta interface{}) bool {
 					condCalled = true
 					gotValue = value.(string)
 					return false
 				},
-				func(d *schema.ResourceDiff, meta interface{}) error {
+				func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 					customCalled = true
 					return errors.New("bad")
 				},

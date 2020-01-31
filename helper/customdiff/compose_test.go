@@ -1,6 +1,7 @@
 package customdiff
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -14,15 +15,15 @@ func TestAll(t *testing.T) {
 	provider := testProvider(
 		map[string]*schema.Schema{},
 		All(
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				aCalled = true
 				return errors.New("A bad")
 			},
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				bCalled = true
 				return nil
 			},
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				cCalled = true
 				return errors.New("C bad")
 			},
@@ -66,15 +67,15 @@ func TestSequence(t *testing.T) {
 	provider := testProvider(
 		map[string]*schema.Schema{},
 		Sequence(
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				aCalled = true
 				return nil
 			},
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				bCalled = true
 				return errors.New("B bad")
 			},
-			func(d *schema.ResourceDiff, meta interface{}) error {
+			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				cCalled = true
 				return errors.New("C bad")
 			},

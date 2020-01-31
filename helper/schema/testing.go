@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -14,7 +15,7 @@ func TestResourceDataRaw(
 	c := terraform.NewResourceConfigRaw(raw)
 
 	sm := schemaMap(schema)
-	diff, err := sm.Diff(nil, c, nil, nil, true)
+	diff, err := sm.Diff(context.Background(), nil, c, nil, nil, true)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

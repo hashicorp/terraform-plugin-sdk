@@ -1,6 +1,7 @@
 package customdiff
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -18,7 +19,7 @@ func TestForceNewIf(t *testing.T) {
 					Optional: true,
 				},
 			},
-			ForceNewIf("foo", func(d *schema.ResourceDiff, meta interface{}) bool {
+			ForceNewIf("foo", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				// When we set "ForceNew", our CustomizeDiff function is actually
 				// called a second time to construct the "create" portion of
 				// the replace diff. On the second call, the old value is masked
@@ -87,7 +88,7 @@ func TestForceNewIf(t *testing.T) {
 					Optional: true,
 				},
 			},
-			ForceNewIf("foo", func(d *schema.ResourceDiff, meta interface{}) bool {
+			ForceNewIf("foo", func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				condCalls++
 				old, new := d.GetChange("foo")
 				gotOld = old.(string)
@@ -140,7 +141,7 @@ func TestForceNewIfChange(t *testing.T) {
 					Optional: true,
 				},
 			},
-			ForceNewIfChange("foo", func(old, new, meta interface{}) bool {
+			ForceNewIfChange("foo", func(_ context.Context, old, new, meta interface{}) bool {
 				// When we set "ForceNew", our CustomizeDiff function is actually
 				// called a second time to construct the "create" portion of
 				// the replace diff. On the second call, the old value is masked
@@ -208,7 +209,7 @@ func TestForceNewIfChange(t *testing.T) {
 					Optional: true,
 				},
 			},
-			ForceNewIfChange("foo", func(old, new, meta interface{}) bool {
+			ForceNewIfChange("foo", func(_ context.Context, old, new, meta interface{}) bool {
 				condCalls++
 				gotOld = old.(string)
 				gotNew = new.(string)

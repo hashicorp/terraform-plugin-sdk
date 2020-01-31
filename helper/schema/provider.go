@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
@@ -53,32 +52,30 @@ type Provider struct {
 	// ConfigureFunc is a function for configuring the provider. If the
 	// provider doesn't need to be configured, this can be omitted.
 	//
-	// See the ConfigureFunc documentation for more information.
+	// Deprecated: Please use ConfigureContextFunc instead.
 	ConfigureFunc ConfigureFunc
 
-	// MetaReset is called by TestReset to reset any state stored in the meta
-	// interface.  This is especially important if the StopContext is stored by
-	// the provider.
-	MetaReset func() error
+	// ConfigureContextFunc is a function for configuring the provider. If the
+	// provider doesn't need to be configured, this can be omitted.
+	ConfigureContextFunc ConfigureContextFunc
 
 	meta interface{}
-
-	// a mutex is required because TestReset can directly replace the stopCtx
-	stopMu        sync.Mutex
-	stopCtx       context.Context
-	stopCtxCancel context.CancelFunc
-	stopOnce      sync.Once
 
 	TerraformVersion string
 }
 
 // ConfigureFunc is the function used to configure a Provider.
 //
+// Deprecated: Please use ConfigureContextFunc
+type ConfigureFunc func(*ResourceData) (interface{}, error)
+
+// ConfigureContextFunc is the function used to configure a Provider.
+//
 // The interface{} value returned by this function is stored and passed into
 // the subsequent resources as the meta parameter. This return value is
 // usually used to pass along a configured API client, a configuration
 // structure, etc.
-type ConfigureFunc func(*ResourceData) (interface{}, error)
+type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, error)
 
 // InternalValidate should be called to validate the structure
 // of the provider.
@@ -141,55 +138,9 @@ func (p *Provider) SetMeta(v interface{}) {
 	p.meta = v
 }
 
-// Stopped reports whether the provider has been stopped or not.
-func (p *Provider) Stopped() bool {
-	ctx := p.StopContext()
-	select {
-	case <-ctx.Done():
-		return true
-	default:
-		return false
-	}
-}
-
-// StopCh returns a channel that is closed once the provider is stopped.
-func (p *Provider) StopContext() context.Context {
-	p.stopOnce.Do(p.stopInit)
-
-	p.stopMu.Lock()
-	defer p.stopMu.Unlock()
-
-	return p.stopCtx
-}
-
-func (p *Provider) stopInit() {
-	p.stopMu.Lock()
-	defer p.stopMu.Unlock()
-
-	p.stopCtx, p.stopCtxCancel = context.WithCancel(context.Background())
-}
-
 // Stop implementation of terraform.ResourceProvider interface.
 func (p *Provider) Stop() error {
-	p.stopOnce.Do(p.stopInit)
-
-	p.stopMu.Lock()
-	defer p.stopMu.Unlock()
-
-	p.stopCtxCancel()
-	return nil
-}
-
-// TestReset resets any state stored in the Provider, and will call TestReset
-// on Meta if it implements the TestProvider interface.
-// This may be used to reset the schema.Provider at the start of a test, and is
-// automatically called by resource.Test.
-func (p *Provider) TestReset() error {
-	p.stopInit()
-	if p.MetaReset != nil {
-		return p.MetaReset()
-	}
-	return nil
+	panic("This should never be called")
 }
 
 // GetSchema implementation of terraform.ResourceProvider interface
@@ -241,8 +192,13 @@ func (p *Provider) ValidateResource(
 
 // Configure implementation of terraform.ResourceProvider interface.
 func (p *Provider) Configure(c *terraform.ResourceConfig) error {
+	panic("This should never be called")
+}
+
+// Context Aware Configure implementation.
+func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceConfig) error {
 	// No configuration
-	if p.ConfigureFunc == nil {
+	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
 		return nil
 	}
 
@@ -250,7 +206,7 @@ func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 
 	// Get a ResourceData for this configuration. To do this, we actually
 	// generate an intermediary "diff" although that is never exposed.
-	diff, err := sm.Diff(nil, c, nil, p.meta, true)
+	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
 		return err
 	}
@@ -260,12 +216,12 @@ func (p *Provider) Configure(c *terraform.ResourceConfig) error {
 		return err
 	}
 
-	if p.TerraformVersion == "" {
-		// Terraform 0.12 introduced this field to the protocol
-		// We can therefore assume that if it's unconfigured at this point, it's 0.10 or 0.11
-		p.TerraformVersion = "0.11+compatible"
+	var meta interface{}
+	if p.ConfigureContextFunc != nil {
+		meta, err = p.ConfigureContextFunc(ctx, data)
+	} else {
+		meta, err = p.ConfigureFunc(data)
 	}
-	meta, err := p.ConfigureFunc(data)
 	if err != nil {
 		return err
 	}
@@ -279,12 +235,7 @@ func (p *Provider) Apply(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Apply(s, d, p.meta)
+	panic("This should never be called")
 }
 
 // Diff implementation of terraform.ResourceProvider interface.
@@ -292,38 +243,14 @@ func (p *Provider) Diff(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState,
 	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Diff(s, c, p.meta)
-}
-
-// SimpleDiff is used by the new protocol wrappers to get a diff that doesn't
-// attempt to calculate ignore_changes.
-func (p *Provider) SimpleDiff(
-	info *terraform.InstanceInfo,
-	s *terraform.InstanceState,
-	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.simpleDiff(s, c, p.meta)
+	panic("This should never be called")
 }
 
 // Refresh implementation of terraform.ResourceProvider interface.
 func (p *Provider) Refresh(
 	info *terraform.InstanceInfo,
 	s *terraform.InstanceState) (*terraform.InstanceState, error) {
-	r, ok := p.ResourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown resource type: %s", info.Type)
-	}
-
-	return r.Refresh(s, p.meta)
+	panic("This should never be called")
 }
 
 // Resources implementation of terraform.ResourceProvider interface.
@@ -360,6 +287,13 @@ func (p *Provider) Resources() []terraform.ResourceType {
 func (p *Provider) ImportState(
 	info *terraform.InstanceInfo,
 	id string) ([]*terraform.InstanceState, error) {
+	panic("This should never be called")
+}
+
+func (p *Provider) ImportStateContext(
+	ctx context.Context,
+	info *terraform.InstanceInfo,
+	id string) ([]*terraform.InstanceState, error) {
 	// Find the resource
 	r, ok := p.ResourcesMap[info.Type]
 	if !ok {
@@ -378,9 +312,13 @@ func (p *Provider) ImportState(
 
 	// Call the import function
 	results := []*ResourceData{data}
-	if r.Importer.State != nil {
+	if r.Importer.State != nil || r.Importer.StateContext != nil {
 		var err error
-		results, err = r.Importer.State(data, p.meta)
+		if r.Importer.StateContext != nil {
+			results, err = r.Importer.StateContext(ctx, data, p.meta)
+		} else {
+			results, err = r.Importer.State(data, p.meta)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -422,26 +360,14 @@ func (p *Provider) ValidateDataSource(
 func (p *Provider) ReadDataDiff(
 	info *terraform.InstanceInfo,
 	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-
-	r, ok := p.DataSourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown data source: %s", info.Type)
-	}
-
-	return r.Diff(nil, c, p.meta)
+	panic("This should never be called")
 }
 
-// RefreshData implementation of terraform.ResourceProvider interface.
+// ReadDataApply implementation of terraform.ResourceProvider interface.
 func (p *Provider) ReadDataApply(
 	info *terraform.InstanceInfo,
 	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-
-	r, ok := p.DataSourcesMap[info.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown data source: %s", info.Type)
-	}
-
-	return r.ReadDataApply(d, p.meta)
+	panic("This should never be called")
 }
 
 // DataSources implementation of terraform.ResourceProvider interface.

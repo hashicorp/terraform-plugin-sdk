@@ -1,10 +1,13 @@
 package plugin
 
 import (
+	"context"
+
 	"github.com/hashicorp/go-plugin"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -42,13 +45,25 @@ func Serve(opts *ServeOpts) {
 			return grpcplugin.NewGRPCProviderServerShim(opts.ProviderFunc())
 		}
 	}
-	VersionedPlugins[5][ProviderPluginName] = &GRPCProviderPlugin{
-		GRPCProvider: opts.GRPCProviderFunc,
-	}
+
+	provider := opts.GRPCProviderFunc()
 
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig:  Handshake,
-		VersionedPlugins: VersionedPlugins,
-		GRPCServer:       plugin.DefaultGRPCServer,
+		HandshakeConfig: Handshake,
+		VersionedPlugins: map[int]plugin.PluginSet{
+			5: {
+				ProviderPluginName: GRPCProviderPlugin{
+					GRPCProvider: func() proto.ProviderServer {
+						return provider
+					},
+				},
+			},
+		},
+		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
+			return grpc.NewServer(append(opts, grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+				ctx = provider.(*grpcplugin.GRPCProviderServer).StopContext(ctx)
+				return handler(ctx, req)
+			}))...)
+		},
 	})
 }
