@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -13,10 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
-
-func TestProvider_impl(t *testing.T) {
-	var _ terraform.ResourceProvider = new(Provider)
-}
 
 func TestProviderGetSchema(t *testing.T) {
 	// This functionality is already broadly tested in core_schema_test.go,
@@ -140,6 +137,29 @@ func TestProviderConfigure(t *testing.T) {
 					},
 				},
 
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+					if d.Get("foo").(int) == 42 {
+						return nil, nil
+					}
+
+					return nil, fmt.Errorf("nope")
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": 42,
+			},
+			Err: false,
+		},
+
+		{
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": &Schema{
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+
 				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
 					if d.Get("foo").(int) == 42 {
 						return nil, nil
@@ -157,7 +177,7 @@ func TestProviderConfigure(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		err := tc.P.Configure(c)
+		err := tc.P.ConfigureContext(context.Background(), c)
 		if err != nil != tc.Err {
 			t.Fatalf("%d: %s", i, err)
 		}
@@ -295,12 +315,11 @@ func TestProviderDiff_legacyTimeoutType(t *testing.T) {
 		},
 	}
 	ic := terraform.NewResourceConfigRaw(invalidCfg)
-	_, err := p.Diff(
-		&terraform.InstanceInfo{
-			Type: "blah",
-		},
+	_, err := p.ResourcesMap["blah"].Diff(
+		context.Background(),
 		nil,
 		ic,
+		p.Meta(),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -331,12 +350,11 @@ func TestProviderDiff_timeoutInvalidValue(t *testing.T) {
 		},
 	}
 	ic := terraform.NewResourceConfigRaw(invalidCfg)
-	_, err := p.Diff(
-		&terraform.InstanceInfo{
-			Type: "blah",
-		},
+	_, err := p.ResourcesMap["blah"].Diff(
+		context.Background(),
 		nil,
 		ic,
+		p.Meta(),
 	)
 	if err == nil {
 		t.Fatal("Expected provider.Diff to fail with invalid timeout value")
@@ -393,7 +411,7 @@ func TestProviderImportState_default(t *testing.T) {
 		},
 	}
 
-	states, err := p.ImportState(&terraform.InstanceInfo{
+	states, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -425,7 +443,7 @@ func TestProviderImportState_setsId(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportState(&terraform.InstanceInfo{
+	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -455,7 +473,7 @@ func TestProviderImportState_setsType(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportState(&terraform.InstanceInfo{
+	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -477,84 +495,6 @@ func TestProviderMeta(t *testing.T) {
 	p.SetMeta(42)
 	if v := p.Meta(); !reflect.DeepEqual(v, expected) {
 		t.Fatalf("bad: %#v", v)
-	}
-}
-
-func TestProviderStop(t *testing.T) {
-	var p Provider
-
-	if p.Stopped() {
-		t.Fatal("should not be stopped")
-	}
-
-	// Verify stopch blocks
-	ch := p.StopContext().Done()
-	select {
-	case <-ch:
-		t.Fatal("should not be stopped")
-	case <-time.After(10 * time.Millisecond):
-	}
-
-	// Stop it
-	if err := p.Stop(); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	// Verify
-	if !p.Stopped() {
-		t.Fatal("should be stopped")
-	}
-
-	select {
-	case <-ch:
-	case <-time.After(10 * time.Millisecond):
-		t.Fatal("should be stopped")
-	}
-}
-
-func TestProviderStop_stopFirst(t *testing.T) {
-	var p Provider
-
-	// Stop it
-	if err := p.Stop(); err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	// Verify
-	if !p.Stopped() {
-		t.Fatal("should be stopped")
-	}
-
-	select {
-	case <-p.StopContext().Done():
-	case <-time.After(10 * time.Millisecond):
-		t.Fatal("should be stopped")
-	}
-}
-
-func TestProviderReset(t *testing.T) {
-	var p Provider
-	stopCtx := p.StopContext()
-	p.MetaReset = func() error {
-		stopCtx = p.StopContext()
-		return nil
-	}
-
-	// cancel the current context
-	p.Stop()
-
-	if err := p.TestReset(); err != nil {
-		t.Fatal(err)
-	}
-
-	// the first context should have been replaced
-	if err := stopCtx.Err(); err != nil {
-		t.Fatal(err)
-	}
-
-	// we should not get a canceled context here either
-	if err := p.StopContext().Err(); err != nil {
-		t.Fatal(err)
 	}
 }
 

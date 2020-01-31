@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -147,7 +148,7 @@ func TestShimResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -226,7 +227,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -289,7 +290,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 	})
 	var s *terraform.InstanceState
 
-	actual, err := r.Diff(s, conf, nil)
+	actual, err := r.Diff(context.Background(), s, conf, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -318,7 +319,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Apply(s, actual, nil)
+	applied, err := r.Apply(context.Background(), s, actual, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +345,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, err := DiffFromValues(initialVal, appliedVal, r)
+	d, err := DiffFromValues(context.Background(), initialVal, appliedVal, r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +378,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -449,7 +450,7 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(s, d, nil)
+	actual, err := r.Apply(context.Background(), s, d, nil)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -3001,7 +3002,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3042,7 +3043,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3083,7 +3084,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"availability_zone": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("availability_zone", "bar"); err != nil {
 					return err
 				}
@@ -3122,7 +3123,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"ami_id": "foo",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("instance_id", "bar"); err != nil {
 					return err
 				}
@@ -3173,7 +3174,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"ports": []interface{}{5, 2, 6},
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if err := d.SetNew("ports", []interface{}{5, 2, 1}); err != nil {
 					return err
 				}
@@ -3222,7 +3223,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			Config: map[string]interface{}{},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return errors.New("diff customization should not have run")
 			},
 
@@ -3260,7 +3261,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"etag": "bar",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
 					d.SetNewComputed("version_id")
 				}
@@ -3305,7 +3306,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"foo": "baz",
 			},
 
-			CustomizeDiff: func(d *ResourceDiff, meta interface{}) error {
+			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				return fmt.Errorf("diff vetoed")
 			},
 
@@ -3367,7 +3368,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 				"stream_enabled":   false,
 				"stream_view_type": "",
 			},
-			CustomizeDiff: func(diff *ResourceDiff, v interface{}) error {
+			CustomizeDiff: func(_ context.Context, diff *ResourceDiff, v interface{}) error {
 				v, ok := diff.GetOk("unrelated_set")
 				if ok {
 					return fmt.Errorf("Didn't expect unrelated_set: %#v", v)
@@ -3390,7 +3391,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
 			{
-				d, err := schemaMap(tc.Schema).Diff(tc.State, c, tc.CustomizeDiff, nil, false)
+				d, err := schemaMap(tc.Schema).Diff(context.Background(), tc.State, c, tc.CustomizeDiff, nil, false)
 				if err != nil != tc.Err {
 					t.Fatalf("err: %s", err)
 				}
@@ -3438,7 +3439,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			res := &Resource{Schema: tc.Schema}
 
-			d, err := diffFromValues(stateVal, configVal, res, tc.CustomizeDiff)
+			d, err := diffFromValues(context.Background(), stateVal, configVal, res, tc.CustomizeDiff)
 			if err != nil {
 				if !tc.Err {
 					t.Fatal(err)
