@@ -3,7 +3,7 @@ package terraform
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/discovery"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"

@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 func TestContext2Plan_basic(t *testing.T) {

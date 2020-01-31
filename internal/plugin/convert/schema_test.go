@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
+	proto "github.com/hashicorp/terraform-plugin-sdk/tfplugin5"
 	"github.com/zclconf/go-cty/cty"
 )
 

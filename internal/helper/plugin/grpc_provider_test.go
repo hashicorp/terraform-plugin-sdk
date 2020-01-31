@@ -12,8 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plugin/convert"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	proto "github.com/hashicorp/terraform-plugin-sdk/tfplugin5"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/msgpack"
 )

@@ -29,8 +29,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states/statefile"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 	"github.com/zclconf/go-cty/cty"
 )
 

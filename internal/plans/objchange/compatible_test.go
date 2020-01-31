@@ -8,7 +8,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 func TestAssertObjectCompatible(t *testing.T) {

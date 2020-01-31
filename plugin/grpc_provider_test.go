@@ -9,11 +9,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 	"github.com/zclconf/go-cty/cty"
 
 	mockproto "github.com/hashicorp/terraform-plugin-sdk/internal/plugin/mock_proto"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
+	proto "github.com/hashicorp/terraform-plugin-sdk/tfplugin5"
 )
 
 var _ providers.Interface = (*GRPCProvider)(nil)

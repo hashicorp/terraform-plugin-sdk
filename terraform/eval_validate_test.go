@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/provisioners"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 func TestEvalValidateResource_managedResource(t *testing.T) {

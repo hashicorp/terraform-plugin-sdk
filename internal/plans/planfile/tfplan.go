@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plans"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/plans/internal/planproto"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/states"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/version"
+	"github.com/hashicorp/terraform-plugin-sdk/tfdiags"
 )
 
 const tfplanFormatVersion = 3
