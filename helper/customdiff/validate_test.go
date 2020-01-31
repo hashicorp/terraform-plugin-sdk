@@ -1,6 +1,7 @@
 package customdiff
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -18,7 +19,7 @@ func TestValidateChange(t *testing.T) {
 				Optional: true,
 			},
 		},
-		ValidateChange("foo", func(old, new, meta interface{}) error {
+		ValidateChange("foo", func(_ context.Context, old, new, meta interface{}) error {
 			called = true
 			gotOld = old.(string)
 			gotNew = new.(string)
@@ -65,7 +66,7 @@ func TestValidateValue(t *testing.T) {
 				Optional: true,
 			},
 		},
-		ValidateValue("foo", func(value, meta interface{}) error {
+		ValidateValue("foo", func(_ context.Context, value, meta interface{}) error {
 			called = true
 			gotValue = value.(string)
 			return errors.New("bad")
