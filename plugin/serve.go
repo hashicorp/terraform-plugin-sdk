@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 const (
@@ -24,7 +24,7 @@ var Handshake = plugin.HandshakeConfig{
 	MagicCookieValue: "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2",
 }
 
-type ProviderFunc func() terraform.ResourceProvider
+type ProviderFunc func() *schema.Provider
 type GRPCProviderFunc func() proto.ProviderServer
 
 // ServeOpts are the configurations to serve a plugin.
@@ -43,7 +43,7 @@ func Serve(opts *ServeOpts) {
 	// automatically wrap the plugins in the grpc shims.
 	if opts.GRPCProviderFunc == nil && opts.ProviderFunc != nil {
 		opts.GRPCProviderFunc = func() proto.ProviderServer {
-			return grpcplugin.NewGRPCProviderServerShim(opts.ProviderFunc())
+			return grpcplugin.NewGRPCProviderServer(opts.ProviderFunc())
 		}
 	}
 
