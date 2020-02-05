@@ -18,6 +18,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -283,8 +284,8 @@ type TestCase struct {
 	//
 	// The end effect of each is the same: specifying the providers that
 	// are used within the tests.
-	Providers         map[string]terraform.ResourceProvider
-	ProviderFactories map[string]terraform.ResourceProviderFactory
+	Providers         map[string]*schema.Provider
+	ProviderFactories map[string]func() (*schema.Provider, error)
 
 	// PreventPostDestroyRefresh can be set to true for cases where data sources
 	// are tested alongside real resources
@@ -447,7 +448,7 @@ type TestStep struct {
 
 	// provider s is used internally to maintain a reference to the
 	// underlying providers during the tests
-	providers map[string]terraform.ResourceProvider
+	providers map[string]*schema.Provider
 }
 
 // Set to a file mask in sprintf format where %s is test name
@@ -544,12 +545,15 @@ func Test(t TestT, c TestCase) {
 
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
-	providers := make(map[string]terraform.ResourceProvider)
-	for name, pf := range testProviderFactories(c) {
+	providers := make(map[string]*schema.Provider)
+	for name, pf := range c.ProviderFactories {
 		p, err := pf()
 		if err != nil {
 			t.Fatal(err)
 		}
+		providers[name] = p
+	}
+	for name, p := range c.Providers {
 		providers[name] = p
 	}
 
@@ -558,22 +562,6 @@ func Test(t TestT, c TestCase) {
 		RunNewTest(t.(*testing.T), c, providers)
 		return
 	}
-}
-
-// testProviderFactories combines the fixed Providers and
-// ResourceProviderFactory functions into a single map of
-// ResourceProviderFactory functions.
-func testProviderFactories(c TestCase) map[string]terraform.ResourceProviderFactory {
-	ctxProviders := make(map[string]terraform.ResourceProviderFactory)
-	for k, pf := range c.ProviderFactories {
-		ctxProviders[k] = pf
-	}
-
-	// add any fixed providers
-	for k, p := range c.Providers {
-		ctxProviders[k] = terraform.ResourceProviderFactoryFixed(p)
-	}
-	return ctxProviders
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a

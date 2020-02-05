@@ -6,11 +6,12 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	tftest "github.com/hashicorp/terraform-plugin-test"
+
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	tftest "github.com/hashicorp/terraform-plugin-test"
 )
 
 func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
@@ -107,9 +108,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 
 			providerType := providerAddr.ProviderConfig.Type
 			if provider, ok := step.providers[providerType]; ok {
-				if provider, ok := provider.(*schema.Provider); ok {
-					rsrcSchema = provider.ResourcesMap[r.Type]
-				}
+				rsrcSchema = provider.ResourcesMap[r.Type]
 			}
 
 			// don't add empty flatmapped containers, so we can more easily
