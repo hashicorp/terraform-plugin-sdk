@@ -3,9 +3,8 @@ package configschema
 import (
 	"testing"
 
-	"github.com/zclconf/go-cty/cty"
-
 	multierror "github.com/hashicorp/go-multierror"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestBlockInternalValidate(t *testing.T) {
