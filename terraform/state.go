@@ -21,12 +21,13 @@ import (
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/mitchellh/copystructure"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
-	"github.com/mitchellh/copystructure"
-	"github.com/zclconf/go-cty/cty"
 )
 
 const (
