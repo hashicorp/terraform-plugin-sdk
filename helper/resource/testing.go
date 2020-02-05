@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -274,8 +275,8 @@ type TestCase struct {
 	//
 	// The end effect of each is the same: specifying the providers that
 	// are used within the tests.
-	Providers         map[string]terraform.ResourceProvider
-	ProviderFactories map[string]terraform.ResourceProviderFactory
+	Providers         map[string]*schema.Provider
+	ProviderFactories map[string]func() (*schema.Provider, error)
 
 	// PreventPostDestroyRefresh can be set to true for cases where data sources
 	// are tested alongside real resources
