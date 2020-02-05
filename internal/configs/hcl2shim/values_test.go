@@ -5,8 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 )
 
 func TestConfigValueFromHCL2Block(t *testing.T) {

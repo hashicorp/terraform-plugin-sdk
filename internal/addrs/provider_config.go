@@ -3,10 +3,10 @@ package addrs
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 // ProviderConfig is the address of a provider configuration.

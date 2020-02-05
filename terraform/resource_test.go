@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/mitchellh/reflectwalk"
 	"github.com/zclconf/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/mitchellh/reflectwalk"
 )
 
 func TestResourceConfigGet(t *testing.T) {
