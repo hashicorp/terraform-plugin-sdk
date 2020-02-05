@@ -5,20 +5,18 @@ import (
 	"strconv"
 
 	tfjson "github.com/hashicorp/terraform-json"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func getResource(providers map[string]terraform.ResourceProvider, providerName string, addr addrs.Resource) *schema.Resource {
-	p := providers[providerName]
-	if p == nil {
+func getResource(providers map[string]*schema.Provider, providerName string, addr addrs.Resource) *schema.Resource {
+	provider := providers[providerName]
+	if provider == nil {
 		panic(fmt.Sprintf("provider %q not found in test step", providerName))
 	}
-
-	// this is only for tests, so should only see schema.Providers
-	provider := p.(*schema.Provider)
 
 	switch addr.Mode {
 	case addrs.ManagedResourceMode:

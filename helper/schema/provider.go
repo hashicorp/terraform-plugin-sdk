@@ -139,12 +139,13 @@ func (p *Provider) SetMeta(v interface{}) {
 	p.meta = v
 }
 
-// Stop implementation of terraform.ResourceProvider interface.
-func (p *Provider) Stop() error {
-	panic("This should never be called")
-}
-
-// GetSchema implementation of terraform.ResourceProvider interface
+// GetSchema returns the config schema for the main provider
+// configuration, as would appear in a "provider" block in the
+// configuration files.
+//
+// Currently not all providers support schema. Callers must therefore
+// first call Resources and DataSources and ensure that at least one
+// resource or data source has the SchemaAvailable flag set.
 func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.ProviderSchema, error) {
 	resourceTypes := map[string]*configschema.Block{}
 	dataSources := map[string]*configschema.Block{}
@@ -167,7 +168,16 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 	}, nil
 }
 
-// Validate implementation of terraform.ResourceProvider interface.
+// Validate is called once at the beginning with the raw configuration
+// (no interpolation done) and can return a list of warnings and/or
+// errors.
+//
+// This is called once with the provider configuration only. It may not
+// be called at all if no provider configuration is given.
+//
+// This should not assume that any values of the configurations are valid.
+// The primary use case of this call is to check that required keys are
+// set.
 func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 	if err := p.InternalValidate(); err != nil {
 		return nil, []error{fmt.Errorf(
@@ -179,7 +189,16 @@ func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 	return schemaMap(p.Schema).Validate(c)
 }
 
-// ValidateResource implementation of terraform.ResourceProvider interface.
+// ValidateResource is called once at the beginning with the raw
+// configuration (no interpolation done) and can return a list of warnings
+// and/or errors.
+//
+// This is called once per resource.
+//
+// This should not assume any of the values in the resource configuration
+// are valid since it is possible they have to be interpolated still.
+// The primary use case of this call is to check that the required keys
+// are set and that the general structure is correct.
 func (p *Provider) ValidateResource(
 	t string, c *terraform.ResourceConfig) ([]string, []error) {
 	r, ok := p.ResourcesMap[t]
@@ -191,12 +210,12 @@ func (p *Provider) ValidateResource(
 	return r.Validate(c)
 }
 
-// Configure implementation of terraform.ResourceProvider interface.
-func (p *Provider) Configure(c *terraform.ResourceConfig) error {
-	panic("This should never be called")
-}
-
-// Context Aware Configure implementation.
+// ConfigureContext configures the provider itself with the configuration
+// given. This is useful for setting things like access keys.
+//
+// This won't be called at all if no provider configuration is given.
+//
+// Configure returns an error if it occurred.
 func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceConfig) error {
 	// No configuration
 	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
@@ -231,30 +250,8 @@ func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceCo
 	return nil
 }
 
-// Apply implementation of terraform.ResourceProvider interface.
-func (p *Provider) Apply(
-	info *terraform.InstanceInfo,
-	s *terraform.InstanceState,
-	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-	panic("This should never be called")
-}
-
-// Diff implementation of terraform.ResourceProvider interface.
-func (p *Provider) Diff(
-	info *terraform.InstanceInfo,
-	s *terraform.InstanceState,
-	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	panic("This should never be called")
-}
-
-// Refresh implementation of terraform.ResourceProvider interface.
-func (p *Provider) Refresh(
-	info *terraform.InstanceInfo,
-	s *terraform.InstanceState) (*terraform.InstanceState, error) {
-	panic("This should never be called")
-}
-
-// Resources implementation of terraform.ResourceProvider interface.
+// Resources returns all the available resource types that this provider
+// knows how to manage.
 func (p *Provider) Resources() []terraform.ResourceType {
 	keys := make([]string, 0, len(p.ResourcesMap))
 	for k := range p.ResourcesMap {
@@ -285,12 +282,20 @@ func (p *Provider) Resources() []terraform.ResourceType {
 	return result
 }
 
-func (p *Provider) ImportState(
-	info *terraform.InstanceInfo,
-	id string) ([]*terraform.InstanceState, error) {
-	panic("This should never be called")
-}
-
+// ImportStateContext requests that the given resource be imported.
+//
+// The returned InstanceState only requires ID be set. Importing
+// will always call Refresh after the state to complete it.
+//
+// IMPORTANT: InstanceState doesn't have the resource type attached
+// to it. A type must be specified on the state via the Ephemeral
+// field on the state.
+//
+// This function can return multiple states. Normally, an import
+// will map 1:1 to a physical resource. However, some resources map
+// to multiple. For example, an AWS security group may contain many rules.
+// Each rule is represented by a separate resource in Terraform,
+// therefore multiple states are returned.
 func (p *Provider) ImportStateContext(
 	ctx context.Context,
 	info *terraform.InstanceInfo,
@@ -345,7 +350,16 @@ func (p *Provider) ImportStateContext(
 	return states, nil
 }
 
-// ValidateDataSource implementation of terraform.ResourceProvider interface.
+// ValidateDataSource is called once at the beginning with the raw
+// configuration (no interpolation done) and can return a list of warnings
+// and/or errors.
+//
+// This is called once per data source instance.
+//
+// This should not assume any of the values in the resource configuration
+// are valid since it is possible they have to be interpolated still.
+// The primary use case of this call is to check that the required keys
+// are set and that the general structure is correct.
 func (p *Provider) ValidateDataSource(
 	t string, c *terraform.ResourceConfig) ([]string, []error) {
 	r, ok := p.DataSourcesMap[t]
@@ -357,21 +371,8 @@ func (p *Provider) ValidateDataSource(
 	return r.Validate(c)
 }
 
-// ReadDataDiff implementation of terraform.ResourceProvider interface.
-func (p *Provider) ReadDataDiff(
-	info *terraform.InstanceInfo,
-	c *terraform.ResourceConfig) (*terraform.InstanceDiff, error) {
-	panic("This should never be called")
-}
-
-// ReadDataApply implementation of terraform.ResourceProvider interface.
-func (p *Provider) ReadDataApply(
-	info *terraform.InstanceInfo,
-	d *terraform.InstanceDiff) (*terraform.InstanceState, error) {
-	panic("This should never be called")
-}
-
-// DataSources implementation of terraform.ResourceProvider interface.
+// DataSources returns all of the available data sources that this
+// provider implements.
 func (p *Provider) DataSources() []terraform.DataSource {
 	keys := make([]string, 0, len(p.DataSourcesMap))
 	for k, _ := range p.DataSourcesMap {
