@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-multierror"
+
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

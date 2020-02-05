@@ -4,8 +4,9 @@ import (
 	"context"
 
 	plugin "github.com/hashicorp/go-plugin"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"google.golang.org/grpc"
+
+	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 )
 
 // GRPCProviderPlugin implements plugin.GRPCPlugin for the go-plugin package.
