@@ -3,8 +3,9 @@ package schema
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 )
 
 // The functions and methods in this file are concerned with the conversion

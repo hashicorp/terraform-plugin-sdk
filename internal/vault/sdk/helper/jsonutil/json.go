@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/hashicorp/errwrap"
+
 	"github.com/hashicorp/terraform-plugin-sdk/internal/vault/sdk/helper/compressutil"
 )
 

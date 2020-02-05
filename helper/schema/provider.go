@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/hashicorp/go-multierror"
+
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )

@@ -3,8 +3,9 @@ package plugin
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 )
 
 func TestSetUnknowns(t *testing.T) {

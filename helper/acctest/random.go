@@ -14,9 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/ssh"
-
 	"github.com/apparentlymart/go-cidr/cidr"
+	"golang.org/x/crypto/ssh"
 )
 
 func init() {

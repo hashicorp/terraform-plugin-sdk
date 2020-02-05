@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/errwrap"
+
 	"github.com/hashicorp/terraform-plugin-sdk/internal/vault/helper/pgpkeys"
 )
 
