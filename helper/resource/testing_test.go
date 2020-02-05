@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
@@ -39,13 +40,13 @@ func TestParallelTest(t *testing.T) {
 func TestTest_factoryError(t *testing.T) {
 	resourceFactoryError := fmt.Errorf("resource factory error")
 
-	factory := func() (terraform.ResourceProvider, error) {
+	factory := func() (*schema.Provider, error) {
 		return nil, resourceFactoryError
 	}
 
 	mt := new(mockT)
 	Test(mt, TestCase{
-		ProviderFactories: map[string]terraform.ResourceProviderFactory{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
 			"test": factory,
 		},
 		Steps: []TestStep{
