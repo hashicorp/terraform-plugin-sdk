@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-test/deep"
 	tfjson "github.com/hashicorp/terraform-json"
+
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 

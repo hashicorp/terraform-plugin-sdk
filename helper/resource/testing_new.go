@@ -9,9 +9,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
-	"github.com/hashicorp/terraform-plugin-sdk/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test"
+
+	"github.com/hashicorp/terraform-plugin-sdk/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
@@ -23,7 +25,7 @@ func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
 	return state
 }
 
-func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
+func RunNewTest(t *testing.T, c TestCase, providers map[string]*schema.Provider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)

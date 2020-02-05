@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test"
+
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
