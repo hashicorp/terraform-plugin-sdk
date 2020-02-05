@@ -12,12 +12,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/mitchellh/copystructure"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/zclconf/go-cty/cty"
-
-	"github.com/mitchellh/copystructure"
 )
 
 // diffChangeType is an enum with the kind of changes a diff has planned.

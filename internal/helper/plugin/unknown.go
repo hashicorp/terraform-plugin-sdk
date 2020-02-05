@@ -3,8 +3,9 @@ package plugin
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
 )
 
 // SetUnknowns takes a cty.Value, and compares it to the schema setting any null

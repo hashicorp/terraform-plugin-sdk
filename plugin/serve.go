@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
+
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"google.golang.org/grpc"
 )
 
 const (
