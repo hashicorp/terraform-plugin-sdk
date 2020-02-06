@@ -14,10 +14,9 @@ import (
 //
 // ResourceData is the primary argument received for CRUD operations on
 // a resource as well as configuration of a provider. It is a powerful
-// structure that can be used to not only query data, but check for changes,
-// define partial state updates, etc.
+// structure that can be used to not only query data, but also check for changes
 //
-// The most relevant methods to take a look at are Get, Set, and Partial.
+// The most relevant methods to take a look at are Get and Set.
 type ResourceData struct {
 	// Settable (internally)
 	schema   map[string]*Schema
@@ -31,8 +30,6 @@ type ResourceData struct {
 	multiReader *MultiLevelFieldReader
 	setWriter   *MapFieldWriter
 	newState    *terraform.InstanceState
-	partial     bool
-	partialMap  map[string]struct{}
 	once        sync.Once
 	isNew       bool
 
@@ -157,22 +154,6 @@ func (d *ResourceData) HasChange(key string) bool {
 	return !reflect.DeepEqual(o, n)
 }
 
-// Partial turns partial state mode on/off.
-//
-// When partial state mode is enabled, then only key prefixes specified
-// by SetPartial will be in the final state. This allows providers to return
-// partial states for partially applied resources (when errors occur).
-func (d *ResourceData) Partial(on bool) {
-	d.partial = on
-	if on {
-		if d.partialMap == nil {
-			d.partialMap = make(map[string]struct{})
-		}
-	} else {
-		d.partialMap = nil
-	}
-}
-
 // Set sets the value for the given key.
 //
 // If the key is invalid or the value is not a correct type, an error
@@ -203,18 +184,6 @@ func (d *ResourceData) Set(key string, value interface{}) error {
 		panic(err)
 	}
 	return err
-}
-
-// SetPartial adds the key to the final state output while
-// in partial state mode. The key must be a root key in the schema (i.e.
-// it cannot be "list.0").
-//
-// If partial state mode is disabled, then this has no effect. Additionally,
-// whenever partial state mode is toggled, the partial data is cleared.
-func (d *ResourceData) SetPartial(k string) {
-	if d.partial {
-		d.partialMap[k] = struct{}{}
-	}
 }
 
 func (d *ResourceData) MarkNewResource() {
@@ -327,12 +296,6 @@ func (d *ResourceData) State() *terraform.InstanceState {
 	rawMap := make(map[string]interface{})
 	for k := range d.schema {
 		source := getSourceSet
-		if d.partial {
-			source = getSourceState
-			if _, ok := d.partialMap[k]; ok {
-				source = getSourceSet
-			}
-		}
 
 		raw := d.get([]string{k}, source)
 		if raw.Exists && !raw.Computed {
