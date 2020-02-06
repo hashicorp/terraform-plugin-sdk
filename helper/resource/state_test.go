@@ -2,7 +2,9 @@ package resource
 
 import (
 	"errors"
+	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -88,68 +90,66 @@ func UnknownPendingStateRefreshFunc() StateRefreshFunc {
 	}
 }
 
-// TODO: find way to make test pass consistently on CircleCI
-// The issue is likely timing related on CI as it can't be recreated locally
-// the test seems brittle even while passing
-// func TestWaitForState_inconsistent_positive(t *testing.T) {
-// 	conf := &StateChangeConf{
-// 		Pending:                   []string{"replicating"},
-// 		Target:                    []string{"done"},
-// 		Refresh:                   InconsistentStateRefreshFunc(),
-// 		Timeout:                   90 * time.Millisecond,
-// 		PollInterval:              10 * time.Millisecond,
-// 		ContinuousTargetOccurence: 3,
-// 	}
+func TestWaitForState_inconsistent_positive(t *testing.T) {
+	t.Logf("GOMAXPROCS=%d", runtime.GOMAXPROCS(0))
 
-// 	idx, err := conf.WaitForState()
+	conf := &StateChangeConf{
+		Pending:                   []string{"replicating"},
+		Target:                    []string{"done"},
+		Refresh:                   InconsistentStateRefreshFunc(),
+		Timeout:                   90 * time.Millisecond,
+		PollInterval:              10 * time.Millisecond,
+		ContinuousTargetOccurence: 3,
+	}
 
-// 	if err != nil {
-// 		t.Fatalf("err: %s", err)
-// 	}
+	idx, err := conf.WaitForState()
 
-// 	if idx != 4 {
-// 		t.Fatalf("Expected index 4, given %d", idx.(int))
-// 	}
-// }
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
 
-// TODO: find way to make test pass consistently on CircleCI
-// The issue is likely timing related on CI as it can't be recreated locally
-// the test seems brittle even while passing
-// func TestWaitForState_inconsistent_negative(t *testing.T) {
-// 	refreshCount := int64(0)
-// 	f := InconsistentStateRefreshFunc()
-// 	refresh := func() (interface{}, string, error) {
-// 		atomic.AddInt64(&refreshCount, 1)
-// 		return f()
-// 	}
+	if idx != 4 {
+		t.Fatalf("Expected index 4, given %d", idx.(int))
+	}
+}
 
-// 	conf := &StateChangeConf{
-// 		Pending:                   []string{"replicating"},
-// 		Target:                    []string{"done"},
-// 		Refresh:                   refresh,
-// 		Timeout:                   85 * time.Millisecond,
-// 		PollInterval:              10 * time.Millisecond,
-// 		ContinuousTargetOccurence: 4,
-// 	}
+func TestWaitForState_inconsistent_negative(t *testing.T) {
+	t.Logf("GOMAXPROCS=%d", runtime.GOMAXPROCS(0))
 
-// 	_, err := conf.WaitForState()
+	refreshCount := int64(0)
+	f := InconsistentStateRefreshFunc()
+	refresh := func() (interface{}, string, error) {
+		atomic.AddInt64(&refreshCount, 1)
+		return f()
+	}
 
-// 	if err == nil {
-// 		t.Fatal("Expected timeout error. No error returned.")
-// 	}
+	conf := &StateChangeConf{
+		Pending:                   []string{"replicating"},
+		Target:                    []string{"done"},
+		Refresh:                   refresh,
+		Timeout:                   85 * time.Millisecond,
+		PollInterval:              10 * time.Millisecond,
+		ContinuousTargetOccurence: 4,
+	}
 
-// 	// we can't guarantee the exact number of refresh calls in the tests by
-// 	// timing them, but we want to make sure the test at least went through th
-// 	// required states.
-// 	if atomic.LoadInt64(&refreshCount) < 6 {
-// 		t.Fatal("refreshed called too few times")
-// 	}
+	_, err := conf.WaitForState()
 
-// 	expectedErr := "timeout while waiting for state to become 'done'"
-// 	if !strings.HasPrefix(err.Error(), expectedErr) {
-// 		t.Fatalf("error prefix doesn't match.\nExpected: %q\nGiven: %q\n", expectedErr, err.Error())
-// 	}
-// }
+	if err == nil {
+		t.Fatal("Expected timeout error. No error returned.")
+	}
+
+	// we can't guarantee the exact number of refresh calls in the tests by
+	// timing them, but we want to make sure the test at least went through th
+	// required states.
+	if atomic.LoadInt64(&refreshCount) < 6 {
+		t.Fatal("refreshed called too few times")
+	}
+
+	expectedErr := "timeout while waiting for state to become 'done'"
+	if !strings.HasPrefix(err.Error(), expectedErr) {
+		t.Fatalf("error prefix doesn't match.\nExpected: %q\nGiven: %q\n", expectedErr, err.Error())
+	}
+}
 
 func TestWaitForState_timeout(t *testing.T) {
 	old := refreshGracePeriod
