@@ -1,3 +1,10 @@
+# 1.7.0 (Unreleased)
+
+DEPRECATED:
+
+* helper/schema: `ResourceData.Partial` [GH-317]
+* helper/schema: `ResourceData.SetPartial` [GH-317]
+
 # 1.6.0 (January 29, 2020)
 
 DEPRECATED:
