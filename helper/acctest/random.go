@@ -36,6 +36,7 @@ func RandomWithPrefix(name string) string {
 	return fmt.Sprintf("%s-%d", name, rand.New(rand.NewSource(time.Now().UnixNano())).Int())
 }
 
+// RandIntRange returns a random integer between min (inclusive) and max (exclusive)
 func RandIntRange(min int, max int) int {
 	source := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rangeMax := max - min
