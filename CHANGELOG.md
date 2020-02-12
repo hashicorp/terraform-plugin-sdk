@@ -1,12 +1,12 @@
-# 1.7.0 (Unreleased)
+# 1.7.0 (February 12, 2020)
 
 FEATURES:
-* Binary acceptance test driver [GH-262]
+* Binary acceptance test driver ([#262](https://github.com/hashicorp/terraform-plugin-sdk/issues/262))
 
 DEPRECATED:
 
-* helper/schema: `ResourceData.Partial` [GH-317]
-* helper/schema: `ResourceData.SetPartial` [GH-317]
+* helper/schema: `ResourceData.Partial` ([#317](https://github.com/hashicorp/terraform-plugin-sdk/issues/317))
+* helper/schema: `ResourceData.SetPartial` ([#317](https://github.com/hashicorp/terraform-plugin-sdk/issues/317))
 
 # 1.6.0 (January 29, 2020)
 
