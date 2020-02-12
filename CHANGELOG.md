@@ -1,5 +1,8 @@
 # 1.7.0 (Unreleased)
 
+FEATURES:
+* Binary acceptance test driver [GH-262]
+
 DEPRECATED:
 
 * helper/schema: `ResourceData.Partial` [GH-317]
