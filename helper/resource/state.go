@@ -83,7 +83,11 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 	go func() {
 		defer close(resCh)
 
-		time.Sleep(conf.Delay)
+		select {
+		case <-time.After(conf.Delay):
+		case <-cancelCh:
+			return
+		}
 
 		// start with 0 delay for the first loop
 		var wait time.Duration
@@ -217,8 +221,8 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 			// still waiting, store the last result
 			lastResult = r
 		case <-ctx.Done():
-			// this is a simple approach but swallows lastResult.Error
-			return lastResult.Result, ctx.Err()
+			close(cancelCh)
+			return nil, ctx.Err()
 		case <-timeout:
 			log.Printf("[WARN] WaitForState timeout after %s", conf.Timeout)
 			log.Printf("[WARN] WaitForState starting %s refresh grace period", refreshGracePeriod)
@@ -248,7 +252,7 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 					// TimeoutError and wait for the channel to close
 					lastResult = r
 				case <-ctx.Done():
-					log.Println("[WARN] Context cancelation detected, abandoning grace period")
+					log.Println("[ERROR] Context cancelation detected, abandoning grace period")
 					break forSelect
 				case <-timeout:
 					log.Println("[ERROR] WaitForState exceeded refresh grace period")
