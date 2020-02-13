@@ -124,10 +124,12 @@ func TestRetry_nilRetryableError(t *testing.T) {
 func TestRetryContext_cancel(t *testing.T) {
 	t.Parallel()
 
+	waitForever := make(chan struct{})
+	defer close(waitForever)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	f := func() *RetryError {
-		<-ctx.Done()
+		<-waitForever
 		return nil
 	}
 
@@ -141,11 +143,13 @@ func TestRetryContext_cancel(t *testing.T) {
 func TestRetryContext_deadline(t *testing.T) {
 	t.Parallel()
 
+	waitForever := make(chan struct{})
+	defer close(waitForever)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
 	f := func() *RetryError {
-		<-ctx.Done()
+		<-waitForever
 		return nil
 	}
 
