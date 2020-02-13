@@ -14,7 +14,7 @@ var refreshGracePeriod = 30 * time.Second
 // It returns three results. `result` is any object that will be returned
 // as the final object after waiting for state change. This allows you to
 // return the final updated object, for example an EC2 instance after refreshing
-// it.
+// it. A nil result represents not found.
 //
 // `state` is the latest state of that object. And `err` is any error that
 // may have happened while refreshing the state.
@@ -29,7 +29,7 @@ type StateChangeConf struct {
 	Timeout        time.Duration    // The amount of time to wait before timeout
 	MinTimeout     time.Duration    // Smallest time to wait before refreshes
 	PollInterval   time.Duration    // Override MinTimeout/backoff and only poll this often
-	NotFoundChecks int              // Number of times to allow not found
+	NotFoundChecks int              // Number of times to allow not found (nil result from Refresh)
 
 	// This is to work around inconsistent APIs
 	ContinuousTargetOccurence int // Number of times the Target state has to occur continuously
