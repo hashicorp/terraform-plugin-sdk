@@ -337,20 +337,18 @@ func TestWaitForStateContext_cancel(t *testing.T) {
 		return nil, "pending", nil
 	}
 	conf := &StateChangeConf{
-		Pending:      []string{"pending", "incomplete"},
-		Target:       []string{"running"},
-		Refresh:      refresh,
-		Timeout:      10 * time.Millisecond,
-		PollInterval: 10 * time.Second,
+		Pending: []string{"pending", "incomplete"},
+		Target:  []string{"running"},
+		Refresh: refresh,
+		Timeout: 10 * time.Second,
 	}
 
-	var obj interface{}
 	var err error
 
 	waitDone := make(chan struct{})
 	go func() {
 		defer close(waitDone)
-		obj, err = conf.WaitForStateContext(ctx)
+		_, err = conf.WaitForStateContext(ctx)
 	}()
 
 	// make sure WaitForState is blocked
@@ -369,17 +367,7 @@ func TestWaitForStateContext_cancel(t *testing.T) {
 		t.Fatal("WaitForState didn't return after refresh finished")
 	}
 
-	if err == nil {
-		t.Fatal("Expected timeout error. No error returned.")
+	if err != context.Canceled {
+		t.Fatalf("Expected canceled context error, got: %s", err)
 	}
-
-	expectedErr := "timeout while waiting for state to become 'running'"
-	if !strings.HasPrefix(err.Error(), expectedErr) {
-		t.Fatalf("Errors don't match.\nExpected: %q\nGiven: %q\n", expectedErr, err.Error())
-	}
-
-	if obj != nil {
-		t.Fatalf("should not return obj")
-	}
-
 }

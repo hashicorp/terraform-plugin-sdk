@@ -124,17 +124,32 @@ func TestRetry_nilRetryableError(t *testing.T) {
 func TestRetryContext_cancel(t *testing.T) {
 	t.Parallel()
 
-	var ran bool
+	ctx, cancel := context.WithCancel(context.Background())
+
 	f := func() *RetryError {
-		ran = true
+		<-ctx.Done()
 		return nil
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := RetryContext(ctx, 10*time.Millisecond, f); err != nil {
-		t.Fatal("should not error")
-	} else if ran {
-		t.Fatal("should not have run RetryFunc")
+
+	if err := RetryContext(ctx, 10*time.Millisecond, f); err != context.Canceled {
+		t.Fatalf("Expected context.Canceled error, got: %s", err)
+	}
+}
+
+func TestRetryContext_deadline(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	f := func() *RetryError {
+		<-ctx.Done()
+		return nil
+	}
+
+	if err := RetryContext(ctx, 10*time.Second, f); err != context.DeadlineExceeded {
+		t.Fatalf("Expected context.DeadlineExceeded error, got: %s", err)
 	}
 }
