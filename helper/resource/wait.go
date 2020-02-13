@@ -1,14 +1,18 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
 )
 
-// Retry is a basic wrapper around StateChangeConf that will just retry
+// RetryContext is a basic wrapper around StateChangeConf that will just retry
 // a function until it no longer returns an error.
-func Retry(timeout time.Duration, f RetryFunc) error {
+//
+// Cancellation from the passed in context will propagate through to the
+// underlying StateChangeConf
+func RetryContext(ctx context.Context, timeout time.Duration, f RetryFunc) error {
 	// These are used to pull the error out of the function; need a mutex to
 	// avoid a data race.
 	var resultErr error
@@ -39,7 +43,7 @@ func Retry(timeout time.Duration, f RetryFunc) error {
 		},
 	}
 
-	_, waitErr := c.WaitForState()
+	_, waitErr := c.WaitForStateContext(ctx)
 
 	// Need to acquire the lock here to be able to avoid race using resultErr as
 	// the return value
@@ -54,6 +58,14 @@ func Retry(timeout time.Duration, f RetryFunc) error {
 	// resultErr takes precedence over waitErr if both are set because it is
 	// more likely to be useful
 	return resultErr
+}
+
+// Retry is a basic wrapper around StateChangeConf that will just retry
+// a function until it no longer returns an error.
+//
+// Deprecated: Please use RetryContext to ensure proper plugin shutdown
+func Retry(timeout time.Duration, f RetryFunc) error {
+	return RetryContext(context.Background(), timeout, f)
 }
 
 // RetryFunc is the function retried until it succeeds.
