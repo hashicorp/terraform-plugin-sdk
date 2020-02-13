@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -117,5 +118,23 @@ func TestRetry_nilRetryableError(t *testing.T) {
 	err := Retry(1*time.Second, f)
 	if err == nil {
 		t.Fatal("should error")
+	}
+}
+
+func TestRetryContext_cancel(t *testing.T) {
+	t.Parallel()
+
+	var ran bool
+	f := func() *RetryError {
+		ran = true
+		return nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := RetryContext(ctx, 10*time.Millisecond, f); err != nil {
+		t.Fatal("should not error")
+	} else if ran {
+		t.Fatal("should not have run RetryFunc")
 	}
 }

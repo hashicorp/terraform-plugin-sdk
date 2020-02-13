@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"log"
 	"time"
 )
@@ -34,7 +35,7 @@ type StateChangeConf struct {
 	ContinuousTargetOccurence int // Number of times the Target state has to occur continuously
 }
 
-// WaitForState watches an object and waits for it to achieve the state
+// WaitForStateContext watches an object and waits for it to achieve the state
 // specified in the configuration using the specified Refresh() func,
 // waiting the number of seconds specified in the timeout configuration.
 //
@@ -48,7 +49,9 @@ type StateChangeConf struct {
 //
 // Otherwise, the result is the result of the first call to the Refresh function to
 // reach the target state.
-func (conf *StateChangeConf) WaitForState() (interface{}, error) {
+//
+// Cancellation from the passed in context will cancel the refresh loop
+func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface{}, error) {
 	log.Printf("[DEBUG] Waiting for state to become: %s", conf.Target)
 
 	notfoundTick := 0
@@ -91,6 +94,8 @@ func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 
 			// wait and watch for cancellation
 			select {
+			case <-ctx.Done():
+				return
 			case <-cancelCh:
 				return
 			case <-time.After(wait):
@@ -256,4 +261,13 @@ func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 			}
 		}
 	}
+}
+
+// WaitForState watches an object and waits for it to achieve the state
+// specified in the configuration using the specified Refresh() func,
+// waiting the number of seconds specified in the timeout configuration.
+//
+// Deprecated: Please use WaitForStateContext to ensure proper plugin shutdown
+func (conf *StateChangeConf) WaitForState() (interface{}, error) {
+	return conf.WaitForStateContext(context.Background())
 }
