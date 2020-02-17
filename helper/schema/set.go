@@ -48,7 +48,7 @@ func HashSchema(schema *Schema) SchemaSetFunc {
 // Set is a set data structure that is returned for elements of type
 // TypeSet.
 type Set struct {
-	F SchemaSetFunc
+	F SchemaSetFunc `json:"-"`
 
 	m    map[string]interface{}
 	once sync.Once

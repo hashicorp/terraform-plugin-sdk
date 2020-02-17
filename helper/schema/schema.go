@@ -111,7 +111,7 @@ type Schema struct {
 	// This allows comparison based on something other than primitive, list
 	// or map equality - for example SSH public keys may be considered
 	// equivalent regardless of trailing whitespace.
-	DiffSuppressFunc SchemaDiffSuppressFunc
+	DiffSuppressFunc SchemaDiffSuppressFunc `json:"-"`
 
 	// If this is non-nil, then this will be a default value that is used
 	// when this item is not set in the configuration.
@@ -136,7 +136,7 @@ type Schema struct {
 	// If either of these is set, then the user won't be asked for input
 	// for this key if the default is not nil.
 	Default     interface{}
-	DefaultFunc SchemaDefaultFunc
+	DefaultFunc SchemaDefaultFunc `json:"-"`
 
 	// Description is used as the description for docs or asking for user
 	// input. It should be relatively short (a few sentences max) and should
@@ -162,7 +162,7 @@ type Schema struct {
 	// to simply store the hash of it.
 	Computed  bool
 	ForceNew  bool
-	StateFunc SchemaStateFunc
+	StateFunc SchemaStateFunc `json:"-"`
 
 	// The following fields are only set for a TypeList, TypeSet, or TypeMap.
 	//
@@ -203,7 +203,7 @@ type Schema struct {
 	//
 	// Set defines a function to determine the unique ID of an item so that
 	// a proper set can be built.
-	Set SchemaSetFunc
+	Set SchemaSetFunc `json:"-"`
 
 	// ComputedWhen is a set of queries on the configuration. Whenever any
 	// of these things is changed, it will require a recompute (this requires
@@ -249,7 +249,7 @@ type Schema struct {
 	//
 	// ValidateFunc is honored only when the schema's Type is set to TypeInt,
 	// TypeFloat, TypeString, TypeBool, or TypeMap. It is ignored for all other types.
-	ValidateFunc SchemaValidateFunc
+	ValidateFunc SchemaValidateFunc `json:"-"`
 
 	// Sensitive ensures that the attribute's value does not get displayed in
 	// logs or regular output. It should be used for passwords or other
