@@ -67,44 +67,6 @@ func ParseProviderConfigCompact(traversal hcl.Traversal) (ProviderConfig, tfdiag
 	return ret, diags
 }
 
-// ParseProviderConfigCompactStr is a helper wrapper around ParseProviderConfigCompact
-// that takes a string and parses it with the HCL native syntax traversal parser
-// before interpreting it.
-//
-// This should be used only in specialized situations since it will cause the
-// created references to not have any meaningful source location information.
-// If a reference string is coming from a source that should be identified in
-// error messages then the caller should instead parse it directly using a
-// suitable function from the HCL API and pass the traversal itself to
-// ParseProviderConfigCompact.
-//
-// Error diagnostics are returned if either the parsing fails or the analysis
-// of the traversal fails. There is no way for the caller to distinguish the
-// two kinds of diagnostics programmatically. If error diagnostics are returned
-// then the returned address is invalid.
-func ParseProviderConfigCompactStr(str string) (ProviderConfig, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-
-	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
-	if parseDiags.HasErrors() {
-		return ProviderConfig{}, diags
-	}
-
-	addr, addrDiags := ParseProviderConfigCompact(traversal)
-	diags = diags.Append(addrDiags)
-	return addr, diags
-}
-
-// Absolute returns an AbsProviderConfig from the receiver and the given module
-// instance address.
-func (pc ProviderConfig) Absolute(module ModuleInstance) AbsProviderConfig {
-	return AbsProviderConfig{
-		Module:         module,
-		ProviderConfig: pc,
-	}
-}
-
 func (pc ProviderConfig) String() string {
 	if pc.Type == "" {
 		// Should never happen; always indicates a bug
@@ -116,15 +78,6 @@ func (pc ProviderConfig) String() string {
 	}
 
 	return "provider." + pc.Type
-}
-
-// StringCompact is an alternative to String that returns the form that can
-// be parsed by ParseProviderConfigCompact, without the "provider." prefix.
-func (pc ProviderConfig) StringCompact() string {
-	if pc.Alias != "" {
-		return fmt.Sprintf("%s.%s", pc.Type, pc.Alias)
-	}
-	return pc.Type
 }
 
 // AbsProviderConfig is the absolute address of a provider configuration
@@ -228,57 +181,6 @@ func ParseAbsProviderConfigStr(str string) (AbsProviderConfig, tfdiags.Diagnosti
 	addr, addrDiags := ParseAbsProviderConfig(traversal)
 	diags = diags.Append(addrDiags)
 	return addr, diags
-}
-
-// ProviderConfigDefault returns the address of the default provider config
-// of the given type inside the recieving module instance.
-func (m ModuleInstance) ProviderConfigDefault(name string) AbsProviderConfig {
-	return AbsProviderConfig{
-		Module: m,
-		ProviderConfig: ProviderConfig{
-			Type: name,
-		},
-	}
-}
-
-// ProviderConfigAliased returns the address of an aliased provider config
-// of with given type and alias inside the recieving module instance.
-func (m ModuleInstance) ProviderConfigAliased(name, alias string) AbsProviderConfig {
-	return AbsProviderConfig{
-		Module: m,
-		ProviderConfig: ProviderConfig{
-			Type:  name,
-			Alias: alias,
-		},
-	}
-}
-
-// Inherited returns an address that the receiving configuration address might
-// inherit from in a parent module. The second bool return value indicates if
-// such inheritance is possible, and thus whether the returned address is valid.
-//
-// Inheritance is possible only for default (un-aliased) providers in modules
-// other than the root module. Even if a valid address is returned, inheritence
-// may not be performed for other reasons, such as if the calling module
-// provided explicit provider configurations within the call for this module.
-// The ProviderTransformer graph transform in the main terraform module has
-// the authoritative logic for provider inheritance, and this method is here
-// mainly just for its benefit.
-func (pc AbsProviderConfig) Inherited() (AbsProviderConfig, bool) {
-	// Can't inherit if we're already in the root.
-	if len(pc.Module) == 0 {
-		return AbsProviderConfig{}, false
-	}
-
-	// Can't inherit if we have an alias.
-	if pc.ProviderConfig.Alias != "" {
-		return AbsProviderConfig{}, false
-	}
-
-	// Otherwise, we might inherit from a configuration with the same
-	// provider name in the parent module instance.
-	parentMod := pc.Module.Parent()
-	return pc.ProviderConfig.Absolute(parentMod), true
 }
 
 func (pc AbsProviderConfig) String() string {

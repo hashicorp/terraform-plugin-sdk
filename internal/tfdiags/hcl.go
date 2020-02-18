@@ -67,21 +67,3 @@ func SourceRangeFromHCL(hclRange hcl.Range) SourceRange {
 		},
 	}
 }
-
-// ToHCL constructs a HCL Range from the receiving SourceRange. This is the
-// opposite of SourceRangeFromHCL.
-func (r SourceRange) ToHCL() hcl.Range {
-	return hcl.Range{
-		Filename: r.Filename,
-		Start: hcl.Pos{
-			Line:   r.Start.Line,
-			Column: r.Start.Column,
-			Byte:   r.Start.Byte,
-		},
-		End: hcl.Pos{
-			Line:   r.End.Line,
-			Column: r.End.Column,
-			Byte:   r.End.Byte,
-		},
-	}
-}
