@@ -243,7 +243,7 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 	return runE
 }
 
-const TestEnvVar = "TF_ACC"
+const testEnvVar = "TF_ACC"
 
 // TestCheckFunc is the callback type used with acceptance tests to check
 // the state of a resource. The state passed in is the latest state known,
@@ -452,9 +452,9 @@ type TestStep struct {
 }
 
 // Set to a file mask in sprintf format where %s is test name
-const EnvLogPathMask = "TF_LOG_PATH_MASK"
+const envLogPathMask = "TF_LOG_PATH_MASK"
 
-func LogOutput(t TestT) (logOutput io.Writer, err error) {
+func logOutput(t TestT) (logOutput io.Writer, err error) {
 	logOutput = ioutil.Discard
 
 	logLevel := logging.LogLevel()
@@ -472,7 +472,7 @@ func LogOutput(t TestT) (logOutput io.Writer, err error) {
 		}
 	}
 
-	if logPathMask := os.Getenv(EnvLogPathMask); logPathMask != "" {
+	if logPathMask := os.Getenv(envLogPathMask); logPathMask != "" {
 		// Escape special characters which may appear if we have subtests
 		testName := strings.Replace(t.Name(), "/", "__", -1)
 
@@ -519,14 +519,14 @@ func Test(t TestT, c TestCase) {
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
-	if os.Getenv(TestEnvVar) == "" && !c.IsUnitTest {
+	if os.Getenv(testEnvVar) == "" && !c.IsUnitTest {
 		t.Skip(fmt.Sprintf(
 			"Acceptance tests skipped unless env '%s' set",
-			TestEnvVar))
+			testEnvVar))
 		return
 	}
 
-	logWriter, err := LogOutput(t)
+	logWriter, err := logOutput(t)
 	if err != nil {
 		t.Error(fmt.Errorf("error setting up logging: %s", err))
 	}

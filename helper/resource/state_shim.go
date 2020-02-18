@@ -6,33 +6,10 @@ import (
 
 	tfjson "github.com/hashicorp/terraform-json"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
-
-func getResource(providers map[string]*schema.Provider, providerName string, addr addrs.Resource) *schema.Resource {
-	provider := providers[providerName]
-	if provider == nil {
-		panic(fmt.Sprintf("provider %q not found in test step", providerName))
-	}
-
-	switch addr.Mode {
-	case addrs.ManagedResourceMode:
-		resource := provider.ResourcesMap[addr.Type]
-		if resource != nil {
-			return resource
-		}
-	case addrs.DataResourceMode:
-		resource := provider.DataSourcesMap[addr.Type]
-		if resource != nil {
-			return resource
-		}
-	}
-
-	panic(fmt.Sprintf("resource %s not found in test step", addr.Type))
-}
 
 type shimmedState struct {
 	state *terraform.State
