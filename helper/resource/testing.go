@@ -97,9 +97,10 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 	} else {
-		if acctest.TestHelper != nil {
-			defer acctest.TestHelper.Close()
+		if acctest.TestHelper == nil {
+			log.Fatal("Please configure the acctest binary driver")
 		}
+		defer acctest.TestHelper.Close()
 		os.Exit(m.Run())
 	}
 }
@@ -310,11 +311,6 @@ type TestCase struct {
 	// IDRefreshIgnore is a list of configuration keys that will be ignored.
 	IDRefreshName   string
 	IDRefreshIgnore []string
-
-	// DisableBinaryDriver forces this test case to run using the legacy test
-	// driver, even if the binary test driver has been enabled.
-	// This property will be removed in version 2.0.0 of the SDK.
-	DisableBinaryDriver bool
 }
 
 // TestStep is a single apply sequence of a test, done within the
@@ -557,11 +553,12 @@ func Test(t TestT, c TestCase) {
 		providers[name] = p
 	}
 
-	if acctest.TestHelper != nil && c.DisableBinaryDriver == false {
-		// inject providers for ImportStateVerify
-		RunNewTest(t.(*testing.T), c, providers)
+	if acctest.TestHelper == nil {
+		t.Fatal("Please configure the acctest binary driver")
 		return
 	}
+
+	RunNewTest(t.(*testing.T), c, providers)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
