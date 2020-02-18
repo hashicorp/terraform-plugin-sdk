@@ -194,22 +194,6 @@ func (c *ResourceConfig) Equal(c2 *ResourceConfig) bool {
 	return true
 }
 
-// CheckSet checks that the given list of configuration keys is
-// properly set. If not, errors are returned for each unset key.
-//
-// This is useful to be called in the Validate method of a ResourceProvider.
-func (c *ResourceConfig) CheckSet(keys []string) []error {
-	var errs []error
-
-	for _, k := range keys {
-		if !c.IsSet(k) {
-			errs = append(errs, fmt.Errorf("%s must be set", k))
-		}
-	}
-
-	return errs
-}
-
 // Get looks up a configuration value by key and returns the value.
 //
 // The second return value is true if the get was successful. Get will
@@ -256,28 +240,6 @@ func (c *ResourceConfig) IsComputed(k string) bool {
 	}
 
 	return w.Unknown
-}
-
-// IsSet checks if the key in the configuration is set. A key is set if
-// it has a value or the value is being computed (is unknown currently).
-//
-// This function should be used rather than checking the keys of the
-// raw configuration itself, since a key may be omitted from the raw
-// configuration if it is being computed.
-func (c *ResourceConfig) IsSet(k string) bool {
-	if c == nil {
-		return false
-	}
-
-	if c.IsComputed(k) {
-		return true
-	}
-
-	if _, ok := c.Get(k); ok {
-		return true
-	}
-
-	return false
 }
 
 func (c *ResourceConfig) get(

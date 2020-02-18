@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
@@ -138,103 +137,4 @@ func ParseTarget(traversal hcl.Traversal) (*Target, tfdiags.Diagnostics) {
 		Subject:     subject,
 		SourceRange: rng,
 	}, diags
-}
-
-// ParseTargetStr is a helper wrapper around ParseTarget that takes a string
-// and parses it with the HCL native syntax traversal parser before
-// interpreting it.
-//
-// This should be used only in specialized situations since it will cause the
-// created references to not have any meaningful source location information.
-// If a target string is coming from a source that should be identified in
-// error messages then the caller should instead parse it directly using a
-// suitable function from the HCL API and pass the traversal itself to
-// ParseTarget.
-//
-// Error diagnostics are returned if either the parsing fails or the analysis
-// of the traversal fails. There is no way for the caller to distinguish the
-// two kinds of diagnostics programmatically. If error diagnostics are returned
-// the returned target may be nil or incomplete.
-func ParseTargetStr(str string) (*Target, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-
-	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
-	if parseDiags.HasErrors() {
-		return nil, diags
-	}
-
-	target, targetDiags := ParseTarget(traversal)
-	diags = diags.Append(targetDiags)
-	return target, diags
-}
-
-// ParseAbsResourceInstance attempts to interpret the given traversal as an
-// absolute resource instance address, using the same syntax as expected by
-// ParseTarget.
-//
-// If no error diagnostics are returned, the returned target includes the
-// address that was extracted and the source range it was extracted from.
-//
-// If error diagnostics are returned then the AbsResource value is invalid and
-// must not be used.
-func ParseAbsResourceInstance(traversal hcl.Traversal) (AbsResourceInstance, tfdiags.Diagnostics) {
-	addr, diags := ParseTarget(traversal)
-	if diags.HasErrors() {
-		return AbsResourceInstance{}, diags
-	}
-
-	switch tt := addr.Subject.(type) {
-
-	case AbsResource:
-		return tt.Instance(NoKey), diags
-
-	case AbsResourceInstance:
-		return tt, diags
-
-	case ModuleInstance: // Catch likely user error with specialized message
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid address",
-			Detail:   "A resource instance address is required here. The module path must be followed by a resource instance specification.",
-			Subject:  traversal.SourceRange().Ptr(),
-		})
-		return AbsResourceInstance{}, diags
-
-	default: // Generic message for other address types
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid address",
-			Detail:   "A resource address is required here.",
-			Subject:  traversal.SourceRange().Ptr(),
-		})
-		return AbsResourceInstance{}, diags
-
-	}
-}
-
-// ParseAbsResourceInstanceStr is a helper wrapper around
-// ParseAbsResourceInstance that takes a string and parses it with the HCL
-// native syntax traversal parser before interpreting it.
-//
-// Error diagnostics are returned if either the parsing fails or the analysis
-// of the traversal fails. There is no way for the caller to distinguish the
-// two kinds of diagnostics programmatically. If error diagnostics are returned
-// the returned address may be incomplete.
-//
-// Since this function has no context about the source of the given string,
-// any returned diagnostics will not have meaningful source location
-// information.
-func ParseAbsResourceInstanceStr(str string) (AbsResourceInstance, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-
-	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
-	if parseDiags.HasErrors() {
-		return AbsResourceInstance{}, diags
-	}
-
-	addr, addrDiags := ParseAbsResourceInstance(traversal)
-	diags = diags.Append(addrDiags)
-	return addr, diags
 }

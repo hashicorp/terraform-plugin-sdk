@@ -2,7 +2,6 @@ package addrs
 
 import (
 	"fmt"
-	"strings"
 )
 
 // Resource is an address for a resource block within configuration, which
@@ -28,44 +27,6 @@ func (r Resource) String() string {
 	}
 }
 
-// Instance produces the address for a specific instance of the receiver
-// that is idenfied by the given key.
-func (r Resource) Instance(key InstanceKey) ResourceInstance {
-	return ResourceInstance{
-		Resource: r,
-		Key:      key,
-	}
-}
-
-// Absolute returns an AbsResource from the receiver and the given module
-// instance address.
-func (r Resource) Absolute(module ModuleInstance) AbsResource {
-	return AbsResource{
-		Module:   module,
-		Resource: r,
-	}
-}
-
-// DefaultProviderConfig returns the address of the provider configuration
-// that should be used for the resource identified by the reciever if it
-// does not have a provider configuration address explicitly set in
-// configuration.
-//
-// This method is not able to verify that such a configuration exists, nor
-// represent the behavior of automatically inheriting certain provider
-// configurations from parent modules. It just does a static analysis of the
-// receiving address and returns an address to start from, relative to the
-// same module that contains the resource.
-func (r Resource) DefaultProviderConfig() ProviderConfig {
-	typeName := r.Type
-	if under := strings.Index(typeName, "_"); under != -1 {
-		typeName = typeName[:under]
-	}
-	return ProviderConfig{
-		Type: typeName,
-	}
-}
-
 // ResourceInstance is an address for a specific instance of a resource.
 // When a resource is defined in configuration with "count" or "for_each" it
 // produces zero or more instances, which can be addressed using this type.
@@ -86,15 +47,6 @@ func (r ResourceInstance) String() string {
 	return r.Resource.String() + r.Key.String()
 }
 
-// Absolute returns an AbsResourceInstance from the receiver and the given module
-// instance address.
-func (r ResourceInstance) Absolute(module ModuleInstance) AbsResourceInstance {
-	return AbsResourceInstance{
-		Module:   module,
-		Resource: r,
-	}
-}
-
 // AbsResource is an absolute address for a resource under a given module path.
 type AbsResource struct {
 	targetable
@@ -111,15 +63,6 @@ func (m ModuleInstance) Resource(mode ResourceMode, typeName string, name string
 			Type: typeName,
 			Name: name,
 		},
-	}
-}
-
-// Instance produces the address for a specific instance of the receiver
-// that is idenfied by the given key.
-func (r AbsResource) Instance(key InstanceKey) AbsResourceInstance {
-	return AbsResourceInstance{
-		Module:   r.Module,
-		Resource: r.Resource.Instance(key),
 	}
 }
 
@@ -202,35 +145,6 @@ func (r AbsResourceInstance) String() string {
 		return r.Resource.String()
 	}
 	return fmt.Sprintf("%s.%s", r.Module.String(), r.Resource.String())
-}
-
-// Less returns true if the receiver should sort before the given other value
-// in a sorted list of addresses.
-func (r AbsResourceInstance) Less(o AbsResourceInstance) bool {
-	switch {
-
-	case len(r.Module) != len(o.Module):
-		return len(r.Module) < len(o.Module)
-
-	case r.Module.String() != o.Module.String():
-		return r.Module.Less(o.Module)
-
-	case r.Resource.Resource.Mode != o.Resource.Resource.Mode:
-		return r.Resource.Resource.Mode == DataResourceMode
-
-	case r.Resource.Resource.Type != o.Resource.Resource.Type:
-		return r.Resource.Resource.Type < o.Resource.Resource.Type
-
-	case r.Resource.Resource.Name != o.Resource.Resource.Name:
-		return r.Resource.Resource.Name < o.Resource.Resource.Name
-
-	case r.Resource.Key != o.Resource.Key:
-		return InstanceKeyLess(r.Resource.Key, o.Resource.Key)
-
-	default:
-		return false
-
-	}
 }
 
 // ResourceMode defines which lifecycle applies to a given resource. Each

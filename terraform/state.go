@@ -4,12 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -18,16 +14,11 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 	uuid "github.com/hashicorp/go-uuid"
-	version "github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/copystructure"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
-	tfversion "github.com/hashicorp/terraform-plugin-sdk/internal/version"
 )
 
 const (
@@ -118,37 +109,6 @@ func NewState() *State {
 	s := &State{}
 	s.init()
 	return s
-}
-
-// Children returns the ModuleStates that are direct children of
-// the given path. If the path is "root", for example, then children
-// returned might be "root.child", but not "root.child.grandchild".
-func (s *State) Children(path []string) []*ModuleState {
-	s.Lock()
-	defer s.Unlock()
-	// TODO: test
-
-	return s.children(path)
-}
-
-func (s *State) children(path []string) []*ModuleState {
-	result := make([]*ModuleState, 0)
-	for _, m := range s.Modules {
-		if m == nil {
-			continue
-		}
-
-		if len(m.Path) != len(path)+1 {
-			continue
-		}
-		if !reflect.DeepEqual(path, m.Path[:len(path)]) {
-			continue
-		}
-
-		result = append(result, m)
-	}
-
-	return result
 }
 
 // AddModule adds the module with the given path to the state.
@@ -492,43 +452,6 @@ func (s *State) equal(other *State) bool {
 	return true
 }
 
-// MarshalEqual is similar to Equal but provides a stronger definition of
-// "equal", where two states are equal if and only if their serialized form
-// is byte-for-byte identical.
-//
-// This is primarily useful for callers that are trying to save snapshots
-// of state to persistent storage, allowing them to detect when a new
-// snapshot must be taken.
-//
-// Note that the serial number and lineage are included in the serialized form,
-// so it's the caller's responsibility to properly manage these attributes
-// so that this method is only called on two states that have the same
-// serial and lineage, unless detecting such differences is desired.
-func (s *State) MarshalEqual(other *State) bool {
-	if s == nil && other == nil {
-		return true
-	} else if s == nil || other == nil {
-		return false
-	}
-
-	recvBuf := &bytes.Buffer{}
-	otherBuf := &bytes.Buffer{}
-
-	err := writeState(s, recvBuf)
-	if err != nil {
-		// should never happen, since we're writing to a buffer
-		panic(err)
-	}
-
-	err = writeState(other, otherBuf)
-	if err != nil {
-		// should never happen, since we're writing to a buffer
-		panic(err)
-	}
-
-	return bytes.Equal(recvBuf.Bytes(), otherBuf.Bytes())
-}
-
 type StateAgeComparison int
 
 const (
@@ -611,27 +534,6 @@ func (s *State) DeepCopy() *State {
 	return copy.(*State)
 }
 
-// FromFutureTerraform checks if this state was written by a Terraform
-// version from the future.
-func (s *State) FromFutureTerraform() bool {
-	s.Lock()
-	defer s.Unlock()
-
-	// No TF version means it is certainly from the past
-	if s.TFVersion == "" {
-		return false
-	}
-
-	v := version.Must(version.NewVersion(s.TFVersion))
-	return tfversion.SemVer.LessThan(v)
-}
-
-func (s *State) Init() {
-	s.Lock()
-	defer s.Unlock()
-	s.init()
-}
-
 func (s *State) init() {
 	if s.Version == 0 {
 		s.Version = stateVersion
@@ -652,13 +554,6 @@ func (s *State) init() {
 		s.Remote.init()
 	}
 
-}
-
-func (s *State) EnsureHasLineage() {
-	s.Lock()
-	defer s.Unlock()
-
-	s.ensureHasLineage()
 }
 
 func (s *State) ensureHasLineage() {
@@ -1316,24 +1211,6 @@ func (s *ResourceState) Untaint() {
 	}
 }
 
-// ProviderAddr returns the provider address for the receiver, by parsing the
-// string representation saved in state. An error can be returned if the
-// value in state is corrupt.
-func (s *ResourceState) ProviderAddr() (addrs.AbsProviderConfig, error) {
-	var diags tfdiags.Diagnostics
-
-	str := s.Provider
-	traversal, travDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(travDiags)
-	if travDiags.HasErrors() {
-		return addrs.AbsProviderConfig{}, diags.Err()
-	}
-
-	addr, addrDiags := addrs.ParseAbsProviderConfig(traversal)
-	diags = diags.Append(addrDiags)
-	return addr, diags.Err()
-}
-
 func (s *ResourceState) init() {
 	s.Lock()
 	defer s.Unlock()
@@ -1476,21 +1353,6 @@ func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {
 	}
 
 	return hcl2shim.HCL2ValueFromFlatmap(s.Attributes, ty)
-}
-
-// Copy all the Fields from another InstanceState
-func (s *InstanceState) Set(from *InstanceState) {
-	s.Lock()
-	defer s.Unlock()
-
-	from.Lock()
-	defer from.Unlock()
-
-	s.ID = from.ID
-	s.Attributes = from.Attributes
-	s.Ephemeral = from.Ephemeral
-	s.Meta = from.Meta
-	s.Tainted = from.Tainted
 }
 
 func (s *InstanceState) DeepCopy() *InstanceState {
@@ -1670,274 +1532,6 @@ func (e *EphemeralState) init() {
 	if e.ConnInfo == nil {
 		e.ConnInfo = make(map[string]string)
 	}
-}
-
-type jsonStateVersionIdentifier struct {
-	Version int `json:"version"`
-}
-
-// Check if this is a V0 format - the magic bytes at the start of the file
-// should be "tfstate" if so. We no longer support upgrading this type of
-// state but return an error message explaining to a user how they can
-// upgrade via the 0.6.x series.
-func testForV0State(buf *bufio.Reader) error {
-	start, err := buf.Peek(len("tfstate"))
-	if err != nil {
-		return fmt.Errorf("Failed to check for magic bytes: %v", err)
-	}
-	if string(start) == "tfstate" {
-		return fmt.Errorf("Terraform 0.7 no longer supports upgrading the binary state\n" +
-			"format which was used prior to Terraform 0.3. Please upgrade\n" +
-			"this state file using Terraform 0.6.16 prior to using it with\n" +
-			"Terraform 0.7.")
-	}
-
-	return nil
-}
-
-// errNoState is returned by ReadState when the io.Reader contains no data
-var errNoState = errors.New("no state")
-
-// readState reads a state structure out of a reader in the format that
-// was written by WriteState.
-func readState(src io.Reader) (*State, error) {
-	// check for a nil file specifically, since that produces a platform
-	// specific error if we try to use it in a bufio.Reader.
-	if f, ok := src.(*os.File); ok && f == nil {
-		return nil, errNoState
-	}
-
-	buf := bufio.NewReader(src)
-
-	if _, err := buf.Peek(1); err != nil {
-		if err == io.EOF {
-			return nil, errNoState
-		}
-		return nil, err
-	}
-
-	if err := testForV0State(buf); err != nil {
-		return nil, err
-	}
-
-	// If we are JSON we buffer the whole thing in memory so we can read it twice.
-	// This is suboptimal, but will work for now.
-	jsonBytes, err := ioutil.ReadAll(buf)
-	if err != nil {
-		return nil, fmt.Errorf("Reading state file failed: %v", err)
-	}
-
-	versionIdentifier := &jsonStateVersionIdentifier{}
-	if err := json.Unmarshal(jsonBytes, versionIdentifier); err != nil {
-		return nil, fmt.Errorf("Decoding state file version failed: %v", err)
-	}
-
-	var result *State
-	switch versionIdentifier.Version {
-	case 0:
-		return nil, fmt.Errorf("State version 0 is not supported as JSON.")
-	case 1:
-		v1State, err := readStateV1(jsonBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		v2State, err := upgradeStateV1ToV2(v1State)
-		if err != nil {
-			return nil, err
-		}
-
-		v3State, err := upgradeStateV2ToV3(v2State)
-		if err != nil {
-			return nil, err
-		}
-
-		// increment the Serial whenever we upgrade state
-		v3State.Serial++
-		result = v3State
-	case 2:
-		v2State, err := readStateV2(jsonBytes)
-		if err != nil {
-			return nil, err
-		}
-		v3State, err := upgradeStateV2ToV3(v2State)
-		if err != nil {
-			return nil, err
-		}
-
-		v3State.Serial++
-		result = v3State
-	case 3:
-		v3State, err := readStateV3(jsonBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		result = v3State
-	default:
-		return nil, fmt.Errorf("Terraform %s does not support state version %d, please update.",
-			tfversion.SemVer.String(), versionIdentifier.Version)
-	}
-
-	// If we reached this place we must have a result set
-	if result == nil {
-		panic("resulting state in load not set, assertion failed")
-	}
-
-	// Prune the state when read it. Its possible to write unpruned states or
-	// for a user to make a state unpruned (nil-ing a module state for example).
-	result.prune()
-
-	// Validate the state file is valid
-	if err := result.Validate(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func readStateV1(jsonBytes []byte) (*stateV1, error) {
-	v1State := &stateV1{}
-	if err := json.Unmarshal(jsonBytes, v1State); err != nil {
-		return nil, fmt.Errorf("Decoding state file failed: %v", err)
-	}
-
-	if v1State.Version != 1 {
-		return nil, fmt.Errorf("Decoded state version did not match the decoder selection: "+
-			"read %d, expected 1", v1State.Version)
-	}
-
-	return v1State, nil
-}
-
-func readStateV2(jsonBytes []byte) (*State, error) {
-	state := &State{}
-	if err := json.Unmarshal(jsonBytes, state); err != nil {
-		return nil, fmt.Errorf("Decoding state file failed: %v", err)
-	}
-
-	// Check the version, this to ensure we don't read a future
-	// version that we don't understand
-	if state.Version > stateVersion {
-		return nil, fmt.Errorf("Terraform %s does not support state version %d, please update.",
-			tfversion.SemVer.String(), state.Version)
-	}
-
-	// Make sure the version is semantic
-	if state.TFVersion != "" {
-		if _, err := version.NewVersion(state.TFVersion); err != nil {
-			return nil, fmt.Errorf(
-				"State contains invalid version: %s\n\n"+
-					"Terraform validates the version format prior to writing it. This\n"+
-					"means that this is invalid of the state becoming corrupted through\n"+
-					"some external means. Please manually modify the Terraform version\n"+
-					"field to be a proper semantic version.",
-				state.TFVersion)
-		}
-	}
-
-	// catch any unitialized fields in the state
-	state.init()
-
-	// Sort it
-	state.sort()
-
-	return state, nil
-}
-
-func readStateV3(jsonBytes []byte) (*State, error) {
-	state := &State{}
-	if err := json.Unmarshal(jsonBytes, state); err != nil {
-		return nil, fmt.Errorf("Decoding state file failed: %v", err)
-	}
-
-	// Check the version, this to ensure we don't read a future
-	// version that we don't understand
-	if state.Version > stateVersion {
-		return nil, fmt.Errorf("Terraform %s does not support state version %d, please update.",
-			tfversion.SemVer.String(), state.Version)
-	}
-
-	// Make sure the version is semantic
-	if state.TFVersion != "" {
-		if _, err := version.NewVersion(state.TFVersion); err != nil {
-			return nil, fmt.Errorf(
-				"State contains invalid version: %s\n\n"+
-					"Terraform validates the version format prior to writing it. This\n"+
-					"means that this is invalid of the state becoming corrupted through\n"+
-					"some external means. Please manually modify the Terraform version\n"+
-					"field to be a proper semantic version.",
-				state.TFVersion)
-		}
-	}
-
-	// catch any unitialized fields in the state
-	state.init()
-
-	// Sort it
-	state.sort()
-
-	// Now we write the state back out to detect any changes in normaliztion.
-	// If our state is now written out differently, bump the serial number to
-	// prevent conflicts.
-	var buf bytes.Buffer
-	err := writeState(state, &buf)
-	if err != nil {
-		return nil, err
-	}
-
-	if !bytes.Equal(jsonBytes, buf.Bytes()) {
-		log.Println("[INFO] state modified during read or write. incrementing serial number")
-		state.Serial++
-	}
-
-	return state, nil
-}
-
-// writeState writes a state somewhere in a binary format.
-func writeState(d *State, dst io.Writer) error {
-	// writing a nil state is a noop.
-	if d == nil {
-		return nil
-	}
-
-	// make sure we have no uninitialized fields
-	d.init()
-
-	// Make sure it is sorted
-	d.sort()
-
-	// Ensure the version is set
-	d.Version = stateVersion
-
-	// If the TFVersion is set, verify it. We used to just set the version
-	// here, but this isn't safe since it changes the MD5 sum on some remote
-	// state storage backends such as Atlas. We now leave it be if needed.
-	if d.TFVersion != "" {
-		if _, err := version.NewVersion(d.TFVersion); err != nil {
-			return fmt.Errorf(
-				"Error writing state, invalid version: %s\n\n"+
-					"The Terraform version when writing the state must be a semantic\n"+
-					"version.",
-				d.TFVersion)
-		}
-	}
-
-	// Encode the data in a human-friendly way
-	data, err := json.MarshalIndent(d, "", "    ")
-	if err != nil {
-		return fmt.Errorf("Failed to encode state: %s", err)
-	}
-
-	// We append a newline to the data because MarshalIndent doesn't
-	data = append(data, '\n')
-
-	// Write the data out to the dst
-	if _, err := io.Copy(dst, bytes.NewReader(data)); err != nil {
-		return fmt.Errorf("Failed to write state: %v", err)
-	}
-
-	return nil
 }
 
 // resourceNameSort implements the sort.Interface to sort name parts lexically for

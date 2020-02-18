@@ -53,7 +53,7 @@ func Serve(opts *ServeOpts) {
 		HandshakeConfig: Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{
 			5: {
-				ProviderPluginName: GRPCProviderPlugin{
+				ProviderPluginName: gRPCProviderPlugin{
 					GRPCProvider: func() proto.ProviderServer {
 						return provider
 					},
