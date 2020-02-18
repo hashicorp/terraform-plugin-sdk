@@ -34,14 +34,6 @@ func (c ModuleCallInstance) String() string {
 	return fmt.Sprintf("module.%s%s", c.Call.Name, c.Key)
 }
 
-// ModuleInstance returns the address of the module instance that corresponds
-// to the receiving call instance when resolved in the given calling module.
-// In other words, it returns the child module instance that the receving
-// call instance creates.
-func (c ModuleCallInstance) ModuleInstance(caller ModuleInstance) ModuleInstance {
-	return caller.Child(c.Call.Name, c.Key)
-}
-
 // ModuleCallOutput is the address of a particular named output produced by
 // an instance of a module call.
 type ModuleCallOutput struct {
@@ -52,12 +44,4 @@ type ModuleCallOutput struct {
 
 func (co ModuleCallOutput) String() string {
 	return fmt.Sprintf("%s.%s", co.Call.String(), co.Name)
-}
-
-// AbsOutputValue returns the absolute output value address that corresponds
-// to the receving module call output address, once resolved in the given
-// calling module.
-func (co ModuleCallOutput) AbsOutputValue(caller ModuleInstance) AbsOutputValue {
-	moduleAddr := co.Call.ModuleInstance(caller)
-	return moduleAddr.OutputValue(co.Name)
 }

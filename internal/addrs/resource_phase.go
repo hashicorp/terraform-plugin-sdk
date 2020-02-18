@@ -20,22 +20,6 @@ type ResourceInstancePhase struct {
 
 var _ Referenceable = ResourceInstancePhase{}
 
-// Phase returns a special "phase address" for the receving instance. See the
-// documentation of ResourceInstancePhase for the limited situations where this
-// is intended to be used.
-func (r ResourceInstance) Phase(rpt ResourceInstancePhaseType) ResourceInstancePhase {
-	return ResourceInstancePhase{
-		ResourceInstance: r,
-		Phase:            rpt,
-	}
-}
-
-// ContainingResource returns an address for the same phase of the resource
-// that this instance belongs to.
-func (rp ResourceInstancePhase) ContainingResource() ResourcePhase {
-	return rp.ResourceInstance.Resource.Phase(rp.Phase)
-}
-
 func (rp ResourceInstancePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
 	// never conflict with any non-phased resource instance string. This
@@ -46,17 +30,6 @@ func (rp ResourceInstancePhase) String() string {
 
 // ResourceInstancePhaseType is an enumeration used with ResourceInstancePhase.
 type ResourceInstancePhaseType string
-
-const (
-	// ResourceInstancePhaseDestroy represents the "destroy" phase of a
-	// resource instance.
-	ResourceInstancePhaseDestroy ResourceInstancePhaseType = "destroy"
-
-	// ResourceInstancePhaseDestroyCBD is similar to ResourceInstancePhaseDestroy
-	// but is used for resources that have "create_before_destroy" set, thus
-	// requiring a different dependency ordering.
-	ResourceInstancePhaseDestroyCBD ResourceInstancePhaseType = "destroy-cbd"
-)
 
 func (rpt ResourceInstancePhaseType) String() string {
 	return string(rpt)
@@ -85,16 +58,6 @@ type ResourcePhase struct {
 }
 
 var _ Referenceable = ResourcePhase{}
-
-// Phase returns a special "phase address" for the receving instance. See the
-// documentation of ResourceInstancePhase for the limited situations where this
-// is intended to be used.
-func (r Resource) Phase(rpt ResourceInstancePhaseType) ResourcePhase {
-	return ResourcePhase{
-		Resource: r,
-		Phase:    rpt,
-	}
-}
 
 func (rp ResourcePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
