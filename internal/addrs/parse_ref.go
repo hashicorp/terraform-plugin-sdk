@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
@@ -38,35 +37,6 @@ func ParseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 		}
 	}
 
-	return ref, diags
-}
-
-// ParseRefStr is a helper wrapper around ParseRef that takes a string
-// and parses it with the HCL native syntax traversal parser before
-// interpreting it.
-//
-// This should be used only in specialized situations since it will cause the
-// created references to not have any meaningful source location information.
-// If a reference string is coming from a source that should be identified in
-// error messages then the caller should instead parse it directly using a
-// suitable function from the HCL API and pass the traversal itself to
-// ParseRef.
-//
-// Error diagnostics are returned if either the parsing fails or the analysis
-// of the traversal fails. There is no way for the caller to distinguish the
-// two kinds of diagnostics programmatically. If error diagnostics are returned
-// the returned reference may be nil or incomplete.
-func ParseRefStr(str string) (*Reference, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-
-	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
-	if parseDiags.HasErrors() {
-		return nil, diags
-	}
-
-	ref, targetDiags := ParseRef(traversal)
-	diags = diags.Append(targetDiags)
 	return ref, diags
 }
 

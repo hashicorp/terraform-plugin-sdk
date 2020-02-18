@@ -992,16 +992,6 @@ func (d *InstanceDiff) Equal(d2 *InstanceDiff) bool {
 	return reflect.DeepEqual(d, d2)
 }
 
-// DeepCopy performs a deep copy of all parts of the InstanceDiff
-func (d *InstanceDiff) DeepCopy() *InstanceDiff {
-	copy, err := copystructure.Config{Lock: true}.Copy(d)
-	if err != nil {
-		panic(err)
-	}
-
-	return copy.(*InstanceDiff)
-}
-
 func (d *InstanceDiff) GoString() string {
 	return fmt.Sprintf("*%#v", InstanceDiff{
 		Attributes:     d.Attributes,
