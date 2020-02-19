@@ -399,6 +399,12 @@ type TestStep struct {
 	// Destroy will create a destroy plan if set to true.
 	Destroy bool
 
+	// ExpectedDiffChanges can be set to a map of resource names to expected diff
+	// change type, e.g. `{ "resource.name": terraform.DiffUpdate }`.
+	// This is useful to detect unexpected resource destruction/recreation where
+	// an in-place update is expected.
+	ExpectedDiffChanges map[string]terraform.DiffChangeType
+
 	// ExpectNonEmptyPlan can be set to true for specific types of tests that are
 	// looking to verify that a diff occurs
 	ExpectNonEmptyPlan bool

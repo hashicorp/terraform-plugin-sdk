@@ -38,6 +38,8 @@ const (
 	DiffRefresh // TODO: Actually use DiffRefresh in core too, for less confusion
 )
 
+//go:generate go run golang.org/x/tools/cmd/stringer -type DiffChangeType
+
 // multiVal matches the index key to a flatmapped set, list or map
 var multiVal = regexp.MustCompile(`\.(#|%)$`)
 

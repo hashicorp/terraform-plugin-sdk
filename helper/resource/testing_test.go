@@ -193,6 +193,50 @@ STATE:
 	}
 }
 
+func TestTest_expected_diff_change(t *testing.T) {
+	t.Skip("test requires new provider implementation")
+
+	mp := testProvider()
+	mp.ApplyReturn = &terraform.InstanceState{
+		ID: "foo",
+	}
+
+	checkDestroy := false
+
+	checkDestroyFn := func(*terraform.State) error {
+		checkDestroy = true
+		return nil
+	}
+
+	mt := new(mockT)
+	Test(mt, TestCase{
+		Providers: map[string]terraform.ResourceProvider{
+			"test": mp,
+		},
+		CheckDestroy: checkDestroyFn,
+		Steps: []TestStep{
+			TestStep{
+				Config:              testConfigStr,
+				ExpectedDiffChanges: map[string]terraform.DiffChangeType{"test_instance.foo": terraform.DiffNone},
+			},
+		},
+	})
+
+	if !mt.failed() {
+		t.Fatal("test should've failed")
+	}
+
+	expected := `Step 0 error: Unexpected diff change type for 'test_instance.foo', expected DiffNone, got Update`
+
+	if mt.failMessage() != expected {
+		t.Fatalf("Expected message: %s\n\ngot:\n\n%s", expected, mt.failMessage())
+	}
+
+	if !checkDestroy {
+		t.Fatal("didn't call check for destroy")
+	}
+}
+
 func TestTest_idRefresh(t *testing.T) {
 	t.Skip("test requires new provider implementation")
 

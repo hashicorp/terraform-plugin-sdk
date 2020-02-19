@@ -77,10 +77,34 @@ func testStep(opts terraform.ContextOpts, state *terraform.State, step TestStep)
 	// Apply, and use the follow up Plan that checks for perpetual diffs
 	if !step.PlanOnly {
 		// Plan!
-		if p, stepDiags := ctx.Plan(); stepDiags.HasErrors() {
+		p, stepDiags := ctx.Plan()
+		if stepDiags.HasErrors() {
 			return state, newOperationError("plan", stepDiags)
-		} else {
-			log.Printf("[WARN] Test: Step plan: %s", legacyPlanComparisonString(newState, p.Changes))
+		}
+		log.Printf("[WARN] Test: Step plan: %s", legacyPlanComparisonString(newState, p.Changes))
+
+		for k, v := range step.ExpectedDiffChanges {
+			if v != terraform.DiffNone && (p.Changes == nil || p.Changes.Empty()) {
+				return state, fmt.Errorf("Expected a non-empty plan, but got an empty plan")
+			}
+			addr, diags := addrs.ParseAbsResourceInstanceStr(k)
+			if diags.HasErrors() {
+				return state, fmt.Errorf("Failed to parse the resource addr '%s'", k)
+			}
+			instanceDiff := p.Changes.ResourceInstance(addr)
+			if v != terraform.DiffNone && instanceDiff == nil {
+				return state, fmt.Errorf("Expected a non-empty diff for '%s', but got an empty diff", k)
+			}
+			// It doesn't look like we provide a mapping for DiffChangeType to something friendly
+			// For plans the human readable operation is buried in ModuleDiff.String()
+			// So this just would notify the tester who would need to check out the debug logs
+			if (v == terraform.DiffNone && instanceDiff != nil) ||
+				(v == terraform.DiffCreate && instanceDiff.Action != plans.Create) ||
+				(v == terraform.DiffDestroy && instanceDiff.Action != plans.Delete) ||
+				(v == terraform.DiffDestroyCreate && instanceDiff.Action != plans.DeleteThenCreate) ||
+				(v == terraform.DiffUpdate && instanceDiff.Action != plans.Update) {
+				return state, fmt.Errorf("Unexpected diff change type for '%s', expected %s, got %s", k, v.String(), instanceDiff.Action.String())
+			}
 		}
 
 		// We need to keep a copy of the state prior to destroying
