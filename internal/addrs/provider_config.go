@@ -18,55 +18,6 @@ type ProviderConfig struct {
 	Alias string
 }
 
-// parseProviderConfigCompact parses the given absolute traversal as a relative
-// provider address in compact form. The following are examples of traversals
-// that can be successfully parsed as compact relative provider configuration
-// addresses:
-//
-//     aws
-//     aws.foo
-//
-// This function will panic if given a relative traversal.
-//
-// If the returned diagnostics contains errors then the result value is invalid
-// and must not be used.
-func parseProviderConfigCompact(traversal hcl.Traversal) (ProviderConfig, tfdiags.Diagnostics) {
-	var diags tfdiags.Diagnostics
-	ret := ProviderConfig{
-		Type: traversal.RootName(),
-	}
-
-	if len(traversal) < 2 {
-		// Just a type name, then.
-		return ret, diags
-	}
-
-	aliasStep := traversal[1]
-	switch ts := aliasStep.(type) {
-	case hcl.TraverseAttr:
-		ret.Alias = ts.Name
-		return ret, diags
-	default:
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid provider configuration address",
-			Detail:   "The provider type name must either stand alone or be followed by an alias name separated with a dot.",
-			Subject:  aliasStep.SourceRange().Ptr(),
-		})
-	}
-
-	if len(traversal) > 2 {
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid provider configuration address",
-			Detail:   "Extraneous extra operators after provider configuration address.",
-			Subject:  traversal[2:].SourceRange().Ptr(),
-		})
-	}
-
-	return ret, diags
-}
-
 func (pc ProviderConfig) String() string {
 	if pc.Type == "" {
 		// Should never happen; always indicates a bug
