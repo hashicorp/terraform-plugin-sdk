@@ -14,15 +14,15 @@ import (
 func TestParseRef(t *testing.T) {
 	tests := []struct {
 		Input   string
-		Want    *Reference
+		Want    *reference
 		WantErr string
 	}{
 
 		// count
 		{
 			`count.index`,
-			&Reference{
-				Subject: CountAttr{
+			&reference{
+				Subject: countAttr{
 					Name: "index",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -34,8 +34,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`count.index.blah`,
-			&Reference{
-				Subject: CountAttr{
+			&reference{
+				Subject: countAttr{
 					Name: "index",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -68,8 +68,8 @@ func TestParseRef(t *testing.T) {
 		// each
 		{
 			`each.key`,
-			&Reference{
-				Subject: ForEachAttr{
+			&reference{
+				Subject: forEachAttr{
 					Name: "key",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -81,8 +81,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`each.value.blah`,
-			&Reference{
-				Subject: ForEachAttr{
+			&reference{
+				Subject: forEachAttr{
 					Name: "value",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -114,8 +114,8 @@ func TestParseRef(t *testing.T) {
 		// data
 		{
 			`data.external.foo`,
-			&Reference{
-				Subject: Resource{
+			&reference{
+				Subject: resource{
 					Mode: DataResourceMode,
 					Type: "external",
 					Name: "foo",
@@ -129,9 +129,9 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`data.external.foo.bar`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "external",
 						Name: "foo",
@@ -155,14 +155,14 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`data.external.foo["baz"].bar`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "external",
 						Name: "foo",
 					},
-					Key: StringKey("baz"),
+					Key: stringKey("baz"),
 				},
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
@@ -182,14 +182,14 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`data.external.foo["baz"]`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "external",
 						Name: "foo",
 					},
-					Key: StringKey("baz"),
+					Key: stringKey("baz"),
 				},
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
@@ -212,8 +212,8 @@ func TestParseRef(t *testing.T) {
 		// local
 		{
 			`local.foo`,
-			&Reference{
-				Subject: LocalValue{
+			&reference{
+				Subject: localValue{
 					Name: "foo",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -225,8 +225,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`local.foo.blah`,
-			&Reference{
-				Subject: LocalValue{
+			&reference{
+				Subject: localValue{
 					Name: "foo",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -247,8 +247,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`local.foo["blah"]`,
-			&Reference{
-				Subject: LocalValue{
+			&reference{
+				Subject: localValue{
 					Name: "foo",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -281,9 +281,9 @@ func TestParseRef(t *testing.T) {
 		// module
 		{
 			`module.foo`,
-			&Reference{
-				Subject: ModuleCallInstance{
-					Call: ModuleCall{
+			&reference{
+				Subject: moduleCallInstance{
+					Call: moduleCall{
 						Name: "foo",
 					},
 				},
@@ -296,10 +296,10 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`module.foo.bar`,
-			&Reference{
-				Subject: ModuleCallOutput{
-					Call: ModuleCallInstance{
-						Call: ModuleCall{
+			&reference{
+				Subject: moduleCallOutput{
+					Call: moduleCallInstance{
+						Call: moduleCall{
 							Name: "foo",
 						},
 					},
@@ -314,10 +314,10 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`module.foo.bar.baz`,
-			&Reference{
-				Subject: ModuleCallOutput{
-					Call: ModuleCallInstance{
-						Call: ModuleCall{
+			&reference{
+				Subject: moduleCallOutput{
+					Call: moduleCallInstance{
+						Call: moduleCall{
 							Name: "foo",
 						},
 					},
@@ -341,12 +341,12 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`module.foo["baz"]`,
-			&Reference{
-				Subject: ModuleCallInstance{
-					Call: ModuleCall{
+			&reference{
+				Subject: moduleCallInstance{
+					Call: moduleCall{
 						Name: "foo",
 					},
-					Key: StringKey("baz"),
+					Key: stringKey("baz"),
 				},
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
@@ -357,13 +357,13 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`module.foo["baz"].bar`,
-			&Reference{
-				Subject: ModuleCallOutput{
-					Call: ModuleCallInstance{
-						Call: ModuleCall{
+			&reference{
+				Subject: moduleCallOutput{
+					Call: moduleCallInstance{
+						Call: moduleCall{
 							Name: "foo",
 						},
-						Key: StringKey("baz"),
+						Key: stringKey("baz"),
 					},
 					Name: "bar",
 				},
@@ -376,13 +376,13 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`module.foo["baz"].bar.boop`,
-			&Reference{
-				Subject: ModuleCallOutput{
-					Call: ModuleCallInstance{
-						Call: ModuleCall{
+			&reference{
+				Subject: moduleCallOutput{
+					Call: moduleCallInstance{
+						Call: moduleCall{
 							Name: "foo",
 						},
-						Key: StringKey("baz"),
+						Key: stringKey("baz"),
 					},
 					Name: "bar",
 				},
@@ -416,8 +416,8 @@ func TestParseRef(t *testing.T) {
 		// path
 		{
 			`path.module`,
-			&Reference{
-				Subject: PathAttr{
+			&reference{
+				Subject: pathAttr{
 					Name: "module",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -429,8 +429,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`path.module.blah`,
-			&Reference{
-				Subject: PathAttr{
+			&reference{
+				Subject: pathAttr{
 					Name: "module",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -463,8 +463,8 @@ func TestParseRef(t *testing.T) {
 		// self
 		{
 			`self`,
-			&Reference{
-				Subject: Self,
+			&reference{
+				Subject: self,
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
 					End:   tfdiags.SourcePos{Line: 1, Column: 5, Byte: 4},
@@ -474,8 +474,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`self.blah`,
-			&Reference{
-				Subject: Self,
+			&reference{
+				Subject: self,
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
 					End:   tfdiags.SourcePos{Line: 1, Column: 5, Byte: 4},
@@ -496,8 +496,8 @@ func TestParseRef(t *testing.T) {
 		// terraform
 		{
 			`terraform.workspace`,
-			&Reference{
-				Subject: TerraformAttr{
+			&reference{
+				Subject: terraformAttr{
 					Name: "workspace",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -509,8 +509,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`terraform.workspace.blah`,
-			&Reference{
-				Subject: TerraformAttr{
+			&reference{
+				Subject: terraformAttr{
 					Name: "workspace",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -543,8 +543,8 @@ func TestParseRef(t *testing.T) {
 		// var
 		{
 			`var.foo`,
-			&Reference{
-				Subject: InputVariable{
+			&reference{
+				Subject: inputVariable{
 					Name: "foo",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -556,8 +556,8 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`var.foo.blah`,
-			&Reference{
-				Subject: InputVariable{
+			&reference{
+				Subject: inputVariable{
 					Name: "foo",
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -590,8 +590,8 @@ func TestParseRef(t *testing.T) {
 		// anything else, interpreted as a managed resource reference
 		{
 			`boop_instance.foo`,
-			&Reference{
-				Subject: Resource{
+			&reference{
+				Subject: resource{
 					Mode: ManagedResourceMode,
 					Type: "boop_instance",
 					Name: "foo",
@@ -605,9 +605,9 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`boop_instance.foo.bar`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "boop_instance",
 						Name: "foo",
@@ -631,14 +631,14 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`boop_instance.foo["baz"].bar`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "boop_instance",
 						Name: "foo",
 					},
-					Key: StringKey("baz"),
+					Key: stringKey("baz"),
 				},
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
@@ -658,14 +658,14 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			`boop_instance.foo["baz"]`,
-			&Reference{
-				Subject: ResourceInstance{
-					Resource: Resource{
+			&reference{
+				Subject: resourceInstance{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "boop_instance",
 						Name: "foo",
 					},
-					Key: StringKey("baz"),
+					Key: stringKey("baz"),
 				},
 				SourceRange: tfdiags.SourceRange{
 					Start: tfdiags.SourcePos{Line: 1, Column: 1, Byte: 0},
@@ -688,7 +688,7 @@ func TestParseRef(t *testing.T) {
 				t.Fatal(travDiags.Error())
 			}
 
-			got, diags := ParseRef(traversal)
+			got, diags := parseRefPub(traversal)
 
 			switch len(diags) {
 			case 0:
