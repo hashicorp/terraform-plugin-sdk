@@ -11,12 +11,12 @@ import (
 func TestParseAbsProviderConfig(t *testing.T) {
 	tests := []struct {
 		Input    string
-		Want     absProviderConfig
+		Want     AbsProviderConfig
 		WantDiag string
 	}{
 		{
 			`provider.aws`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: RootModuleInstance,
 				ProviderConfig: ProviderConfig{
 					Type: "aws",
@@ -26,7 +26,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`provider.aws.foo`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: RootModuleInstance,
 				ProviderConfig: ProviderConfig{
 					Type:  "aws",
@@ -37,7 +37,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`module.baz.provider.aws`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: ModuleInstance{
 					{
 						Name: "baz",
@@ -51,7 +51,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`module.baz.provider.aws.foo`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: ModuleInstance{
 					{
 						Name: "baz",
@@ -66,7 +66,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`module.baz["foo"].provider.aws`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: ModuleInstance{
 					{
 						Name:        "baz",
@@ -81,7 +81,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`module.baz[1].provider.aws`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: ModuleInstance{
 					{
 						Name:        "baz",
@@ -96,7 +96,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`module.baz[1].module.bar.provider.aws`,
-			absProviderConfig{
+			AbsProviderConfig{
 				Module: ModuleInstance{
 					{
 						Name:        "baz",
@@ -114,42 +114,42 @@ func TestParseAbsProviderConfig(t *testing.T) {
 		},
 		{
 			`aws`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider address must begin with "provider.", followed by a provider type name.`,
 		},
 		{
 			`aws.foo`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider address must begin with "provider.", followed by a provider type name.`,
 		},
 		{
 			`provider`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider address must begin with "provider.", followed by a provider type name.`,
 		},
 		{
 			`provider.aws.foo.bar`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Extraneous operators after provider configuration alias.`,
 		},
 		{
 			`provider["aws"]`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`The prefix "provider." must be followed by a provider type name.`,
 		},
 		{
 			`provider.aws["foo"]`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider type name must be followed by a configuration alias name.`,
 		},
 		{
 			`module.foo`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider address must begin with "provider.", followed by a provider type name.`,
 		},
 		{
 			`module.foo["provider"]`,
-			absProviderConfig{},
+			AbsProviderConfig{},
 			`Provider address must begin with "provider.", followed by a provider type name.`,
 		},
 	}
@@ -165,7 +165,7 @@ func TestParseAbsProviderConfig(t *testing.T) {
 				return
 			}
 
-			got, diags := parseAbsProviderConfig(traversal)
+			got, diags := ParseAbsProviderConfig(traversal)
 
 			if test.WantDiag != "" {
 				if len(diags) != 1 {
