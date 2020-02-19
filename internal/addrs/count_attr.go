@@ -1,12 +1,12 @@
 package addrs
 
-// CountAttr is the address of an attribute of the "count" object in
+// countAttr is the address of an attribute of the "count" object in
 // the interpolation scope, like "count.index".
-type CountAttr struct {
+type countAttr struct {
 	referenceable
 	Name string
 }
 
-func (ca CountAttr) String() string {
+func (ca countAttr) String() string {
 	return "count." + ca.Name
 }

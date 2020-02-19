@@ -4,17 +4,17 @@ import (
 	"fmt"
 )
 
-// Resource is an address for a resource block within configuration, which
+// resource is an address for a resource block within configuration, which
 // contains potentially-multiple resource instances if that configuration
 // block uses "count" or "for_each".
-type Resource struct {
+type resource struct {
 	referenceable
-	Mode ResourceMode
+	Mode resourceMode
 	Type string
 	Name string
 }
 
-func (r Resource) String() string {
+func (r resource) String() string {
 	switch r.Mode {
 	case ManagedResourceMode:
 		return fmt.Sprintf("%s.%s", r.Type, r.Name)
@@ -27,38 +27,38 @@ func (r Resource) String() string {
 	}
 }
 
-// ResourceInstance is an address for a specific instance of a resource.
+// resourceInstance is an address for a specific instance of a resource.
 // When a resource is defined in configuration with "count" or "for_each" it
 // produces zero or more instances, which can be addressed using this type.
-type ResourceInstance struct {
+type resourceInstance struct {
 	referenceable
-	Resource Resource
-	Key      InstanceKey
+	Resource resource
+	Key      instanceKey
 }
 
-func (r ResourceInstance) ContainingResource() Resource {
+func (r resourceInstance) ContainingResource() resource {
 	return r.Resource
 }
 
-func (r ResourceInstance) String() string {
+func (r resourceInstance) String() string {
 	if r.Key == NoKey {
 		return r.Resource.String()
 	}
 	return r.Resource.String() + r.Key.String()
 }
 
-// AbsResource is an absolute address for a resource under a given module path.
-type AbsResource struct {
+// absResource is an absolute address for a resource under a given module path.
+type absResource struct {
 	targetable
 	Module   ModuleInstance
-	Resource Resource
+	Resource resource
 }
 
 // Resource returns the address of a particular resource within the receiver.
-func (m ModuleInstance) Resource(mode ResourceMode, typeName string, name string) AbsResource {
-	return AbsResource{
+func (m ModuleInstance) Resource(mode resourceMode, typeName string, name string) absResource {
+	return absResource{
 		Module: m,
-		Resource: Resource{
+		Resource: resource{
 			Mode: mode,
 			Type: typeName,
 			Name: name,
@@ -69,14 +69,14 @@ func (m ModuleInstance) Resource(mode ResourceMode, typeName string, name string
 // TargetContains implements Targetable by returning true if the given other
 // address is either equal to the receiver or is an instance of the
 // receiver.
-func (r AbsResource) TargetContains(other Targetable) bool {
+func (r absResource) TargetContains(other targetableI) bool {
 	switch to := other.(type) {
 
-	case AbsResource:
+	case absResource:
 		// We'll use our stringification as a cheat-ish way to test for equality.
 		return to.String() == r.String()
 
-	case AbsResourceInstance:
+	case absResourceInstance:
 		return r.TargetContains(to.ContainingResource())
 
 	default:
@@ -85,27 +85,27 @@ func (r AbsResource) TargetContains(other Targetable) bool {
 	}
 }
 
-func (r AbsResource) String() string {
+func (r absResource) String() string {
 	if len(r.Module) == 0 {
 		return r.Resource.String()
 	}
 	return fmt.Sprintf("%s.%s", r.Module.String(), r.Resource.String())
 }
 
-// AbsResourceInstance is an absolute address for a resource instance under a
+// absResourceInstance is an absolute address for a resource instance under a
 // given module path.
-type AbsResourceInstance struct {
+type absResourceInstance struct {
 	targetable
 	Module   ModuleInstance
-	Resource ResourceInstance
+	Resource resourceInstance
 }
 
 // ResourceInstance returns the address of a particular resource instance within the receiver.
-func (m ModuleInstance) ResourceInstance(mode ResourceMode, typeName string, name string, key InstanceKey) AbsResourceInstance {
-	return AbsResourceInstance{
+func (m ModuleInstance) ResourceInstance(mode resourceMode, typeName string, name string, key instanceKey) absResourceInstance {
+	return absResourceInstance{
 		Module: m,
-		Resource: ResourceInstance{
-			Resource: Resource{
+		Resource: resourceInstance{
+			Resource: resource{
 				Mode: mode,
 				Type: typeName,
 				Name: name,
@@ -117,9 +117,9 @@ func (m ModuleInstance) ResourceInstance(mode ResourceMode, typeName string, nam
 
 // ContainingResource returns the address of the resource that contains the
 // receving resource instance. In other words, it discards the key portion
-// of the address to produce an AbsResource value.
-func (r AbsResourceInstance) ContainingResource() AbsResource {
-	return AbsResource{
+// of the address to produce an absResource value.
+func (r absResourceInstance) ContainingResource() absResource {
+	return absResource{
 		Module:   r.Module,
 		Resource: r.Resource.ContainingResource(),
 	}
@@ -127,10 +127,10 @@ func (r AbsResourceInstance) ContainingResource() AbsResource {
 
 // TargetContains implements Targetable by returning true if the given other
 // address is equal to the receiver.
-func (r AbsResourceInstance) TargetContains(other Targetable) bool {
+func (r absResourceInstance) TargetContains(other targetableI) bool {
 	switch to := other.(type) {
 
-	case AbsResourceInstance:
+	case absResourceInstance:
 		// We'll use our stringification as a cheat-ish way to test for equality.
 		return to.String() == r.String()
 
@@ -140,29 +140,29 @@ func (r AbsResourceInstance) TargetContains(other Targetable) bool {
 	}
 }
 
-func (r AbsResourceInstance) String() string {
+func (r absResourceInstance) String() string {
 	if len(r.Module) == 0 {
 		return r.Resource.String()
 	}
 	return fmt.Sprintf("%s.%s", r.Module.String(), r.Resource.String())
 }
 
-// ResourceMode defines which lifecycle applies to a given resource. Each
+// resourceMode defines which lifecycle applies to a given resource. Each
 // resource lifecycle has a slightly different address format.
-type ResourceMode rune
+type resourceMode rune
 
-//go:generate go run golang.org/x/tools/cmd/stringer -type ResourceMode
+//go:generate go run golang.org/x/tools/cmd/stringer -type resourceMode
 
 const (
 	// InvalidResourceMode is the zero value of ResourceMode and is not
 	// a valid resource mode.
-	InvalidResourceMode ResourceMode = 0
+	InvalidResourceMode resourceMode = 0
 
 	// ManagedResourceMode indicates a managed resource, as defined by
 	// "resource" blocks in configuration.
-	ManagedResourceMode ResourceMode = 'M'
+	ManagedResourceMode resourceMode = 'M'
 
 	// DataResourceMode indicates a data resource, as defined by
 	// "data" blocks in configuration.
-	DataResourceMode ResourceMode = 'D'
+	DataResourceMode resourceMode = 'D'
 )

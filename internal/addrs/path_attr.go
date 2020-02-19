@@ -1,12 +1,12 @@
 package addrs
 
-// PathAttr is the address of an attribute of the "path" object in
+// pathAttr is the address of an attribute of the "path" object in
 // the interpolation scope, like "path.module".
-type PathAttr struct {
+type pathAttr struct {
 	referenceable
 	Name string
 }
 
-func (pa PathAttr) String() string {
+func (pa pathAttr) String() string {
 	return "path." + pa.Name
 }
