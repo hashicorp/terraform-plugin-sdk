@@ -23,10 +23,10 @@ import (
 type ModuleInstance []ModuleInstanceStep
 
 var (
-	_ Targetable = ModuleInstance(nil)
+	_ targetableI = ModuleInstance(nil)
 )
 
-func ParseModuleInstance(traversal hcl.Traversal) (ModuleInstance, tfdiags.Diagnostics) {
+func parseModuleInstance(traversal hcl.Traversal) (ModuleInstance, tfdiags.Diagnostics) {
 	mi, remain, diags := parseModuleInstancePrefix(traversal)
 	if len(remain) != 0 {
 		if len(remain) == len(traversal) {
@@ -72,7 +72,7 @@ func ParseModuleInstanceStr(str string) (ModuleInstance, tfdiags.Diagnostics) {
 		return nil, diags
 	}
 
-	addr, addrDiags := ParseModuleInstance(traversal)
+	addr, addrDiags := parseModuleInstance(traversal)
 	diags = diags.Append(addrDiags)
 	return addr, diags
 }
@@ -142,12 +142,12 @@ func parseModuleInstancePrefix(traversal hcl.Traversal) (ModuleInstance, hcl.Tra
 
 				switch idx.Key.Type() {
 				case cty.String:
-					step.InstanceKey = StringKey(idx.Key.AsString())
+					step.InstanceKey = stringKey(idx.Key.AsString())
 				case cty.Number:
 					var idxInt int
 					err := gocty.FromCtyValue(idx.Key, &idxInt)
 					if err == nil {
-						step.InstanceKey = IntKey(idxInt)
+						step.InstanceKey = intKey(idxInt)
 					} else {
 						diags = diags.Append(&hcl.Diagnostic{
 							Severity: hcl.DiagError,
@@ -212,7 +212,7 @@ func (m Module) UnkeyedInstanceShim() ModuleInstance {
 // tree. It is used only as part of ModuleInstance.
 type ModuleInstanceStep struct {
 	Name        string
-	InstanceKey InstanceKey
+	InstanceKey instanceKey
 }
 
 // RootModuleInstance is the module instance address representing the root
@@ -221,7 +221,7 @@ var RootModuleInstance ModuleInstance
 
 // Child returns the address of a child module instance of the receiver,
 // identified by the given name and key.
-func (m ModuleInstance) Child(name string, key InstanceKey) ModuleInstance {
+func (m ModuleInstance) Child(name string, key instanceKey) ModuleInstance {
 	ret := make(ModuleInstance, 0, len(m)+1)
 	ret = append(ret, m...)
 	return append(ret, ModuleInstanceStep{
@@ -253,7 +253,7 @@ func (m ModuleInstance) String() string {
 // address either matches the receiver, is a sub-module-instance of the
 // receiver, or is a targetable absolute address within a module that
 // is contained within the reciever.
-func (m ModuleInstance) TargetContains(other Targetable) bool {
+func (m ModuleInstance) TargetContains(other targetableI) bool {
 	switch to := other.(type) {
 
 	case ModuleInstance:
@@ -271,10 +271,10 @@ func (m ModuleInstance) TargetContains(other Targetable) bool {
 		// If we fall out here then the prefixed matched, so it's contained.
 		return true
 
-	case AbsResource:
+	case absResource:
 		return m.TargetContains(to.Module)
 
-	case AbsResourceInstance:
+	case absResourceInstance:
 		return m.TargetContains(to.Module)
 
 	default:

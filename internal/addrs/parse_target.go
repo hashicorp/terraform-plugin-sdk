@@ -8,22 +8,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
-// Target describes a targeted address with source location information.
-type Target struct {
-	Subject     Targetable
+// target describes a targeted address with source location information.
+type target struct {
+	Subject     targetableI
 	SourceRange tfdiags.SourceRange
 }
 
-// ParseTarget attempts to interpret the given traversal as a targetable
+// parseTarget attempts to interpret the given traversal as a targetable
 // address. The given traversal must be absolute, or this function will
 // panic.
 //
 // If no error diagnostics are returned, the returned target includes the
 // address that was extracted and the source range it was extracted from.
 //
-// If error diagnostics are returned then the Target value is invalid and
+// If error diagnostics are returned then the target value is invalid and
 // must not be used.
-func ParseTarget(traversal hcl.Traversal) (*Target, tfdiags.Diagnostics) {
+func parseTarget(traversal hcl.Traversal) (*target, tfdiags.Diagnostics) {
 	path, remain, diags := parseModuleInstancePrefix(traversal)
 	if diags.HasErrors() {
 		return nil, diags
@@ -32,7 +32,7 @@ func ParseTarget(traversal hcl.Traversal) (*Target, tfdiags.Diagnostics) {
 	rng := tfdiags.SourceRangeFromHCL(traversal.SourceRange())
 
 	if len(remain) == 0 {
-		return &Target{
+		return &target{
 			Subject:     path,
 			SourceRange: rng,
 		}, diags
@@ -95,14 +95,14 @@ func ParseTarget(traversal hcl.Traversal) (*Target, tfdiags.Diagnostics) {
 		return nil, diags
 	}
 
-	var subject Targetable
+	var subject targetableI
 	remain = remain[2:]
 	switch len(remain) {
 	case 0:
 		subject = path.Resource(mode, typeName, name)
 	case 1:
 		if tt, ok := remain[0].(hcl.TraverseIndex); ok {
-			key, err := ParseInstanceKey(tt.Key)
+			key, err := parseInstanceKey(tt.Key)
 			if err != nil {
 				diags = diags.Append(&hcl.Diagnostic{
 					Severity: hcl.DiagError,
@@ -133,7 +133,7 @@ func ParseTarget(traversal hcl.Traversal) (*Target, tfdiags.Diagnostics) {
 		return nil, diags
 	}
 
-	return &Target{
+	return &target{
 		Subject:     subject,
 		SourceRange: rng,
 	}, diags

@@ -1,11 +1,11 @@
 package addrs
 
-// LocalValue is the address of a local value.
-type LocalValue struct {
+// localValue is the address of a local value.
+type localValue struct {
 	referenceable
 	Name string
 }
 
-func (v LocalValue) String() string {
+func (v localValue) String() string {
 	return "local." + v.Name
 }

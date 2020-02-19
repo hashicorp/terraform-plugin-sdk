@@ -8,15 +8,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
-// Reference describes a reference to an address with source location
+// reference describes a reference to an address with source location
 // information.
-type Reference struct {
-	Subject     Referenceable
+type reference struct {
+	Subject     referenceableI
 	SourceRange tfdiags.SourceRange
 	Remaining   hcl.Traversal
 }
 
-// ParseRef attempts to extract a referencable address from the prefix of the
+// parseRefPub attempts to extract a referencable address from the prefix of the
 // given traversal, which must be an absolute traversal or this function
 // will panic.
 //
@@ -27,7 +27,7 @@ type Reference struct {
 //
 // If error diagnostics are returned then the Reference value is invalid and
 // must not be used.
-func ParseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
+func parseRefPub(traversal hcl.Traversal) (*reference, tfdiags.Diagnostics) {
 	ref, diags := parseRef(traversal)
 
 	// Normalize a little to make life easier for callers.
@@ -40,7 +40,7 @@ func ParseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 	return ref, diags
 }
 
-func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
+func parseRef(traversal hcl.Traversal) (*reference, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	root := traversal.RootName()
@@ -50,16 +50,16 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 
 	case "count":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     CountAttr{Name: name},
+		return &reference{
+			Subject:     countAttr{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
 
 	case "each":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     ForEachAttr{Name: name},
+		return &reference{
+			Subject:     forEachAttr{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
@@ -79,8 +79,8 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 
 	case "local":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     LocalValue{Name: name},
+		return &reference{
+			Subject:     localValue{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
@@ -95,8 +95,8 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 		// an entire module instance or to a single output from a module
 		// instance, depending on what we find after this introducer.
 
-		callInstance := ModuleCallInstance{
-			Call: ModuleCall{
+		callInstance := moduleCallInstance{
+			Call: moduleCall{
 				Name: callName,
 			},
 			Key: NoKey,
@@ -107,7 +107,7 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 			// be a reference to a collection of instances of a particular
 			// module, but the caller will need to deal with that ambiguity
 			// since we don't have enough context here.
-			return &Reference{
+			return &reference{
 				Subject:     callInstance,
 				SourceRange: tfdiags.SourceRangeFromHCL(callRange),
 				Remaining:   remain,
@@ -116,7 +116,7 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 
 		if idxTrav, ok := remain[0].(hcl.TraverseIndex); ok {
 			var err error
-			callInstance.Key, err = ParseInstanceKey(idxTrav.Key)
+			callInstance.Key, err = parseInstanceKey(idxTrav.Key)
 			if err != nil {
 				diags = diags.Append(&hcl.Diagnostic{
 					Severity: hcl.DiagError,
@@ -131,7 +131,7 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 			if len(remain) == 0 {
 				// Also a reference to an entire module instance, but we have a key
 				// now.
-				return &Reference{
+				return &reference{
 					Subject:     callInstance,
 					SourceRange: tfdiags.SourceRangeFromHCL(hcl.RangeBetween(callRange, idxTrav.SrcRange)),
 					Remaining:   remain,
@@ -141,8 +141,8 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 
 		if attrTrav, ok := remain[0].(hcl.TraverseAttr); ok {
 			remain = remain[1:]
-			return &Reference{
-				Subject: ModuleCallOutput{
+			return &reference{
+				Subject: moduleCallOutput{
 					Name: attrTrav.Name,
 					Call: callInstance,
 				},
@@ -161,31 +161,31 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 
 	case "path":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     PathAttr{Name: name},
+		return &reference{
+			Subject:     pathAttr{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
 
 	case "self":
-		return &Reference{
-			Subject:     Self,
+		return &reference{
+			Subject:     self,
 			SourceRange: tfdiags.SourceRangeFromHCL(rootRange),
 			Remaining:   traversal[1:],
 		}, diags
 
 	case "terraform":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     TerraformAttr{Name: name},
+		return &reference{
+			Subject:     terraformAttr{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
 
 	case "var":
 		name, rng, remain, diags := parseSingleAttrRef(traversal)
-		return &Reference{
-			Subject:     InputVariable{Name: name},
+		return &reference{
+			Subject:     inputVariable{Name: name},
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 			Remaining:   remain,
 		}, diags
@@ -195,7 +195,7 @@ func parseRef(traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
 	}
 }
 
-func parseResourceRef(mode ResourceMode, startRange hcl.Range, traversal hcl.Traversal) (*Reference, tfdiags.Diagnostics) {
+func parseResourceRef(mode resourceMode, startRange hcl.Range, traversal hcl.Traversal) (*reference, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	if len(traversal) < 2 {
@@ -246,12 +246,12 @@ func parseResourceRef(mode ResourceMode, startRange hcl.Range, traversal hcl.Tra
 	rng := hcl.RangeBetween(startRange, attrTrav.SrcRange)
 	remain := traversal[2:]
 
-	resourceAddr := Resource{
+	resourceAddr := resource{
 		Mode: mode,
 		Type: typeName,
 		Name: name,
 	}
-	resourceInstAddr := ResourceInstance{
+	resourceInstAddr := resourceInstance{
 		Resource: resourceAddr,
 		Key:      NoKey,
 	}
@@ -260,7 +260,7 @@ func parseResourceRef(mode ResourceMode, startRange hcl.Range, traversal hcl.Tra
 		// This might actually be a reference to the collection of all instances
 		// of the resource, but we don't have enough context here to decide
 		// so we'll let the caller resolve that ambiguity.
-		return &Reference{
+		return &reference{
 			Subject:     resourceAddr,
 			SourceRange: tfdiags.SourceRangeFromHCL(rng),
 		}, diags
@@ -268,7 +268,7 @@ func parseResourceRef(mode ResourceMode, startRange hcl.Range, traversal hcl.Tra
 
 	if idxTrav, ok := remain[0].(hcl.TraverseIndex); ok {
 		var err error
-		resourceInstAddr.Key, err = ParseInstanceKey(idxTrav.Key)
+		resourceInstAddr.Key, err = parseInstanceKey(idxTrav.Key)
 		if err != nil {
 			diags = diags.Append(&hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -282,7 +282,7 @@ func parseResourceRef(mode ResourceMode, startRange hcl.Range, traversal hcl.Tra
 		rng = hcl.RangeBetween(rng, idxTrav.SrcRange)
 	}
 
-	return &Reference{
+	return &reference{
 		Subject:     resourceInstAddr,
 		SourceRange: tfdiags.SourceRangeFromHCL(rng),
 		Remaining:   remain,

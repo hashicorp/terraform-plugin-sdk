@@ -2,7 +2,7 @@ package addrs
 
 import "fmt"
 
-// ResourceInstancePhase is a special kind of reference used only internally
+// resourceInstancePhase is a special kind of reference used only internally
 // during graph building to represent resource instances that are in a
 // non-primary state.
 //
@@ -12,15 +12,15 @@ import "fmt"
 //
 // This special reference type cannot be accessed directly by end-users, and
 // should never be shown in the UI.
-type ResourceInstancePhase struct {
+type resourceInstancePhase struct {
 	referenceable
-	ResourceInstance ResourceInstance
-	Phase            ResourceInstancePhaseType
+	ResourceInstance resourceInstance
+	Phase            resourceInstancePhaseType
 }
 
-var _ Referenceable = ResourceInstancePhase{}
+var _ referenceableI = resourceInstancePhase{}
 
-func (rp ResourceInstancePhase) String() string {
+func (rp resourceInstancePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
 	// never conflict with any non-phased resource instance string. This
 	// is intentionally something that would fail parsing with ParseRef,
@@ -28,14 +28,14 @@ func (rp ResourceInstancePhase) String() string {
 	return fmt.Sprintf("%s#%s", rp.ResourceInstance, rp.Phase)
 }
 
-// ResourceInstancePhaseType is an enumeration used with ResourceInstancePhase.
-type ResourceInstancePhaseType string
+// resourceInstancePhaseType is an enumeration used with ResourceInstancePhase.
+type resourceInstancePhaseType string
 
-func (rpt ResourceInstancePhaseType) String() string {
+func (rpt resourceInstancePhaseType) String() string {
 	return string(rpt)
 }
 
-// ResourcePhase is a special kind of reference used only internally
+// resourcePhase is a special kind of reference used only internally
 // during graph building to represent resources that are in a
 // non-primary state.
 //
@@ -51,15 +51,15 @@ func (rpt ResourceInstancePhaseType) String() string {
 //
 // This special reference type cannot be accessed directly by end-users, and
 // should never be shown in the UI.
-type ResourcePhase struct {
+type resourcePhase struct {
 	referenceable
-	Resource Resource
-	Phase    ResourceInstancePhaseType
+	Resource resource
+	Phase    resourceInstancePhaseType
 }
 
-var _ Referenceable = ResourcePhase{}
+var _ referenceableI = resourcePhase{}
 
-func (rp ResourcePhase) String() string {
+func (rp resourcePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
 	// never conflict with any non-phased resource instance string. This
 	// is intentionally something that would fail parsing with ParseRef,

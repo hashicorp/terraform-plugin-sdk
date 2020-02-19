@@ -13,12 +13,12 @@ import (
 func TestParseTarget(t *testing.T) {
 	tests := []struct {
 		Input   string
-		Want    *Target
+		Want    *target
 		WantErr string
 	}{
 		{
 			`module.foo`,
-			&Target{
+			&target{
 				Subject: ModuleInstance{
 					{
 						Name: "foo",
@@ -33,11 +33,11 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo[2]`,
-			&Target{
+			&target{
 				Subject: ModuleInstance{
 					{
 						Name:        "foo",
-						InstanceKey: IntKey(2),
+						InstanceKey: intKey(2),
 					},
 				},
 				SourceRange: tfdiags.SourceRange{
@@ -49,11 +49,11 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo[2].module.bar`,
-			&Target{
+			&target{
 				Subject: ModuleInstance{
 					{
 						Name:        "foo",
-						InstanceKey: IntKey(2),
+						InstanceKey: intKey(2),
 					},
 					{
 						Name: "bar",
@@ -68,9 +68,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`aws_instance.foo`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "aws_instance",
 						Name: "foo",
@@ -86,15 +86,15 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`aws_instance.foo[1]`,
-			&Target{
-				Subject: AbsResourceInstance{
-					Resource: ResourceInstance{
-						Resource: Resource{
+			&target{
+				Subject: absResourceInstance{
+					Resource: resourceInstance{
+						Resource: resource{
 							Mode: ManagedResourceMode,
 							Type: "aws_instance",
 							Name: "foo",
 						},
-						Key: IntKey(1),
+						Key: intKey(1),
 					},
 					Module: RootModuleInstance,
 				},
@@ -107,9 +107,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`data.aws_instance.foo`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "aws_instance",
 						Name: "foo",
@@ -125,15 +125,15 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`data.aws_instance.foo[1]`,
-			&Target{
-				Subject: AbsResourceInstance{
-					Resource: ResourceInstance{
-						Resource: Resource{
+			&target{
+				Subject: absResourceInstance{
+					Resource: resourceInstance{
+						Resource: resource{
 							Mode: DataResourceMode,
 							Type: "aws_instance",
 							Name: "foo",
 						},
-						Key: IntKey(1),
+						Key: intKey(1),
 					},
 					Module: RootModuleInstance,
 				},
@@ -146,9 +146,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.aws_instance.bar`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "aws_instance",
 						Name: "bar",
@@ -166,9 +166,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.module.bar.aws_instance.baz`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: ManagedResourceMode,
 						Type: "aws_instance",
 						Name: "baz",
@@ -187,15 +187,15 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.module.bar.aws_instance.baz["hello"]`,
-			&Target{
-				Subject: AbsResourceInstance{
-					Resource: ResourceInstance{
-						Resource: Resource{
+			&target{
+				Subject: absResourceInstance{
+					Resource: resourceInstance{
+						Resource: resource{
 							Mode: ManagedResourceMode,
 							Type: "aws_instance",
 							Name: "baz",
 						},
-						Key: StringKey("hello"),
+						Key: stringKey("hello"),
 					},
 					Module: ModuleInstance{
 						{Name: "foo"},
@@ -211,9 +211,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.data.aws_instance.bar`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "aws_instance",
 						Name: "bar",
@@ -231,9 +231,9 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.module.bar.data.aws_instance.baz`,
-			&Target{
-				Subject: AbsResource{
-					Resource: Resource{
+			&target{
+				Subject: absResource{
+					Resource: resource{
 						Mode: DataResourceMode,
 						Type: "aws_instance",
 						Name: "baz",
@@ -252,15 +252,15 @@ func TestParseTarget(t *testing.T) {
 		},
 		{
 			`module.foo.module.bar.data.aws_instance.baz["hello"]`,
-			&Target{
-				Subject: AbsResourceInstance{
-					Resource: ResourceInstance{
-						Resource: Resource{
+			&target{
+				Subject: absResourceInstance{
+					Resource: resourceInstance{
+						Resource: resource{
 							Mode: DataResourceMode,
 							Type: "aws_instance",
 							Name: "baz",
 						},
-						Key: StringKey("hello"),
+						Key: stringKey("hello"),
 					},
 					Module: ModuleInstance{
 						{Name: "foo"},
@@ -314,7 +314,7 @@ func TestParseTarget(t *testing.T) {
 				t.Fatal(travDiags.Error())
 			}
 
-			got, diags := ParseTarget(traversal)
+			got, diags := parseTarget(traversal)
 
 			switch len(diags) {
 			case 0:

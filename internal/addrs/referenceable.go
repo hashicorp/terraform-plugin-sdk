@@ -1,8 +1,8 @@
 package addrs
 
-// Referenceable is an interface implemented by all address types that can
+// referenceableI is an interface implemented by all address types that can
 // appear as references in configuration language expressions.
-type Referenceable interface {
+type referenceableI interface {
 	// All implementations of this interface must be covered by the type switch
 	// in lang.Scope.buildEvalContext.
 	referenceableSigil()
