@@ -1,11 +1,11 @@
 package addrs
 
-// InputVariable is the address of an input variable.
-type InputVariable struct {
+// inputVariable is the address of an input variable.
+type inputVariable struct {
 	referenceable
 	Name string
 }
 
-func (v InputVariable) String() string {
+func (v inputVariable) String() string {
 	return "var." + v.Name
 }

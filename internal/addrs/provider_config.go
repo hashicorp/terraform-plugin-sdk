@@ -18,7 +18,7 @@ type ProviderConfig struct {
 	Alias string
 }
 
-// ParseProviderConfigCompact parses the given absolute traversal as a relative
+// parseProviderConfigCompact parses the given absolute traversal as a relative
 // provider address in compact form. The following are examples of traversals
 // that can be successfully parsed as compact relative provider configuration
 // addresses:
@@ -30,7 +30,7 @@ type ProviderConfig struct {
 //
 // If the returned diagnostics contains errors then the result value is invalid
 // and must not be used.
-func ParseProviderConfigCompact(traversal hcl.Traversal) (ProviderConfig, tfdiags.Diagnostics) {
+func parseProviderConfigCompact(traversal hcl.Traversal) (ProviderConfig, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	ret := ProviderConfig{
 		Type: traversal.RootName(),
@@ -80,14 +80,14 @@ func (pc ProviderConfig) String() string {
 	return "provider." + pc.Type
 }
 
-// AbsProviderConfig is the absolute address of a provider configuration
+// absProviderConfig is the absolute address of a provider configuration
 // within a particular module instance.
-type AbsProviderConfig struct {
+type absProviderConfig struct {
 	Module         ModuleInstance
 	ProviderConfig ProviderConfig
 }
 
-// ParseAbsProviderConfig parses the given traversal as an absolute provider
+// parseAbsProviderConfig parses the given traversal as an absolute provider
 // address. The following are examples of traversals that can be successfully
 // parsed as absolute provider configuration addresses:
 //
@@ -101,9 +101,9 @@ type AbsProviderConfig struct {
 // between resources and provider configurations in the state structure.
 // This type of address is not generally used in the UI, except in error
 // messages that refer to provider configurations.
-func ParseAbsProviderConfig(traversal hcl.Traversal) (AbsProviderConfig, tfdiags.Diagnostics) {
+func parseAbsProviderConfig(traversal hcl.Traversal) (absProviderConfig, tfdiags.Diagnostics) {
 	modInst, remain, diags := parseModuleInstancePrefix(traversal)
-	ret := AbsProviderConfig{
+	ret := absProviderConfig{
 		Module: modInst,
 	}
 	if len(remain) < 2 || remain.RootName() != "provider" {
@@ -169,21 +169,21 @@ func ParseAbsProviderConfig(traversal hcl.Traversal) (AbsProviderConfig, tfdiags
 // of the traversal fails. There is no way for the caller to distinguish the
 // two kinds of diagnostics programmatically. If error diagnostics are returned
 // the returned address is invalid.
-func ParseAbsProviderConfigStr(str string) (AbsProviderConfig, tfdiags.Diagnostics) {
+func ParseAbsProviderConfigStr(str string) (absProviderConfig, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
 	diags = diags.Append(parseDiags)
 	if parseDiags.HasErrors() {
-		return AbsProviderConfig{}, diags
+		return absProviderConfig{}, diags
 	}
 
-	addr, addrDiags := ParseAbsProviderConfig(traversal)
+	addr, addrDiags := parseAbsProviderConfig(traversal)
 	diags = diags.Append(addrDiags)
 	return addr, diags
 }
 
-func (pc AbsProviderConfig) String() string {
+func (pc absProviderConfig) String() string {
 	if len(pc.Module) == 0 {
 		return pc.ProviderConfig.String()
 	}

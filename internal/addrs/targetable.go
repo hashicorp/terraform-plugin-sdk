@@ -1,8 +1,8 @@
 package addrs
 
-// Targetable is an interface implemented by all address types that can be
+// targetable is an interface implemented by all address types that can be
 // used as "targets" for selecting sub-graphs of a graph.
-type Targetable interface {
+type targetableI interface {
 	targetableSigil()
 
 	// TargetContains returns true if the receiver is considered to contain
@@ -11,7 +11,7 @@ type Targetable interface {
 	// addresses within it are also implicitly targeted.
 	//
 	// A targetable address always contains at least itself.
-	TargetContains(other Targetable) bool
+	TargetContains(other targetableI) bool
 
 	// String produces a string representation of the address that could be
 	// parsed as a HCL traversal and passed to ParseTarget to produce an
