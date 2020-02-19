@@ -31,14 +31,14 @@ func (pc ProviderConfig) String() string {
 	return "provider." + pc.Type
 }
 
-// absProviderConfig is the absolute address of a provider configuration
+// AbsProviderConfig is the absolute address of a provider configuration
 // within a particular module instance.
-type absProviderConfig struct {
+type AbsProviderConfig struct {
 	Module         ModuleInstance
 	ProviderConfig ProviderConfig
 }
 
-// parseAbsProviderConfig parses the given traversal as an absolute provider
+// ParseAbsProviderConfig parses the given traversal as an absolute provider
 // address. The following are examples of traversals that can be successfully
 // parsed as absolute provider configuration addresses:
 //
@@ -52,9 +52,9 @@ type absProviderConfig struct {
 // between resources and provider configurations in the state structure.
 // This type of address is not generally used in the UI, except in error
 // messages that refer to provider configurations.
-func parseAbsProviderConfig(traversal hcl.Traversal) (absProviderConfig, tfdiags.Diagnostics) {
+func ParseAbsProviderConfig(traversal hcl.Traversal) (AbsProviderConfig, tfdiags.Diagnostics) {
 	modInst, remain, diags := parseModuleInstancePrefix(traversal)
-	ret := absProviderConfig{
+	ret := AbsProviderConfig{
 		Module: modInst,
 	}
 	if len(remain) < 2 || remain.RootName() != "provider" {
@@ -120,21 +120,21 @@ func parseAbsProviderConfig(traversal hcl.Traversal) (absProviderConfig, tfdiags
 // of the traversal fails. There is no way for the caller to distinguish the
 // two kinds of diagnostics programmatically. If error diagnostics are returned
 // the returned address is invalid.
-func ParseAbsProviderConfigStr(str string) (absProviderConfig, tfdiags.Diagnostics) {
+func ParseAbsProviderConfigStr(str string) (AbsProviderConfig, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
 	diags = diags.Append(parseDiags)
 	if parseDiags.HasErrors() {
-		return absProviderConfig{}, diags
+		return AbsProviderConfig{}, diags
 	}
 
-	addr, addrDiags := parseAbsProviderConfig(traversal)
+	addr, addrDiags := ParseAbsProviderConfig(traversal)
 	diags = diags.Append(addrDiags)
 	return addr, diags
 }
 
-func (pc absProviderConfig) String() string {
+func (pc AbsProviderConfig) String() string {
 	if len(pc.Module) == 0 {
 		return pc.ProviderConfig.String()
 	}

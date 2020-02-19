@@ -14,11 +14,14 @@ import (
 
 	multierror "github.com/hashicorp/go-multierror"
 	uuid "github.com/hashicorp/go-uuid"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/copystructure"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
 )
 
 const (
@@ -109,6 +112,37 @@ func NewState() *State {
 	s := &State{}
 	s.init()
 	return s
+}
+
+// Children returns the ModuleStates that are direct children of
+// the given path. If the path is "root", for example, then children
+// returned might be "root.child", but not "root.child.grandchild".
+func (s *State) Children(path []string) []*ModuleState {
+	s.Lock()
+	defer s.Unlock()
+	// TODO: test
+
+	return s.children(path)
+}
+
+func (s *State) children(path []string) []*ModuleState {
+	result := make([]*ModuleState, 0)
+	for _, m := range s.Modules {
+		if m == nil {
+			continue
+		}
+
+		if len(m.Path) != len(path)+1 {
+			continue
+		}
+		if !reflect.DeepEqual(path, m.Path[:len(path)]) {
+			continue
+		}
+
+		result = append(result, m)
+	}
+
+	return result
 }
 
 // AddModule adds the module with the given path to the state.
@@ -534,6 +568,12 @@ func (s *State) DeepCopy() *State {
 	return copy.(*State)
 }
 
+func (s *State) Init() {
+	s.Lock()
+	defer s.Unlock()
+	s.init()
+}
+
 func (s *State) init() {
 	if s.Version == 0 {
 		s.Version = stateVersion
@@ -554,6 +594,13 @@ func (s *State) init() {
 		s.Remote.init()
 	}
 
+}
+
+func (s *State) EnsureHasLineage() {
+	s.Lock()
+	defer s.Unlock()
+
+	s.ensureHasLineage()
 }
 
 func (s *State) ensureHasLineage() {
@@ -1211,6 +1258,24 @@ func (s *ResourceState) Untaint() {
 	}
 }
 
+// ProviderAddr returns the provider address for the receiver, by parsing the
+// string representation saved in state. An error can be returned if the
+// value in state is corrupt.
+func (s *ResourceState) ProviderAddr() (addrs.AbsProviderConfig, error) {
+	var diags tfdiags.Diagnostics
+
+	str := s.Provider
+	traversal, travDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
+	diags = diags.Append(travDiags)
+	if travDiags.HasErrors() {
+		return addrs.AbsProviderConfig{}, diags.Err()
+	}
+
+	addr, addrDiags := addrs.ParseAbsProviderConfig(traversal)
+	diags = diags.Append(addrDiags)
+	return addr, diags.Err()
+}
+
 func (s *ResourceState) init() {
 	s.Lock()
 	defer s.Unlock()
@@ -1353,6 +1418,21 @@ func (s *InstanceState) AttrsAsObjectValue(ty cty.Type) (cty.Value, error) {
 	}
 
 	return hcl2shim.HCL2ValueFromFlatmap(s.Attributes, ty)
+}
+
+// Copy all the Fields from another InstanceState
+func (s *InstanceState) Set(from *InstanceState) {
+	s.Lock()
+	defer s.Unlock()
+
+	from.Lock()
+	defer from.Unlock()
+
+	s.ID = from.ID
+	s.Attributes = from.Attributes
+	s.Ephemeral = from.Ephemeral
+	s.Meta = from.Meta
+	s.Tainted = from.Tainted
 }
 
 func (s *InstanceState) DeepCopy() *InstanceState {
