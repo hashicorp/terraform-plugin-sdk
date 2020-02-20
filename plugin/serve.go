@@ -6,9 +6,9 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
+	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 const (
