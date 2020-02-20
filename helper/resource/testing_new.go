@@ -11,9 +11,9 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	tftest "github.com/hashicorp/terraform-plugin-test"
 
-	"github.com/hashicorp/terraform-plugin-sdk/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {

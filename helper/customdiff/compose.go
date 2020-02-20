@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // All returns a CustomizeDiffFunc that runs all of the given

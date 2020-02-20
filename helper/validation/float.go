@@ -3,7 +3,7 @@ package validation
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // FloatBetween returns a SchemaValidateFunc which tests if the provided value

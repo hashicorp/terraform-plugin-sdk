@@ -3,7 +3,7 @@ package acctest
 import (
 	"os"
 
-	"github.com/hashicorp/terraform-plugin-sdk/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	tftest "github.com/hashicorp/terraform-plugin-test"
 )
 

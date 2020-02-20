@@ -24,8 +24,8 @@ import (
 	"github.com/mitchellh/copystructure"
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // Name of ENV variable which (if not empty) prefers panic over error

@@ -3,8 +3,8 @@ package convert
 import (
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/tfdiags"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
+	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 // WarnsAndErrorsToProto converts the warnings and errors return by the legacy

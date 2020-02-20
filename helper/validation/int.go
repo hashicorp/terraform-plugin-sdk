@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // IntBetween returns a SchemaValidateFunc which tests if the provided value

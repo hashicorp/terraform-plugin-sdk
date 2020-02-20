@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
 // Schema pairs a provider or resource schema with that schema's version.

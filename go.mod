@@ -1,6 +1,6 @@
-module github.com/hashicorp/terraform-plugin-sdk
+module github.com/hashicorp/terraform-plugin-sdk/v2
 
-go 1.12
+go 1.14
 
 require (
 	github.com/agext/levenshtein v1.2.2
