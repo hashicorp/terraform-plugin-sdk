@@ -69,7 +69,7 @@ func (m ModuleInstance) Resource(mode resourceMode, typeName string, name string
 // TargetContains implements Targetable by returning true if the given other
 // address is either equal to the receiver or is an instance of the
 // receiver.
-func (r absResource) TargetContains(other targetableI) bool {
+func (r absResource) TargetContains(other Targetable) bool {
 	switch to := other.(type) {
 
 	case absResource:
@@ -127,7 +127,7 @@ func (r absResourceInstance) ContainingResource() absResource {
 
 // TargetContains implements Targetable by returning true if the given other
 // address is equal to the receiver.
-func (r absResourceInstance) TargetContains(other targetableI) bool {
+func (r absResourceInstance) TargetContains(other Targetable) bool {
 	switch to := other.(type) {
 
 	case absResourceInstance:
