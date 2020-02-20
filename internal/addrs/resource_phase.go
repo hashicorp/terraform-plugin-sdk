@@ -18,7 +18,7 @@ type resourceInstancePhase struct {
 	Phase            resourceInstancePhaseType
 }
 
-var _ referenceableI = resourceInstancePhase{}
+var _ Referenceable = resourceInstancePhase{}
 
 func (rp resourceInstancePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
@@ -57,7 +57,7 @@ type resourcePhase struct {
 	Phase    resourceInstancePhaseType
 }
 
-var _ referenceableI = resourcePhase{}
+var _ Referenceable = resourcePhase{}
 
 func (rp resourcePhase) String() string {
 	// We use a different separator here than usual to ensure that we'll
