@@ -2,15 +2,6 @@ package validation
 
 import "fmt"
 
-// ValidateListUniqueStrings is a ValidateFunc that ensures a list has no
-// duplicate items in it. It's useful for when a list is needed over a set
-// because order matters, yet the items still need to be unique.
-//
-// Deprecated: use ListOfUniqueStrings
-func ValidateListUniqueStrings(i interface{}, k string) (warnings []string, errors []error) {
-	return ListOfUniqueStrings(i, k)
-}
-
 // ListOfUniqueStrings is a ValidateFunc that ensures a list has no
 // duplicate items in it. It's useful for when a list is needed over a set
 // because order matters, yet the items still need to be unique.

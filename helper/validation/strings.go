@@ -184,14 +184,6 @@ func StringIsBase64(i interface{}, k string) (warnings []string, errors []error)
 	return warnings, errors
 }
 
-// ValidateJsonString is a SchemaValidateFunc which tests to make sure the
-// supplied string is valid JSON.
-//
-// Deprecated: use StringIsJSON instead
-func ValidateJsonString(i interface{}, k string) (warnings []string, errors []error) {
-	return StringIsJSON(i, k)
-}
-
 // StringIsJSON is a SchemaValidateFunc which tests to make sure the supplied string is valid JSON.
 func StringIsJSON(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
@@ -205,14 +197,6 @@ func StringIsJSON(i interface{}, k string) (warnings []string, errors []error) {
 	}
 
 	return warnings, errors
-}
-
-// ValidateRegexp returns a SchemaValidateFunc which tests to make sure the
-// supplied string is a valid regular expression.
-//
-// Deprecated: use StringIsValidRegExp instead
-func ValidateRegexp(i interface{}, k string) (warnings []string, errors []error) {
-	return StringIsValidRegExp(i, k)
 }
 
 // StringIsValidRegExp returns a SchemaValidateFunc which tests to make sure the supplied string is a valid regular expression.
