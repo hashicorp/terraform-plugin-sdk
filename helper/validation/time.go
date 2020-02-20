@@ -52,10 +52,3 @@ func IsRFC3339Time(i interface{}, k string) (warnings []string, errors []error) 
 
 	return warnings, errors
 }
-
-// ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses as time.RFC3339 format
-//
-// Deprecated: use IsRFC3339Time() instead
-func ValidateRFC3339TimeString(i interface{}, k string) (warnings []string, errors []error) {
-	return IsRFC3339Time(i, k)
-}
