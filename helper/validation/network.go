@@ -9,14 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-// SingleIP returns a SchemaValidateFunc which tests if the provided value
-// is of type string, and in valid single Value notation
-//
-// Deprecated: use IsIPAddress instead
-func SingleIP() schema.SchemaValidateFunc {
-	return IsIPAddress
-}
-
 // IsIPAddress is a SchemaValidateFunc which tests if the provided value is of type string and is a single IP (v4 or v6)
 func IsIPAddress(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
@@ -65,13 +57,6 @@ func IsIPv4Address(i interface{}, k string) (warnings []string, errors []error) 
 	return warnings, errors
 }
 
-// IPRange returns a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
-//
-// Deprecated: use IsIPv4Range instead
-func IPRange() schema.SchemaValidateFunc {
-	return IsIPv4Range
-}
-
 // IsIPv4Range is a SchemaValidateFunc which tests if the provided value is of type string, and in valid IP range
 func IsIPv4Range(i interface{}, k string) (warnings []string, errors []error) {
 	v, ok := i.(string)
@@ -108,14 +93,6 @@ func IsCIDR(i interface{}, k string) (warnings []string, errors []error) {
 	}
 
 	return warnings, errors
-}
-
-// CIDRNetwork returns a SchemaValidateFunc which tests if the provided value
-// is of type string, is in valid Value network notation, and has significant bits between min and max (inclusive)
-//
-// Deprecated: use IsCIDRNetwork instead
-func CIDRNetwork(min, max int) schema.SchemaValidateFunc {
-	return IsCIDRNetwork(min, max)
 }
 
 // IsCIDRNetwork returns a SchemaValidateFunc which tests if the provided value
