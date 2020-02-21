@@ -20,7 +20,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/mitchellh/copystructure"
 	"github.com/mitchellh/mapstructure"
@@ -31,27 +30,6 @@ import (
 
 // Name of ENV variable which (if not empty) prefers panic over error
 const PanicOnErr = "TF_SCHEMA_PANIC_ON_ERROR"
-
-var (
-	protoVersionMu sync.Mutex
-	protoVersion5  = false
-)
-
-func isProto5() bool {
-	protoVersionMu.Lock()
-	defer protoVersionMu.Unlock()
-	return protoVersion5
-
-}
-
-// SetProto5 enables a feature flag for any internal changes required required
-// to work with the new plugin protocol.  This should not be called by
-// provider.
-func SetProto5() {
-	protoVersionMu.Lock()
-	defer protoVersionMu.Unlock()
-	protoVersion5 = true
-}
 
 // Schema is used to describe the structure of a value.
 //
@@ -1534,7 +1512,7 @@ func (m schemaMap) validateList(
 	// at this point, we're going to skip validation in the new protocol if
 	// there are any unknowns. Validate will eventually be called again once
 	// all values are known.
-	if isProto5() && !isWhollyKnown(raw) {
+	if !isWhollyKnown(raw) {
 		return nil, nil
 	}
 
@@ -1819,24 +1797,14 @@ func (m schemaMap) validatePrimitive(
 		}
 		decoded = n
 	case TypeInt:
-		switch {
-		case isProto5():
-			// We need to verify the type precisely, because WeakDecode will
-			// decode a float as an integer.
+		// We need to verify the type precisely, because WeakDecode will
+		// decode a float as an integer.
 
-			// the config shims only use int for integral number values
-			if v, ok := raw.(int); ok {
-				decoded = v
-			} else {
-				return nil, []error{fmt.Errorf("%s: must be a whole number, got %v", k, raw)}
-			}
-		default:
-			// Verify that we can parse this as an int
-			var n int
-			if err := mapstructure.WeakDecode(raw, &n); err != nil {
-				return nil, []error{fmt.Errorf("%s: %s", k, err)}
-			}
-			decoded = n
+		// the config shims only use int for integral number values
+		if v, ok := raw.(int); ok {
+			decoded = v
+		} else {
+			return nil, []error{fmt.Errorf("%s: must be a whole number, got %v", k, raw)}
 		}
 	case TypeFloat:
 		// Verify that we can parse this as an int

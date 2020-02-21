@@ -82,18 +82,16 @@ func (r *ConfigFieldReader) readField(
 	k := strings.Join(address, ".")
 	schema := schemaList[len(schemaList)-1]
 
-	if protoVersion5 {
-		switch schema.Type {
-		case TypeList, TypeSet, TypeMap, typeObject:
-			// Check if the value itself is unknown.
-			// The new protocol shims will add unknown values to this list of
-			// ComputedKeys. This is the only way we have to indicate that a
-			// collection is unknown in the config
-			for _, unknown := range r.Config.ComputedKeys {
-				if k == unknown {
-					log.Printf("[DEBUG] setting computed for %q from ComputedKeys", k)
-					return FieldReadResult{Computed: true, Exists: true}, nil
-				}
+	switch schema.Type {
+	case TypeList, TypeSet, TypeMap, typeObject:
+		// Check if the value itself is unknown.
+		// The new protocol shims will add unknown values to this list of
+		// ComputedKeys. This is the only way we have to indicate that a
+		// collection is unknown in the config
+		for _, unknown := range r.Config.ComputedKeys {
+			if k == unknown {
+				log.Printf("[DEBUG] setting computed for %q from ComputedKeys", k)
+				return FieldReadResult{Computed: true, Exists: true}, nil
 			}
 		}
 	}
