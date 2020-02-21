@@ -3419,29 +3419,155 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
-		"computed-only field with validateFunc": {
+		"Computed-only with AtLeastOneOf": {
 			map[string]*Schema{
-				"string": &Schema{
+				"string_one": &Schema{
 					Type:     TypeString,
 					Computed: true,
-					ValidateFunc: func(v interface{}, k string) (ws []string, es []error) {
-						es = append(es, fmt.Errorf("this is not fine"))
-						return
+					AtLeastOneOf: []string{
+						"string_one",
+						"string_two",
+					},
+				},
+				"string_two": &Schema{
+					Type:     TypeString,
+					Computed: true,
+					AtLeastOneOf: []string{
+						"string_one",
+						"string_two",
 					},
 				},
 			},
 			true,
 		},
 
-		"computed-only field with diffSuppressFunc": {
+		"Computed-only with ConflictsWith": {
+			map[string]*Schema{
+				"string_one": &Schema{
+					Type:     TypeString,
+					Computed: true,
+					ConflictsWith: []string{
+						"string_two",
+					},
+				},
+				"string_two": &Schema{
+					Type:     TypeString,
+					Computed: true,
+					ConflictsWith: []string{
+						"string_one",
+					},
+				},
+			},
+			true,
+		},
+
+		"Computed-only with Default": {
 			map[string]*Schema{
 				"string": &Schema{
 					Type:     TypeString,
 					Computed: true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
-						// Always suppress any diff
-						return false
+					Default:  "test",
+				},
+			},
+			true,
+		},
+
+		"Computed-only with DefaultFunc": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:        TypeString,
+					Computed:    true,
+					DefaultFunc: func() (interface{}, error) { return nil, nil },
+				},
+			},
+			true,
+		},
+
+		"Computed-only with DiffSuppressFunc": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:             TypeString,
+					Computed:         true,
+					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool { return false },
+				},
+			},
+			true,
+		},
+
+		"Computed-only with ExactlyOneOf": {
+			map[string]*Schema{
+				"string_one": &Schema{
+					Type:     TypeString,
+					Computed: true,
+					ExactlyOneOf: []string{
+						"string_one",
+						"string_two",
 					},
+				},
+				"string_two": &Schema{
+					Type:     TypeString,
+					Computed: true,
+					ExactlyOneOf: []string{
+						"string_one",
+						"string_two",
+					},
+				},
+			},
+			true,
+		},
+
+		"Computed-only with InputDefault": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:         TypeString,
+					Computed:     true,
+					InputDefault: "test",
+				},
+			},
+			true,
+		},
+
+		"Computed-only with MaxItems": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:     TypeList,
+					Elem:     &Schema{Type: TypeString},
+					Computed: true,
+					MaxItems: 1,
+				},
+			},
+			true,
+		},
+
+		"Computed-only with MinItems": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:     TypeList,
+					Elem:     &Schema{Type: TypeString},
+					Computed: true,
+					MinItems: 1,
+				},
+			},
+			true,
+		},
+
+		"Computed-only with StateFunc": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:      TypeString,
+					Computed:  true,
+					StateFunc: func(v interface{}) string { return "" },
+				},
+			},
+			true,
+		},
+
+		"Computed-only with ValidateFunc": {
+			map[string]*Schema{
+				"string": &Schema{
+					Type:         TypeString,
+					Computed:     true,
+					ValidateFunc: func(v interface{}, k string) ([]string, []error) { return nil, nil },
 				},
 			},
 			true,
