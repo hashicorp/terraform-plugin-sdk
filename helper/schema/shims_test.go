@@ -914,39 +914,6 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 		},
 
 		{
-			Name: "List decode with promotion with list",
-			Schema: map[string]*Schema{
-				"ports": &Schema{
-					Type:          TypeList,
-					Required:      true,
-					Elem:          &Schema{Type: TypeInt},
-					PromoteSingle: true,
-				},
-			},
-
-			State: nil,
-
-			Config: map[string]interface{}{
-				"ports": []interface{}{"5"},
-			},
-
-			Diff: &terraform.InstanceDiff{
-				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"ports.#": &terraform.ResourceAttrDiff{
-						Old: "0",
-						New: "1",
-					},
-					"ports.0": &terraform.ResourceAttrDiff{
-						Old: "",
-						New: "5",
-					},
-				},
-			},
-
-			Err: false,
-		},
-
-		{
 			Schema: map[string]*Schema{
 				"ports": &Schema{
 					Type:     TypeList,
