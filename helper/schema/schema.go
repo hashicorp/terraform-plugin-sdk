@@ -757,7 +757,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			}
 		}
 
-		// Computed-only field
 		if computedOnly {
 			if len(v.AtLeastOneOf) > 0 {
 				return fmt.Errorf("%s: AtLeastOneOf is for configurable attributes,"+
