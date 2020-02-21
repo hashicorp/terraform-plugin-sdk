@@ -305,6 +305,36 @@ func TestValidationStringInSlice(t *testing.T) {
 	})
 }
 
+func TestValidationStringNotInSlice(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: "ValidValue",
+			f:   StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, false),
+		},
+		// ignore case
+		{
+			val: "VALIDVALUE",
+			f:   StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, true),
+		},
+		{
+			val:         "AnotherInvalidValue",
+			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, false),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to not be any of \\[InvalidValue AnotherInvalidValue\\], got AnotherInvalidValue"),
+		},
+		// ignore case
+		{
+			val:         "INVALIDVALUE",
+			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, true),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to not be any of \\[InvalidValue AnotherInvalidValue\\], got INVALIDVALUE"),
+		},
+		{
+			val:         1,
+			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, false),
+			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be string"),
+		},
+	})
+}
+
 func TestValidationStringMatch(t *testing.T) {
 	runTestCases(t, []testCase{
 		{
