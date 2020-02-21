@@ -189,14 +189,6 @@ type Schema struct {
 	MaxItems int
 	MinItems int
 
-	// PromoteSingle originally allowed for a single element to be assigned
-	// where a primitive list was expected, but this no longer works from
-	// Terraform v0.12 onwards (Terraform Core will require a list to be set
-	// regardless of what this is set to) and so only applies to Terraform v0.11
-	// and earlier, and so should be used only to retain this functionality
-	// for those still using v0.11 with a provider that formerly used this.
-	PromoteSingle bool
-
 	// The following fields are only valid for a TypeSet type.
 	//
 	// Set defines a function to determine the unique ID of an item so that
@@ -1531,13 +1523,6 @@ func (m schemaMap) validateList(
 	// We use reflection to verify the slice because you can't
 	// case to []interface{} unless the slice is exactly that type.
 	rawV := reflect.ValueOf(raw)
-
-	// If we support promotion and the raw value isn't a slice, wrap
-	// it in []interface{} and check again.
-	if schema.PromoteSingle && rawV.Kind() != reflect.Slice {
-		raw = []interface{}{raw}
-		rawV = reflect.ValueOf(raw)
-	}
 
 	if rawV.Kind() != reflect.Slice {
 		return nil, []error{fmt.Errorf(
