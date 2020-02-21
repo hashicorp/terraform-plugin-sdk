@@ -873,6 +873,14 @@ func TestCheckModuleResourceAttrPair(mpFirst []string, nameFirst string, keyFirs
 }
 
 func testCheckResourceAttrPair(isFirst *terraform.InstanceState, nameFirst string, keyFirst string, isSecond *terraform.InstanceState, nameSecond string, keySecond string) error {
+	if nameFirst == nameSecond && keyFirst == keySecond {
+		return fmt.Errorf(
+			"comparing self: resource %s attribute %s",
+			nameFirst,
+			keyFirst,
+		)
+	}
+
 	vFirst, okFirst := isFirst.Attributes[keyFirst]
 	vSecond, okSecond := isSecond.Attributes[keySecond]
 
