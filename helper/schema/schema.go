@@ -758,15 +758,51 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		// Computed-only field
-		if v.Computed && !v.Optional {
-			if v.ValidateFunc != nil {
-				return fmt.Errorf("%s: ValidateFunc is for validating user input, "+
-					"there's nothing to validate on computed-only field", k)
+		if computedOnly {
+			if len(v.AtLeastOneOf) > 0 {
+				return fmt.Errorf("%s: AtLeastOneOf is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if len(v.ConflictsWith) > 0 {
+				return fmt.Errorf("%s: ConflictsWith is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.Default != nil {
+				return fmt.Errorf("%s: Default is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.DefaultFunc != nil {
+				return fmt.Errorf("%s: DefaultFunc is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
 			}
 			if v.DiffSuppressFunc != nil {
 				return fmt.Errorf("%s: DiffSuppressFunc is for suppressing differences"+
 					" between config and state representation. "+
 					"There is no config for computed-only field, nothing to compare.", k)
+			}
+			if len(v.ExactlyOneOf) > 0 {
+				return fmt.Errorf("%s: ExactlyOneOf is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.InputDefault != "" {
+				return fmt.Errorf("%s: InputDefault is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.MaxItems > 0 {
+				return fmt.Errorf("%s: MaxItems is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.MinItems > 0 {
+				return fmt.Errorf("%s: MinItems is for configurable attributes,"+
+					"there's nothing to configure on computed-only field", k)
+			}
+			if v.StateFunc != nil {
+				return fmt.Errorf("%s: StateFunc is extraneous, "+
+					"value should just be changed before setting on computed-only field", k)
+			}
+			if v.ValidateFunc != nil {
+				return fmt.Errorf("%s: ValidateFunc is for validating user input, "+
+					"there's nothing to validate on computed-only field", k)
 			}
 		}
 
