@@ -727,6 +727,14 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			}
 		}
 
+		if v.Type == TypeMap && v.Elem != nil {
+			switch v.Elem.(type) {
+			case *Resource:
+				return fmt.Errorf("%s: TypeMap with Elem *Resource not supported,"+
+					"use TypeList/TypeSet with Elem *Resource or TypeMap with Elem *Schema", k)
+			}
+		}
+
 		if computedOnly {
 			if len(v.AtLeastOneOf) > 0 {
 				return fmt.Errorf("%s: AtLeastOneOf is for configurable attributes,"+
