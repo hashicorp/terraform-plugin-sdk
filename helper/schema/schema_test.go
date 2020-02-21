@@ -3636,6 +3636,24 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true, // in *schema.Resource with ConfigMode of attribute, so must also have ConfigMode of attribute
 		},
+
+		"TypeMap with Elem *Resource": {
+			map[string]*Schema{
+				"map": &Schema{
+					Type:     TypeMap,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"keynothandled": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
 	}
 
 	for tn, tc := range cases {
