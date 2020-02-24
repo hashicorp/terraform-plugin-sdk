@@ -6537,7 +6537,7 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 			},
 
 			Config: map[string]interface{}{},
-			Err:    true,
+			Err:    false,
 		},
 
 		"Only Unknown Variable Value": {
@@ -6614,6 +6614,277 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 			},
 
 			Err: false,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			c := terraform.NewResourceConfigRaw(tc.Config)
+			_, es := schemaMap(tc.Schema).Validate(c)
+			if len(es) > 0 != tc.Err {
+				if len(es) == 0 {
+					t.Fatalf("expected error")
+				}
+
+				for _, e := range es {
+					t.Fatalf("didn't expect error, got error: %+v", e)
+				}
+
+				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestValidateAllOfAttributes(t *testing.T) {
+	cases := map[string]struct {
+		Key    string
+		Schema map[string]*Schema
+		Config map[string]interface{}
+		Err    bool
+	}{
+
+		"two attributes specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": true,
+				"blacklist": true,
+			},
+			Err: false,
+		},
+
+		"one attributes specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": true,
+			},
+			Err: true,
+		},
+
+		"no attributes specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{},
+			Err:    false,
+		},
+
+		"two attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist":  true,
+				"purplelist": true,
+			},
+			Err: false,
+		},
+
+		"three attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist":  true,
+				"purplelist": true,
+				"blacklist":  true,
+			},
+			Err: false,
+		},
+
+		"one attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"purplelist": true,
+			},
+			Err: true,
+		},
+
+		"no attributes of three specified": {
+			Key: "whitelist",
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+			},
+
+			Config: map[string]interface{}{},
+			Err:    false,
+		},
+
+		"Only Unknown Variable Value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": hcl2shim.UnknownVariableValue,
+			},
+
+			Err: true,
+		},
+
+		"only unknown list value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+					AllOf:    []string{"whitelist", "blacklist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+					AllOf:    []string{"whitelist", "blacklist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": []interface{}{hcl2shim.UnknownVariableValue},
+			},
+
+			Err: true,
+		},
+
+		"Unknown Variable Value and Known Value": {
+			Schema: map[string]*Schema{
+				"whitelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"blacklist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+				"purplelist": &Schema{
+					Type:     TypeBool,
+					Optional: true,
+					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": hcl2shim.UnknownVariableValue,
+				"blacklist": true,
+			},
+
+			Err: true,
 		},
 	}
 
