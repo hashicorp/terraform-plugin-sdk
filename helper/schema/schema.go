@@ -223,13 +223,13 @@ type Schema struct {
 	//
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
-	// 
-	// AllOf is a set of schema keys that must be set simultaneously. This 
+	//
+	// AllOf is a set of schema keys that must be set simultaneously. This
 	// setting conflicts with ExactlyOneOf or AtLeastOneOf
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
-	AllOf 		  []string
+	AllOf         []string
 
 	// When Deprecated is set, this attribute is deprecated.
 	//
@@ -1521,7 +1521,7 @@ func validateAllOfAttribute(
 	if len(schema.AllOf) == 0 {
 		return nil
 	}
-	
+
 	allKeys := removeDuplicates(append(schema.AllOf, k))
 	sort.Strings(allKeys)
 
