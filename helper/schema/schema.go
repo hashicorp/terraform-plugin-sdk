@@ -223,9 +223,13 @@ type Schema struct {
 	//
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
+	// 
+	// AllOf is a set of schema keys that must be set simultaneously. This 
+	// setting conflicts with ExactlyOneOf or AtLeastOneOf
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
+	AllOf 		  []string
 
 	// When Deprecated is set, this attribute is deprecated.
 	//
@@ -770,6 +774,16 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap)
 			if err != nil {
 				return fmt.Errorf("ConflictsWith: %+v", err)
+			}
+		}
+
+		if len(v.AllOf) > 0 {
+			if len(v.ExactlyOneOf) > 0 || len(v.AtLeastOneOf) > 0 {
+				return fmt.Errorf("AllOf cannot be used simultaneously with ExactlyOneOf or AtLeastOneOf")
+			}
+			err := checkKeysAgainstSchemaFlags(k, v.AllOf, topSchemaMap)
+			if err != nil {
+				return fmt.Errorf("AllOf: %+v", err)
 			}
 		}
 
@@ -1390,7 +1404,20 @@ func (m schemaMap) validate(
 		ok = raw != nil
 	}
 
-	err := validateExactlyOneAttribute(k, schema, c)
+	if !ok {
+		if schema.Required {
+			return nil, []error{fmt.Errorf(
+				"%q: required field is not set", k)}
+		}
+		return nil, nil
+	}
+
+	err := validateAllOfAttribute(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	err = validateExactlyOneAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1398,14 +1425,6 @@ func (m schemaMap) validate(
 	err = validateAtLeastOneAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
-	}
-
-	if !ok {
-		if schema.Required {
-			return nil, []error{fmt.Errorf(
-				"%q: required field is not set", k)}
-		}
-		return nil, nil
 	}
 
 	if !schema.Required && !schema.Optional {
@@ -1492,6 +1511,27 @@ func removeDuplicates(elements []string) []string {
 	}
 
 	return result
+}
+
+func validateAllOfAttribute(
+	k string,
+	schema *Schema,
+	c *terraform.ResourceConfig) error {
+
+	if len(schema.AllOf) == 0 {
+		return nil
+	}
+	
+	allKeys := removeDuplicates(append(schema.AllOf, k))
+	sort.Strings(allKeys)
+
+	for _, allOfKey := range allKeys {
+		if _, ok := c.Get(allOfKey); !ok {
+			return fmt.Errorf("%q: all of `%s` must be specified", k, strings.Join(allKeys, ","))
+		}
+	}
+
+	return nil
 }
 
 func validateExactlyOneAttribute(
