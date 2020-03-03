@@ -1,6 +1,13 @@
+# 1.8.0 (Unreleased)
+
+FEATURES:
+
+* helper/validation: `StringNotInSlice` [GH-341]
+
 # 1.7.0 (February 12, 2020)
 
 FEATURES:
+
 * Binary acceptance test driver ([#262](https://github.com/hashicorp/terraform-plugin-sdk/issues/262))
 
 DEPRECATED:
