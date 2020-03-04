@@ -932,11 +932,19 @@ func TestCheckNoResourceAttr_empty(t *testing.T) {
 
 func TestTestCheckResourceAttrPair(t *testing.T) {
 	tests := map[string]struct {
-		state   *terraform.State
-		wantErr string
+		nameFirst  string
+		keyFirst   string
+		nameSecond string
+		keySecond  string
+		state      *terraform.State
+		wantErr    string
 	}{
-		"exist match": {
-			&terraform.State{
+		"self": {
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.a",
+			keySecond:  "a",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -959,10 +967,44 @@ func TestTestCheckResourceAttrPair(t *testing.T) {
 					},
 				},
 			},
-			``,
+			wantErr: `comparing self: resource test.a attribute a`,
+		},
+		"exist match": {
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.b",
+			keySecond:  "b",
+			state: &terraform.State{
+				Modules: []*terraform.ModuleState{
+					{
+						Path: []string{"root"},
+						Resources: map[string]*terraform.ResourceState{
+							"test.a": {
+								Primary: &terraform.InstanceState{
+									Attributes: map[string]string{
+										"a": "boop",
+									},
+								},
+							},
+							"test.b": {
+								Primary: &terraform.InstanceState{
+									Attributes: map[string]string{
+										"b": "boop",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: ``,
 		},
 		"nonexist match": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.b",
+			keySecond:  "b",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -981,10 +1023,14 @@ func TestTestCheckResourceAttrPair(t *testing.T) {
 					},
 				},
 			},
-			``,
+			wantErr: ``,
 		},
 		"exist nonmatch": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.b",
+			keySecond:  "b",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1007,10 +1053,14 @@ func TestTestCheckResourceAttrPair(t *testing.T) {
 					},
 				},
 			},
-			`test.a: Attribute 'a' expected "boop", got "beep"`,
+			wantErr: `test.a: Attribute 'a' expected "boop", got "beep"`,
 		},
 		"inconsistent exist a": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.b",
+			keySecond:  "b",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1031,10 +1081,14 @@ func TestTestCheckResourceAttrPair(t *testing.T) {
 					},
 				},
 			},
-			`test.a: Attribute "a" is "beep", but "b" is not set in test.b`,
+			wantErr: `test.a: Attribute "a" is "beep", but "b" is not set in test.b`,
 		},
 		"inconsistent exist b": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a",
+			nameSecond: "test.b",
+			keySecond:  "b",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1055,40 +1109,14 @@ func TestTestCheckResourceAttrPair(t *testing.T) {
 					},
 				},
 			},
-			`test.a: Attribute "a" not set, but "b" is set in test.b as "boop"`,
+			wantErr: `test.a: Attribute "a" not set, but "b" is set in test.b as "boop"`,
 		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			fn := TestCheckResourceAttrPair("test.a", "a", "test.b", "b")
-			err := fn(test.state)
-
-			if test.wantErr != "" {
-				if err == nil {
-					t.Fatalf("succeeded; want error\nwant: %s", test.wantErr)
-				}
-				if got, want := err.Error(), test.wantErr; got != want {
-					t.Fatalf("wrong error\ngot:  %s\nwant: %s", got, want)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("failed; want success\ngot: %s", err.Error())
-			}
-		})
-	}
-}
-
-func TestTestCheckResourceAttrPairCount(t *testing.T) {
-	tests := map[string]struct {
-		state   *terraform.State
-		attr    string
-		wantErr string
-	}{
 		"unset and 0 equal list": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a.#",
+			nameSecond: "test.b",
+			keySecond:  "a.#",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1109,11 +1137,14 @@ func TestTestCheckResourceAttrPairCount(t *testing.T) {
 					},
 				},
 			},
-			"a.#",
-			``,
+			wantErr: ``,
 		},
 		"unset and 0 equal map": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a.%",
+			nameSecond: "test.b",
+			keySecond:  "a.%",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1134,11 +1165,14 @@ func TestTestCheckResourceAttrPairCount(t *testing.T) {
 					},
 				},
 			},
-			"a.%",
-			``,
+			wantErr: ``,
 		},
 		"count equal": {
-			&terraform.State{
+			nameFirst:  "test.a",
+			keyFirst:   "a.%",
+			nameSecond: "test.b",
+			keySecond:  "a.%",
+			state: &terraform.State{
 				Modules: []*terraform.ModuleState{
 					{
 						Path: []string{"root"},
@@ -1160,14 +1194,13 @@ func TestTestCheckResourceAttrPairCount(t *testing.T) {
 					},
 				},
 			},
-			"a.%",
-			``,
+			wantErr: ``,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			fn := TestCheckResourceAttrPair("test.a", test.attr, "test.b", test.attr)
+			fn := TestCheckResourceAttrPair(test.nameFirst, test.keyFirst, test.nameSecond, test.keySecond)
 			err := fn(test.state)
 
 			if test.wantErr != "" {
