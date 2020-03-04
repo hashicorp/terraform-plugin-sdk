@@ -3,7 +3,7 @@ package objchange
 import (
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
 // NormalizeObjectFromLegacySDK takes an object that may have been generated

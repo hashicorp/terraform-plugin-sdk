@@ -7,8 +7,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 var (

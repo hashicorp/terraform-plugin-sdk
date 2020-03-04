@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/meta"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 )
 
 func TestUserAgentAppendViaEnvVar(t *testing.T) {

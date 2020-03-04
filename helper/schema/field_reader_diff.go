@@ -6,7 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // DiffFieldReader reads fields out of a diff structures.

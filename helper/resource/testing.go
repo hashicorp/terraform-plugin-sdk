@@ -16,11 +16,11 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
 
-	"github.com/hashicorp/terraform-plugin-sdk/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // flagSweep is a flag available when running tests on the command line. It

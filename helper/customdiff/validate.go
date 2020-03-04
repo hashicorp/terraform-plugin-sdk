@@ -3,7 +3,7 @@ package customdiff
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // ValueChangeValidationFunc is a function type that validates the difference

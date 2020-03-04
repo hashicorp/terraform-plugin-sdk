@@ -8,8 +8,8 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/hashicorp/terraform-plugin-sdk/internal/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var ReservedProviderFields = []string{
