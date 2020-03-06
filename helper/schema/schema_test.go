@@ -6457,3 +6457,47 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 		})
 	}
 }
+
+func Test_panicOnErrDefaultTrue(t *testing.T) {
+	oldEnv := os.Getenv(PanicOnErr)
+
+	os.Setenv(PanicOnErr, "")
+	if !schemaMap(nil).panicOnError() {
+		t.Fatalf("Empty %s should default to true", PanicOnErr)
+	}
+
+	os.Setenv(PanicOnErr, oldEnv)
+}
+
+func Test_panicOnErrParsableTrue(t *testing.T) {
+	oldEnv := os.Getenv(PanicOnErr)
+
+	os.Setenv(PanicOnErr, "true")
+	if !schemaMap(nil).panicOnError() {
+		t.Fatalf("Parsable truthy %s should return true", PanicOnErr)
+	}
+
+	os.Setenv(PanicOnErr, oldEnv)
+}
+
+func Test_panicOnErrParsableFalse(t *testing.T) {
+	oldEnv := os.Getenv(PanicOnErr)
+
+	os.Setenv(PanicOnErr, "false")
+	if schemaMap(nil).panicOnError() {
+		t.Fatalf("Parsable falsy %s should return false", PanicOnErr)
+	}
+
+	os.Setenv(PanicOnErr, oldEnv)
+}
+
+func Test_panicOnErrUnparsableDefaultTrue(t *testing.T) {
+	oldEnv := os.Getenv(PanicOnErr)
+
+	os.Setenv(PanicOnErr, "FOO")
+	if !schemaMap(nil).panicOnError() {
+		t.Fatalf("Any set value for %s should return true", PanicOnErr)
+	}
+
+	os.Setenv(PanicOnErr, oldEnv)
+}

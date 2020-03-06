@@ -14,6 +14,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"regexp"
@@ -411,10 +412,18 @@ type InternalMap = schemaMap
 type schemaMap map[string]*Schema
 
 func (m schemaMap) panicOnError() bool {
-	if os.Getenv(PanicOnErr) != "" {
+	if env := os.Getenv(PanicOnErr); env == "" {
+		// default to true
+		return true
+	} else if b, err := strconv.ParseBool(env); err == nil {
+		// allow opt out
+		return b
+	} else {
+		// default to true for anything set, this is backwards compatible
+		// with the previous implementation
+		log.Printf("[WARN] %s=%s not parsable: %s, defaulting to true", PanicOnErr, env, err)
 		return true
 	}
-	return false
 }
 
 // Data returns a ResourceData for the given schema, state, and diff.

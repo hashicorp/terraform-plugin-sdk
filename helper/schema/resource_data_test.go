@@ -2232,7 +2232,7 @@ func TestResourceDataSet(t *testing.T) {
 	}
 
 	oldEnv := os.Getenv(PanicOnErr)
-	os.Setenv(PanicOnErr, "")
+	os.Setenv(PanicOnErr, "false")
 	defer os.Setenv(PanicOnErr, oldEnv)
 
 	for i, tc := range cases {
