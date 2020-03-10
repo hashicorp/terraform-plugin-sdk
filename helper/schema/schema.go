@@ -138,9 +138,9 @@ type Schema struct {
 	Default     interface{}
 	DefaultFunc SchemaDefaultFunc
 
-	// Description is used as the description for docs or asking for user
-	// input. It should be relatively short (a few sentences max) and should
-	// be formatted to fit a CLI.
+	// Description is used as the description for docs, the language server and
+	// other user facing usage. It can be plain-text or markdown depending on the
+	// global DescriptionKind setting.
 	Description string
 
 	// InputDefault is the default value to use for when inputs are requested.
