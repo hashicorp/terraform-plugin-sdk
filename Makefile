@@ -17,7 +17,6 @@ generate:
 protobuf:
 	bash scripts/protobuf-check.sh
 	bash internal/tfplugin5/generate.sh
-	bash internal/plans/internal/planproto/generate.sh
 
 fmt:
 	gofmt -w $(GOFMT_FILES)
