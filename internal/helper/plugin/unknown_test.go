@@ -68,7 +68,7 @@ func TestSetUnknowns(t *testing.T) {
 			// if the object has no computed attributes, it should stay null
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": &configschema.Attribute{
+					"foo": {
 						Type: cty.String,
 					},
 				},
@@ -104,7 +104,7 @@ func TestSetUnknowns(t *testing.T) {
 			// the set value should remain null
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": &configschema.Attribute{
+					"foo": {
 						Type:     cty.String,
 						Computed: true,
 					},

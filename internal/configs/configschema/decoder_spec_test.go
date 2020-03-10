@@ -204,13 +204,13 @@ func TestBlockDecoderSpec(t *testing.T) {
 					&hcl.Block{
 						Type:        "map",
 						Labels:      []string{"foo"},
-						LabelRanges: []hcl.Range{hcl.Range{}},
+						LabelRanges: []hcl.Range{{}},
 						Body:        hcl.EmptyBody(),
 					},
 					&hcl.Block{
 						Type:        "map",
 						Labels:      []string{"bar"},
-						LabelRanges: []hcl.Range{hcl.Range{}},
+						LabelRanges: []hcl.Range{{}},
 						Body:        hcl.EmptyBody(),
 					},
 					&hcl.Block{
@@ -291,13 +291,13 @@ func TestBlockDecoderSpec(t *testing.T) {
 					&hcl.Block{
 						Type:        "map",
 						Labels:      []string{"foo"},
-						LabelRanges: []hcl.Range{hcl.Range{}},
+						LabelRanges: []hcl.Range{{}},
 						Body:        hcl.EmptyBody(),
 					},
 					&hcl.Block{
 						Type:        "map",
 						Labels:      []string{"bar"},
-						LabelRanges: []hcl.Range{hcl.Range{}},
+						LabelRanges: []hcl.Range{{}},
 						Body:        hcl.EmptyBody(),
 					},
 				},

@@ -96,7 +96,7 @@ func (p *Provider) InternalValidate() error {
 	}
 
 	// Provider-specific checks
-	for k, _ := range sm {
+	for k := range sm {
 		if isReservedProviderFieldName(k) {
 			return fmt.Errorf("%s is a reserved field name for a provider", k)
 		}
@@ -375,7 +375,7 @@ func (p *Provider) ValidateDataSource(
 // provider implements.
 func (p *Provider) DataSources() []terraform.DataSource {
 	keys := make([]string, 0, len(p.DataSourcesMap))
-	for k, _ := range p.DataSourcesMap {
+	for k := range p.DataSourcesMap {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
