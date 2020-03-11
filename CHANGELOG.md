@@ -2,7 +2,7 @@
 
 DEPRECATED:
 
-* helper/schema: `ResourceData.GetOkExists` [GH-350]
+* helper/schema: `ResourceData.GetOkExists` will not be removed in the next major version unless a suitable replacement or alternative can be prescribed [GH-350]
 
 # 1.8.0 (March 11, 2020)
 
