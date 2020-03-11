@@ -1,3 +1,9 @@
+# 1.9.0 (Unreleased)
+
+DEPRECATED:
+
+* helper/schema: `ResourceData.GetOkExists` [GH-350]
+
 # 1.8.0 (March 11, 2020)
 
 FEATURES:
