@@ -1,8 +1,8 @@
-# 1.8.0 (Unreleased)
+# 1.8.0 (March 11, 2020)
 
 FEATURES:
 
-* helper/validation: `StringNotInSlice` [GH-341]
+* helper/validation: `StringNotInSlice` ([#341](https://github.com/hashicorp/terraform-plugin-sdk/issues/341))
 
 # 1.7.0 (February 12, 2020)
 
