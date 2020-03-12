@@ -291,10 +291,10 @@ func TestContext2Apply_resourceDependsOnModuleStateOnly(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.a": &ResourceState{
+					"aws_instance.a": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "parent",
@@ -304,10 +304,10 @@ func TestContext2Apply_resourceDependsOnModuleStateOnly(t *testing.T) {
 					},
 				},
 			},
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.child": &ResourceState{
+					"aws_instance.child": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "child",
@@ -812,10 +812,10 @@ func TestContext2Apply_createBeforeDestroy(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -869,10 +869,10 @@ func TestContext2Apply_createBeforeDestroyUpdate(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -927,10 +927,10 @@ func TestContext2Apply_createBeforeDestroy_dependsNonCBD(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -940,7 +940,7 @@ func TestContext2Apply_createBeforeDestroy_dependsNonCBD(t *testing.T) {
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1000,10 +1000,10 @@ func TestContext2Apply_createBeforeDestroy_hook(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -1073,10 +1073,10 @@ func TestContext2Apply_createBeforeDestroy_deposedCount(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar.0": &ResourceState{
+					"aws_instance.bar.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -1084,12 +1084,12 @@ func TestContext2Apply_createBeforeDestroy_deposedCount(t *testing.T) {
 						},
 
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
 					},
-					"aws_instance.bar.1": &ResourceState{
+					"aws_instance.bar.1": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -1097,7 +1097,7 @@ func TestContext2Apply_createBeforeDestroy_deposedCount(t *testing.T) {
 						},
 
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "bar",
 							},
 						},
@@ -1152,17 +1152,17 @@ func TestContext2Apply_createBeforeDestroy_deposedOnly(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
 						},
 
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
@@ -1208,10 +1208,10 @@ func TestContext2Apply_destroyComputed(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1265,10 +1265,10 @@ func testContext2Apply_destroyDependsOn(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "foo",
@@ -1276,7 +1276,7 @@ func testContext2Apply_destroyDependsOn(t *testing.T) {
 						},
 					},
 
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "bar",
@@ -1342,10 +1342,10 @@ func testContext2Apply_destroyDependsOnStateOnly(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "foo",
@@ -1354,7 +1354,7 @@ func testContext2Apply_destroyDependsOnStateOnly(t *testing.T) {
 						Provider: "provider.aws",
 					},
 
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "bar",
@@ -1422,10 +1422,10 @@ func testContext2Apply_destroyDependsOnStateOnlyModule(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "foo",
@@ -1434,7 +1434,7 @@ func testContext2Apply_destroyDependsOnStateOnlyModule(t *testing.T) {
 						Provider: "provider.aws",
 					},
 
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:         "bar",
@@ -1529,10 +1529,10 @@ func TestContext2Apply_destroyData(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"data.null_data_source.testing": &ResourceState{
+					"data.null_data_source.testing": {
 						Type: "null_data_source",
 						Primary: &InstanceState{
 							ID: "-",
@@ -1599,16 +1599,16 @@ func TestContext2Apply_destroySkipsCBD(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1647,10 +1647,10 @@ func TestContext2Apply_destroyModuleVarProviderConfig(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1736,10 +1736,10 @@ func TestContext2Apply_destroyCrossProviders(t *testing.T) {
 func getContextForApply_destroyCrossProviders(t *testing.T, m *configs.Config, providerFactories map[string]providers.Factory) *Context {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.shared": &ResourceState{
+					"aws_instance.shared": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "remote-2652591293",
@@ -1751,10 +1751,10 @@ func getContextForApply_destroyCrossProviders(t *testing.T, m *configs.Config, p
 					},
 				},
 			},
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_vpc.bar": &ResourceState{
+					"aws_vpc.bar": {
 						Type: "aws_vpc",
 						Primary: &InstanceState{
 							ID: "vpc-aaabbb12",
@@ -1829,7 +1829,7 @@ func TestContext2Apply_badDiff(t *testing.T) {
 	p.DiffFn = func(*InstanceInfo, *InstanceState, *ResourceConfig) (*InstanceDiff, error) {
 		return &InstanceDiff{
 			Attributes: map[string]*ResourceAttrDiff{
-				"newp": &ResourceAttrDiff{
+				"newp": {
 					Old:         "",
 					New:         "",
 					NewComputed: true,
@@ -1940,10 +1940,10 @@ func TestContext2Apply_cancelBlock(t *testing.T) {
 	p.DiffFn = func(*InstanceInfo, *InstanceState, *ResourceConfig) (*InstanceDiff, error) {
 		return &InstanceDiff{
 			Attributes: map[string]*ResourceAttrDiff{
-				"id": &ResourceAttrDiff{
+				"id": {
 					New: "foo",
 				},
-				"num": &ResourceAttrDiff{
+				"num": {
 					New: "2",
 				},
 			},
@@ -2173,10 +2173,10 @@ func TestContext2Apply_countDecrease(t *testing.T) {
 	p.ApplyFn = testApplyFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2186,7 +2186,7 @@ func TestContext2Apply_countDecrease(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.1": &ResourceState{
+					"aws_instance.foo.1": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2196,7 +2196,7 @@ func TestContext2Apply_countDecrease(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.2": &ResourceState{
+					"aws_instance.foo.2": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2242,10 +2242,10 @@ func TestContext2Apply_countDecreaseToOneX(t *testing.T) {
 	p.DiffFn = testDiffFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2255,13 +2255,13 @@ func TestContext2Apply_countDecreaseToOneX(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.1": &ResourceState{
+					"aws_instance.foo.1": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
 						},
 					},
-					"aws_instance.foo.2": &ResourceState{
+					"aws_instance.foo.2": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2309,10 +2309,10 @@ func TestContext2Apply_countDecreaseToOneCorrupted(t *testing.T) {
 	p.DiffFn = testDiffFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2322,7 +2322,7 @@ func TestContext2Apply_countDecreaseToOneCorrupted(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -2374,10 +2374,10 @@ func TestContext2Apply_countTainted(t *testing.T) {
 	p.ApplyFn = testApplyFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2667,20 +2667,20 @@ func TestContext2Apply_moduleDestroyOrder(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
 					"aws_instance.b": resourceState("aws_instance", "b"),
 				},
 			},
 
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
 					"aws_instance.a": resourceState("aws_instance", "a"),
 				},
 				Outputs: map[string]*OutputState{
-					"a_output": &OutputState{
+					"a_output": {
 						Type:      "string",
 						Sensitive: false,
 						Value:     "a",
@@ -2876,10 +2876,10 @@ func TestContext2Apply_moduleOrphanInheritAlias(t *testing.T) {
 	// Create a state with an orphan module
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2934,10 +2934,10 @@ func TestContext2Apply_moduleOrphanProvider(t *testing.T) {
 	// Create a state with an orphan module
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -2985,10 +2985,10 @@ func TestContext2Apply_moduleOrphanGrandchildProvider(t *testing.T) {
 	// Create a state with an orphan module that is nested (grandchild)
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "parent", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -3187,10 +3187,10 @@ func TestContext2Apply_moduleProviderCloseNested(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: []string{"root", "child", "subchild"},
 					Resources: map[string]*ResourceState{
-						"aws_instance.foo": &ResourceState{
+						"aws_instance.foo": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "bar",
@@ -3225,10 +3225,10 @@ func TestContext2Apply_moduleVarRefExisting(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -4331,15 +4331,15 @@ func TestContext2Apply_outputOrphan(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Outputs: map[string]*OutputState{
-					"foo": &OutputState{
+					"foo": {
 						Type:      "string",
 						Sensitive: false,
 						Value:     "bar",
 					},
-					"bar": &OutputState{
+					"bar": {
 						Type:      "string",
 						Sensitive: false,
 						Value:     "baz",
@@ -4383,14 +4383,14 @@ func TestContext2Apply_outputOrphanModule(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Outputs: map[string]*OutputState{
-					"foo": &OutputState{
+					"foo": {
 						Type:  "string",
 						Value: "bar",
 					},
-					"bar": &OutputState{
+					"bar": {
 						Type:  "string",
 						Value: "baz",
 					},
@@ -4773,10 +4773,10 @@ func TestContext2Apply_provisionerFail_createBeforeDestroy(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -4823,10 +4823,10 @@ func TestContext2Apply_error_createBeforeDestroy(t *testing.T) {
 	p := testProvider("aws")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -4874,10 +4874,10 @@ func TestContext2Apply_errorDestroy_createBeforeDestroy(t *testing.T) {
 	p := testProvider("aws")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -4949,10 +4949,10 @@ func TestContext2Apply_multiDepose_createBeforeDestroy(t *testing.T) {
 	ps := map[string]providers.Factory{"aws": testProviderFuncFixed(p)}
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type:    "aws_instance",
 						Primary: &InstanceState{ID: "foo"},
 					},
@@ -5249,10 +5249,10 @@ func TestContext2Apply_provisionerDestroy(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5307,10 +5307,10 @@ func TestContext2Apply_provisionerDestroyFail(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5381,10 +5381,10 @@ func TestContext2Apply_provisionerDestroyFailContinue(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5457,10 +5457,10 @@ func TestContext2Apply_provisionerDestroyFailContinueFail(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5537,10 +5537,10 @@ func TestContext2Apply_provisionerDestroyTainted(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -5609,10 +5609,10 @@ func TestContext2Apply_provisionerDestroyModule(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5671,10 +5671,10 @@ func TestContext2Apply_provisionerDestroyRef(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5685,7 +5685,7 @@ func TestContext2Apply_provisionerDestroyRef(t *testing.T) {
 						Provider: "provider.aws",
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -5741,17 +5741,17 @@ func TestContext2Apply_provisionerDestroyRefInvalid(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -6177,10 +6177,10 @@ func TestContext2Apply_outputDiffVars(t *testing.T) {
 	p := testProvider("aws")
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.baz": &ResourceState{ // This one is not in config, so should be destroyed
+					"aws_instance.baz": { // This one is not in config, so should be destroyed
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -6445,10 +6445,10 @@ func TestContext2Apply_destroyNestedModule(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child", "subchild"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -6495,10 +6495,10 @@ func TestContext2Apply_destroyDeeplyNestedModule(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child", "subchild", "subsubchild"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -6956,10 +6956,10 @@ func TestContext2Apply_destroyOrphan(t *testing.T) {
 	p := testProvider("aws")
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.baz": &ResourceState{
+					"aws_instance.baz": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -7035,10 +7035,10 @@ func TestContext2Apply_destroyTaintedProvisioner(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -7384,10 +7384,10 @@ func TestContext2Apply_errorPartial(t *testing.T) {
 	p := testProvider("aws")
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -7502,10 +7502,10 @@ func TestContext2Apply_hookOrphan(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -7572,7 +7572,7 @@ func TestContext2Apply_idAttr(t *testing.T) {
 	p.DiffFn = func(*InstanceInfo, *InstanceState, *ResourceConfig) (*InstanceDiff, error) {
 		return &InstanceDiff{
 			Attributes: map[string]*ResourceAttrDiff{
-				"num": &ResourceAttrDiff{
+				"num": {
 					New: "42",
 				},
 			},
@@ -7797,10 +7797,10 @@ func TestContext2Apply_taintX(t *testing.T) {
 	p.DiffFn = testDiffFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -7854,10 +7854,10 @@ func TestContext2Apply_taintDep(t *testing.T) {
 	p.DiffFn = testDiffFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -7868,7 +7868,7 @@ func TestContext2Apply_taintDep(t *testing.T) {
 							Tainted: true,
 						},
 					},
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -7918,10 +7918,10 @@ func TestContext2Apply_taintDepRequiresNew(t *testing.T) {
 	p.DiffFn = testDiffFn
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -7932,7 +7932,7 @@ func TestContext2Apply_taintDepRequiresNew(t *testing.T) {
 							Tainted: true,
 						},
 					},
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -8107,7 +8107,7 @@ func TestContext2Apply_targetedDestroy(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "i-bcd345"),
@@ -8186,7 +8186,7 @@ func TestContext2Apply_destroyProvisionerWithLocals(t *testing.T) {
 		},
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: []string{"root"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "1234"),
@@ -8283,7 +8283,7 @@ func TestContext2Apply_destroyProvisionerWithMultipleLocals(t *testing.T) {
 		},
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: []string{"root"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "1234"),
@@ -8334,7 +8334,7 @@ func TestContext2Apply_destroyProvisionerWithOutput(t *testing.T) {
 		},
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: []string{"root"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "1"),
@@ -8346,7 +8346,7 @@ func TestContext2Apply_destroyProvisionerWithOutput(t *testing.T) {
 						},
 					},
 				},
-				&ModuleState{
+				{
 					Path: []string{"root", "mod"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.baz": resourceState("aws_instance", "3"),
@@ -8354,7 +8354,7 @@ func TestContext2Apply_destroyProvisionerWithOutput(t *testing.T) {
 					// state needs to be properly initialized
 					Outputs: map[string]*OutputState{},
 				},
-				&ModuleState{
+				{
 					Path: []string{"root", "mod2"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.bar": resourceState("aws_instance", "2"),
@@ -8407,7 +8407,7 @@ func TestContext2Apply_targetedDestroyCountDeps(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "i-bcd345"),
@@ -8451,14 +8451,14 @@ func TestContext2Apply_targetedDestroyModule(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "i-bcd345"),
 						"aws_instance.bar": resourceState("aws_instance", "i-abc123"),
 					},
 				},
-				&ModuleState{
+				{
 					Path: []string{"root", "child"},
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "i-bcd345"),
@@ -8513,7 +8513,7 @@ func TestContext2Apply_targetedDestroyCountIndex(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo.0": resourceState("aws_instance", "i-bcd345"),
@@ -8790,10 +8790,10 @@ func TestContext2Apply_targetedResourceOrphanModule(t *testing.T) {
 	// Create a state with an orphan module
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type:     "aws_instance",
 						Primary:  &InstanceState{},
 						Provider: "provider.aws",
@@ -8984,10 +8984,10 @@ func TestContext2Apply_createBefore_depends(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -8996,7 +8996,7 @@ func TestContext2Apply_createBefore_depends(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.lb": &ResourceState{
+					"aws_instance.lb": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -9099,10 +9099,10 @@ func TestContext2Apply_singleDestroy(t *testing.T) {
 	p.DiffFn = testDiffFn
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -9111,7 +9111,7 @@ func TestContext2Apply_singleDestroy(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.lb": &ResourceState{
+					"aws_instance.lb": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -9326,10 +9326,10 @@ func TestContext2Apply_targetedWithTaintedInState(t *testing.T) {
 		},
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.ifailedprovisioners": &ResourceState{
+						"aws_instance.ifailedprovisioners": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID:      "ifailedprovisioners",
@@ -9446,7 +9446,7 @@ func TestContext2Apply_ignoreChangesWithDep(t *testing.T) {
 			newAmi, _ := c.Get("ami")
 			return &InstanceDiff{
 				Attributes: map[string]*ResourceAttrDiff{
-					"ami": &ResourceAttrDiff{
+					"ami": {
 						Old:         s.Attributes["ami"],
 						New:         newAmi.(string),
 						RequiresNew: true,
@@ -9462,10 +9462,10 @@ func TestContext2Apply_ignoreChangesWithDep(t *testing.T) {
 	}
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "i-abc123",
@@ -9475,7 +9475,7 @@ func TestContext2Apply_ignoreChangesWithDep(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.1": &ResourceState{
+					"aws_instance.foo.1": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "i-bcd234",
@@ -9485,7 +9485,7 @@ func TestContext2Apply_ignoreChangesWithDep(t *testing.T) {
 							},
 						},
 					},
-					"aws_eip.foo.0": &ResourceState{
+					"aws_eip.foo.0": {
 						Type: "aws_eip",
 						Primary: &InstanceState{
 							ID: "eip-abc123",
@@ -9495,7 +9495,7 @@ func TestContext2Apply_ignoreChangesWithDep(t *testing.T) {
 							},
 						},
 					},
-					"aws_eip.foo.1": &ResourceState{
+					"aws_eip.foo.1": {
 						Type: "aws_eip",
 						Primary: &InstanceState{
 							ID: "eip-bcd234",
@@ -9877,16 +9877,16 @@ func TestContext2Apply_destroyWithLocals(t *testing.T) {
 	}
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Outputs: map[string]*OutputState{
-					"name": &OutputState{
+					"name": {
 						Type:  "string",
 						Value: "test-bar",
 					},
 				},
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -9998,16 +9998,16 @@ func TestContext2Apply_destroyWithProviders(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 			},
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 			},
-			&ModuleState{
+			{
 				Path: []string{"root", "mod", "removed"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.child": &ResourceState{
+					"aws_instance.child": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -10073,10 +10073,10 @@ func TestContext2Apply_providersFromState(t *testing.T) {
 			name: "add implicit provider",
 			state: MustShimLegacyState(&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root"},
 						Resources: map[string]*ResourceState{
-							"aws_instance.a": &ResourceState{
+							"aws_instance.a": {
 								Type: "aws_instance",
 								Primary: &InstanceState{
 									ID: "bar",
@@ -10096,10 +10096,10 @@ func TestContext2Apply_providersFromState(t *testing.T) {
 			name: "add aliased provider",
 			state: MustShimLegacyState(&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root"},
 						Resources: map[string]*ResourceState{
-							"aws_instance.a": &ResourceState{
+							"aws_instance.a": {
 								Type: "aws_instance",
 								Primary: &InstanceState{
 									ID: "bar",
@@ -10119,10 +10119,10 @@ func TestContext2Apply_providersFromState(t *testing.T) {
 			name: "add unaliased module provider",
 			state: MustShimLegacyState(&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root", "child"},
 						Resources: map[string]*ResourceState{
-							"aws_instance.a": &ResourceState{
+							"aws_instance.a": {
 								Type: "aws_instance",
 								Primary: &InstanceState{
 									ID: "bar",
@@ -10186,7 +10186,7 @@ func TestContext2Apply_plannedInterpolatedCount(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
 					"aws_instance.test": {
@@ -10248,7 +10248,7 @@ func TestContext2Apply_plannedDestroyInterpolatedCount(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
 					"aws_instance.a.0": {
@@ -10325,7 +10325,7 @@ func TestContext2Apply_scaleInMultivarRef(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
 					"aws_instance.one": {

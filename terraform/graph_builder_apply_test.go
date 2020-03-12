@@ -243,10 +243,10 @@ func TestApplyGraphBuilder_destroyStateOnly(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"test_object.A": &ResourceState{
+					"test_object.A": {
 						Type: "test_object",
 						Primary: &InstanceState{
 							ID:         "foo",
@@ -255,7 +255,7 @@ func TestApplyGraphBuilder_destroyStateOnly(t *testing.T) {
 						Provider: "provider.test",
 					},
 
-					"test_object.B": &ResourceState{
+					"test_object.B": {
 						Type: "test_object",
 						Primary: &InstanceState{
 							ID:         "bar",

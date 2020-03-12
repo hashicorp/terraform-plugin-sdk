@@ -910,7 +910,7 @@ func TestFunctions(t *testing.T) {
 	for _, impureFunc := range impureFunctions {
 		delete(allFunctions, impureFunc)
 	}
-	for f, _ := range scope.Functions() {
+	for f := range scope.Functions() {
 		if _, ok := tests[f]; !ok {
 			t.Errorf("Missing test for function %s\n", f)
 		}

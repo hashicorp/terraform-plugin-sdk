@@ -20,7 +20,7 @@ func TestBackendPrepare(t *testing.T) {
 			"Basic required field",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Required: true,
 						Type:     TypeString,
 					},
@@ -35,7 +35,7 @@ func TestBackendPrepare(t *testing.T) {
 			"Null config",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Required: true,
 						Type:     TypeString,
 					},
@@ -50,7 +50,7 @@ func TestBackendPrepare(t *testing.T) {
 			"Basic required field set",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Required: true,
 						Type:     TypeString,
 					},
@@ -69,7 +69,7 @@ func TestBackendPrepare(t *testing.T) {
 			"unused default",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Optional: true,
 						Type:     TypeString,
 						Default:  "baz",
@@ -89,7 +89,7 @@ func TestBackendPrepare(t *testing.T) {
 			"default",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Type:     TypeString,
 						Optional: true,
 						Default:  "baz",
@@ -107,7 +107,7 @@ func TestBackendPrepare(t *testing.T) {
 			"default func",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Type:     TypeString,
 						Optional: true,
 						DefaultFunc: func() (interface{}, error) {
@@ -160,7 +160,7 @@ func TestBackendConfigure(t *testing.T) {
 			"Basic config",
 			&Backend{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Type:     TypeInt,
 						Optional: true,
 					},

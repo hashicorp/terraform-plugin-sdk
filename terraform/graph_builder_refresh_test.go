@@ -13,53 +13,53 @@ func TestRefreshGraphBuilder_configOrphans(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"test_object.foo.0": &ResourceState{
+					"test_object.foo.0": {
 						Type: "test_object",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
 					},
-					"test_object.foo.1": &ResourceState{
+					"test_object.foo.1": {
 						Type: "test_object",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "bar",
 							},
 						},
 					},
-					"test_object.foo.2": &ResourceState{
+					"test_object.foo.2": {
 						Type: "test_object",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "baz",
 							},
 						},
 					},
-					"data.test_object.foo.0": &ResourceState{
+					"data.test_object.foo.0": {
 						Type: "test_object",
 						Deposed: []*InstanceState{ // NOTE: Real-world data resources don't get deposed
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
 					},
-					"data.test_object.foo.1": &ResourceState{
+					"data.test_object.foo.1": {
 						Type: "test_object",
 						Deposed: []*InstanceState{ // NOTE: Real-world data resources don't get deposed
-							&InstanceState{
+							{
 								ID: "bar",
 							},
 						},
 					},
-					"data.test_object.foo.2": &ResourceState{
+					"data.test_object.foo.2": {
 						Type: "test_object",
 						Deposed: []*InstanceState{ // NOTE: Real-world data resources don't get deposed
-							&InstanceState{
+							{
 								ID: "baz",
 							},
 						},

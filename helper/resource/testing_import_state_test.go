@@ -13,7 +13,7 @@ func TestTest_importState(t *testing.T) {
 
 	mp := testProvider()
 	mp.ImportStateReturn = []*terraform.InstanceState{
-		&terraform.InstanceState{
+		{
 			ID:        "foo",
 			Ephemeral: terraform.EphemeralState{Type: "test_instance"},
 		},
@@ -42,7 +42,7 @@ func TestTest_importState(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config:           testConfigStrProvider,
 				ResourceName:     "test_instance.foo",
 				ImportState:      true,
@@ -65,7 +65,7 @@ func TestTest_importStateFail(t *testing.T) {
 
 	mp := testProvider()
 	mp.ImportStateReturn = []*terraform.InstanceState{
-		&terraform.InstanceState{
+		{
 			ID:        "bar",
 			Ephemeral: terraform.EphemeralState{Type: "test_instance"},
 		},
@@ -94,7 +94,7 @@ func TestTest_importStateFail(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config:           testConfigStrProvider,
 				ResourceName:     "test_instance.foo",
 				ImportState:      true,
@@ -143,7 +143,7 @@ func TestTest_importStateDetectId(t *testing.T) {
 		}
 
 		return []*terraform.InstanceState{
-			&terraform.InstanceState{
+			{
 				ID:        "bar",
 				Ephemeral: terraform.EphemeralState{Type: "test_instance"},
 			},
@@ -168,10 +168,10 @@ func TestTest_importStateDetectId(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config: testConfigStr,
 			},
-			TestStep{
+			{
 				Config:           testConfigStr,
 				ResourceName:     "test_instance.foo",
 				ImportState:      true,
@@ -306,7 +306,7 @@ func TestTest_importStateVerify(t *testing.T) {
 		}
 
 		return []*terraform.InstanceState{
-			&terraform.InstanceState{
+			{
 				ID:        "foo",
 				Ephemeral: terraform.EphemeralState{Type: "test_instance"},
 			},
@@ -320,10 +320,10 @@ func TestTest_importStateVerify(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config: testConfigStr,
 			},
-			TestStep{
+			{
 				Config:            testConfigStr,
 				ResourceName:      "test_instance.foo",
 				ImportState:       true,
@@ -371,7 +371,7 @@ func TestTest_importStateVerifyFail(t *testing.T) {
 		}
 
 		return []*terraform.InstanceState{
-			&terraform.InstanceState{
+			{
 				ID:        "foo",
 				Ephemeral: terraform.EphemeralState{Type: "test_instance"},
 			},
@@ -385,10 +385,10 @@ func TestTest_importStateVerifyFail(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config: testConfigStr,
 			},
-			TestStep{
+			{
 				Config:            testConfigStr,
 				ResourceName:      "test_instance.foo",
 				ImportState:       true,
@@ -444,7 +444,7 @@ func TestTest_importStateIdFunc(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config:            testConfigStrProvider,
 				ResourceName:      "test_instance.foo",
 				ImportState:       true,
@@ -501,7 +501,7 @@ func TestTest_importStateIdFuncFail(t *testing.T) {
 		},
 
 		Steps: []TestStep{
-			TestStep{
+			{
 				Config:            testConfigStrProvider,
 				ResourceName:      "test_instance.foo",
 				ImportState:       true,

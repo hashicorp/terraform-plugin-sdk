@@ -13,21 +13,21 @@ func TestNodeRefreshableDataResourceDynamicExpand_scaleOut(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"data.aws_instance.foo.0": &ResourceState{
+					"data.aws_instance.foo.0": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
 					},
-					"data.aws_instance.foo.1": &ResourceState{
+					"data.aws_instance.foo.1": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "bar",
 							},
 						},
@@ -80,37 +80,37 @@ func TestNodeRefreshableDataResourceDynamicExpand_scaleIn(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"data.aws_instance.foo.0": &ResourceState{
+					"data.aws_instance.foo.0": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 							},
 						},
 					},
-					"data.aws_instance.foo.1": &ResourceState{
+					"data.aws_instance.foo.1": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "bar",
 							},
 						},
 					},
-					"data.aws_instance.foo.2": &ResourceState{
+					"data.aws_instance.foo.2": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "baz",
 							},
 						},
 					},
-					"data.aws_instance.foo.3": &ResourceState{
+					"data.aws_instance.foo.3": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "qux",
 							},
 						},

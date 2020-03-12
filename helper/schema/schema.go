@@ -625,7 +625,7 @@ func (m schemaMap) Input(
 	input terraform.UIInput,
 	c *terraform.ResourceConfig) (*terraform.ResourceConfig, error) {
 	keys := make([]string, 0, len(m))
-	for k, _ := range m {
+	for k := range m {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -1608,7 +1608,7 @@ func (m schemaMap) validateList(
 
 	// Now build the []interface{}
 	raws := make([]interface{}, rawV.Len())
-	for i, _ := range raws {
+	for i := range raws {
 		raws[i] = rawV.Index(i).Interface()
 	}
 
@@ -1694,7 +1694,7 @@ func (m schemaMap) validateMap(
 
 	// It is a slice, verify that all the elements are maps
 	raws := make([]interface{}, rawV.Len())
-	for i, _ := range raws {
+	for i := range raws {
 		raws[i] = rawV.Index(i).Interface()
 	}
 
@@ -1818,7 +1818,7 @@ func (m schemaMap) validateObject(
 
 	// Detect any extra/unknown keys and report those as errors.
 	if m, ok := raw.(map[string]interface{}); ok {
-		for subk, _ := range m {
+		for subk := range m {
 			if _, ok := schema[subk]; !ok {
 				if subk == TimeoutsConfigKey {
 					continue

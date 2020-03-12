@@ -24,10 +24,10 @@ func TestContext2Refresh(t *testing.T) {
 
 	startingState := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -265,7 +265,7 @@ func TestContext2Refresh_targeted(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_vpc.metoo":      resourceState("aws_vpc", "vpc-abc123"),
@@ -348,7 +348,7 @@ func TestContext2Refresh_targetedCount(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_vpc.metoo":      resourceState("aws_vpc", "vpc-abc123"),
@@ -441,7 +441,7 @@ func TestContext2Refresh_targetedCountIndex(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_vpc.metoo":      resourceState("aws_vpc", "vpc-abc123"),
@@ -529,10 +529,10 @@ func TestContext2Refresh_delete(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.web": &ResourceState{
+						"aws_instance.web": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -603,10 +603,10 @@ func TestContext2Refresh_hook(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.web": &ResourceState{
+						"aws_instance.web": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -634,10 +634,10 @@ func TestContext2Refresh_modules(t *testing.T) {
 	m := testModule(t, "refresh-modules")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -647,10 +647,10 @@ func TestContext2Refresh_modules(t *testing.T) {
 				},
 			},
 
-			&ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "baz",
@@ -809,10 +809,10 @@ func TestContext2Refresh_output(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.web": &ResourceState{
+						"aws_instance.web": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -825,7 +825,7 @@ func TestContext2Refresh_output(t *testing.T) {
 					},
 
 					Outputs: map[string]*OutputState{
-						"foo": &OutputState{
+						"foo": {
 							Type:      "string",
 							Sensitive: false,
 							Value:     "foo",
@@ -885,10 +885,10 @@ func TestContext2Refresh_outputPartial(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.foo": &ResourceState{
+						"aws_instance.foo": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -918,10 +918,10 @@ func TestContext2Refresh_stateBasic(t *testing.T) {
 	m := testModule(t, "refresh-basic")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -1039,10 +1039,10 @@ func TestContext2Refresh_dataOrphan(t *testing.T) {
 	p := testProvider("null")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"data.null_data_source.bar": &ResourceState{
+					"data.null_data_source.bar": {
 						Type: "null_data_source",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1075,7 +1075,7 @@ func TestContext2Refresh_dataState(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				// Intentionally no resources since data resources are
 				// supposed to refresh themselves even if they didn't
@@ -1200,7 +1200,7 @@ func TestContext2Refresh_dataStateRefData(t *testing.T) {
 	m := testModule(t, "refresh-data-ref-data")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				// Intentionally no resources since data resources are
 				// supposed to refresh themselves even if they didn't
@@ -1246,10 +1246,10 @@ func TestContext2Refresh_tainted(t *testing.T) {
 	m := testModule(t, "refresh-basic")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -1311,10 +1311,10 @@ func TestContext2Refresh_unknownProvider(t *testing.T) {
 		),
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.web": &ResourceState{
+						"aws_instance.web": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -1367,10 +1367,10 @@ func TestContext2Refresh_vars(t *testing.T) {
 		State: MustShimLegacyState(&State{
 
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
-						"aws_instance.web": &ResourceState{
+						"aws_instance.web": {
 							Type: "aws_instance",
 							Primary: &InstanceState{
 								ID: "foo",
@@ -1446,10 +1446,10 @@ func TestContext2Refresh_orphanModule(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "i-abc123",
@@ -1467,10 +1467,10 @@ func TestContext2Refresh_orphanModule(t *testing.T) {
 					},
 				},
 			},
-			&ModuleState{
+			{
 				Path: append(rootModulePath, "child"),
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "i-bcd234",
@@ -1486,20 +1486,20 @@ func TestContext2Refresh_orphanModule(t *testing.T) {
 					},
 				},
 				Outputs: map[string]*OutputState{
-					"id": &OutputState{
+					"id": {
 						Value: "i-bcd234",
 						Type:  "string",
 					},
-					"grandchild_id": &OutputState{
+					"grandchild_id": {
 						Value: "i-cde345",
 						Type:  "string",
 					},
 				},
 			},
-			&ModuleState{
+			{
 				Path: append(rootModulePath, "child", "grandchild"),
 				Resources: map[string]*ResourceState{
-					"aws_instance.baz": &ResourceState{
+					"aws_instance.baz": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "i-cde345",
@@ -1511,7 +1511,7 @@ func TestContext2Refresh_orphanModule(t *testing.T) {
 					},
 				},
 				Outputs: map[string]*OutputState{
-					"id": &OutputState{
+					"id": {
 						Value: "i-cde345",
 						Type:  "string",
 					},
@@ -1596,13 +1596,13 @@ func TestContext2Refresh_noDiffHookOnScaleOut(t *testing.T) {
 
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "foo",
 								Attributes: map[string]string{
 									"id": "foo",
@@ -1610,10 +1610,10 @@ func TestContext2Refresh_noDiffHookOnScaleOut(t *testing.T) {
 							},
 						},
 					},
-					"aws_instance.foo.1": &ResourceState{
+					"aws_instance.foo.1": {
 						Type: "aws_instance",
 						Deposed: []*InstanceState{
-							&InstanceState{
+							{
 								ID: "bar",
 								Attributes: map[string]string{
 									"id": "foo",
@@ -1657,10 +1657,10 @@ func TestContext2Refresh_updateProviderInState(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.bar": &ResourceState{
+					"aws_instance.bar": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -1931,10 +1931,10 @@ func TestContext2Refresh_dataResourceDependsOn(t *testing.T) {
 
 	s := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"test_resource.a": &ResourceState{
+					"test_resource.a": {
 						Type:     "test_resource",
 						Provider: "provider.test",
 						Primary: &InstanceState{

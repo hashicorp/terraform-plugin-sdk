@@ -82,7 +82,7 @@ func TestEvalValidateSelfRef(t *testing.T) {
 
 			ps := &ProviderSchema{
 				ResourceTypes: map[string]*configschema.Block{
-					"aws_instance": &configschema.Block{
+					"aws_instance": {
 						Attributes: map[string]*configschema.Attribute{
 							"foo": {
 								Type:     cty.String,
