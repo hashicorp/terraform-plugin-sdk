@@ -4,6 +4,10 @@ DEPRECATED:
 
 * helper/schema: `ResourceData.GetOkExists` will not be removed in the next major version unless a suitable replacement or alternative can be prescribed [GH-350]
 
+BUG FIXES:
+
+* Binary acceptance test driver: auto-configure providers [GH-355]
+
 # 1.8.0 (March 11, 2020)
 
 FEATURES:
