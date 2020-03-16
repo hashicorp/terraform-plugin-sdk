@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -539,11 +540,6 @@ func Test(t TestT, c TestCase) {
 		t.Fatal("Acceptance tests must be run with the -v flag on tests")
 	}
 
-	// Run the PreCheck if we have it
-	if c.PreCheck != nil {
-		c.PreCheck()
-	}
-
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
 	providers := make(map[string]*schema.Provider)
@@ -556,6 +552,21 @@ func Test(t TestT, c TestCase) {
 	}
 	for name, p := range c.Providers {
 		providers[name] = p
+	}
+
+	// Auto-configure all providers.
+	for _, p := range providers {
+		err = p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Run the PreCheck if we have it.
+	// This is done after the auto-configure to allow providers
+	// to override the default auto-configure parameters.
+	if c.PreCheck != nil {
+		c.PreCheck()
 	}
 
 	if acctest.TestHelper == nil {
