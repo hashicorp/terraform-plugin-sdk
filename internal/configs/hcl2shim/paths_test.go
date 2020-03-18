@@ -246,7 +246,7 @@ func TestRequiresReplace(t *testing.T) {
 				"foo": cty.String,
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}},
+				{cty.GetAttrStep{Name: "foo"}},
 			},
 		},
 		{
@@ -260,8 +260,8 @@ func TestRequiresReplace(t *testing.T) {
 				"bar": cty.String,
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}},
-				cty.Path{cty.GetAttrStep{Name: "bar"}},
+				{cty.GetAttrStep{Name: "foo"}},
+				{cty.GetAttrStep{Name: "bar"}},
 			},
 		},
 		{
@@ -275,7 +275,7 @@ func TestRequiresReplace(t *testing.T) {
 				}),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}, cty.GetAttrStep{Name: "bar"}},
+				{cty.GetAttrStep{Name: "foo"}, cty.GetAttrStep{Name: "bar"}},
 			},
 		},
 		{
@@ -291,7 +291,7 @@ func TestRequiresReplace(t *testing.T) {
 				}),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}, cty.GetAttrStep{Name: "bar"}, cty.GetAttrStep{Name: "baz"}},
+				{cty.GetAttrStep{Name: "foo"}, cty.GetAttrStep{Name: "bar"}, cty.GetAttrStep{Name: "baz"}},
 			},
 		},
 		{
@@ -304,7 +304,7 @@ func TestRequiresReplace(t *testing.T) {
 				"foo": cty.Map(cty.String),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}},
+				{cty.GetAttrStep{Name: "foo"}},
 			},
 		},
 		{
@@ -317,7 +317,7 @@ func TestRequiresReplace(t *testing.T) {
 				"foo": cty.Map(cty.String),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}},
+				{cty.GetAttrStep{Name: "foo"}},
 			},
 		},
 		{
@@ -333,7 +333,7 @@ func TestRequiresReplace(t *testing.T) {
 				)),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.StringVal("bar")}, cty.GetAttrStep{Name: "baz"}},
+				{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.StringVal("bar")}, cty.GetAttrStep{Name: "baz"}},
 			},
 		},
 		{
@@ -349,7 +349,7 @@ func TestRequiresReplace(t *testing.T) {
 				)),
 			}),
 			expected: []cty.Path{
-				cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(1)}, cty.GetAttrStep{Name: "baz"}},
+				{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(1)}, cty.GetAttrStep{Name: "baz"}},
 			},
 		},
 	} {

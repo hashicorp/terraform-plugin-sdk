@@ -106,16 +106,16 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"list": &configschema.NestedBlock{
+					"list": {
 						Nesting: configschema.NestingList,
 					},
-					"map": &configschema.NestedBlock{
+					"map": {
 						Nesting: configschema.NestingMap,
 					},
-					"set": &configschema.NestedBlock{
+					"set": {
 						Nesting: configschema.NestingSet,
 					},
-					"single": &configschema.NestedBlock{
+					"single": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
@@ -157,15 +157,15 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"single": &configschema.NestedBlock{
+					"single": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							BlockTypes: map[string]*configschema.NestedBlock{
-								"list": &configschema.NestedBlock{
+								"list": {
 									Nesting: configschema.NestingList,
 									Block: configschema.Block{
 										BlockTypes: map[string]*configschema.NestedBlock{
-											"set": &configschema.NestedBlock{
+											"set": {
 												Nesting: configschema.NestingSet,
 											},
 										},
@@ -278,16 +278,16 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"list": &configschema.NestedBlock{
+					"list": {
 						Nesting: configschema.NestingList,
 					},
-					"map": &configschema.NestedBlock{
+					"map": {
 						Nesting: configschema.NestingMap,
 					},
-					"set": &configschema.NestedBlock{
+					"set": {
 						Nesting: configschema.NestingSet,
 					},
-					"single": &configschema.NestedBlock{
+					"single": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
@@ -329,15 +329,15 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"single": &configschema.NestedBlock{
+					"single": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							BlockTypes: map[string]*configschema.NestedBlock{
-								"list": &configschema.NestedBlock{
+								"list": {
 									Nesting: configschema.NestingList,
 									Block: configschema.Block{
 										BlockTypes: map[string]*configschema.NestedBlock{
-											"set": &configschema.NestedBlock{
+											"set": {
 												Nesting: configschema.NestingSet,
 											},
 										},

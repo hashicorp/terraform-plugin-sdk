@@ -25,10 +25,10 @@ func TestStateValidate(t *testing.T) {
 		"multiple modules": {
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root", "foo"},
 					},
-					&ModuleState{
+					{
 						Path: []string{"root", "foo"},
 					},
 				},
@@ -59,8 +59,8 @@ func TestStateAddModule(t *testing.T) {
 				addrs.RootModuleInstance.Child("child", addrs.NoKey),
 			},
 			[][]string{
-				[]string{"root"},
-				[]string{"root", "child"},
+				{"root"},
+				{"root", "child"},
 			},
 		},
 
@@ -72,10 +72,10 @@ func TestStateAddModule(t *testing.T) {
 				addrs.RootModuleInstance.Child("bar", addrs.NoKey),
 			},
 			[][]string{
-				[]string{"root"},
-				[]string{"root", "bar"},
-				[]string{"root", "foo"},
-				[]string{"root", "foo", "bar"},
+				{"root"},
+				{"root", "bar"},
+				{"root", "foo"},
+				{"root", "foo", "bar"},
 			},
 		},
 		// Same last element, different middle element
@@ -88,11 +88,11 @@ func TestStateAddModule(t *testing.T) {
 				addrs.RootModuleInstance.Child("bar", addrs.NoKey),
 			},
 			[][]string{
-				[]string{"root"},
-				[]string{"root", "bar"},
-				[]string{"root", "foo"},
-				[]string{"root", "bar", "bar"},
-				[]string{"root", "foo", "bar"},
+				{"root"},
+				{"root", "bar"},
+				{"root", "foo"},
+				{"root", "bar", "bar"},
+				{"root", "foo", "bar"},
 			},
 		},
 	}
@@ -134,10 +134,10 @@ func TestStateDeepCopy(t *testing.T) {
 			&State{
 				Version: 6,
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{},
 								},
@@ -154,10 +154,10 @@ func TestStateDeepCopy(t *testing.T) {
 			&State{
 				Version: 6,
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{},
 								},
@@ -219,7 +219,7 @@ func TestStateEqual(t *testing.T) {
 			false,
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root"},
 					},
 				},
@@ -232,14 +232,14 @@ func TestStateEqual(t *testing.T) {
 			true,
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root"},
 					},
 				},
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: []string{"root"},
 					},
 				},
@@ -252,10 +252,10 @@ func TestStateEqual(t *testing.T) {
 			false,
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"schema_version": "1",
@@ -268,10 +268,10 @@ func TestStateEqual(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"schema_version": "2",
@@ -290,10 +290,10 @@ func TestStateEqual(t *testing.T) {
 			true,
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"timeouts": map[string]interface{}{
@@ -309,10 +309,10 @@ func TestStateEqual(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"timeouts": map[string]interface{}{
@@ -334,10 +334,10 @@ func TestStateEqual(t *testing.T) {
 			true,
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"timeouts": map[string]interface{}{
@@ -353,10 +353,10 @@ func TestStateEqual(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Primary: &InstanceState{
 									Meta: map[string]interface{}{
 										"timeouts": map[string]interface{}{
@@ -544,17 +544,17 @@ func TestStateRemove(t *testing.T) {
 			"test_instance.foo",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.bar": &ResourceState{
+							"test_instance.bar": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -566,10 +566,10 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.bar": &ResourceState{
+							"test_instance.bar": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -585,10 +585,10 @@ func TestStateRemove(t *testing.T) {
 			"test_instance.foo.primary",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -600,7 +600,7 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path:      rootModulePath,
 						Resources: map[string]*ResourceState{},
 					},
@@ -612,17 +612,17 @@ func TestStateRemove(t *testing.T) {
 			"test_instance.foo[0]",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo.0": &ResourceState{
+							"test_instance.foo.0": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.foo.1": &ResourceState{
+							"test_instance.foo.1": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -634,10 +634,10 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo.1": &ResourceState{
+							"test_instance.foo.1": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -653,17 +653,17 @@ func TestStateRemove(t *testing.T) {
 			"test_instance.foo",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo.0": &ResourceState{
+							"test_instance.foo.0": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.foo.1": &ResourceState{
+							"test_instance.foo.1": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -675,7 +675,7 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path:      rootModulePath,
 						Resources: map[string]*ResourceState{},
 					},
@@ -687,10 +687,10 @@ func TestStateRemove(t *testing.T) {
 			"module.foo",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -699,17 +699,17 @@ func TestStateRemove(t *testing.T) {
 						},
 					},
 
-					&ModuleState{
+					{
 						Path: []string{"root", "foo"},
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.bar": &ResourceState{
+							"test_instance.bar": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -721,10 +721,10 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -740,10 +740,10 @@ func TestStateRemove(t *testing.T) {
 			"module.foo",
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -752,17 +752,17 @@ func TestStateRemove(t *testing.T) {
 						},
 					},
 
-					&ModuleState{
+					{
 						Path: []string{"root", "foo"},
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.bar": &ResourceState{
+							"test_instance.bar": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -771,17 +771,17 @@ func TestStateRemove(t *testing.T) {
 						},
 					},
 
-					&ModuleState{
+					{
 						Path: []string{"root", "foo", "bar"},
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
 								},
 							},
 
-							"test_instance.bar": &ResourceState{
+							"test_instance.bar": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -793,10 +793,10 @@ func TestStateRemove(t *testing.T) {
 			},
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{
+					{
 						Path: rootModulePath,
 						Resources: map[string]*ResourceState{
-							"test_instance.foo": &ResourceState{
+							"test_instance.foo": {
 								Type: "test_instance",
 								Primary: &InstanceState{
 									ID: "foo",
@@ -1099,7 +1099,7 @@ func TestStateEmpty(t *testing.T) {
 		{
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{},
+					{},
 				},
 			},
 			false,
@@ -1135,7 +1135,7 @@ func TestStateHasResources(t *testing.T) {
 		{
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{},
+					{},
 				},
 			},
 			false,
@@ -1143,8 +1143,8 @@ func TestStateHasResources(t *testing.T) {
 		{
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{},
-					&ModuleState{},
+					{},
+					{},
 				},
 			},
 			false,
@@ -1152,10 +1152,10 @@ func TestStateHasResources(t *testing.T) {
 		{
 			&State{
 				Modules: []*ModuleState{
-					&ModuleState{},
-					&ModuleState{
+					{},
+					{
 						Resources: map[string]*ResourceState{
-							"foo.foo": &ResourceState{},
+							"foo.foo": {},
 						},
 					},
 				},
@@ -1210,20 +1210,20 @@ func TestInstanceState_MergeDiff(t *testing.T) {
 
 	diff := &InstanceDiff{
 		Attributes: map[string]*ResourceAttrDiff{
-			"foo": &ResourceAttrDiff{
+			"foo": {
 				Old: "bar",
 				New: "baz",
 			},
-			"bar": &ResourceAttrDiff{
+			"bar": {
 				Old: "",
 				New: "foo",
 			},
-			"baz": &ResourceAttrDiff{
+			"baz": {
 				Old:         "",
 				New:         "foo",
 				NewComputed: true,
 			},
-			"port": &ResourceAttrDiff{
+			"port": {
 				NewRemoved: true,
 			},
 		},
@@ -1250,18 +1250,18 @@ func TestInstanceState_MergeDiff_computedSet(t *testing.T) {
 
 	diff := &InstanceDiff{
 		Attributes: map[string]*ResourceAttrDiff{
-			"config.#": &ResourceAttrDiff{
+			"config.#": {
 				Old:         "0",
 				New:         "1",
 				RequiresNew: true,
 			},
 
-			"config.0.name": &ResourceAttrDiff{
+			"config.0.name": {
 				Old: "",
 				New: "hello",
 			},
 
-			"config.0.rules.#": &ResourceAttrDiff{
+			"config.0.rules.#": {
 				Old:         "",
 				NewComputed: true,
 			},
@@ -1286,7 +1286,7 @@ func TestInstanceState_MergeDiff_nil(t *testing.T) {
 
 	diff := &InstanceDiff{
 		Attributes: map[string]*ResourceAttrDiff{
-			"foo": &ResourceAttrDiff{
+			"foo": {
 				Old: "",
 				New: "baz",
 			},

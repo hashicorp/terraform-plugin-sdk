@@ -40,10 +40,10 @@ type resourceDiffTestCase struct {
 // testDiffCases produces a list of test cases for use with SetNew and SetDiff.
 func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool) []resourceDiffTestCase {
 	return []resourceDiffTestCase{
-		resourceDiffTestCase{
+		{
 			Name: "basic primitive diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -59,7 +59,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -69,7 +69,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue: "qux",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: func() string {
 							if computed {
@@ -82,10 +82,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "basic set diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeSet,
 					Optional: true,
 					Computed: true,
@@ -104,12 +104,12 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.1996459178": &terraform.ResourceAttrDiff{
+					"foo.1996459178": {
 						Old:        "bar",
 						New:        "",
 						NewRemoved: true,
 					},
-					"foo.2015626392": &terraform.ResourceAttrDiff{
+					"foo.2015626392": {
 						Old: "",
 						New: "baz",
 					},
@@ -141,10 +141,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				}(),
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "basic list diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Optional: true,
 					Computed: true,
@@ -162,7 +162,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0": &terraform.ResourceAttrDiff{
+					"foo.0": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -189,10 +189,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				}(),
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "basic map diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeMap,
 					Optional: true,
 					Computed: true,
@@ -209,7 +209,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.bar": &terraform.ResourceAttrDiff{
+					"foo.bar": {
 						Old: "baz",
 						New: "qux",
 					},
@@ -241,14 +241,14 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				}(),
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "additional diff with primitive",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 				},
-				"one": &Schema{
+				"one": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -265,7 +265,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -275,11 +275,11 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue: "four",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
-					"one": &terraform.ResourceAttrDiff{
+					"one": {
 						Old: "two",
 						New: func() string {
 							if computed {
@@ -292,14 +292,14 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "additional diff with primitive computed only",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 				},
-				"one": &Schema{
+				"one": {
 					Type:     TypeString,
 					Computed: true,
 				},
@@ -315,7 +315,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -325,11 +325,11 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue: "three",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
-					"one": &terraform.ResourceAttrDiff{
+					"one": {
 						Old: "two",
 						New: func() string {
 							if computed {
@@ -342,21 +342,21 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "complex-ish set diff",
 			Schema: map[string]*Schema{
-				"top": &Schema{
+				"top": {
 					Type:     TypeSet,
 					Optional: true,
 					Computed: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"foo": &Schema{
+							"foo": {
 								Type:     TypeInt,
 								Optional: true,
 								Computed: true,
 							},
-							"bar": &Schema{
+							"bar": {
 								Type:     TypeInt,
 								Optional: true,
 								Computed: true,
@@ -389,19 +389,19 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"top.4.foo": &terraform.ResourceAttrDiff{
+					"top.4.foo": {
 						Old: "",
 						New: "1",
 					},
-					"top.4.bar": &terraform.ResourceAttrDiff{
+					"top.4.bar": {
 						Old: "",
 						New: "3",
 					},
-					"top.24.foo": &terraform.ResourceAttrDiff{
+					"top.24.foo": {
 						Old: "",
 						New: "12",
 					},
-					"top.24.bar": &terraform.ResourceAttrDiff{
+					"top.24.bar": {
 						Old: "",
 						New: "12",
 					},
@@ -465,10 +465,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				}(),
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "primitive, no diff, no refresh",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Computed: true,
 				},
@@ -484,7 +484,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue: "baz",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: func() string {
 							if computed {
@@ -497,10 +497,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "non-computed key, should error",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Required: true,
 				},
@@ -515,7 +515,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -525,10 +525,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue:      "qux",
 			ExpectedError: true,
 		},
-		resourceDiffTestCase{
+		{
 			Name: "bad key, should error",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Required: true,
 				},
@@ -543,7 +543,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -553,7 +553,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue:      "qux",
 			ExpectedError: true,
 		},
-		resourceDiffTestCase{
+		{
 			// NOTE: This case is technically impossible in the current
 			// implementation, because optional+computed values never show up in the
 			// diff, and we actually clear existing diffs when SetNew or
@@ -561,7 +561,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			// these behaviors change that we don't introduce regressions.
 			Name: "NewRemoved in diff for Optional and Computed, should be fully overridden",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -575,7 +575,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			Config: testConfig(t, map[string]interface{}{}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old:        "bar",
 						New:        "",
 						NewRemoved: true,
@@ -586,7 +586,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 			NewValue: "qux",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: func() string {
 							if computed {
@@ -599,10 +599,10 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "NewComputed should always propagate",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Computed: true,
 				},
@@ -621,7 +621,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 				Attributes: func() map[string]*terraform.ResourceAttrDiff {
 					if computed {
 						return map[string]*terraform.ResourceAttrDiff{
-							"foo": &terraform.ResourceAttrDiff{
+							"foo": {
 								NewComputed: computed,
 							},
 						}
@@ -689,10 +689,10 @@ func TestSetNewComputed(t *testing.T) {
 
 func TestForceNew(t *testing.T) {
 	cases := []resourceDiffTestCase{
-		resourceDiffTestCase{
+		{
 			Name: "basic primitive diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -708,7 +708,7 @@ func TestForceNew(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -717,7 +717,7 @@ func TestForceNew(t *testing.T) {
 			Key: "foo",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old:         "bar",
 						New:         "baz",
 						RequiresNew: true,
@@ -725,10 +725,10 @@ func TestForceNew(t *testing.T) {
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "no change, should error",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -744,10 +744,10 @@ func TestForceNew(t *testing.T) {
 			}),
 			ExpectedError: true,
 		},
-		resourceDiffTestCase{
+		{
 			Name: "basic primitive, non-computed key",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Required: true,
 				},
@@ -762,7 +762,7 @@ func TestForceNew(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -771,7 +771,7 @@ func TestForceNew(t *testing.T) {
 			Key: "foo",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old:         "bar",
 						New:         "baz",
 						RequiresNew: true,
@@ -779,10 +779,10 @@ func TestForceNew(t *testing.T) {
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "nested field",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Required: true,
 					MaxItems: 1,
@@ -817,11 +817,11 @@ func TestForceNew(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "abc",
 						New: "abcdefg",
 					},
-					"foo.0.baz": &terraform.ResourceAttrDiff{
+					"foo.0.baz": {
 						Old: "xyz",
 						New: "changed",
 					},
@@ -830,11 +830,11 @@ func TestForceNew(t *testing.T) {
 			Key: "foo.0.baz",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "abc",
 						New: "abcdefg",
 					},
-					"foo.0.baz": &terraform.ResourceAttrDiff{
+					"foo.0.baz": {
 						Old:         "xyz",
 						New:         "changed",
 						RequiresNew: true,
@@ -842,10 +842,10 @@ func TestForceNew(t *testing.T) {
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "preserve NewRemoved on existing diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 				},
@@ -858,7 +858,7 @@ func TestForceNew(t *testing.T) {
 			Config: testConfig(t, map[string]interface{}{}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old:        "bar",
 						New:        "",
 						NewRemoved: true,
@@ -868,7 +868,7 @@ func TestForceNew(t *testing.T) {
 			Key: "foo",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old:         "bar",
 						New:         "",
 						RequiresNew: true,
@@ -877,10 +877,10 @@ func TestForceNew(t *testing.T) {
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "nested field, preserve original diff without zero values",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Required: true,
 					MaxItems: 1,
@@ -913,7 +913,7 @@ func TestForceNew(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "abc",
 						New: "abcdefg",
 					},
@@ -922,7 +922,7 @@ func TestForceNew(t *testing.T) {
 			Key: "foo.0.bar",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old:         "abc",
 						New:         "abcdefg",
 						RequiresNew: true,
@@ -958,10 +958,10 @@ func TestForceNew(t *testing.T) {
 
 func TestClear(t *testing.T) {
 	cases := []resourceDiffTestCase{
-		resourceDiffTestCase{
+		{
 			Name: "basic primitive diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -977,7 +977,7 @@ func TestClear(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -986,10 +986,10 @@ func TestClear(t *testing.T) {
 			Key:      "foo",
 			Expected: &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{}},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "non-computed key, should error",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Required: true,
 				},
@@ -1004,7 +1004,7 @@ func TestClear(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -1013,15 +1013,15 @@ func TestClear(t *testing.T) {
 			Key:           "foo",
 			ExpectedError: true,
 		},
-		resourceDiffTestCase{
+		{
 			Name: "multi-value, one removed",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
 				},
-				"one": &Schema{
+				"one": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -1039,11 +1039,11 @@ func TestClear(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
-					"one": &terraform.ResourceAttrDiff{
+					"one": {
 						Old: "two",
 						New: "three",
 					},
@@ -1052,28 +1052,28 @@ func TestClear(t *testing.T) {
 			Key: "one",
 			Expected: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
 				},
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "basic sub-block diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Optional: true,
 					Computed: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"bar": &Schema{
+							"bar": {
 								Type:     TypeString,
 								Optional: true,
 								Computed: true,
 							},
-							"baz": &Schema{
+							"baz": {
 								Type:     TypeString,
 								Optional: true,
 								Computed: true,
@@ -1098,7 +1098,7 @@ func TestClear(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "bar1",
 						New: "bar2",
 					},
@@ -1107,21 +1107,21 @@ func TestClear(t *testing.T) {
 			Key:      "foo.0.bar",
 			Expected: &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{}},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "sub-block diff only partial clear",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Optional: true,
 					Computed: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"bar": &Schema{
+							"bar": {
 								Type:     TypeString,
 								Optional: true,
 								Computed: true,
 							},
-							"baz": &Schema{
+							"baz": {
 								Type:     TypeString,
 								Optional: true,
 								Computed: true,
@@ -1146,11 +1146,11 @@ func TestClear(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "bar1",
 						New: "bar2",
 					},
-					"foo.0.baz": &terraform.ResourceAttrDiff{
+					"foo.0.baz": {
 						Old: "baz1",
 						New: "baz2",
 					},
@@ -1158,7 +1158,7 @@ func TestClear(t *testing.T) {
 			},
 			Key: "foo.0.bar",
 			Expected: &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{
-				"foo.0.baz": &terraform.ResourceAttrDiff{
+				"foo.0.baz": {
 					Old: "baz1",
 					New: "baz2",
 				},
@@ -1192,10 +1192,10 @@ func TestClear(t *testing.T) {
 
 func TestGetChangedKeysPrefix(t *testing.T) {
 	cases := []resourceDiffTestCase{
-		resourceDiffTestCase{
+		{
 			Name: "basic primitive diff",
 			Schema: map[string]*Schema{
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeString,
 					Optional: true,
 					Computed: true,
@@ -1211,7 +1211,7 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"foo": &terraform.ResourceAttrDiff{
+					"foo": {
 						Old: "bar",
 						New: "baz",
 					},
@@ -1222,14 +1222,14 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 				"foo",
 			},
 		},
-		resourceDiffTestCase{
+		{
 			Name: "nested field filtering",
 			Schema: map[string]*Schema{
-				"testfield": &Schema{
+				"testfield": {
 					Type:     TypeString,
 					Required: true,
 				},
-				"foo": &Schema{
+				"foo": {
 					Type:     TypeList,
 					Required: true,
 					MaxItems: 1,
@@ -1266,15 +1266,15 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
-					"testfield": &terraform.ResourceAttrDiff{
+					"testfield": {
 						Old: "blablah",
 						New: "modified",
 					},
-					"foo.0.bar": &terraform.ResourceAttrDiff{
+					"foo.0.bar": {
 						Old: "abc",
 						New: "abcdefg",
 					},
-					"foo.0.baz": &terraform.ResourceAttrDiff{
+					"foo.0.baz": {
 						Old: "xyz",
 						New: "changed",
 					},

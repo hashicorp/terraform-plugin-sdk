@@ -592,12 +592,12 @@ func TestNewResourceConfigShimmed(t *testing.T) {
 			}),
 			Schema: &configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"bar": &configschema.Attribute{
+					"bar": {
 						Type: cty.Set(cty.Object(map[string]cty.Type{
 							"val": cty.String,
 						})),
 					},
-					"baz": &configschema.Attribute{
+					"baz": {
 						Type: cty.Set(cty.Object(map[string]cty.Type{
 							"obj": cty.Object(map[string]cty.Type{
 								"attr": cty.List(cty.String),

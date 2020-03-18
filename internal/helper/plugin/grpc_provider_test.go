@@ -660,7 +660,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test prepare",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Optional: true,
 				},
@@ -675,7 +675,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test default",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Optional: true,
 					Default:  "default",
@@ -691,7 +691,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test defaultfunc",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Optional: true,
 					DefaultFunc: func() (interface{}, error) {
@@ -709,7 +709,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test default required",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Required: true,
 					DefaultFunc: func() (interface{}, error) {
@@ -727,7 +727,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test incorrect type",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Required: true,
 				},
@@ -742,7 +742,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test incorrect default type",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Optional: true,
 					Default:  true,
@@ -758,7 +758,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test incorrect default bool type",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeBool,
 					Optional: true,
 					Default:  "",
@@ -774,7 +774,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 		{
 			Name: "test deprecated default",
 			Schema: map[string]*schema.Schema{
-				"foo": &schema.Schema{
+				"foo": {
 					Type:     schema.TypeString,
 					Optional: true,
 					Default:  "do not use",

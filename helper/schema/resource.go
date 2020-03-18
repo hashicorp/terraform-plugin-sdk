@@ -184,6 +184,11 @@ type Resource struct {
 	// actions (Create, Read, Update, Delete, Default) to the Resource struct, and
 	// accessing them in the matching methods.
 	Timeouts *ResourceTimeout
+
+	// Description is used as the description for docs, the language server and
+	// other user facing usage. It can be plain-text or markdown depending on the
+	// global DescriptionKind setting.
+	Description string
 }
 
 // ShimInstanceStateFromValue converts a cty.Value to a
@@ -787,7 +792,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 	// Data source
 	if r.isTopLevel() && !writable {
 		tsm = schemaMap(r.Schema)
-		for k, _ := range tsm {
+		for k := range tsm {
 			if isReservedDataSourceFieldName(k) {
 				return fmt.Errorf("%s is a reserved field name", k)
 			}
