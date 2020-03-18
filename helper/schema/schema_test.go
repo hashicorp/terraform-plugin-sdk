@@ -3307,6 +3307,244 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"ConflictsWith list index syntax with self reference": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			false, // TODO: This should return an error as it will always error during runtime
+		},
+
+		"ConflictsWith list index syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			false,
+		},
+
+		"ConflictsWith list index syntax with list configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith list index syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			false, // TODO: This should return an error as sets cannot be indexed
+		},
+
+		"ConflictsWith list index syntax with set configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith map key syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			false, // TODO: This should return an error as validateConflictingAttributes will never error
+		},
+
+		"ConflictsWith map key syntax with list configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			false, // TODO: This should return an error as validateConflictingAttributes will never error
+		},
+
+		"ConflictsWith map key syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			false, // TODO: This should return an error as validateConflictingAttributes will never error and sets cannot be indexed
+		},
+
+		"ConflictsWith map key syntax with set configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:          TypeString,
+								Optional:      true,
+								ConflictsWith: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			false, // TODO: This should return an error as validateConflictingAttributes will never error and sets cannot be indexed
+		},
+
+		"ConflictsWith map key syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": &Schema{
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"map_attr.some_key"},
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith string syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": &Schema{
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"map_attr"},
+				},
+			},
+			false,
+		},
+
+		"ConflictsWith string syntax with self reference": {
+			map[string]*Schema{
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"test"},
+				},
+			},
+			false, // TODO: This should return an error as it will always error during runtime
+		},
+
 		"Sub-resource invalid": {
 			map[string]*Schema{
 				"foo": {
@@ -5400,6 +5638,401 @@ func TestSchemaMapDeepCopy(t *testing.T) {
 	if reflect.DeepEqual(source, dest) {
 		t.Fatalf("source and dest should not match")
 	}
+}
+
+func TestValidateConflictingAttributes(t *testing.T) {
+	cases := map[string]struct {
+		Key    string
+		Schema *Schema
+		Config map[string]interface{}
+		Err    bool
+	}{
+		"root attribute self conflicting": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"self"},
+			},
+			Config: map[string]interface{}{
+				"self": true,
+			},
+			Err: true,
+		},
+
+		"root attribute conflicting unconfigured self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{},
+			Err:    false,
+		},
+
+		"root attribute conflicting unconfigured self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"self": hcl2shim.UnknownVariableValue,
+			},
+			Err: false,
+		},
+
+		"root attribute conflicting unconfigured self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"self": true,
+			},
+			Err: false,
+		},
+
+		"root attribute conflicting unknown self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": hcl2shim.UnknownVariableValue,
+			},
+			Err: false,
+		},
+
+		"root attribute conflicting unknown self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": hcl2shim.UnknownVariableValue,
+				"self":      hcl2shim.UnknownVariableValue,
+			},
+			Err: false,
+		},
+
+		"root attribute conflicting unknown self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": hcl2shim.UnknownVariableValue,
+				"self":      true,
+			},
+			Err: false,
+		},
+
+		"root attribute conflicting known self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": true,
+			},
+			Err: true,
+		},
+
+		"root attribute conflicting known self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": true,
+				"self":      hcl2shim.UnknownVariableValue,
+			},
+			Err: true,
+		},
+
+		"root attribute conflicting known self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"root_attr"},
+			},
+			Config: map[string]interface{}{
+				"root_attr": true,
+				"self":      true,
+			},
+			Err: true,
+		},
+
+		"configuration block attribute list index syntax self conflicting": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.self"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"self": true,
+					},
+				},
+			},
+			Err: true,
+		},
+
+		"configuration block attribute list index syntax conflicting unconfigured self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{},
+			Err:    false,
+		},
+
+		"configuration block attribute list index syntax conflicting unconfigured self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"self": hcl2shim.UnknownVariableValue,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute list index syntax conflicting unconfigured self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"self": true,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute list index syntax conflicting unknown self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": hcl2shim.UnknownVariableValue,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute list index syntax conflicting unknown self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": hcl2shim.UnknownVariableValue,
+						"self":        hcl2shim.UnknownVariableValue,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute list index syntax conflicting unknown self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": hcl2shim.UnknownVariableValue,
+						"self":        true,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute list index syntax conflicting known self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+					},
+				},
+			},
+			Err: true,
+		},
+
+		"configuration block attribute list index syntax conflicting known self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+						"self":        hcl2shim.UnknownVariableValue,
+					},
+				},
+			},
+			Err: true,
+		},
+
+		"configuration block attribute list index syntax conflicting known self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.0.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+						"self":        true,
+					},
+				},
+			},
+			Err: true,
+		},
+
+		"configuration block attribute map key syntax self conflicting": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.self"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"self": true,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute map key syntax conflicting known self unconfigured": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute map key syntax conflicting known self unknown": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+						"self":        hcl2shim.UnknownVariableValue,
+					},
+				},
+			},
+			Err: false,
+		},
+
+		"configuration block attribute map key syntax conflicting known self known": {
+			Key: "self",
+			Schema: &Schema{
+				Type:          TypeBool,
+				Optional:      true,
+				ConflictsWith: []string{"config_block_attr.nested_attr"},
+			},
+			Config: map[string]interface{}{
+				"config_block_attr": []interface{}{
+					map[string]interface{}{
+						"nested_attr": true,
+						"self":        true,
+					},
+				},
+			},
+			Err: false,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			c := terraform.NewResourceConfigRaw(tc.Config)
+
+			err := validateConflictingAttributes(tc.Key, tc.Schema, c)
+			if err == nil && tc.Err {
+				t.Fatalf("expected error")
+			}
+
+			if err != nil && !tc.Err {
+				t.Fatalf("didn't expect error, got error: %+v", err)
+			}
+		})
+	}
+
 }
 
 func TestValidateExactlyOneOfAttributes(t *testing.T) {
