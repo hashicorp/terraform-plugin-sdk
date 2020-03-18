@@ -2,6 +2,7 @@ package convert
 
 import (
 	"encoding/json"
+	"log"
 	"reflect"
 	"sort"
 
@@ -53,6 +54,9 @@ func ConfigSchemaToProto(b *configschema.Block) *proto.Schema_Block {
 func protoStringKind(k configschema.StringKind) proto.StringKind {
 	switch k {
 	default:
+		log.Printf("[TRACE] unexpected configschema.StringKind: %d", k)
+		return proto.StringKind_PLAIN
+	case configschema.StringPlain:
 		return proto.StringKind_PLAIN
 	case configschema.StringMarkdown:
 		return proto.StringKind_MARKDOWN
@@ -124,6 +128,9 @@ func ProtoToConfigSchema(b *proto.Schema_Block) *configschema.Block {
 func schemaStringKind(k proto.StringKind) configschema.StringKind {
 	switch k {
 	default:
+		log.Printf("[TRACE] unexpected proto.StringKind: %d", k)
+		return configschema.StringPlain
+	case proto.StringKind_PLAIN:
 		return configschema.StringPlain
 	case proto.StringKind_MARKDOWN:
 		return configschema.StringMarkdown
