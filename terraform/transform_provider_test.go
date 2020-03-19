@@ -51,7 +51,7 @@ func TestProviderTransformer_moduleChild(t *testing.T) {
 	{
 		tf := &ImportStateTransformer{
 			Targets: []*ImportTarget{
-				&ImportTarget{
+				{
 					Addr: addrs.RootModuleInstance.
 						Child("moo", addrs.NoKey).
 						ResourceInstance(
@@ -268,7 +268,7 @@ func TestMissingProviderTransformer_moduleChild(t *testing.T) {
 	{
 		tf := &ImportStateTransformer{
 			Targets: []*ImportTarget{
-				&ImportTarget{
+				{
 					Addr: addrs.RootModuleInstance.
 						Child("moo", addrs.NoKey).
 						ResourceInstance(
@@ -312,7 +312,7 @@ func TestMissingProviderTransformer_moduleGrandchild(t *testing.T) {
 	{
 		tf := &ImportStateTransformer{
 			Targets: []*ImportTarget{
-				&ImportTarget{
+				{
 					Addr: addrs.RootModuleInstance.
 						Child("a", addrs.NoKey).
 						Child("b", addrs.NoKey).
@@ -355,7 +355,7 @@ func TestParentProviderTransformer(t *testing.T) {
 	{
 		tf := &ImportStateTransformer{
 			Targets: []*ImportTarget{
-				&ImportTarget{
+				{
 					Addr: addrs.RootModuleInstance.
 						Child("moo", addrs.NoKey).
 						ResourceInstance(
@@ -408,7 +408,7 @@ func TestParentProviderTransformer_moduleGrandchild(t *testing.T) {
 	{
 		tf := &ImportStateTransformer{
 			Targets: []*ImportTarget{
-				&ImportTarget{
+				{
 					Addr: addrs.RootModuleInstance.
 						Child("a", addrs.NoKey).
 						Child("b", addrs.NoKey).

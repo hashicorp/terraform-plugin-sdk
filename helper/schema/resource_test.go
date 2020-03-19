@@ -20,7 +20,7 @@ func TestResourceApply_create(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -38,7 +38,7 @@ func TestResourceApply_create(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "42",
 			},
 		},
@@ -73,7 +73,7 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -96,7 +96,7 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "42",
 			},
 		},
@@ -150,7 +150,7 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -199,7 +199,7 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 func TestResourceDiff_Timeout_diff(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -233,7 +233,7 @@ func TestResourceDiff_Timeout_diff(t *testing.T) {
 
 	expected := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "42",
 			},
 		},
@@ -257,7 +257,7 @@ func TestResourceDiff_Timeout_diff(t *testing.T) {
 func TestResourceDiff_CustomizeFunc(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -292,7 +292,7 @@ func TestResourceDiff_CustomizeFunc(t *testing.T) {
 func TestResourceApply_destroy(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -330,12 +330,12 @@ func TestResourceApply_destroy(t *testing.T) {
 func TestResourceApply_destroyCreate(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
 
-			"tags": &Schema{
+			"tags": {
 				Type:     TypeMap,
 				Optional: true,
 				Computed: true,
@@ -363,11 +363,11 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New:         "42",
 				RequiresNew: true,
 			},
-			"tags.Name": &terraform.ResourceAttrDiff{
+			"tags.Name": {
 				Old:         "foo",
 				New:         "foo",
 				RequiresNew: true,
@@ -402,7 +402,7 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 func TestResourceApply_destroyPartial(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -450,7 +450,7 @@ func TestResourceApply_destroyPartial(t *testing.T) {
 func TestResourceApply_update(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -471,7 +471,7 @@ func TestResourceApply_update(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "13",
 			},
 		},
@@ -498,7 +498,7 @@ func TestResourceApply_update(t *testing.T) {
 func TestResourceApply_updateNoCallback(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -516,7 +516,7 @@ func TestResourceApply_updateNoCallback(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "13",
 			},
 		},
@@ -542,7 +542,7 @@ func TestResourceApply_updateNoCallback(t *testing.T) {
 func TestResourceApply_isNewResource(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeString,
 				Optional: true,
 			},
@@ -565,7 +565,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 
 	d := &terraform.InstanceDiff{
 		Attributes: map[string]*terraform.ResourceAttrDiff{
-			"foo": &terraform.ResourceAttrDiff{
+			"foo": {
 				New: "bla-blah",
 			},
 		},
@@ -636,7 +636,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		1: {
 			&Resource{
 				Schema: map[string]*Schema{
-					"foo": &Schema{
+					"foo": {
 						Type:     TypeInt,
 						Optional: true,
 						Required: true,
@@ -652,7 +652,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			&Resource{
 				Create: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"boo": &Schema{
+					"boo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -668,7 +668,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Create: func(d *ResourceData, meta interface{}) error { return nil },
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 						ForceNew: true,
@@ -683,7 +683,7 @@ func TestResourceInternalValidate(t *testing.T) {
 		4: {
 			&Resource{
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -698,7 +698,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			&Resource{
 				Create: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -715,7 +715,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -732,7 +732,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Read:   func(d *ResourceData, meta interface{}) error { return nil },
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -766,7 +766,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"parent_list": &Schema{
+					"parent_list": {
 						Type:     TypeString,
 						Optional: true,
 						Elem: &Resource{
@@ -791,7 +791,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"alias": &Schema{
+					"alias": {
 						Type:     TypeString,
 						Optional: true,
 					},
@@ -805,7 +805,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			&Resource{
 				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"id": &Schema{
+					"id": {
 						Type:     TypeString,
 						Optional: true,
 					},
@@ -822,7 +822,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Update: func(d *ResourceData, meta interface{}) error { return nil },
 				Delete: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"id": &Schema{
+					"id": {
 						Type:       TypeString,
 						Optional:   true,
 						Deprecated: "Use x_id instead",
@@ -837,7 +837,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			&Resource{
 				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -851,7 +851,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			&Resource{
 				Read: func(d *ResourceData, meta interface{}) error { return nil },
 				Schema: map[string]*Schema{
-					"goo": &Schema{
+					"goo": {
 						Type:     TypeInt,
 						Optional: true,
 					},
@@ -885,7 +885,7 @@ func TestResourceRefresh(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -931,7 +931,7 @@ func TestResourceRefresh(t *testing.T) {
 func TestResourceRefresh_blankId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -960,7 +960,7 @@ func TestResourceRefresh_blankId(t *testing.T) {
 func TestResourceRefresh_delete(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -992,7 +992,7 @@ func TestResourceRefresh_delete(t *testing.T) {
 func TestResourceRefresh_existsError(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1026,7 +1026,7 @@ func TestResourceRefresh_existsError(t *testing.T) {
 func TestResourceRefresh_noExists(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1062,7 +1062,7 @@ func TestResourceRefresh_needsMigration(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1134,7 +1134,7 @@ func TestResourceRefresh_noMigrationNeeded(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1189,7 +1189,7 @@ func TestResourceRefresh_stateSchemaVersionUnset(t *testing.T) {
 		// Version 1 > Version 0
 		SchemaVersion: 1,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1240,7 +1240,7 @@ func TestResourceRefresh_migrateStateErr(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1276,7 +1276,7 @@ func TestResourceData(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1314,7 +1314,7 @@ func TestResourceData_blank(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1348,7 +1348,7 @@ func TestResourceData_timeouts(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"foo": &Schema{
+			"foo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1373,7 +1373,7 @@ func TestResource_UpgradeState(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},
@@ -1442,7 +1442,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 3,
 		Schema: map[string]*Schema{
-			"newfoo": &Schema{
+			"newfoo": {
 				Type:     TypeInt,
 				Optional: true,
 			},

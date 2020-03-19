@@ -177,7 +177,7 @@ func TestStateShim(t *testing.T) {
 	expected := &terraform.State{
 		Version: 3,
 		Modules: []*terraform.ModuleState{
-			&terraform.ModuleState{
+			{
 				Path: []string{"root"},
 				Outputs: map[string]*terraform.OutputState{
 					"bar": {
@@ -191,7 +191,7 @@ func TestStateShim(t *testing.T) {
 					},
 				},
 				Resources: map[string]*terraform.ResourceState{
-					"test_thing.baz": &terraform.ResourceState{
+					"test_thing.baz": {
 						Type:     "test_thing",
 						Provider: "provider.test",
 						Primary: &terraform.InstanceState{
@@ -202,7 +202,7 @@ func TestStateShim(t *testing.T) {
 							},
 						},
 					},
-					"test_thing.foo": &terraform.ResourceState{
+					"test_thing.foo": {
 						Type:     "test_thing",
 						Provider: "provider.test",
 						Primary: &terraform.InstanceState{
@@ -219,10 +219,10 @@ func TestStateShim(t *testing.T) {
 					},
 				},
 			},
-			&terraform.ModuleState{
+			{
 				Path: []string{"root", "child"},
 				Resources: map[string]*terraform.ResourceState{
-					"test_thing.baz": &terraform.ResourceState{
+					"test_thing.baz": {
 						Type:     "test_thing",
 						Provider: "module.child.provider.test",
 						Primary: &terraform.InstanceState{
@@ -243,7 +243,7 @@ func TestStateShim(t *testing.T) {
 						},
 						Dependencies: []string{"data.test_data_thing.foo"},
 					},
-					"data.test_data_thing.foo": &terraform.ResourceState{
+					"data.test_data_thing.foo": {
 						Type:     "test_data_thing",
 						Provider: "module.child.provider.test",
 						Primary: &terraform.InstanceState{
@@ -254,7 +254,7 @@ func TestStateShim(t *testing.T) {
 							},
 						},
 					},
-					"test_thing.lots.0": &terraform.ResourceState{
+					"test_thing.lots.0": {
 						Type:     "test_thing",
 						Provider: "module.child.provider.test",
 						Primary: &terraform.InstanceState{
@@ -265,7 +265,7 @@ func TestStateShim(t *testing.T) {
 							},
 						},
 					},
-					"test_thing.lots.1": &terraform.ResourceState{
+					"test_thing.lots.1": {
 						Type:     "test_thing",
 						Provider: "module.child.provider.test",
 						Primary: &terraform.InstanceState{
@@ -277,7 +277,7 @@ func TestStateShim(t *testing.T) {
 							Tainted: true,
 						},
 					},
-					"test_thing.single_count": &terraform.ResourceState{
+					"test_thing.single_count": {
 						Type:     "test_thing",
 						Provider: "module.child.provider.test",
 						Primary: &terraform.InstanceState{
@@ -296,7 +296,7 @@ func TestStateShim(t *testing.T) {
 	providers := map[string]terraform.ResourceProvider{
 		"test": &schema.Provider{
 			ResourcesMap: map[string]*schema.Resource{
-				"test_thing": &schema.Resource{
+				"test_thing": {
 					Schema: map[string]*schema.Schema{
 						"id":     {Type: schema.TypeString, Computed: true},
 						"fizzle": {Type: schema.TypeString, Optional: true},
@@ -305,7 +305,7 @@ func TestStateShim(t *testing.T) {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"test_data_thing": &schema.Resource{
+				"test_data_thing": {
 					Schema: map[string]*schema.Schema{
 						"id":     {Type: schema.TypeString, Computed: true},
 						"fuzzle": {Type: schema.TypeString, Optional: true},

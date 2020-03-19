@@ -11,18 +11,18 @@ import (
 func TestMapResources(t *testing.T) {
 	m := &Map{
 		Mapping: map[string]Resource{
-			"aws_elb":      Resource{},
-			"aws_instance": Resource{},
+			"aws_elb":      {},
+			"aws_instance": {},
 		},
 	}
 
 	rts := m.Resources()
 
 	expected := []terraform.ResourceType{
-		terraform.ResourceType{
+		{
 			Name: "aws_elb",
 		},
-		terraform.ResourceType{
+		{
 			Name: "aws_instance",
 		},
 	}
@@ -35,7 +35,7 @@ func TestMapResources(t *testing.T) {
 func TestMapValidate(t *testing.T) {
 	m := &Map{
 		Mapping: map[string]Resource{
-			"aws_elb": Resource{
+			"aws_elb": {
 				ConfigValidator: &config.Validator{
 					Required: []string{"foo"},
 				},

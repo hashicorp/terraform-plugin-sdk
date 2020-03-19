@@ -53,7 +53,7 @@ func providerProtoSchema() *proto.GetProviderSchema_Response {
 			},
 		},
 		ResourceSchemas: map[string]*proto.Schema{
-			"resource": &proto.Schema{
+			"resource": {
 				Version: 1,
 				Block: &proto.Schema_Block{
 					Attributes: []*proto.Schema_Attribute{
@@ -67,7 +67,7 @@ func providerProtoSchema() *proto.GetProviderSchema_Response {
 			},
 		},
 		DataSourceSchemas: map[string]*proto.Schema{
-			"data": &proto.Schema{
+			"data": {
 				Version: 1,
 				Block: &proto.Schema_Block{
 					Attributes: []*proto.Schema_Attribute{

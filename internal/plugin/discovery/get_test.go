@@ -249,7 +249,7 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"no compatible version",
 			5,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "1.0.0",
 					Protocols: []string{"4.0"},
 				},
@@ -260,11 +260,11 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"equal, suggests latest",
 			4,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "1.0.0",
 					Protocols: []string{"4.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "1.5.0",
 					Protocols: []string{"4.0"},
 				},
@@ -275,19 +275,19 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"provider protocol too old, suggests earliest",
 			5,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "1.0.0",
 					Protocols: []string{"4.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.5.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "3.0.0",
 					Protocols: []string{"5.0"},
 				},
@@ -298,19 +298,19 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"provider protocol too new, suggests latest",
 			4,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "1.0.0",
 					Protocols: []string{"4.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.5.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "3.0.0",
 					Protocols: []string{"5.0"},
 				},
@@ -321,7 +321,7 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"compatible prereleses are filtered",
 			5,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0-alpha",
 					Protocols: []string{"4.0", "5.0"},
 				},
@@ -332,19 +332,19 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"suggests latest non-prerelease",
 			4,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0-alpha",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.5.0-pre",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.5.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
@@ -355,19 +355,19 @@ func TestFindClosestProtocolCompatibleVersion(t *testing.T) {
 			"suggests earliest non-prerelease",
 			5,
 			[]*response.TerraformProviderVersion{
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0-alpha",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.0.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "2.6.0",
 					Protocols: []string{"4.0", "5.0"},
 				},
-				&response.TerraformProviderVersion{
+				{
 					Version:   "3.0.0",
 					Protocols: []string{"5.0"},
 				},
@@ -569,7 +569,7 @@ func TestProviderInstallerPurgeUnused(t *testing.T) {
 		registry:              registry.NewClient(Disco(server), nil),
 	}
 	purged, err := i.PurgeUnused(map[string]PluginMeta{
-		"test": PluginMeta{
+		"test": {
 			Name:    "test",
 			Version: VersionStr("1.2.3"),
 			Path:    wantedPath,
@@ -623,7 +623,7 @@ func TestProviderChecksum(t *testing.T) {
 				ShasumsSignatureURL: "http://127.0.0.1:8080/terraform-provider-template/0.1.0/terraform-provider-template_0.1.0_SHA256SUMS.sig",
 				SigningKeys: response.SigningKeyList{
 					GPGKeys: []*response.GPGKey{
-						&response.GPGKey{
+						{
 							ASCIIArmor: string(hashicorpKey),
 						},
 					},
@@ -639,7 +639,7 @@ func TestProviderChecksum(t *testing.T) {
 				ShasumsSignatureURL: "http://127.0.0.1:8080/terraform-provider-badsig/0.1.0/terraform-provider-badsig_0.1.0_SHA256SUMS.sig",
 				SigningKeys: response.SigningKeyList{
 					GPGKeys: []*response.GPGKey{
-						&response.GPGKey{
+						{
 							ASCIIArmor: string(hashicorpKey),
 						},
 					},
@@ -668,7 +668,7 @@ func TestProviderChecksum(t *testing.T) {
 				ShasumsSignatureURL: "http://127.0.0.1:8080/terraform-provider-template/0.1.0/terraform-provider-template_0.1.0_SHA256SUMS.sig",
 				SigningKeys: response.SigningKeyList{
 					GPGKeys: []*response.GPGKey{
-						&response.GPGKey{
+						{
 							ASCIIArmor: string(hashicorpKey),
 						},
 					},
@@ -685,7 +685,7 @@ func TestProviderChecksum(t *testing.T) {
 				ShasumsSignatureURL: "http://127.0.0.1:8080/terraform-provider-template/0.1.0/terraform-provider-template_0.1.0_SHA256SUMS.sig",
 				SigningKeys: response.SigningKeyList{
 					GPGKeys: []*response.GPGKey{
-						&response.GPGKey{
+						{
 							ASCIIArmor: string(hashicorpKey),
 						},
 					},

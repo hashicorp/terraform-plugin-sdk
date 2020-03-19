@@ -69,7 +69,7 @@ func TestConfigFieldReader(t *testing.T) {
 // This contains custom table tests for our ConfigFieldReader
 func TestConfigFieldReader_custom(t *testing.T) {
 	schema := map[string]*Schema{
-		"bool": &Schema{
+		"bool": {
 			Type: TypeBool,
 		},
 	}
@@ -128,11 +128,11 @@ func TestConfigFieldReader_custom(t *testing.T) {
 
 func TestConfigFieldReader_DefaultHandling(t *testing.T) {
 	schema := map[string]*Schema{
-		"strWithDefault": &Schema{
+		"strWithDefault": {
 			Type:    TypeString,
 			Default: "ImADefault",
 		},
-		"strWithDefaultFunc": &Schema{
+		"strWithDefaultFunc": {
 			Type: TypeString,
 			DefaultFunc: func() (interface{}, error) {
 				return "FuncDefault", nil
@@ -213,16 +213,16 @@ func TestConfigFieldReader_DefaultHandling(t *testing.T) {
 
 func TestConfigFieldReader_ComputedMap(t *testing.T) {
 	schema := map[string]*Schema{
-		"map": &Schema{
+		"map": {
 			Type:     TypeMap,
 			Computed: true,
 		},
-		"listmap": &Schema{
+		"listmap": {
 			Type:     TypeMap,
 			Computed: true,
 			Elem:     TypeList,
 		},
-		"maplist": &Schema{
+		"maplist": {
 			Type:     TypeList,
 			Computed: true,
 			Elem:     TypeMap,
@@ -390,7 +390,7 @@ func TestConfigFieldReader_ComputedMap(t *testing.T) {
 
 func TestConfigFieldReader_ComputedSet(t *testing.T) {
 	schema := map[string]*Schema{
-		"strSet": &Schema{
+		"strSet": {
 			Type: TypeSet,
 			Elem: &Schema{Type: TypeString},
 			Set:  HashString,
@@ -464,7 +464,7 @@ func TestConfigFieldReader_computedComplexSet(t *testing.T) {
 	}
 
 	schema := map[string]*Schema{
-		"set": &Schema{
+		"set": {
 			Type: TypeSet,
 			Elem: &Resource{
 				Schema: map[string]*Schema{

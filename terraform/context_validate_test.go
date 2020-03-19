@@ -539,10 +539,10 @@ func TestContext2Validate_orphans(t *testing.T) {
 	m := testModule(t, "validate-good")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "bar",
@@ -938,10 +938,10 @@ func TestContext2Validate_tainted(t *testing.T) {
 	m := testModule(t, "validate-good")
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: rootModulePath,
 				Resources: map[string]*ResourceState{
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID:      "bar",
@@ -1007,7 +1007,7 @@ func TestContext2Validate_targetedDestroy(t *testing.T) {
 		},
 		State: MustShimLegacyState(&State{
 			Modules: []*ModuleState{
-				&ModuleState{
+				{
 					Path: rootModulePath,
 					Resources: map[string]*ResourceState{
 						"aws_instance.foo": resourceState("aws_instance", "i-bcd345"),

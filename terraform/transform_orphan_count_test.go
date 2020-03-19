@@ -12,24 +12,24 @@ import (
 func TestOrphanResourceCountTransformer(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.2": &ResourceState{
+					"aws_instance.foo.2": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -66,24 +66,24 @@ func TestOrphanResourceCountTransformer(t *testing.T) {
 func TestOrphanResourceCountTransformer_zero(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.2": &ResourceState{
+					"aws_instance.foo.2": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -120,24 +120,24 @@ func TestOrphanResourceCountTransformer_zero(t *testing.T) {
 func TestOrphanResourceCountTransformer_oneNoIndex(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.2": &ResourceState{
+					"aws_instance.foo.2": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -174,24 +174,24 @@ func TestOrphanResourceCountTransformer_oneNoIndex(t *testing.T) {
 func TestOrphanResourceCountTransformer_oneIndex(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.1": &ResourceState{
+					"aws_instance.foo.1": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -228,24 +228,24 @@ func TestOrphanResourceCountTransformer_oneIndex(t *testing.T) {
 func TestOrphanResourceCountTransformer_zeroAndNone(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
@@ -282,24 +282,24 @@ func TestOrphanResourceCountTransformer_zeroAndNone(t *testing.T) {
 func TestOrphanResourceCountTransformer_zeroAndNoneCount(t *testing.T) {
 	state := MustShimLegacyState(&State{
 		Modules: []*ModuleState{
-			&ModuleState{
+			{
 				Path: []string{"root"},
 				Resources: map[string]*ResourceState{
-					"aws_instance.web": &ResourceState{
+					"aws_instance.web": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo": &ResourceState{
+					"aws_instance.foo": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
 						},
 					},
 
-					"aws_instance.foo.0": &ResourceState{
+					"aws_instance.foo.0": {
 						Type: "aws_instance",
 						Primary: &InstanceState{
 							ID: "foo",
