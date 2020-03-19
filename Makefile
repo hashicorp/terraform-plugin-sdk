@@ -19,7 +19,7 @@ protobuf:
 	bash internal/tfplugin5/generate.sh
 
 fmt:
-	gofmt -w $(GOFMT_FILES)
+	gofmt -s -w $(GOFMT_FILES)
 
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
