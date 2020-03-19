@@ -770,7 +770,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if len(v.ConflictsWith) > 0 {
-			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap)
+			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap, v)
 			if err != nil {
 				return fmt.Errorf("ConflictsWith: %+v", err)
 			}
@@ -784,14 +784,14 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if len(v.ExactlyOneOf) > 0 {
-			err := checkKeysAgainstSchemaFlags(k, v.ExactlyOneOf, topSchemaMap)
+			err := checkKeysAgainstSchemaFlags(k, v.ExactlyOneOf, topSchemaMap, v)
 			if err != nil {
 				return fmt.Errorf("ExactlyOneOf: %+v", err)
 			}
 		}
 
 		if len(v.AtLeastOneOf) > 0 {
-			err := checkKeysAgainstSchemaFlags(k, v.AtLeastOneOf, topSchemaMap)
+			err := checkKeysAgainstSchemaFlags(k, v.AtLeastOneOf, topSchemaMap, v)
 			if err != nil {
 				return fmt.Errorf("AtLeastOneOf: %+v", err)
 			}
@@ -860,14 +860,20 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 	return nil
 }
 
-func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap) error {
+func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap, self *Schema) error {
 	for _, key := range keys {
 		parts := strings.Split(key, ".")
 		sm := topSchemaMap
 		var target *Schema
 		for _, part := range parts {
-			// Skip index fields
-			if _, err := strconv.Atoi(part); err == nil {
+			// Skip index fields if 0
+			partInt, err := strconv.Atoi(part)
+
+			if err == nil {
+				if partInt != 0 {
+					return fmt.Errorf("%s configuration block reference (%s) can only use the .0. index for TypeList and MaxItems: 1 configuration blocks", k, key)
+				}
+
 				continue
 			}
 
@@ -876,13 +882,27 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 				return fmt.Errorf("%s references unknown attribute (%s) at part (%s)", k, key, part)
 			}
 
-			if subResource, ok := target.Elem.(*Resource); ok {
-				sm = schemaMap(subResource.Schema)
+			subResource, ok := target.Elem.(*Resource)
+
+			if !ok {
+				continue
 			}
+
+			if target.Type == TypeSet || target.MaxItems != 1 {
+				return fmt.Errorf("%s configuration block reference (%s) can only be used with TypeList and MaxItems: 1 configuration blocks", k, key)
+			}
+
+			sm = schemaMap(subResource.Schema)
 		}
+
 		if target == nil {
 			return fmt.Errorf("%s cannot find target attribute (%s), sm: %#v", k, key, sm)
 		}
+
+		if target == self {
+			return fmt.Errorf("%s cannot reference self (%s)", k, key)
+		}
+
 		if target.Required {
 			return fmt.Errorf("%s cannot contain Required attribute (%s)", k, key)
 		}

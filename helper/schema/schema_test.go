@@ -3611,7 +3611,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			false, // TODO: This should return an error as it will always error during runtime
+			true,
 		},
 
 		"ConflictsWith list index syntax with list configuration block existing attribute": {
@@ -3619,6 +3619,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				"config_block_attr": &Schema{
 					Type:     TypeList,
 					Optional: true,
+					MaxItems: 1,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
 							"nested_attr": &Schema{
@@ -3638,6 +3639,29 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 		},
 
 		"ConflictsWith list index syntax with list configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": &Schema{
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": &Schema{
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": &Schema{
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith list index syntax with list configuration block missing MaxItems": {
 			map[string]*Schema{
 				"config_block_attr": &Schema{
 					Type:     TypeList,
@@ -3680,7 +3704,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ConflictsWith: []string{"config_block_attr.0.nested_attr"},
 				},
 			},
-			false, // TODO: This should return an error as sets cannot be indexed
+			true,
 		},
 
 		"ConflictsWith list index syntax with set configuration block missing attribute": {
@@ -3726,7 +3750,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ConflictsWith: []string{"config_block_attr.nested_attr"},
 				},
 			},
-			false, // TODO: This should return an error as validateConflictingAttributes will never error
+			true,
 		},
 
 		"ConflictsWith map key syntax with list configuration block self reference": {
@@ -3745,7 +3769,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			false, // TODO: This should return an error as validateConflictingAttributes will never error
+			true,
 		},
 
 		"ConflictsWith map key syntax with set configuration block existing attribute": {
@@ -3768,7 +3792,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ConflictsWith: []string{"config_block_attr.nested_attr"},
 				},
 			},
-			false, // TODO: This should return an error as validateConflictingAttributes will never error and sets cannot be indexed
+			true,
 		},
 
 		"ConflictsWith map key syntax with set configuration block self reference": {
@@ -3787,7 +3811,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			false, // TODO: This should return an error as validateConflictingAttributes will never error and sets cannot be indexed
+			true,
 		},
 
 		"ConflictsWith map key syntax with map attribute": {
@@ -3830,7 +3854,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ConflictsWith: []string{"test"},
 				},
 			},
-			false, // TODO: This should return an error as it will always error during runtime
+			true,
 		},
 
 		"Sub-resource invalid": {
