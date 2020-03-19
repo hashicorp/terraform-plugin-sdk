@@ -3597,12 +3597,12 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with self reference": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:          TypeString,
 								Optional:      true,
 								ConflictsWith: []string{"config_block_attr.0.nested_attr"},
@@ -3616,20 +3616,20 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with list configuration block existing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					MaxItems: 1,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.0.nested_attr"},
@@ -3640,19 +3640,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with list configuration block missing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
@@ -3663,19 +3663,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with list configuration block missing MaxItems": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
@@ -3686,19 +3686,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with set configuration block existing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeSet,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.0.nested_attr"},
@@ -3709,19 +3709,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith list index syntax with set configuration block missing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeSet,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.0.missing_attr"},
@@ -3732,19 +3732,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith map key syntax with list configuration block existing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.nested_attr"},
@@ -3755,12 +3755,12 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith map key syntax with list configuration block self reference": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:          TypeString,
 								Optional:      true,
 								ConflictsWith: []string{"config_block_attr.nested_attr"},
@@ -3774,19 +3774,19 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith map key syntax with set configuration block existing attribute": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeSet,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:     TypeString,
 								Optional: true,
 							},
 						},
 					},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"config_block_attr.nested_attr"},
@@ -3797,12 +3797,12 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith map key syntax with set configuration block self reference": {
 			map[string]*Schema{
-				"config_block_attr": &Schema{
+				"config_block_attr": {
 					Type:     TypeSet,
 					Optional: true,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
-							"nested_attr": &Schema{
+							"nested_attr": {
 								Type:          TypeString,
 								Optional:      true,
 								ConflictsWith: []string{"config_block_attr.nested_attr"},
@@ -3816,12 +3816,12 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith map key syntax with map attribute": {
 			map[string]*Schema{
-				"map_attr": &Schema{
+				"map_attr": {
 					Type:     TypeMap,
 					Optional: true,
 					Elem:     &Schema{Type: TypeString},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"map_attr.some_key"},
@@ -3832,12 +3832,12 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith string syntax with map attribute": {
 			map[string]*Schema{
-				"map_attr": &Schema{
+				"map_attr": {
 					Type:     TypeMap,
 					Optional: true,
 					Elem:     &Schema{Type: TypeString},
 				},
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"map_attr"},
@@ -3848,7 +3848,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith string syntax with self reference": {
 			map[string]*Schema{
-				"test": &Schema{
+				"test": {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"test"},
