@@ -4,6 +4,10 @@ DEPRECATED:
 
 * helper/schema: `ResourceData.GetOkExists` will not be removed in the next major version unless a suitable replacement or alternative can be prescribed [GH-350]
 
+FEATURES:
+
+* Added support for additional protocol 5.2 fields (`Description`, `DescriptionKind`, `Deprecated`) [GH-353]
+
 BUG FIXES:
 
 * Binary acceptance test driver: auto-configure providers [GH-355]
