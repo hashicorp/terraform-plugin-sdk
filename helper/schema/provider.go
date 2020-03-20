@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -189,14 +190,26 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 // The primary use case of this call is to check that required keys are
 // set.
 func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
+
+	diags := p.ValidateDiag(c)
+
+	return diags.Warnings(), diags.Errors()
+}
+
+func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
 	if err := p.InternalValidate(); err != nil {
-		return nil, []error{fmt.Errorf(
-			"Internal validation of the provider failed! This is always a bug\n"+
-				"with the provider itself, and not a user issue. Please report\n"+
-				"this bug:\n\n%s", err)}
+		return []*diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  "Provider InternalValidate Error",
+				Detail: fmt.Sprintf("Internal validation of the provider failed! This is always a bug\n"+
+					"with the provider itself, and not a user issue. Please report\n"+
+					"this bug:\n\n%s", err),
+			},
+		}
 	}
 
-	return schemaMap(p.Schema).Validate(c)
+	return schemaMap(p.Schema).ValidateDiag(c)
 }
 
 // ValidateResource is called once at the beginning with the raw

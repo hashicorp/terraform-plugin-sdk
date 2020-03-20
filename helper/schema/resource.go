@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -431,13 +432,23 @@ func (r *Resource) SimpleDiff(
 
 // Validate validates the resource configuration against the schema.
 func (r *Resource) Validate(c *terraform.ResourceConfig) ([]string, []error) {
-	warns, errs := schemaMap(r.Schema).Validate(c)
+	diags := r.ValidateDiag(c)
+
+	return diags.Warnings(), diags.Errors()
+}
+
+func (r *Resource) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
+	diags := schemaMap(r.Schema).ValidateDiag(c)
 
 	if r.DeprecationMessage != "" {
-		warns = append(warns, r.DeprecationMessage)
+		diags = append(diags, &diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Deprecated Resource",
+			Detail:   r.DeprecationMessage,
+		})
 	}
 
-	return warns, errs
+	return diags
 }
 
 // ReadDataApply loads the data for a data source, given a diff that
