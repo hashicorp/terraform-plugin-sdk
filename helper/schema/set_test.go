@@ -112,6 +112,11 @@ func testSetInt(v interface{}) int {
 	return v.(int)
 }
 
+// Same test function implementation but not same address
+func testSetInt2(v interface{}) int {
+	return v.(int)
+}
+
 func TestHashResource_nil(t *testing.T) {
 	resource := &Resource{
 		Schema: map[string]*Schema{
@@ -213,5 +218,30 @@ func TestHashEqual(t *testing.T) {
 				t.Fatalf("expected %t, got %t", tc.expected, actual)
 			}
 		})
+	}
+}
+
+func TestSetEqualNested(t *testing.T) {
+	s := &Set{F: testSetInt}
+	s.Add(1)
+	s.Add(5)
+	s.Add(25)
+
+	s1 := &Set{F: testSetInt}
+	s1.Add(100)
+	s.m["dummy"] = s1
+
+	// Same nested structure but different function address
+	s2 := &Set{F: testSetInt2}
+	s2.Add(1)
+	s2.Add(5)
+	s2.Add(25)
+
+	s3 := &Set{F: testSetInt2}
+	s3.Add(100)
+	s2.m["dummy"] = s3
+
+	if !s.Equal(s2) {
+		t.Fatalf("Nested Sets structures differ")
 	}
 }
