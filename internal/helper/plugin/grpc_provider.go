@@ -189,8 +189,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	warns, errs := s.provider.Validate(config)
-	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, convert.WarnsAndErrsToProto(warns, errs))
+	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateDiag(config))
 
 	preparedConfigMP, err := msgpack.Marshal(configVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -216,8 +215,7 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	warns, errs := s.provider.ValidateResource(req.TypeName, config)
-	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, convert.WarnsAndErrsToProto(warns, errs))
+	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateResourceDiag(req.TypeName, config))
 
 	return resp, nil
 }
@@ -241,8 +239,7 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *pr
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	warns, errs := s.provider.ValidateDataSource(req.TypeName, config)
-	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, convert.WarnsAndErrsToProto(warns, errs))
+	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateDataSourceDiag(req.TypeName, config))
 
 	return resp, nil
 }

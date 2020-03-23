@@ -3,6 +3,7 @@ package convert
 import (
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
@@ -130,4 +131,22 @@ func PathToAttributePath(p cty.Path) *proto.AttributePath {
 		}
 	}
 	return ap
+}
+
+func DiagsToProto(diags diag.Diagnostics) []*proto.Diagnostic {
+	var ds []*proto.Diagnostic
+	for _, d := range diags {
+		protoDiag := &proto.Diagnostic{
+			Summary:   d.Summary,
+			Detail:    d.Detail,
+			Attribute: PathToAttributePath(d.AttributePath),
+		}
+		if d.Severity == diag.Error {
+			protoDiag.Severity = proto.Diagnostic_ERROR
+		} else if d.Severity == diag.Warning {
+			protoDiag.Severity = proto.Diagnostic_WARNING
+		}
+		ds = append(ds, protoDiag)
+	}
+	return ds
 }

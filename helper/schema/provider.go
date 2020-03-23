@@ -201,7 +201,7 @@ func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
 		return []*diag.Diagnostic{
 			{
 				Severity: diag.Error,
-				Summary:  "Provider InternalValidate Error",
+				Summary:  "InternalValidate",
 				Detail: fmt.Sprintf("Internal validation of the provider failed! This is always a bug\n"+
 					"with the provider itself, and not a user issue. Please report\n"+
 					"this bug:\n\n%s", err),
@@ -224,13 +224,23 @@ func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
 // are set and that the general structure is correct.
 func (p *Provider) ValidateResource(
 	t string, c *terraform.ResourceConfig) ([]string, []error) {
+	diags := p.ValidateResourceDiag(t, c)
+	return diags.Warnings(), diags.Errors()
+}
+
+func (p *Provider) ValidateResourceDiag(
+	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.ResourcesMap[t]
 	if !ok {
-		return nil, []error{fmt.Errorf(
-			"Provider doesn't support resource: %s", t)}
+		return []*diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Provider doesn't support resource: %s", t),
+			},
+		}
 	}
 
-	return r.Validate(c)
+	return r.ValidateDiag(c)
 }
 
 // Configure configures the provider itself with the configuration
@@ -385,13 +395,23 @@ func (p *Provider) ImportState(
 // are set and that the general structure is correct.
 func (p *Provider) ValidateDataSource(
 	t string, c *terraform.ResourceConfig) ([]string, []error) {
+	diags := p.ValidateDataSourceDiag(t, c)
+	return diags.Warnings(), diags.Errors()
+}
+
+func (p *Provider) ValidateDataSourceDiag(
+	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.DataSourcesMap[t]
 	if !ok {
-		return nil, []error{fmt.Errorf(
-			"Provider doesn't support data source: %s", t)}
+		return []*diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Provider doesn't support data source: %s", t),
+			},
+		}
 	}
 
-	return r.Validate(c)
+	return r.ValidateDiag(c)
 }
 
 // DataSources returns all of the available data sources that this
