@@ -42,10 +42,11 @@ type Diagnostic struct {
 	Summary       string
 	Detail        string
 	AttributePath cty.Path
+	MapKey        string
 }
 
 func (d *Diagnostic) Error() string {
-	return fmt.Sprintf("%s: %s", d.Severity, d.Summary)
+	return fmt.Sprintf("%s: %s: %s", d.Severity, d.Summary, d.Detail)
 }
 
 type Severity int

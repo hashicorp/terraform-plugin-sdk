@@ -410,13 +410,19 @@ func (s *Schema) finalizeDiff(d *terraform.ResourceAttrDiff, customized bool) *t
 	return d
 }
 
-func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path) diag.Diagnostics {
+func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path, isTypeMap bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if s.ValidateDiagFunc != nil {
 		diags = s.ValidateDiagFunc(decoded, k)
 		for _, d := range diags {
-			d.AttributePath = path
+			p := path.Copy()
+			if len(d.AttributePath) == 0 {
+				if isTypeMap && d.MapKey != "" {
+					p = append(p, cty.IndexStep{Key: cty.StringVal(d.MapKey)})
+				}
+				d.AttributePath = p
+			}
 		}
 	} else if s.ValidateFunc != nil {
 		ws, es := s.ValidateFunc(decoded, k)
@@ -1611,7 +1617,8 @@ func (m schemaMap) validateList(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path) diag.Diagnostics {
+	path cty.Path,
+	isTypeSet bool) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
@@ -1675,7 +1682,12 @@ func (m schemaMap) validateList(
 
 	for i, raw := range raws {
 		key := fmt.Sprintf("%s.%d", k, i)
-		path = append(path, cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
+
+		// TODO: figure out cty.Path for TypeSet
+		// if isTypeSet {
+		// } else {
+		// }
+		p := append(path.Copy(), cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
 
 		// Reify the key value from the ResourceConfig.
 		// If the list was computed we have all raw values, but some of these
@@ -1687,9 +1699,9 @@ func (m schemaMap) validateList(
 		switch t := schema.Elem.(type) {
 		case *Resource:
 			// This is a sub-resource
-			diags = append(diags, m.validateObject(key, t.Schema, c, path)...)
+			diags = append(diags, m.validateObject(key, t.Schema, c, p)...)
 		case *Schema:
-			diags = append(diags, m.validateType(key, raw, t, c, path)...)
+			diags = append(diags, m.validateType(key, raw, t, c, p)...)
 		}
 
 	}
@@ -1752,7 +1764,7 @@ func (m schemaMap) validateMap(
 			return diags
 		}
 
-		return schema.validateFunc(mapIface, k, path)
+		return schema.validateFunc(mapIface, k, path, true)
 	}
 
 	// It is a slice, verify that all the elements are maps
@@ -1784,7 +1796,7 @@ func (m schemaMap) validateMap(
 		}
 	}
 
-	return schema.validateFunc(validatableMap, k, path)
+	return schema.validateFunc(validatableMap, k, path, true)
 }
 
 func validateMapValues(k string, m map[string]interface{}, schema *Schema, path cty.Path) diag.Diagnostics {
@@ -1793,12 +1805,12 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 
 	for key, raw := range m {
 		valueType, err := getValueType(k, schema)
-		path = append(path, cty.GetAttrStep{Name: key})
+		p := append(path.Copy(), cty.IndexStep{Key: cty.StringVal(key)})
 		if err != nil {
 			return append(diags, &diag.Diagnostic{
 				Severity:      diag.Error,
 				Summary:       err.Error(),
-				AttributePath: path,
+				AttributePath: p,
 			})
 		}
 
@@ -1809,7 +1821,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 				return append(diags, &diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       err.Error(),
-					AttributePath: path,
+					AttributePath: p,
 				})
 			}
 		case TypeInt:
@@ -1818,7 +1830,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 				return append(diags, &diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       err.Error(),
-					AttributePath: path,
+					AttributePath: p,
 				})
 			}
 		case TypeFloat:
@@ -1827,7 +1839,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 				return append(diags, &diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       err.Error(),
-					AttributePath: path,
+					AttributePath: p,
 				})
 			}
 		case TypeString:
@@ -1836,7 +1848,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 				return append(diags, &diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       err.Error(),
-					AttributePath: path,
+					AttributePath: p,
 				})
 			}
 		default:
@@ -2014,7 +2026,7 @@ func (m schemaMap) validatePrimitive(
 		panic(fmt.Sprintf("Unknown validation type: %#v", schema.Type))
 	}
 
-	return append(diags, schema.validateFunc(decoded, k, path)...)
+	return append(diags, schema.validateFunc(decoded, k, path, false)...)
 }
 
 func (m schemaMap) validateType(
@@ -2027,8 +2039,10 @@ func (m schemaMap) validateType(
 	var diags diag.Diagnostics
 
 	switch schema.Type {
-	case TypeSet, TypeList:
-		diags = m.validateList(k, raw, schema, c, path)
+	case TypeList:
+		diags = m.validateList(k, raw, schema, c, path, false)
+	case TypeSet:
+		diags = m.validateList(k, raw, schema, c, path, true)
 	case TypeMap:
 		diags = m.validateMap(k, raw, schema, c, path)
 	default:
