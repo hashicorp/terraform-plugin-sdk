@@ -1,16 +1,16 @@
-# 1.9.0 (Unreleased)
+# 1.9.0 (March 26, 2020)
 
 DEPRECATED:
 
-* helper/schema: `ResourceData.GetOkExists` will not be removed in the next major version unless a suitable replacement or alternative can be prescribed [GH-350]
+* helper/schema: `ResourceData.GetOkExists` will not be removed in the next major version unless a suitable replacement or alternative can be prescribed ([#350](https://github.com/hashicorp/terraform-plugin-sdk/issues/350))
 
 FEATURES:
 
-* Added support for additional protocol 5.2 fields (`Description`, `DescriptionKind`, `Deprecated`) [GH-353]
+* Added support for additional protocol 5.2 fields (`Description`, `DescriptionKind`, `Deprecated`) ([#353](https://github.com/hashicorp/terraform-plugin-sdk/issues/353))
 
 BUG FIXES:
 
-* Binary acceptance test driver: auto-configure providers [GH-355]
+* Binary acceptance test driver: auto-configure providers ([#355](https://github.com/hashicorp/terraform-plugin-sdk/issues/355))
 
 # 1.8.0 (March 11, 2020)
 
