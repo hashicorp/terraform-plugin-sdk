@@ -62,7 +62,7 @@ func (r *ResourceImporter) InternalValidate() error {
 	return nil
 }
 
-// ImportStatePassthrough is an implementation of StateContextFunc that can be
+// ImportStatePassthrough is an implementation of StateFunc that can be
 // used to simply pass the ID directly through.
 //
 // Deprecated: Please use the context aware ImportStatePassthroughContext instead

@@ -502,7 +502,7 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
-	err = s.provider.ConfigureContext(ctx, config)
+	err = s.provider.Configure(ctx, config)
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 
 	return resp, nil
@@ -972,7 +972,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto
 		Type: req.TypeName,
 	}
 
-	newInstanceStates, err := s.provider.ImportStateContext(ctx, info, req.Id)
+	newInstanceStates, err := s.provider.ImportState(ctx, info, req.Id)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil

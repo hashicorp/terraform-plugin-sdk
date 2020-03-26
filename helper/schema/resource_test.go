@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 
@@ -1004,7 +1002,7 @@ func TestResourceRefresh(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1034,7 +1032,7 @@ func TestResourceRefresh_blankId(t *testing.T) {
 		Attributes: map[string]string{},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1065,7 +1063,7 @@ func TestResourceRefresh_delete(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -1100,7 +1098,7 @@ func TestResourceRefresh_existsError(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if err == nil {
 		t.Fatalf("should error")
 	}
@@ -1134,227 +1132,12 @@ func TestResourceRefresh_noExists(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Refresh(context.Background(), s, 42)
+	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
 	if actual != nil {
 		t.Fatalf("should have no state")
-	}
-}
-
-func TestResourceRefresh_needsMigration(t *testing.T) {
-	// Schema v2 it deals only in newfoo, which tracks foo as an int
-	r := &Resource{
-		SchemaVersion: 2,
-		Schema: map[string]*Schema{
-			"newfoo": {
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		return d.Set("newfoo", d.Get("newfoo").(int)+1)
-	}
-
-	r.MigrateState = func(
-		v int,
-		s *terraform.InstanceState,
-		meta interface{}) (*terraform.InstanceState, error) {
-		// Real state migration functions will probably switch on this value,
-		// but we'll just assert on it for now.
-		if v != 1 {
-			t.Fatalf("Expected StateSchemaVersion to be 1, got %d", v)
-		}
-
-		if meta != 42 {
-			t.Fatal("Expected meta to be passed through to the migration function")
-		}
-
-		oldfoo, err := strconv.ParseFloat(s.Attributes["oldfoo"], 64)
-		if err != nil {
-			t.Fatalf("err: %#v", err)
-		}
-		s.Attributes["newfoo"] = strconv.Itoa(int(oldfoo * 10))
-		delete(s.Attributes, "oldfoo")
-
-		return s, nil
-	}
-
-	// State is v1 and deals in oldfoo, which tracked foo as a float at 1/10th
-	// the scale of newfoo
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"oldfoo": "1.2",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "1",
-		},
-	}
-
-	actual, err := r.Refresh(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"id":     "bar",
-			"newfoo": "13",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "2",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad:\n\nexpected: %#v\ngot: %#v", expected, actual)
-	}
-}
-
-func TestResourceRefresh_noMigrationNeeded(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 2,
-		Schema: map[string]*Schema{
-			"newfoo": {
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		return d.Set("newfoo", d.Get("newfoo").(int)+1)
-	}
-
-	r.MigrateState = func(
-		v int,
-		s *terraform.InstanceState,
-		meta interface{}) (*terraform.InstanceState, error) {
-		t.Fatal("Migrate function shouldn't be called!")
-		return nil, nil
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"newfoo": "12",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "2",
-		},
-	}
-
-	actual, err := r.Refresh(context.Background(), s, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"id":     "bar",
-			"newfoo": "13",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "2",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad:\n\nexpected: %#v\ngot: %#v", expected, actual)
-	}
-}
-
-func TestResourceRefresh_stateSchemaVersionUnset(t *testing.T) {
-	r := &Resource{
-		// Version 1 > Version 0
-		SchemaVersion: 1,
-		Schema: map[string]*Schema{
-			"newfoo": {
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		return d.Set("newfoo", d.Get("newfoo").(int)+1)
-	}
-
-	r.MigrateState = func(
-		v int,
-		s *terraform.InstanceState,
-		meta interface{}) (*terraform.InstanceState, error) {
-		s.Attributes["newfoo"] = s.Attributes["oldfoo"]
-		return s, nil
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"oldfoo": "12",
-		},
-	}
-
-	actual, err := r.Refresh(context.Background(), s, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	expected := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"id":     "bar",
-			"newfoo": "13",
-		},
-		Meta: map[string]interface{}{
-			"schema_version": "1",
-		},
-	}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad:\n\nexpected: %#v\ngot: %#v", expected, actual)
-	}
-}
-
-func TestResourceRefresh_migrateStateErr(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 2,
-		Schema: map[string]*Schema{
-			"newfoo": {
-				Type:     TypeInt,
-				Optional: true,
-			},
-		},
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		t.Fatal("Read should never be called!")
-		return nil
-	}
-
-	r.MigrateState = func(
-		v int,
-		s *terraform.InstanceState,
-		meta interface{}) (*terraform.InstanceState, error) {
-		return s, fmt.Errorf("triggering an error")
-	}
-
-	s := &terraform.InstanceState{
-		ID: "bar",
-		Attributes: map[string]string{
-			"oldfoo": "12",
-		},
-	}
-
-	_, err := r.Refresh(context.Background(), s, nil)
-	if err == nil {
-		t.Fatal("expected error, but got none!")
 	}
 }
 
@@ -1616,159 +1399,6 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 	})
 	if err := r.InternalValidate(nil, true); err == nil {
 		t.Fatal("StateUpgraders cannot have a version >= current SchemaVersion")
-	}
-}
-
-// The legacy provider will need to be able to handle both types of schema
-// transformations, which has been retrofitted into the Refresh method.
-func TestResource_migrateAndUpgrade(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 4,
-		Schema: map[string]*Schema{
-			"four": {
-				Type:     TypeInt,
-				Required: true,
-			},
-		},
-		// this MigrateState will take the state to version 2
-		MigrateState: func(v int, is *terraform.InstanceState, _ interface{}) (*terraform.InstanceState, error) {
-			switch v {
-			case 0:
-				_, ok := is.Attributes["zero"]
-				if !ok {
-					return nil, fmt.Errorf("zero not found in %#v", is.Attributes)
-				}
-				is.Attributes["one"] = "1"
-				delete(is.Attributes, "zero")
-				fallthrough
-			case 1:
-				_, ok := is.Attributes["one"]
-				if !ok {
-					return nil, fmt.Errorf("one not found in %#v", is.Attributes)
-				}
-				is.Attributes["two"] = "2"
-				delete(is.Attributes, "one")
-			default:
-				return nil, fmt.Errorf("invalid schema version %d", v)
-			}
-			return is, nil
-		},
-	}
-
-	r.Read = func(d *ResourceData, m interface{}) error {
-		return d.Set("four", 4)
-	}
-
-	r.StateUpgraders = []StateUpgrader{
-		{
-			Version: 2,
-			Type: cty.Object(map[string]cty.Type{
-				"id":  cty.String,
-				"two": cty.Number,
-			}),
-			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-				_, ok := m["two"].(float64)
-				if !ok {
-					return nil, fmt.Errorf("two not found in %#v", m)
-				}
-				m["three"] = float64(3)
-				delete(m, "two")
-				return m, nil
-			},
-		},
-		{
-			Version: 3,
-			Type: cty.Object(map[string]cty.Type{
-				"id":    cty.String,
-				"three": cty.Number,
-			}),
-			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-				_, ok := m["three"].(float64)
-				if !ok {
-					return nil, fmt.Errorf("three not found in %#v", m)
-				}
-				m["four"] = float64(4)
-				delete(m, "three")
-				return m, nil
-			},
-		},
-	}
-
-	testStates := []*terraform.InstanceState{
-		{
-			ID: "bar",
-			Attributes: map[string]string{
-				"id":   "bar",
-				"zero": "0",
-			},
-			Meta: map[string]interface{}{
-				"schema_version": "0",
-			},
-		},
-		{
-			ID: "bar",
-			Attributes: map[string]string{
-				"id":  "bar",
-				"one": "1",
-			},
-			Meta: map[string]interface{}{
-				"schema_version": "1",
-			},
-		},
-		{
-			ID: "bar",
-			Attributes: map[string]string{
-				"id":  "bar",
-				"two": "2",
-			},
-			Meta: map[string]interface{}{
-				"schema_version": "2",
-			},
-		},
-		{
-			ID: "bar",
-			Attributes: map[string]string{
-				"id":    "bar",
-				"three": "3",
-			},
-			Meta: map[string]interface{}{
-				"schema_version": "3",
-			},
-		},
-		{
-			ID: "bar",
-			Attributes: map[string]string{
-				"id":   "bar",
-				"four": "4",
-			},
-			Meta: map[string]interface{}{
-				"schema_version": "4",
-			},
-		},
-	}
-
-	for i, s := range testStates {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			newState, err := r.Refresh(context.Background(), s, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			expected := &terraform.InstanceState{
-				ID: "bar",
-				Attributes: map[string]string{
-					"id":   "bar",
-					"four": "4",
-				},
-				Meta: map[string]interface{}{
-					"schema_version": "4",
-				},
-			}
-
-			if !cmp.Equal(expected, newState, equateEmpty) {
-				t.Fatal(cmp.Diff(expected, newState, equateEmpty))
-			}
-		})
 	}
 }
 
