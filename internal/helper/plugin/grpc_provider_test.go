@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/msgpack"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
@@ -592,7 +593,7 @@ func TestApplyResourceChange(t *testing.T) {
 				Optional: true,
 			},
 		},
-		CreateContext: func(_ context.Context, rd *schema.ResourceData, _ interface{}) error {
+		CreateContext: func(_ context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			rd.SetId("bar")
 			return nil
 		},
@@ -1352,15 +1353,17 @@ func TestValidateNulls(t *testing.T) {
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			d := validateConfigNulls(tc.Cfg, nil)
-			diags := convert.ProtoToDiagnostics(d)
+			diags := convert.ProtoToDiags(d)
 			switch {
 			case tc.Err:
 				if !diags.HasErrors() {
 					t.Fatal("expected error")
 				}
 			default:
-				if diags.HasErrors() {
-					t.Fatalf("unexpected error: %q", diags.Err())
+				for _, d := range diags {
+					if d.Severity == diag.Error {
+						t.Fatalf("unexpected error: %q", d)
+					}
 				}
 			}
 		})
@@ -1376,7 +1379,7 @@ func TestStopContext_grpc(t *testing.T) {
 				Optional: true,
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) error {
+		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
 			rd.SetId("bar")
 			return nil
@@ -1442,7 +1445,7 @@ func TestStopContext_stop(t *testing.T) {
 				Optional: true,
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) error {
+		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
 			rd.SetId("bar")
 			return nil
@@ -1507,7 +1510,7 @@ func TestStopContext_stopReset(t *testing.T) {
 				Optional: true,
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) error {
+		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
 			rd.SetId("bar")
 			return nil

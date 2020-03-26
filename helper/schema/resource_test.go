@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	ctyjson "github.com/hashicorp/go-cty/cty/json"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -1398,7 +1399,7 @@ func TestResource_ContextTimeout(t *testing.T) {
 	}
 
 	var deadlineSet bool
-	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) error {
+	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) diag.Diagnostics {
 		d.SetId("foo")
 		_, deadlineSet = ctx.Deadline()
 		return nil

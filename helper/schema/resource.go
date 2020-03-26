@@ -218,16 +218,16 @@ type DeleteFunc func(*ResourceData, interface{}) error
 type ExistsFunc func(*ResourceData, interface{}) (bool, error)
 
 // See Resource documentation.
-type CreateContextFunc func(context.Context, *ResourceData, interface{}) error
+type CreateContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
 
 // See Resource documentation.
-type ReadContextFunc func(context.Context, *ResourceData, interface{}) error
+type ReadContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
 
 // See Resource documentation.
-type UpdateContextFunc func(context.Context, *ResourceData, interface{}) error
+type UpdateContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
 
 // See Resource documentation.
-type DeleteContextFunc func(context.Context, *ResourceData, interface{}) error
+type DeleteContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
 
 // See Resource documentation.
 type StateMigrateFunc func(
@@ -257,40 +257,40 @@ type StateUpgradeFunc func(ctx context.Context, rawState map[string]interface{},
 // See Resource documentation.
 type CustomizeDiffFunc func(context.Context, *ResourceDiff, interface{}) error
 
-func (r *Resource) create(ctx context.Context, d *ResourceData, meta interface{}) error {
+func (r *Resource) create(ctx context.Context, d *ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	if r.Create != nil {
-		return r.Create(d, meta)
+		return diags.Append(r.Create(d, meta))
 	}
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutCreate))
 	defer cancel()
-	return r.CreateContext(ctx, d, meta)
+	return diags.Append(r.CreateContext(ctx, d, meta))
 }
 
-func (r *Resource) read(ctx context.Context, d *ResourceData, meta interface{}) error {
+func (r *Resource) read(ctx context.Context, d *ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	if r.Read != nil {
-		return r.Read(d, meta)
+		return diags.Append(r.Read(d, meta))
 	}
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
 	defer cancel()
-	return r.ReadContext(ctx, d, meta)
+	return diags.Append(r.ReadContext(ctx, d, meta))
 }
 
-func (r *Resource) update(ctx context.Context, d *ResourceData, meta interface{}) error {
+func (r *Resource) update(ctx context.Context, d *ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	if r.Update != nil {
-		return r.Update(d, meta)
+		return diags.Append(r.Update(d, meta))
 	}
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutUpdate))
 	defer cancel()
-	return r.UpdateContext(ctx, d, meta)
+	return diags.Append(r.UpdateContext(ctx, d, meta))
 }
 
-func (r *Resource) delete(ctx context.Context, d *ResourceData, meta interface{}) error {
+func (r *Resource) delete(ctx context.Context, d *ResourceData, meta interface{}) (diags diag.Diagnostics) {
 	if r.Delete != nil {
-		return r.Delete(d, meta)
+		return diags.Append(r.Delete(d, meta))
 	}
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutDelete))
 	defer cancel()
-	return r.DeleteContext(ctx, d, meta)
+	return diags.Append(r.DeleteContext(ctx, d, meta))
 }
 
 // Apply creates, updates, and/or deletes a resource.
@@ -298,22 +298,28 @@ func (r *Resource) Apply(
 	ctx context.Context,
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff,
-	meta interface{}) (*terraform.InstanceState, error) {
+	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
+
+	var diags diag.Diagnostics
+
 	data, err := schemaMap(r.Schema).Data(s, d)
-	if err != nil {
-		return s, err
+	diags = diags.Append(err)
+	if diags.HasErrors() {
+		return s, diags
 	}
 
 	// Instance Diff shoould have the timeout info, need to copy it over to the
 	// ResourceData meta
 	rt := ResourceTimeout{}
 	if _, ok := d.Meta[TimeoutKey]; ok {
+		// TODO should this be added to diags?
 		if err := rt.DiffDecode(d); err != nil {
 			log.Printf("[ERR] Error decoding ResourceTimeout: %s", err)
 		}
 	} else if s != nil {
 		if _, ok := s.Meta[TimeoutKey]; ok {
 			if err := rt.StateDecode(s); err != nil {
+				// TODO should this be added to diags?
 				log.Printf("[ERR] Error decoding ResourceTimeout: %s", err)
 			}
 		}
@@ -331,10 +337,10 @@ func (r *Resource) Apply(
 	if d.Destroy || d.RequiresNew() {
 		if s.ID != "" {
 			// Destroy the resource since it is created
-			err := r.delete(ctx, data, meta)
+			diags = diags.Append(r.delete(ctx, data, meta))
 
-			if err != nil {
-				return r.recordCurrentSchemaVersion(data.State()), err
+			if diags.HasErrors() {
+				return r.recordCurrentSchemaVersion(data.State()), diags
 			}
 
 			// Make sure the ID is gone.
@@ -344,31 +350,31 @@ func (r *Resource) Apply(
 		// If we're only destroying, and not creating, then return
 		// now since we're done!
 		if !d.RequiresNew() {
-			return nil, nil
+			return nil, diags
 		}
 
 		// Reset the data to be stateless since we just destroyed
 		data, err = schemaMap(r.Schema).Data(nil, d)
+		diags = diags.Append(err)
+		if diags.HasErrors() {
+			return nil, diags
+		}
 		// data was reset, need to re-apply the parsed timeouts
 		data.timeouts = &rt
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	err = nil
 	if data.Id() == "" {
 		// We're creating, it is a new resource.
 		data.MarkNewResource()
-		err = r.create(ctx, data, meta)
+		diags = diags.Append(r.create(ctx, data, meta))
 	} else {
 		if !r.updateFuncSet() {
-			return s, fmt.Errorf("doesn't support update")
+			return s, diags.Append(fmt.Errorf("doesn't support update"))
 		}
-		err = r.update(ctx, data, meta)
+		diags = diags.Append(r.update(ctx, data, meta))
 	}
 
-	return r.recordCurrentSchemaVersion(data.State()), err
+	return r.recordCurrentSchemaVersion(data.State()), diags
 }
 
 // Diff returns a diff of this resource.
@@ -431,14 +437,8 @@ func (r *Resource) SimpleDiff(
 }
 
 // Validate validates the resource configuration against the schema.
-func (r *Resource) Validate(c *terraform.ResourceConfig) ([]string, []error) {
-	diags := r.ValidateDiag(c)
-
-	return diags.Warnings(), diags.Errors()
-}
-
-func (r *Resource) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
-	diags := schemaMap(r.Schema).ValidateDiag(c)
+func (r *Resource) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
+	diags := schemaMap(r.Schema).Validate(c)
 
 	if r.DeprecationMessage != "" {
 		diags = append(diags, &diag.Diagnostic{
@@ -457,15 +457,19 @@ func (r *Resource) ReadDataApply(
 	ctx context.Context,
 	d *terraform.InstanceDiff,
 	meta interface{},
-) (*terraform.InstanceState, error) {
+) (*terraform.InstanceState, diag.Diagnostics) {
+
+	var diags diag.Diagnostics
+
 	// Data sources are always built completely from scratch
 	// on each read, so the source state is always nil.
 	data, err := schemaMap(r.Schema).Data(nil, d)
-	if err != nil {
-		return nil, err
+	diags = diags.Append(err)
+	if diags.HasErrors() {
+		return nil, diags
 	}
 
-	err = r.read(ctx, data, meta)
+	diags = diags.Append(r.read(ctx, data, meta))
 
 	state := data.State()
 	if state != nil && state.ID == "" {
@@ -476,7 +480,7 @@ func (r *Resource) ReadDataApply(
 		state.ID = "-"
 	}
 
-	return r.recordCurrentSchemaVersion(state), err
+	return r.recordCurrentSchemaVersion(state), diags
 }
 
 // RefreshWithoutUpgrade reads the instance state, but does not call
@@ -486,15 +490,19 @@ func (r *Resource) ReadDataApply(
 func (r *Resource) RefreshWithoutUpgrade(
 	ctx context.Context,
 	s *terraform.InstanceState,
-	meta interface{}) (*terraform.InstanceState, error) {
+	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
+
+	var diags diag.Diagnostics
+
 	// If the ID is already somehow blank, it doesn't exist
 	if s.ID == "" {
-		return nil, nil
+		return nil, diags
 	}
 
 	rt := ResourceTimeout{}
 	if _, ok := s.Meta[TimeoutKey]; ok {
 		if err := rt.StateDecode(s); err != nil {
+			// TODO should this be added to diags?
 			log.Printf("[ERR] Error decoding ResourceTimeout: %s", err)
 		}
 	}
@@ -503,36 +511,38 @@ func (r *Resource) RefreshWithoutUpgrade(
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
+		diags = diags.Append(err)
+		if diags.HasErrors() {
+			return s, diags
+		}
 		data.timeouts = &rt
 
-		if err != nil {
-			return s, err
-		}
-
 		exists, err := r.Exists(data, meta)
+		diags = diags.Append(err)
 
-		if err != nil {
-			return s, err
+		if diags.HasErrors() {
+			return s, diags
 		}
 		if !exists {
-			return nil, nil
+			return nil, diags
 		}
 	}
 
 	data, err := schemaMap(r.Schema).Data(s, nil)
-	data.timeouts = &rt
-	if err != nil {
-		return s, err
+	diags = diags.Append(err)
+	if diags.HasErrors() {
+		return s, diags
 	}
+	data.timeouts = &rt
 
-	err = r.read(ctx, data, meta)
+	diags = diags.Append(r.read(ctx, data, meta))
 
 	state := data.State()
 	if state != nil && state.ID == "" {
 		state = nil
 	}
 
-	return r.recordCurrentSchemaVersion(state), err
+	return r.recordCurrentSchemaVersion(state), diags
 }
 
 func (r *Resource) createFuncSet() bool {
@@ -797,7 +807,7 @@ func Noop(*ResourceData, interface{}) error {
 
 // NoopContext is a convenience implementation of context aware resource function which takes
 // no action and returns no error.
-func NoopContext(context.Context, *ResourceData, interface{}) error {
+func NoopContext(context.Context, *ResourceData, interface{}) diag.Diagnostics {
 	return nil
 }
 

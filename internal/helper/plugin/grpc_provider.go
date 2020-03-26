@@ -189,7 +189,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateDiag(config))
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.Validate(config))
 
 	preparedConfigMP, err := msgpack.Marshal(configVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -215,7 +215,7 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateResourceDiag(req.TypeName, config))
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.ValidateResource(req.TypeName, config))
 
 	return resp, nil
 }
@@ -239,7 +239,7 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *pr
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
-	resp.Diagnostics = convert.DiagsToProto(s.provider.ValidateDataSourceDiag(req.TypeName, config))
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.ValidateDataSource(req.TypeName, config))
 
 	return resp, nil
 }
@@ -540,9 +540,9 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 	}
 	instanceState.Meta = private
 
-	newInstanceState, err := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
-	if err != nil {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+	newInstanceState, diags := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
+	if diags.HasErrors() {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 		return resp, nil
 	}
 
@@ -900,11 +900,9 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 		}
 	}
 
-	newInstanceState, err := res.Apply(ctx, priorState, diff, s.provider.Meta())
-	// we record the error here, but continue processing any returned state.
-	if err != nil {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
-	}
+	newInstanceState, diags := res.Apply(ctx, priorState, diff, s.provider.Meta())
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
+
 	newStateVal := cty.NullVal(schemaBlock.ImpliedType())
 
 	// Always return a null value for destroy.
@@ -1052,9 +1050,9 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 	}
 
 	// now we can get the new complete data source
-	newInstanceState, err := res.ReadDataApply(ctx, diff, s.provider.Meta())
-	if err != nil {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+	newInstanceState, diags := res.ReadDataApply(ctx, diff, s.provider.Meta())
+	if diags.HasErrors() {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 		return resp, nil
 	}
 

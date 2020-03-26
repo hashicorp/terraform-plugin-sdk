@@ -180,8 +180,7 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 }
 
 // Validate is called once at the beginning with the raw configuration
-// (no interpolation done) and can return a list of warnings and/or
-// errors.
+// (no interpolation done) and can return diagnostics
 //
 // This is called once with the provider configuration only. It may not
 // be called at all if no provider configuration is given.
@@ -189,14 +188,7 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 // This should not assume that any values of the configurations are valid.
 // The primary use case of this call is to check that required keys are
 // set.
-func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
-
-	diags := p.ValidateDiag(c)
-
-	return diags.Warnings(), diags.Errors()
-}
-
-func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
+func (p *Provider) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	if err := p.InternalValidate(); err != nil {
 		return []*diag.Diagnostic{
 			{
@@ -209,12 +201,11 @@ func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
 		}
 	}
 
-	return schemaMap(p.Schema).ValidateDiag(c)
+	return schemaMap(p.Schema).Validate(c)
 }
 
 // ValidateResource is called once at the beginning with the raw
-// configuration (no interpolation done) and can return a list of warnings
-// and/or errors.
+// configuration (no interpolation done) and can return diagnostics.
 //
 // This is called once per resource.
 //
@@ -223,12 +214,6 @@ func (p *Provider) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
 // The primary use case of this call is to check that the required keys
 // are set and that the general structure is correct.
 func (p *Provider) ValidateResource(
-	t string, c *terraform.ResourceConfig) ([]string, []error) {
-	diags := p.ValidateResourceDiag(t, c)
-	return diags.Warnings(), diags.Errors()
-}
-
-func (p *Provider) ValidateResourceDiag(
 	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.ResourcesMap[t]
 	if !ok {
@@ -240,7 +225,7 @@ func (p *Provider) ValidateResourceDiag(
 		}
 	}
 
-	return r.ValidateDiag(c)
+	return r.Validate(c)
 }
 
 // Configure configures the provider itself with the configuration
@@ -384,8 +369,7 @@ func (p *Provider) ImportState(
 }
 
 // ValidateDataSource is called once at the beginning with the raw
-// configuration (no interpolation done) and can return a list of warnings
-// and/or errors.
+// configuration (no interpolation done) and can return diagnostics.
 //
 // This is called once per data source instance.
 //
@@ -394,12 +378,6 @@ func (p *Provider) ImportState(
 // The primary use case of this call is to check that the required keys
 // are set and that the general structure is correct.
 func (p *Provider) ValidateDataSource(
-	t string, c *terraform.ResourceConfig) ([]string, []error) {
-	diags := p.ValidateDataSourceDiag(t, c)
-	return diags.Warnings(), diags.Errors()
-}
-
-func (p *Provider) ValidateDataSourceDiag(
 	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.DataSourcesMap[t]
 	if !ok {
@@ -411,7 +389,7 @@ func (p *Provider) ValidateDataSourceDiag(
 		}
 	}
 
-	return r.ValidateDiag(c)
+	return r.Validate(c)
 }
 
 // DataSources returns all of the available data sources that this

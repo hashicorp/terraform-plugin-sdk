@@ -5173,23 +5173,25 @@ func TestSchemaMap_Validate(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			ws, es := schemaMap(tc.Schema).Validate(c)
-			if len(es) > 0 != tc.Err {
-				if len(es) == 0 {
+			diags := schemaMap(tc.Schema).Validate(c)
+			if diags.HasErrors() != tc.Err {
+				if !diags.HasErrors() {
 					t.Errorf("%q: no errors", tn)
 				}
 
-				for _, e := range es {
+				for _, e := range diags.Errors() {
 					t.Errorf("%q: err: %s", tn, e)
 				}
 
 				t.FailNow()
 			}
 
+			ws := diags.Warnings()
 			if !reflect.DeepEqual(ws, tc.Warnings) {
 				t.Fatalf("%q: warnings:\n\nexpected: %#v\ngot:%#v", tn, tc.Warnings, ws)
 			}
 
+			es := diags.Errors()
 			if tc.Errors != nil {
 				sort.Sort(errorSort(es))
 				sort.Sort(errorSort(tc.Errors))
@@ -5269,20 +5271,21 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 
 	for tn, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := schemaMap(tc.Schema).Validate(c)
+		diags := schemaMap(tc.Schema).Validate(c)
 
-		if len(es) > 0 != tc.Err {
-			if len(es) == 0 {
+		if diags.HasErrors() != tc.Err {
+			if !diags.HasErrors() {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range es {
+			for _, e := range diags.Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
+		es := diags.Errors()
 		if tc.Errors != nil {
 			if !reflect.DeepEqual(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
@@ -5357,20 +5360,21 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 
 	for tn, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := schemaMap(tc.Schema).Validate(c)
+		diags := schemaMap(tc.Schema).Validate(c)
 
-		if len(es) > 0 != tc.Err {
-			if len(es) == 0 {
+		if diags.HasErrors() != tc.Err {
+			if !diags.HasErrors() {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range es {
+			for _, e := range diags.Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
+		es := diags.Errors()
 		if tc.Errors != nil {
 			if !reflect.DeepEqual(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
@@ -6442,13 +6446,13 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
-			_, es := schemaMap(tc.Schema).Validate(c)
-			if len(es) > 0 != tc.Err {
-				if len(es) == 0 {
+			diags := schemaMap(tc.Schema).Validate(c)
+			if diags.HasErrors() != tc.Err {
+				if !diags.HasErrors() {
 					t.Fatalf("expected error")
 				}
 
-				for _, e := range es {
+				for _, e := range diags.Errors() {
 					t.Fatalf("didn't expect error, got error: %+v", e)
 				}
 

@@ -1,55 +1,18 @@
 package convert
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
-func TestProtoDiagnostics(t *testing.T) {
-	diags := WarnsAndErrsToProto(
-		[]string{
-			"warning 1",
-			"warning 2",
-		},
-		[]error{
-			errors.New("error 1"),
-			errors.New("error 2"),
-		},
-	)
-
-	expected := []*proto.Diagnostic{
-		{
-			Severity: proto.Diagnostic_WARNING,
-			Summary:  "warning 1",
-		},
-		{
-			Severity: proto.Diagnostic_WARNING,
-			Summary:  "warning 2",
-		},
-		{
-			Severity: proto.Diagnostic_ERROR,
-			Summary:  "error 1",
-		},
-		{
-			Severity: proto.Diagnostic_ERROR,
-			Summary:  "error 2",
-		},
-	}
-
-	if !cmp.Equal(expected, diags) {
-		t.Fatal(cmp.Diff(expected, diags))
-	}
-}
-
 func TestDiagnostics(t *testing.T) {
 	type diagFlat struct {
-		Severity tfdiags.Severity
+		Severity diag.Severity
 		Attr     []interface{}
 		Summary  string
 		Detail   string
@@ -74,7 +37,7 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "simple error",
 				},
 			},
@@ -89,7 +52,7 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "simple error",
 					Detail:   "detailed error",
 				},
@@ -104,7 +67,7 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Warning,
+					Severity: diag.Warning,
 					Summary:  "simple warning",
 				},
 			},
@@ -119,7 +82,7 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Warning,
+					Severity: diag.Warning,
 					Summary:  "simple warning",
 					Detail:   "detailed warning",
 				},
@@ -138,11 +101,11 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "first error",
 				},
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "second error",
 				},
 			},
@@ -160,11 +123,11 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Warning,
+					Severity: diag.Warning,
 					Summary:  "warning",
 				},
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "error",
 				},
 			},
@@ -189,7 +152,7 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "error",
 					Detail:   "error detail",
 					Attr:     []interface{}{"attribute_name"},
@@ -286,25 +249,25 @@ func TestDiagnostics(t *testing.T) {
 			},
 			[]diagFlat{
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "error 1",
 					Detail:   "error 1 detail",
 					Attr:     []interface{}{"attr"},
 				},
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "error 2",
 					Detail:   "error 2 detail",
 					Attr:     []interface{}{"attr", "sub"},
 				},
 				{
-					Severity: tfdiags.Warning,
+					Severity: diag.Warning,
 					Summary:  "warning",
 					Detail:   "warning detail",
 					Attr:     []interface{}{"attr", 1, "sub"},
 				},
 				{
-					Severity: tfdiags.Error,
+					Severity: diag.Error,
 					Summary:  "error 3",
 					Detail:   "error 3 detail",
 					Attr:     []interface{}{"attr", "idx", "sub"},
@@ -313,14 +276,13 @@ func TestDiagnostics(t *testing.T) {
 		},
 	}
 
-	flattenTFDiags := func(ds tfdiags.Diagnostics) []diagFlat {
+	flattenDiags := func(ds diag.Diagnostics) []diagFlat {
 		var flat []diagFlat
 		for _, item := range ds {
-			desc := item.Description()
 
 			var attr []interface{}
 
-			for _, a := range tfdiags.GetAttribute(item) {
+			for _, a := range item.AttributePath {
 				switch step := a.(type) {
 				case cty.GetAttrStep:
 					attr = append(attr, step.Name)
@@ -336,10 +298,10 @@ func TestDiagnostics(t *testing.T) {
 			}
 
 			flat = append(flat, diagFlat{
-				Severity: item.Severity(),
+				Severity: item.Severity,
 				Attr:     attr,
-				Summary:  desc.Summary,
-				Detail:   desc.Detail,
+				Summary:  item.Summary,
+				Detail:   item.Detail,
 			})
 		}
 		return flat
@@ -348,9 +310,9 @@ func TestDiagnostics(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			// we take the
-			tfDiags := ProtoToDiagnostics(tc.Cons(nil))
+			diags := ProtoToDiags(tc.Cons(nil))
 
-			flat := flattenTFDiags(tfDiags)
+			flat := flattenDiags(diags)
 
 			if !cmp.Equal(flat, tc.Want, typeComparer, valueComparer, equateEmpty) {
 				t.Fatal(cmp.Diff(flat, tc.Want, typeComparer, valueComparer, equateEmpty))

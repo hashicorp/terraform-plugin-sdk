@@ -410,19 +410,14 @@ func (s *Schema) finalizeDiff(d *terraform.ResourceAttrDiff, customized bool) *t
 	return d
 }
 
-func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path, isTypeMap bool) diag.Diagnostics {
+func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if s.ValidateDiagFunc != nil {
 		diags = s.ValidateDiagFunc(decoded, k)
 		for _, d := range diags {
-			p := path.Copy()
-			if len(d.AttributePath) == 0 {
-				if isTypeMap && d.MapKey != "" {
-					p = append(p, cty.IndexStep{Key: cty.StringVal(d.MapKey)})
-				}
-				d.AttributePath = p
-			}
+			d.AttributePath = append(path.Copy(), d.AttributePath...)
+
 		}
 	} else if s.ValidateFunc != nil {
 		ws, es := s.ValidateFunc(decoded, k)
@@ -640,12 +635,7 @@ func (m schemaMap) Diff(
 }
 
 // Validate validates the configuration against this schema mapping.
-func (m schemaMap) Validate(c *terraform.ResourceConfig) ([]string, []error) {
-	diags := m.ValidateDiag(c)
-	return diags.Warnings(), diags.Errors()
-}
-
-func (m schemaMap) ValidateDiag(c *terraform.ResourceConfig) diag.Diagnostics {
+func (m schemaMap) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	return m.validateObject("", m, c, cty.Path{})
 }
 
@@ -1764,7 +1754,7 @@ func (m schemaMap) validateMap(
 			return diags
 		}
 
-		return schema.validateFunc(mapIface, k, path, true)
+		return schema.validateFunc(mapIface, k, path)
 	}
 
 	// It is a slice, verify that all the elements are maps
@@ -1796,7 +1786,7 @@ func (m schemaMap) validateMap(
 		}
 	}
 
-	return schema.validateFunc(validatableMap, k, path, true)
+	return schema.validateFunc(validatableMap, k, path)
 }
 
 func validateMapValues(k string, m map[string]interface{}, schema *Schema, path cty.Path) diag.Diagnostics {
@@ -2026,7 +2016,7 @@ func (m schemaMap) validatePrimitive(
 		panic(fmt.Sprintf("Unknown validation type: %#v", schema.Type))
 	}
 
-	return append(diags, schema.validateFunc(decoded, k, path, false)...)
+	return append(diags, schema.validateFunc(decoded, k, path)...)
 }
 
 func (m schemaMap) validateType(

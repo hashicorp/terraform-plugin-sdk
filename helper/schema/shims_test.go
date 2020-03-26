@@ -320,8 +320,8 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 
 	// Shim
 	// apply this diff, so we have a state to compare
-	applied, err := r.Apply(context.Background(), s, actual, nil)
-	if err != nil {
+	applied, diags := r.Apply(context.Background(), s, actual, nil)
+	if diags.HasErrors() {
 		t.Fatal(err)
 	}
 
