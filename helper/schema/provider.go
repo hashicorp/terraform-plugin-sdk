@@ -210,13 +210,13 @@ func (p *Provider) ValidateResource(
 	return r.Validate(c)
 }
 
-// ConfigureContext configures the provider itself with the configuration
+// Configure configures the provider itself with the configuration
 // given. This is useful for setting things like access keys.
 //
 // This won't be called at all if no provider configuration is given.
 //
 // Configure returns an error if it occurred.
-func (p *Provider) ConfigureContext(ctx context.Context, c *terraform.ResourceConfig) error {
+func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) error {
 	// No configuration
 	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
 		return nil
@@ -282,7 +282,7 @@ func (p *Provider) Resources() []terraform.ResourceType {
 	return result
 }
 
-// ImportStateContext requests that the given resource be imported.
+// ImportState requests that the given resource be imported.
 //
 // The returned InstanceState only requires ID be set. Importing
 // will always call Refresh after the state to complete it.
@@ -296,7 +296,7 @@ func (p *Provider) Resources() []terraform.ResourceType {
 // to multiple. For example, an AWS security group may contain many rules.
 // Each rule is represented by a separate resource in Terraform,
 // therefore multiple states are returned.
-func (p *Provider) ImportStateContext(
+func (p *Provider) ImportState(
 	ctx context.Context,
 	info *terraform.InstanceInfo,
 	id string) ([]*terraform.InstanceState, error) {

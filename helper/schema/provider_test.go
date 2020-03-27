@@ -177,7 +177,7 @@ func TestProviderConfigure(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		err := tc.P.ConfigureContext(context.Background(), c)
+		err := tc.P.Configure(context.Background(), c)
 		if err != nil != tc.Err {
 			t.Fatalf("%d: %s", i, err)
 		}
@@ -411,7 +411,7 @@ func TestProviderImportState_default(t *testing.T) {
 		},
 	}
 
-	states, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
+	states, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -443,7 +443,7 @@ func TestProviderImportState_setsId(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
+	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
@@ -473,7 +473,7 @@ func TestProviderImportState_setsType(t *testing.T) {
 		},
 	}
 
-	_, err := p.ImportStateContext(context.Background(), &terraform.InstanceInfo{
+	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
 		Type: "foo",
 	}, "bar")
 	if err != nil {
