@@ -441,7 +441,7 @@ func (r *Resource) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	diags := schemaMap(r.Schema).Validate(c)
 
 	if r.DeprecationMessage != "" {
-		diags = append(diags, &diag.Diagnostic{
+		diags = diags.Append(&diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Deprecated Resource",
 			Detail:   r.DeprecationMessage,

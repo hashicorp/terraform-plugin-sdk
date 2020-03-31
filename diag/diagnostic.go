@@ -16,6 +16,8 @@ func (diags Diagnostics) Append(i interface{}) Diagnostics {
 		if len(v) != 0 {
 			diags = append(diags, v...)
 		}
+	case Diagnostic:
+		diags = append(diags, &v)
 	case *Diagnostic:
 		diags = append(diags, v)
 	case error:
