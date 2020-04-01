@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -3649,6 +3650,22 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 								Optional: true,
 							},
 						},
+					},
+				},
+			},
+			true,
+		},
+
+		"ValidateFunc and ValidateDiagFunc cannot both be set": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeInt,
+					Required: true,
+					ValidateFunc: func(interface{}, string) ([]string, []error) {
+						return nil, nil
+					},
+					ValidateDiagFunc: func(interface{}, string) diag.Diagnostics {
+						return nil
 					},
 				},
 			},

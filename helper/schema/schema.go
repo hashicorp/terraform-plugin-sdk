@@ -223,7 +223,17 @@ type Schema struct {
 	//
 	// ValidateFunc is honored only when the schema's Type is set to TypeInt,
 	// TypeFloat, TypeString, TypeBool, or TypeMap. It is ignored for all other types.
-	ValidateFunc     SchemaValidateFunc
+	//
+	// Deprecated: please use ValidateDiagFunc
+	ValidateFunc SchemaValidateFunc
+
+	// ValidateDiagFunc allows individual fields to define arbitrary validation
+	// logic. It is yielded the provided config value as an interface{} that is
+	// guaranteed to be of the proper Schema type, and it can yield diagnostics
+	// based on inspection of that value.
+	//
+	// ValidateDiagFunc is honored only when the schema's Type is set to TypeInt,
+	// TypeFloat, TypeString, TypeBool, or TypeMap. It is ignored for all other types.
 	ValidateDiagFunc SchemaValidateDiagFunc
 
 	// Sensitive ensures that the attribute's value does not get displayed in
@@ -293,7 +303,12 @@ type SchemaStateFunc func(interface{}) string
 
 // SchemaValidateFunc is a function used to validate a single field in the
 // schema.
+//
+// Deprecated: please use SchemaValidateDiagFunc
 type SchemaValidateFunc func(interface{}, string) ([]string, []error)
+
+// SchemaValidateDiagFunc is a function used to validate a single field in the
+// schema and has Diagnostic support.
 type SchemaValidateDiagFunc func(interface{}, string) diag.Diagnostics
 
 func (s *Schema) GoString() string {
@@ -840,6 +855,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			case TypeList, TypeSet:
 				return fmt.Errorf("%s: ValidateFunc is not yet supported on lists or sets.", k)
 			}
+		}
+
+		if v.ValidateFunc != nil && v.ValidateDiagFunc != nil {
+			return fmt.Errorf("%s: ValidateFunc and ValidateDiagFunc cannot both be set", k)
 		}
 
 		if v.Deprecated == "" && v.Removed == "" {
@@ -1606,8 +1625,7 @@ func (m schemaMap) validateList(
 	raw interface{},
 	schema *Schema,
 	c *terraform.ResourceConfig,
-	path cty.Path,
-	isTypeSet bool) diag.Diagnostics {
+	path cty.Path) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
@@ -1672,18 +1690,14 @@ func (m schemaMap) validateList(
 	for i, raw := range raws {
 		key := fmt.Sprintf("%s.%d", k, i)
 
-		// TODO: figure out cty.Path for TypeSet
-		// if isTypeSet {
-		// } else {
-		// }
-		p := append(path.Copy(), cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
-
 		// Reify the key value from the ResourceConfig.
 		// If the list was computed we have all raw values, but some of these
 		// may be known in the config, and aren't individually marked as Computed.
 		if r, ok := c.Get(key); ok {
 			raw = r
 		}
+
+		p := append(path.Copy(), cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
 
 		switch t := schema.Elem.(type) {
 		case *Resource:
@@ -1899,7 +1913,7 @@ func (m schemaMap) validateObject(
 		if k != "" {
 			key = fmt.Sprintf("%s.%s", k, subK)
 		}
-		diags = diags.Append(m.validate(key, s, c, append(path, cty.GetAttrStep{Name: subK})))
+		diags = diags.Append(m.validate(key, s, c, append(path.Copy(), cty.GetAttrStep{Name: subK})))
 	}
 
 	// Detect any extra/unknown keys and report those as errors.
@@ -1912,7 +1926,7 @@ func (m schemaMap) validateObject(
 				diags = diags.Append(&diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       "Invalid or unknown key",
-					AttributePath: append(path, cty.GetAttrStep{Name: subk}),
+					AttributePath: append(path.Copy(), cty.GetAttrStep{Name: subk}),
 				})
 			}
 		}
@@ -2026,12 +2040,19 @@ func (m schemaMap) validateType(
 	path cty.Path) diag.Diagnostics {
 
 	var diags diag.Diagnostics
-
 	switch schema.Type {
 	case TypeList:
-		diags = m.validateList(k, raw, schema, c, path, false)
+		diags = m.validateList(k, raw, schema, c, path)
 	case TypeSet:
-		diags = m.validateList(k, raw, schema, c, path, true)
+		// indexing into sets is not representable in the current protocol
+		// best we can do is associate the path up to this attribute
+		// we may be able to try and enhance the rendered text with the rest of
+		// the path ie "error in TypeSet element { 'foo' : 'bar' }",
+		// but it will not be a perfect UX
+		diags = m.validateList(k, raw, schema, c, path)
+		for _, d := range diags {
+			d.AttributePath = path
+		}
 	case TypeMap:
 		diags = m.validateMap(k, raw, schema, c, path)
 	default:
