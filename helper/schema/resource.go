@@ -155,11 +155,6 @@ type Resource struct {
 	//
 	// This function needs to be resilient to support all scenarios.
 	//
-	// If this function needs to access external API resources, remember to flag
-	// the RequiresRefresh attribute mentioned below to ensure that
-	// -refresh=false is blocked when running plan or apply, as this means that
-	// this resource requires refresh-like behaviour to work effectively.
-	//
 	// For the most part, only computed fields can be customized by this
 	// function.
 	//
