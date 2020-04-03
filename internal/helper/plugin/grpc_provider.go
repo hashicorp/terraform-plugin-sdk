@@ -470,7 +470,7 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 	}
 }
 
-func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*proto.Stop_Response, error) {
+func (s *GRPCProviderServer) Stop(ctx context.Context, _ *proto.Stop_Request) (*proto.Stop_Response, error) {
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -478,6 +478,14 @@ func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*pr
 	close(s.stopCh)
 	// reset the stop signal
 	s.stopCh = make(chan struct{})
+
+	// handle any provider specific cleanup
+	err := s.provider.Stop(ctx)
+	if err != nil {
+		return &proto.Stop_Response{
+			Error: err.Error(),
+		}, nil
+	}
 
 	return &proto.Stop_Response{}, nil
 }

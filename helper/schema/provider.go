@@ -60,10 +60,19 @@ type Provider struct {
 	// provider doesn't need to be configured, this can be omitted.
 	ConfigureContextFunc ConfigureContextFunc
 
+	// StopFunc is called from the gRPC server Stop call. This does not
+	// participate in the Terraform graph, so care should be taken to not
+	// do any sort of resource affecting logic, instead it should be used
+	// for cleanup (ie. session files, etc).
+	StopFunc StopFunc
+
 	meta interface{}
 
 	TerraformVersion string
 }
+
+// StopFunc is a function used to handle the Stop request from Terraform CLI.
+type StopFunc func(context.Context, interface{}) error
 
 // ConfigureFunc is the function used to configure a Provider.
 //
@@ -137,6 +146,15 @@ func (p *Provider) Meta() interface{} {
 // set here.
 func (p *Provider) SetMeta(v interface{}) {
 	p.meta = v
+}
+
+// Stop is used by the gRPC server to allow providers to customize their cleanup.
+func (p *Provider) Stop(ctx context.Context) error {
+	if p.StopFunc == nil {
+		return nil
+	}
+
+	return p.StopFunc(ctx, p.meta)
 }
 
 // GetSchema returns the config schema for the main provider
