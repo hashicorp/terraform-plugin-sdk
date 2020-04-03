@@ -283,8 +283,8 @@ func TestProviderValidate(t *testing.T) {
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
 		diags := tc.P.Validate(c)
-		if diags.HasErrors() != tc.Err {
-			t.Fatalf("%d: %#v", i, diags.Err())
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %#v", i, diags)
 		}
 	}
 }
@@ -396,8 +396,8 @@ func TestProviderValidateResource(t *testing.T) {
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
 		diags := tc.P.ValidateResource(tc.Type, c)
-		if diags.HasErrors() != tc.Err {
-			t.Fatalf("%d: %#v", i, diags.Err())
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %#v", i, diags)
 		}
 	}
 }

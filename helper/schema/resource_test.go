@@ -44,9 +44,9 @@ func TestResourceApply_create(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !called {
@@ -112,9 +112,9 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 		t.Fatalf("Error encoding timeout to diff: %s", err)
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !called {
@@ -178,9 +178,9 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !called {
@@ -313,9 +313,9 @@ func TestResourceApply_destroy(t *testing.T) {
 		Destroy: true,
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !called {
@@ -375,9 +375,9 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !change {
@@ -477,9 +477,9 @@ func TestResourceApply_update(t *testing.T) {
 		},
 	}
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	expected := &terraform.InstanceState{
@@ -574,9 +574,9 @@ func TestResourceApply_isNewResource(t *testing.T) {
 	// positive test
 	var s *terraform.InstanceState = nil
 
-	actual, err := r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	expected := &terraform.InstanceState{
@@ -601,9 +601,9 @@ func TestResourceApply_isNewResource(t *testing.T) {
 		},
 	}
 
-	actual, err = r.Apply(context.Background(), s, d, nil)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags = r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	expected = &terraform.InstanceState{
@@ -985,9 +985,9 @@ func TestResourceRefresh(t *testing.T) {
 		},
 	}
 
-	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -1015,9 +1015,9 @@ func TestResourceRefresh_blankId(t *testing.T) {
 		Attributes: map[string]string{},
 	}
 
-	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 	if actual != nil {
 		t.Fatalf("bad: %#v", actual)
@@ -1046,9 +1046,9 @@ func TestResourceRefresh_delete(t *testing.T) {
 		},
 	}
 
-	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if actual != nil {
@@ -1115,9 +1115,9 @@ func TestResourceRefresh_noExists(t *testing.T) {
 		},
 	}
 
-	actual, err := r.RefreshWithoutUpgrade(context.Background(), s, 42)
-	if err != nil {
-		t.Fatalf("err: %s", err)
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 	if actual != nil {
 		t.Fatalf("should have no state")
@@ -1415,8 +1415,8 @@ func TestResource_ContextTimeout(t *testing.T) {
 		},
 	}
 
-	if _, err := r.Apply(context.Background(), s, d, nil); err != nil {
-		t.Fatalf("err: %s", err)
+	if _, diags := r.Apply(context.Background(), s, d, nil); diags.HasError() {
+		t.Fatalf("err: %s", errorDiags(diags))
 	}
 
 	if !deadlineSet {

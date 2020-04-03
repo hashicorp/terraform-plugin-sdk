@@ -38,7 +38,7 @@ func AppendProtoDiag(diags []*proto.Diagnostic, d interface{}) []*proto.Diagnost
 	return diags
 }
 
-// ProtoToDiagnostics converts a list of proto.Diagnostics to a diag.Diagnostics.
+// ProtoToDiags converts a list of proto.Diagnostics to a diag.Diagnostics.
 func ProtoToDiags(ds []*proto.Diagnostic) diag.Diagnostics {
 	var diags diag.Diagnostics
 	for _, d := range ds {
@@ -51,17 +51,12 @@ func ProtoToDiags(ds []*proto.Diagnostic) diag.Diagnostics {
 			severity = diag.Warning
 		}
 
-		newDiag := &diag.Diagnostic{
-			Severity: severity,
-			Summary:  d.Summary,
-			Detail:   d.Detail,
-		}
-
-		if d.Attribute != nil {
-			newDiag.AttributePath = AttributePathToPath(d.Attribute)
-		}
-
-		diags = append(diags, newDiag)
+		diags = append(diags, diag.Diagnostic{
+			Severity:      severity,
+			Summary:       d.Summary,
+			Detail:        d.Detail,
+			AttributePath: AttributePathToPath(d.Attribute),
+		})
 	}
 
 	return diags
@@ -88,6 +83,9 @@ func DiagsToProto(diags diag.Diagnostics) []*proto.Diagnostic {
 // AttributePathToPath takes the proto encoded path and converts it to a cty.Path
 func AttributePathToPath(ap *proto.AttributePath) cty.Path {
 	var p cty.Path
+	if ap == nil {
+		return p
+	}
 	for _, step := range ap.Steps {
 		switch selector := step.Selector.(type) {
 		case *proto.AttributePath_Step_AttributeName:
@@ -101,7 +99,7 @@ func AttributePathToPath(ap *proto.AttributePath) cty.Path {
 	return p
 }
 
-// AttributePathToPath takes a cty.Path and converts it to a proto-encoded path.
+// PathToAttributePath takes a cty.Path and converts it to a proto-encoded path.
 func PathToAttributePath(p cty.Path) *proto.AttributePath {
 	ap := &proto.AttributePath{}
 	for _, step := range p {

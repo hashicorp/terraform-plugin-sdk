@@ -1356,7 +1356,7 @@ func TestValidateNulls(t *testing.T) {
 			diags := convert.ProtoToDiags(d)
 			switch {
 			case tc.Err:
-				if !diags.HasErrors() {
+				if !diags.HasError() {
 					t.Fatal("expected error")
 				}
 			default:

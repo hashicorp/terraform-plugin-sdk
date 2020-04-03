@@ -190,7 +190,7 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 // set.
 func (p *Provider) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	if err := p.InternalValidate(); err != nil {
-		return []*diag.Diagnostic{
+		return []diag.Diagnostic{
 			{
 				Severity: diag.Error,
 				Summary:  "InternalValidate",
@@ -217,7 +217,7 @@ func (p *Provider) ValidateResource(
 	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.ResourcesMap[t]
 	if !ok {
-		return []*diag.Diagnostic{
+		return []diag.Diagnostic{
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Provider doesn't support resource: %s", t),
@@ -381,7 +381,7 @@ func (p *Provider) ValidateDataSource(
 	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.DataSourcesMap[t]
 	if !ok {
-		return []*diag.Diagnostic{
+		return []diag.Diagnostic{
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Provider doesn't support data source: %s", t),
