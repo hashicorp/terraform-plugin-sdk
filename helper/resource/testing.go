@@ -100,8 +100,14 @@ func TestMain(m *testing.M) {
 		if acctest.TestHelper == nil {
 			log.Fatal("Please configure the acctest binary driver")
 		}
-		defer acctest.TestHelper.Close()
-		os.Exit(m.Run())
+
+		exitCode := m.Run()
+		err := acctest.TestHelper.Close()
+		if err != nil {
+			log.Printf("Error cleaning up temporary test files: %s", err)
+		}
+
+		os.Exit(exitCode)
 	}
 }
 
