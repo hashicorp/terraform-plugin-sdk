@@ -1,3 +1,9 @@
+# 1.9.1 (Unreleased)
+
+BUG FIXES:
+
+* Binary acceptance test driver: fix cleanup of temporary directories [GH-378]
+
 # 1.9.0 (March 26, 2020)
 
 DEPRECATED:
