@@ -103,11 +103,20 @@ type Resource struct {
 	Read   ReadFunc
 	Update UpdateFunc
 	Delete DeleteFunc
+
+	// Exists is a function that is called to check if a resource still
+	// exists. If this returns false, then this will affect the diff
+	// accordingly. If this function isn't set, it will not be called. You
+	// can also signal existence in the Read method by calling d.SetId("")
+	// if the Resource is no longer present and should be removed from state.
+	// The *ResourceData passed to Exists should _not_ be modified.
+	//
+	// Deprecated: ReadContext should be able to encapsulate the logic of Exists
 	Exists ExistsFunc
 
 	// The functions below are the CRUD operations for this resource.
 	//
-	// The only optional operation is Update and Exists. If Update is not
+	// The only optional operation is Update. If Update is not
 	// implemented, then updates will not be supported for this resource.
 	//
 	// The ResourceData parameter in the functions below are used to
@@ -120,20 +129,11 @@ type Resource struct {
 	// to store API clients, configuration structures, etc.
 	//
 	// If any errors occur during each of the operation, an error should be
-	// returned. If a resource was partially updated, be careful to enable
-	// partial state mode for ResourceData and use it accordingly.
-	//
-	// Exists is a function that is called to check if a resource still
-	// exists. If this returns false, then this will affect the diff
-	// accordingly. If this function isn't set, it will not be called. You
-	// can also signal existence in the Read method by calling d.SetId("")
-	// if the Resource is no longer present and should be removed from state.
-	// The *ResourceData passed to Exists should _not_ be modified.
+	// returned.
 	CreateContext CreateContextFunc
 	ReadContext   ReadContextFunc
 	UpdateContext UpdateContextFunc
 	DeleteContext DeleteContextFunc
-	ExistsContext ExistsContextFunc
 
 	// CustomizeDiff is a custom function for working with the diff that
 	// Terraform has created for this resource - it can be used to customize the
@@ -234,9 +234,6 @@ type UpdateContextFunc func(context.Context, *ResourceData, interface{}) error
 type DeleteContextFunc func(context.Context, *ResourceData, interface{}) error
 
 // See Resource documentation.
-type ExistsContextFunc func(context.Context, *ResourceData, interface{}) (bool, error)
-
-// See Resource documentation.
 type StateMigrateFunc func(
 	int, *terraform.InstanceState, interface{}) (*terraform.InstanceState, error)
 
@@ -298,15 +295,6 @@ func (r *Resource) delete(ctx context.Context, d *ResourceData, meta interface{}
 	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutDelete))
 	defer cancel()
 	return r.DeleteContext(ctx, d, meta)
-}
-
-func (r *Resource) exists(ctx context.Context, d *ResourceData, meta interface{}) (bool, error) {
-	if r.Exists != nil {
-		return r.Exists(d, meta)
-	}
-	ctx, cancel := context.WithTimeout(ctx, d.Timeout(TimeoutRead))
-	defer cancel()
-	return r.ExistsContext(ctx, d, meta)
 }
 
 // Apply creates, updates, and/or deletes a resource.
@@ -505,7 +493,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	if r.existsFuncSet() {
+	if r.Exists != nil {
 		// Make a copy of data so that if it is modified it doesn't
 		// affect our Read later.
 		data, err := schemaMap(r.Schema).Data(s, nil)
@@ -515,7 +503,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 			return s, err
 		}
 
-		exists, err := r.exists(ctx, data, meta)
+		exists, err := r.Exists(data, meta)
 
 		if err != nil {
 			return s, err
@@ -555,10 +543,6 @@ func (r *Resource) updateFuncSet() bool {
 
 func (r *Resource) deleteFuncSet() bool {
 	return (r.Delete != nil || r.DeleteContext != nil)
-}
-
-func (r *Resource) existsFuncSet() bool {
-	return (r.Exists != nil || r.ExistsContext != nil)
 }
 
 // InternalValidate should be called to validate the structure
@@ -687,9 +671,6 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 	}
 	if r.DeleteContext != nil && r.Delete != nil {
 		return fmt.Errorf("DeleteContext and Delete should not both be set")
-	}
-	if r.ExistsContext != nil && r.Exists != nil {
-		return fmt.Errorf("ExistsContext and Exists should not both be set")
 	}
 
 	return schemaMap(r.Schema).InternalValidate(tsm)
