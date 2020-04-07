@@ -1573,7 +1573,6 @@ func validateAtLeastOneAttribute(
 	return fmt.Errorf("%q: one of `%s` must be specified", k, strings.Join(allKeys, ","))
 }
 
-
 func validatePairedWithAttribute(
 	k string,
 	schema *Schema,
@@ -1603,13 +1602,12 @@ func validatePairedWithAttribute(
 		return nil
 	}
 
-	if count + unknownVariableValueCount != len(allKeys) {
+	if count+unknownVariableValueCount != len(allKeys) {
 		return fmt.Errorf("all of `%s` must be specified when using %q", strings.Join(allKeys, ","), k)
 	}
 
 	return nil
 }
-
 
 func (m schemaMap) validateList(
 	k string,

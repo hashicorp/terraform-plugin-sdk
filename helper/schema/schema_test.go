@@ -6636,7 +6636,6 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 	}
 }
 
-
 func TestValidatePairedWithAttributes(t *testing.T) {
 	cases := map[string]struct {
 		Key    string
@@ -6649,13 +6648,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist"},
 				},
 			},
@@ -6671,13 +6670,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist"},
 				},
 			},
@@ -6692,18 +6691,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -6719,18 +6718,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -6745,18 +6744,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -6769,18 +6768,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -6795,18 +6794,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -6822,18 +6821,18 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:         TypeBool,
-					Optional:     true,
+					Type:       TypeBool,
+					Optional:   true,
 					PairedWith: []string{"whitelist", "blacklist"},
 				},
 			},
@@ -7207,15 +7206,15 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 				"purplelist": {
@@ -7241,15 +7240,15 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 			},
@@ -7270,15 +7269,15 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
-					Elem:         &Schema{Type: TypeString},
+					Type:       TypeList,
+					Optional:   true,
+					Elem:       &Schema{Type: TypeString},
 					PairedWith: []string{"allow", "deny"},
 				},
 			},
@@ -7298,13 +7297,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeMap,
-					Optional:     true,
+					Type:       TypeMap,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
+					Type:       TypeList,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"purplelist": {
@@ -7328,13 +7327,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeMap,
-					Optional:     true,
+					Type:       TypeMap,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
+					Type:       TypeList,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"purplelist": {
@@ -7358,13 +7357,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeMap,
-					Optional:     true,
+					Type:       TypeMap,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
+					Type:       TypeList,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"purplelist": {
@@ -7390,13 +7389,13 @@ func TestValidatePairedWithAttributes(t *testing.T) {
 			Key: "allow",
 			Schema: map[string]*Schema{
 				"allow": {
-					Type:         TypeMap,
-					Optional:     true,
+					Type:       TypeMap,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 				"deny": {
-					Type:         TypeList,
-					Optional:     true,
+					Type:       TypeList,
+					Optional:   true,
 					PairedWith: []string{"allow", "deny"},
 				},
 			},
