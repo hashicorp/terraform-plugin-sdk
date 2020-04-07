@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/hashicorp/go-multierror"
@@ -89,6 +90,10 @@ func (p *Provider) InternalValidate() error {
 		return errors.New("provider is nil")
 	}
 
+	if p.ConfigureFunc != nil && p.ConfigureContextFunc != nil {
+		return errors.New("ConfigureFunc and ConfigureContextFunc must not both be set")
+	}
+
 	var validationErrors error
 	sm := schemaMap(p.Schema)
 	if err := sm.InternalValidate(sm); err != nil {
@@ -112,6 +117,11 @@ func (p *Provider) InternalValidate() error {
 		if err := r.InternalValidate(nil, false); err != nil {
 			validationErrors = multierror.Append(validationErrors, fmt.Errorf("data source %s: %s", k, err))
 		}
+	}
+
+	// Warn of deprecations
+	if p.ConfigureFunc != nil && p.ConfigureContextFunc == nil {
+		log.Printf("[WARN] ConfigureFunc is deprecated, please use ConfigureContextFunc")
 	}
 
 	return validationErrors

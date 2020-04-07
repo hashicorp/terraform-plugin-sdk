@@ -540,6 +540,23 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: fmt.Errorf("%s is a reserved field name for a provider", "alias"),
 		},
+		{ // ConfigureFunc and ConfigureContext cannot both be set
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					return nil, nil
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			ExpectedErr: fmt.Errorf("ConfigureFunc and ConfigureContextFunc must not both be set"),
+		},
 	}
 
 	for i, tc := range cases {

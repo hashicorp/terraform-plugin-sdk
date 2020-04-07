@@ -360,7 +360,6 @@ func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version in
 				"schema_version": strconv.Itoa(version),
 			},
 		}
-
 		is, err := res.MigrateState(version, is, s.provider.Meta())
 		if err != nil {
 			return nil, 0, err

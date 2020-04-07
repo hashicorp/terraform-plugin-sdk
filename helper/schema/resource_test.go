@@ -928,24 +928,6 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		19: { // Exists and ExistsContext should not both be set
-			&Resource{
-				Create:        Noop,
-				Read:          Noop,
-				Update:        Noop,
-				Delete:        Noop,
-				Exists:        func(*ResourceData, interface{}) (bool, error) { return false, nil },
-				ExistsContext: func(context.Context, *ResourceData, interface{}) (bool, error) { return false, nil },
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:     TypeString,
-						Required: true,
-					},
-				},
-			},
-			true,
-			true,
-		},
 	}
 
 	for i, tc := range cases {
