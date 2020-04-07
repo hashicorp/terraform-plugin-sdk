@@ -225,7 +225,7 @@ type Schema struct {
 	// the keys in that list must be specified.
 	//
 	// PairedWith is a set of schema keys that when one key is set, the rest
-	// of the keys in the set must also be set.
+	// of the keys in the set must also be specified.
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
