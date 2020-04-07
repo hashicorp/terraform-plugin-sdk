@@ -223,9 +223,13 @@ type Schema struct {
 	//
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
+	//
+	// PairedWith is a set of schema keys that when one key is set, the rest
+	// of the keys in the set must also be set.
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
+	PairedWith    []string
 
 	// When Deprecated is set, this attribute is deprecated.
 	//
@@ -766,6 +770,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: AtLeastOneOf cannot be set with Required", k)
 		}
 
+		if len(v.PairedWith) > 0 && v.Required {
+			return fmt.Errorf("%s: PairedWith cannot be set with Required", k)
+		}
+
 		if len(v.ConflictsWith) > 0 {
 			err := checkKeysAgainstSchemaFlags(k, v.ConflictsWith, topSchemaMap)
 			if err != nil {
@@ -784,6 +792,13 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			err := checkKeysAgainstSchemaFlags(k, v.AtLeastOneOf, topSchemaMap)
 			if err != nil {
 				return fmt.Errorf("AtLeastOneOf: %+v", err)
+			}
+		}
+
+		if len(v.PairedWith) > 0 {
+			err := checkKeysAgainstSchemaFlags(k, v.PairedWith, topSchemaMap)
+			if err != nil {
+				return fmt.Errorf("PairedWith: %+v", err)
 			}
 		}
 
@@ -1400,6 +1415,11 @@ func (m schemaMap) validate(
 		return nil, []error{err}
 	}
 
+	err = validatePairedWithAttribute(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	if !ok {
 		if schema.Required {
 			return nil, []error{fmt.Errorf(
@@ -1552,6 +1572,44 @@ func validateAtLeastOneAttribute(
 
 	return fmt.Errorf("%q: one of `%s` must be specified", k, strings.Join(allKeys, ","))
 }
+
+
+func validatePairedWithAttribute(
+	k string,
+	schema *Schema,
+	c *terraform.ResourceConfig) error {
+
+	if len(schema.PairedWith) == 0 {
+		return nil
+	}
+
+	allKeys := removeDuplicates(append(schema.PairedWith, k))
+	sort.Strings(allKeys)
+	count := 0
+	unknownVariableValueCount := 0
+
+	for _, pairedWithKey := range allKeys {
+		if c.IsComputed(pairedWithKey) {
+			unknownVariableValueCount++
+			continue
+		}
+
+		if _, ok := c.Get(pairedWithKey); ok {
+			count++
+		}
+	}
+
+	if count == 0 && unknownVariableValueCount == 0 {
+		return nil
+	}
+
+	if count + unknownVariableValueCount != len(allKeys) {
+		return fmt.Errorf("all of `%s` must be specified when using %q", strings.Join(allKeys, ","), k)
+	}
+
+	return nil
+}
+
 
 func (m schemaMap) validateList(
 	k string,
