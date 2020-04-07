@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -137,12 +138,12 @@ func TestProviderConfigure(t *testing.T) {
 					},
 				},
 
-				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
 					if d.Get("foo").(int) == 42 {
 						return nil, nil
 					}
 
-					return nil, fmt.Errorf("nope")
+					return nil, diag.Diagnostics{diag.FromErr(fmt.Errorf("nope"))}
 				},
 			},
 			Config: map[string]interface{}{
@@ -177,9 +178,9 @@ func TestProviderConfigure(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		err := tc.P.Configure(context.Background(), c)
-		if err != nil != tc.Err {
-			t.Fatalf("%d: %s", i, err)
+		diags := tc.P.Configure(context.Background(), c)
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %s", i, errorDiags(diags))
 		}
 	}
 }
@@ -551,7 +552,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
 					return nil, nil
 				},
-				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
 					return nil, nil
 				},
 			},

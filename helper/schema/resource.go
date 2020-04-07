@@ -514,7 +514,6 @@ func (r *Resource) RefreshWithoutUpgrade(
 	rt := ResourceTimeout{}
 	if _, ok := s.Meta[TimeoutKey]; ok {
 		if err := rt.StateDecode(s); err != nil {
-			// TODO should this be added to diags?
 			log.Printf("[ERR] Error decoding ResourceTimeout: %s", err)
 		}
 	}

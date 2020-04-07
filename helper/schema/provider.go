@@ -78,7 +78,7 @@ type ConfigureFunc func(*ResourceData) (interface{}, error)
 // the subsequent resources as the meta parameter. This return value is
 // usually used to pass along a configured API client, a configuration
 // structure, etc.
-type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, error)
+type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, diag.Diagnostics)
 
 // InternalValidate should be called to validate the structure
 // of the provider.
@@ -233,11 +233,14 @@ func (p *Provider) ValidateResource(
 //
 // This won't be called at all if no provider configuration is given.
 //
-// Configure returns an error if it occurred.
-func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) error {
+// Configure returns Diagnostics.
+func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) diag.Diagnostics {
+
+	var diags diag.Diagnostics
+
 	// No configuration
 	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
-		return nil
+		return diags
 	}
 
 	sm := schemaMap(p.Schema)
@@ -246,26 +249,31 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) e
 	// generate an intermediary "diff" although that is never exposed.
 	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
-		return err
+		return append(diags, diag.FromErr(err))
 	}
 
 	data, err := sm.Data(nil, diff)
 	if err != nil {
-		return err
+		return append(diags, diag.FromErr(err))
 	}
 
-	var meta interface{}
+	if p.ConfigureFunc != nil {
+		meta, err := p.ConfigureFunc(data)
+		if err != nil {
+			return append(diags, diag.FromErr(err))
+		}
+		p.meta = meta
+	}
 	if p.ConfigureContextFunc != nil {
-		meta, err = p.ConfigureContextFunc(ctx, data)
-	} else {
-		meta, err = p.ConfigureFunc(data)
-	}
-	if err != nil {
-		return err
+		meta, ds := p.ConfigureContextFunc(ctx, data)
+		diags = append(diags, ds...)
+		if diags.HasError() {
+			return diags
+		}
+		p.meta = meta
 	}
 
-	p.meta = meta
-	return nil
+	return diags
 }
 
 // Resources returns all the available resource types that this provider

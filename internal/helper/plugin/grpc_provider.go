@@ -498,8 +498,8 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
-	err = s.provider.Configure(ctx, config)
-	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+	diags := s.provider.Configure(ctx, config)
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 
 	return resp, nil
 }
