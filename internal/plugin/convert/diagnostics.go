@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -65,6 +67,9 @@ func ProtoToDiags(ds []*proto.Diagnostic) diag.Diagnostics {
 func DiagsToProto(diags diag.Diagnostics) []*proto.Diagnostic {
 	var ds []*proto.Diagnostic
 	for _, d := range diags {
+		if err := d.Validate(); err != nil {
+			panic(fmt.Errorf("Invalid diagnostic: %s. This is always a bug in the provider implementation", err))
+		}
 		protoDiag := &proto.Diagnostic{
 			Summary:   d.Summary,
 			Detail:    d.Detail,
