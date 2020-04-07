@@ -850,12 +850,16 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 				return fmt.Errorf("%s: ValidateFunc is for validating user input, "+
 					"there's nothing to validate on computed-only field", k)
 			}
+			if v.ValidateDiagFunc != nil {
+				return fmt.Errorf("%s: ValidateDiagFunc is for validating user input, "+
+					"there's nothing to validate on computed-only field", k)
+			}
 		}
 
-		if v.ValidateFunc != nil {
+		if v.ValidateFunc != nil || v.ValidateDiagFunc != nil {
 			switch v.Type {
 			case TypeList, TypeSet:
-				return fmt.Errorf("%s: ValidateFunc is not yet supported on lists or sets.", k)
+				return fmt.Errorf("%s: ValidateFunc and ValidateDiagFunc are not yet supported on lists or sets.", k)
 			}
 		}
 
@@ -868,6 +872,12 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 				return fmt.Errorf("%s: Field name may only contain lowercase alphanumeric characters & underscores.", k)
 			}
 		}
+
+		// Warn of deprecations
+		if v.ValidateFunc != nil && v.ValidateDiagFunc == nil {
+			log.Printf("[WARN] ValidateFunc is deprecated, please use ValidateDiagFunc")
+		}
+
 	}
 
 	return nil
