@@ -431,7 +431,9 @@ func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path) diag
 	if s.ValidateDiagFunc != nil {
 		diags = s.ValidateDiagFunc(decoded, path)
 		for i := range diags {
-			diags[i].AttributePath = diag.JoinPath(path, diags[i].AttributePath)
+			if !diags[i].AttributePath.HasPrefix(path) {
+				diags[i].AttributePath = append(path, diags[i].AttributePath...)
+			}
 		}
 	} else if s.ValidateFunc != nil {
 		ws, es := s.ValidateFunc(decoded, k)
