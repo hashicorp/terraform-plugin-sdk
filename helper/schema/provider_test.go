@@ -290,6 +290,175 @@ func TestProviderValidate(t *testing.T) {
 	}
 }
 
+func TestProviderValidate_attributePath(t *testing.T) {
+	cases := []struct {
+		P             *Provider
+		Config        map[string]interface{}
+		ExpectedDiags diag.Diagnostics
+	}{
+		{ // validate path automatically built across list
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateFunc: func(v interface{}, k string) ([]string, []error) {
+										return []string{"warn"}, []error{fmt.Errorf("error")}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Warning,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+			},
+		},
+		{ // path is truncated at typeset
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeSet,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: cty.Path{cty.GetAttrStep{Name: "doesnotmatter"}}}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}},
+				},
+			},
+		},
+		{ // relative path is appended
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeMap,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: cty.Path{cty.IndexStep{Key: cty.StringVal("mapkey")}}}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": map[string]interface{}{
+							"mapkey": "val",
+						},
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}, cty.IndexStep{Key: cty.StringVal("mapkey")}},
+				},
+			},
+		},
+		{ // absolute path is not altered
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeMap,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: append(path, cty.IndexStep{Key: cty.StringVal("mapkey")})}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": map[string]interface{}{
+							"mapkey": "val",
+						},
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}, cty.IndexStep{Key: cty.StringVal("mapkey")}},
+				},
+			},
+		},
+	}
+
+	for i, tc := range cases {
+		c := terraform.NewResourceConfigRaw(tc.Config)
+		diags := tc.P.Validate(c)
+		if len(diags) != len(tc.ExpectedDiags) {
+			t.Fatalf("%d: wrong number of diags, expected %d, got %d", i, len(tc.ExpectedDiags), len(diags))
+		}
+		for j := range diags {
+			if diags[j].Severity != tc.ExpectedDiags[j].Severity {
+				t.Fatalf("%d: expected severity %v, got %v", i, tc.ExpectedDiags[j].Severity, diags[j].Severity)
+			}
+			if !diags[j].AttributePath.Equals(tc.ExpectedDiags[j].AttributePath) {
+				t.Fatalf("%d: attribute paths do not match expected: %v, got %v", i, tc.ExpectedDiags[j].AttributePath, diags[j].AttributePath)
+			}
+		}
+	}
+}
+
 func TestProviderDiff_legacyTimeoutType(t *testing.T) {
 	p := &Provider{
 		ResourcesMap: map[string]*Resource{
