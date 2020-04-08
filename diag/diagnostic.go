@@ -1,6 +1,7 @@
 package diag
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/zclconf/go-cty/cty"
@@ -36,7 +37,7 @@ func (d Diagnostic) Validate() error {
 		return fmt.Errorf("invalid severity: %v", d.Severity)
 	}
 	if d.Summary == "" {
-		return fmt.Errorf("empty detail")
+		return errors.New("empty detail")
 	}
 	return nil
 }

@@ -382,7 +382,10 @@ func (r *Resource) Apply(
 		diags = append(diags, r.create(ctx, data, meta)...)
 	} else {
 		if !r.updateFuncSet() {
-			return s, append(diags, diag.FromErr(fmt.Errorf("doesn't support update")))
+			return s, append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "doesn't support update",
+			})
 		}
 		diags = append(diags, r.update(ctx, data, meta)...)
 	}
