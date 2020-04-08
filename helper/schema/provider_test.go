@@ -296,7 +296,7 @@ func TestProviderValidate_attributePath(t *testing.T) {
 		Config        map[string]interface{}
 		ExpectedDiags diag.Diagnostics
 	}{
-		{ // validate path automatically built across list
+		{ // legacy validate path automatically built, even across list
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -328,6 +328,40 @@ func TestProviderValidate_attributePath(t *testing.T) {
 					Severity:      diag.Warning,
 					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
 				},
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+			},
+		},
+		{ // validate path automatically built, even across list
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity:      diag.Error,
 					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
