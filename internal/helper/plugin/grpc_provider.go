@@ -541,8 +541,8 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 	instanceState.Meta = private
 
 	newInstanceState, diags := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 	if diags.HasError() {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 		return resp, nil
 	}
 
@@ -1051,8 +1051,8 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 
 	// now we can get the new complete data source
 	newInstanceState, diags := res.ReadDataApply(ctx, diff, s.provider.Meta())
+	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 	if diags.HasError() {
-		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 		return resp, nil
 	}
 
