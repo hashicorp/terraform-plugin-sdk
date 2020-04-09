@@ -1,8 +1,8 @@
-# 1.9.1 (Unreleased)
+# 1.9.1 (April 09, 2020)
 
 BUG FIXES:
 
-* Binary acceptance test driver: fix cleanup of temporary directories [GH-378]
+* Binary acceptance test driver: fix cleanup of temporary directories ([#378](https://github.com/hashicorp/terraform-plugin-sdk/issues/378))
 
 # 1.9.0 (March 26, 2020)
 
