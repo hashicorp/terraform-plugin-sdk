@@ -2057,11 +2057,9 @@ func (m schemaMap) validateType(
 		diags = m.validateList(k, raw, schema, c, path)
 	case TypeSet:
 		// indexing into sets is not representable in the current protocol
-		// best we can do is associate the path up to this attribute
-		// we may be able to try and enhance the rendered text with the rest of
-		// the path ie "error in TypeSet element { 'foo' : 'bar' }",
-		// but it will not be a perfect UX
+		// best we can do is associate the path up to this attribute.
 		diags = m.validateList(k, raw, schema, c, path)
+		log.Printf("[WARN] Truncating attribute path of %d diagnostics for TypeSet", len(diags))
 		for i := range diags {
 			diags[i].AttributePath = path
 		}
