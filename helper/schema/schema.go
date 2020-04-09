@@ -224,12 +224,11 @@ type Schema struct {
 	// AtLeastOneOf is a set of schema keys that, when set, at least one of
 	// the keys in that list must be specified.
 	//
-	// AllOf is a set of schema keys that must be set simultaneously. This
-	// setting conflicts with ExactlyOneOf or AtLeastOneOf
+	// RequiredWith is a set of schema keys that must be set simultaneously.
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
-	AllOf         []string
+	RequiredWith  []string
 
 	// When Deprecated is set, this attribute is deprecated.
 	//
@@ -777,13 +776,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			}
 		}
 
-		if len(v.AllOf) > 0 {
-			if len(v.ExactlyOneOf) > 0 || len(v.AtLeastOneOf) > 0 {
-				return fmt.Errorf("AllOf cannot be used simultaneously with ExactlyOneOf or AtLeastOneOf")
-			}
-			err := checkKeysAgainstSchemaFlags(k, v.AllOf, topSchemaMap)
+		if len(v.RequiredWith) > 0 {
+			err := checkKeysAgainstSchemaFlags(k, v.RequiredWith, topSchemaMap)
 			if err != nil {
-				return fmt.Errorf("AllOf: %+v", err)
+				return fmt.Errorf("RequiredWith: %+v", err)
 			}
 		}
 
@@ -1412,7 +1408,13 @@ func (m schemaMap) validate(
 		return nil, nil
 	}
 
-	err := validateAllOfAttribute(k, schema, c)
+	if !schema.Required && !schema.Optional {
+		// This is a computed-only field
+		return nil, []error{fmt.Errorf(
+			"%q: this field cannot be set", k)}
+	}
+
+	err := validateRequiredWithAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1425,12 +1427,6 @@ func (m schemaMap) validate(
 	err = validateAtLeastOneAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
-	}
-
-	if !schema.Required && !schema.Optional {
-		// This is a computed-only field
-		return nil, []error{fmt.Errorf(
-			"%q: this field cannot be set", k)}
 	}
 
 	// If the value is unknown then we can't validate it yet.
@@ -1513,20 +1509,20 @@ func removeDuplicates(elements []string) []string {
 	return result
 }
 
-func validateAllOfAttribute(
+func validateRequiredWithAttribute(
 	k string,
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
 
-	if len(schema.AllOf) == 0 {
+	if len(schema.RequiredWith) == 0 {
 		return nil
 	}
 
-	allKeys := removeDuplicates(append(schema.AllOf, k))
+	allKeys := removeDuplicates(append(schema.RequiredWith, k))
 	sort.Strings(allKeys)
 
-	for _, allOfKey := range allKeys {
-		if _, ok := c.Get(allOfKey); !ok {
+	for _, key := range allKeys {
+		if _, ok := c.Get(key); !ok {
 			return fmt.Errorf("%q: all of `%s` must be specified", k, strings.Join(allKeys, ","))
 		}
 	}
