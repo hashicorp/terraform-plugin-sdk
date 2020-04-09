@@ -6502,7 +6502,7 @@ func Test_panicOnErrUnparsableDefaultTrue(t *testing.T) {
 	os.Setenv(PanicOnErr, oldEnv)
 }
 
-func TestValidateAllOfAttributes(t *testing.T) {
+func TestValidateRequiredWithAttributes(t *testing.T) {
 	cases := map[string]struct {
 		Key    string
 		Schema map[string]*Schema
@@ -6514,14 +6514,14 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"blacklist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"blacklist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist"},
 				},
 			},
 
@@ -6536,14 +6536,14 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"blacklist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"blacklist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist"},
 				},
 			},
 
@@ -6557,14 +6557,14 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"blacklist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"blacklist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist"},
 				},
 			},
 
@@ -6576,19 +6576,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist"},
 				},
 			},
 
@@ -6603,19 +6603,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -6631,19 +6631,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -6657,19 +6657,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 			Key: "whitelist",
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 			},
 
@@ -6680,19 +6680,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 		"Only Unknown Variable Value": {
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 			},
 
@@ -6706,16 +6706,16 @@ func TestValidateAllOfAttributes(t *testing.T) {
 		"only unknown list value": {
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeList,
-					Optional: true,
-					Elem:     &Schema{Type: TypeString},
-					AllOf:    []string{"whitelist", "blacklist"},
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					RequiredWith: []string{"whitelist", "blacklist"},
 				},
 				"blacklist": {
-					Type:     TypeList,
-					Optional: true,
-					Elem:     &Schema{Type: TypeString},
-					AllOf:    []string{"whitelist", "blacklist"},
+					Type:         TypeList,
+					Optional:     true,
+					Elem:         &Schema{Type: TypeString},
+					RequiredWith: []string{"whitelist", "blacklist"},
 				},
 			},
 
@@ -6729,19 +6729,19 @@ func TestValidateAllOfAttributes(t *testing.T) {
 		"Unknown Variable Value and Known Value": {
 			Schema: map[string]*Schema{
 				"whitelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"blacklist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 				"purplelist": {
-					Type:     TypeBool,
-					Optional: true,
-					AllOf:    []string{"whitelist", "blacklist", "purplelist"},
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
 				},
 			},
 
