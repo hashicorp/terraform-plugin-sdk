@@ -6359,7 +6359,7 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 			},
 
 			Config: map[string]interface{}{},
-			Err:    false,
+			Err:    true,
 		},
 
 		"Only Unknown Variable Value": {
