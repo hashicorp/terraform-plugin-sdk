@@ -1400,6 +1400,16 @@ func (m schemaMap) validate(
 		ok = raw != nil
 	}
 
+	err := validateExactlyOneAttribute(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	err = validateAtLeastOneAttribute(k, schema, c)
+	if err != nil {
+		return nil, []error{err}
+	}
+
 	if !ok {
 		if schema.Required {
 			return nil, []error{fmt.Errorf(
@@ -1414,17 +1424,7 @@ func (m schemaMap) validate(
 			"%q: this field cannot be set", k)}
 	}
 
-	err := validateRequiredWithAttribute(k, schema, c)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	err = validateExactlyOneAttribute(k, schema, c)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	err = validateAtLeastOneAttribute(k, schema, c)
+	err = validateRequiredWithAttribute(k, schema, c)
 	if err != nil {
 		return nil, []error{err}
 	}
