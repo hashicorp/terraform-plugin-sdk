@@ -1,3 +1,9 @@
+# 1.10.0 (Unreleased)
+
+FEATURES:
+
+* Added validation helper `RequiredWith` [GH-342]
+
 # 1.9.1 (April 09, 2020)
 
 BUG FIXES:
