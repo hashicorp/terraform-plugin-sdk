@@ -19,7 +19,7 @@ package acctest
 //     acctest.UseBinaryDriver("provider_name", Provider)
 //     resource.TestMain(m)
 //   }
-//
+// Where `Provider` is the function that returns the instance of a configured `terraform.ResourceProvider`
 // Some providers already have a TestMain defined, usually for the purpose of enabling test
 // sweepers. These additional occurrences should be removed.
 //
