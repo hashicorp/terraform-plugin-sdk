@@ -5,7 +5,7 @@ package acctest
 // an emulated version packaged inside the SDK. This allows for a number of important
 // enhancements, but most notably a more realistic testing experience and matrix testing
 // against multiple versions of Terraform CLI. This also allows the SDK to be completely
-// separated, at a dependency level, from the Terraform CLI.
+// separated, at a dependency level, from the Terraform CLI, as long as it is >= 0.12.0
 //
 // The new test driver must be enabled by initialising the test helper in your TestMain
 // function in all provider packages that run acceptance tests. Most providers have only
