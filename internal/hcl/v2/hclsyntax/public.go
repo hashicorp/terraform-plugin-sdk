@@ -36,57 +36,6 @@ func ParseConfig(src []byte, filename string, start hcl.Pos) (*hcl.File, hcl.Dia
 	}, diags
 }
 
-// ParseExpression parses the given buffer as a standalone HCL expression,
-// returning it as an instance of Expression.
-func ParseExpression(src []byte, filename string, start hcl.Pos) (Expression, hcl.Diagnostics) {
-	tokens, diags := LexExpression(src, filename, start)
-	peeker := newPeeker(tokens, false)
-	parser := &parser{peeker: peeker}
-
-	// Bare expressions are always parsed in  "ignore newlines" mode, as if
-	// they were wrapped in parentheses.
-	parser.PushIncludeNewlines(false)
-
-	expr, parseDiags := parser.ParseExpression()
-	diags = append(diags, parseDiags...)
-
-	next := parser.Peek()
-	if next.Type != TokenEOF && !parser.recovery {
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Extra characters after expression",
-			Detail:   "An expression was successfully parsed, but extra characters were found after it.",
-			Subject:  &next.Range,
-		})
-	}
-
-	parser.PopIncludeNewlines()
-
-	// Panic if the parser uses incorrect stack discipline with the peeker's
-	// newlines stack, since otherwise it will produce confusing downstream
-	// errors.
-	peeker.AssertEmptyIncludeNewlinesStack()
-
-	return expr, diags
-}
-
-// ParseTemplate parses the given buffer as a standalone HCL template,
-// returning it as an instance of Expression.
-func ParseTemplate(src []byte, filename string, start hcl.Pos) (Expression, hcl.Diagnostics) {
-	tokens, diags := LexTemplate(src, filename, start)
-	peeker := newPeeker(tokens, false)
-	parser := &parser{peeker: peeker}
-	expr, parseDiags := parser.ParseTemplate()
-	diags = append(diags, parseDiags...)
-
-	// Panic if the parser uses incorrect stack discipline with the peeker's
-	// newlines stack, since otherwise it will produce confusing downstream
-	// errors.
-	peeker.AssertEmptyIncludeNewlinesStack()
-
-	return expr, diags
-}
-
 // ParseTraversalAbs parses the given buffer as a standalone absolute traversal.
 //
 // Parsing as a traversal is more limited than parsing as an expession since
@@ -139,19 +88,6 @@ func LexExpression(src []byte, filename string, start hcl.Pos) (Tokens, hcl.Diag
 	// This is actually just the same thing as LexConfig, since configs
 	// and expressions lex in the same way.
 	tokens := scanTokens(src, filename, start, scanNormal)
-	diags := checkInvalidTokens(tokens)
-	return tokens, diags
-}
-
-// LexTemplate performs lexical analysis on the given buffer, treating it as a
-// standalone HCL template, and returns the resulting tokens.
-//
-// Only minimal validation is done during lexical analysis, so the returned
-// diagnostics may include errors about lexical issues such as bad character
-// encodings or unrecognized characters, but full parsing is required to
-// detect _all_ syntax errors.
-func LexTemplate(src []byte, filename string, start hcl.Pos) (Tokens, hcl.Diagnostics) {
-	tokens := scanTokens(src, filename, start, scanTemplate)
 	diags := checkInvalidTokens(tokens)
 	return tokens, diags
 }

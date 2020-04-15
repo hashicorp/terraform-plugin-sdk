@@ -105,15 +105,6 @@ func (d Diagnostics) Append(diag *Diagnostic) Diagnostics {
 	return append(d, diag)
 }
 
-// Extend concatenates the given Diagnostics with the receiver and returns
-// the whole new Diagnostics.
-//
-// This is similar to Append but accepts multiple diagnostics to add. It has
-// all the same caveats and constraints.
-func (d Diagnostics) Extend(diags Diagnostics) Diagnostics {
-	return append(d, diags...)
-}
-
 // HasErrors returns true if the receiver contains any diagnostics of
 // severity DiagError.
 func (d Diagnostics) HasErrors() bool {
@@ -123,21 +114,4 @@ func (d Diagnostics) HasErrors() bool {
 		}
 	}
 	return false
-}
-
-func (d Diagnostics) Errs() []error {
-	var errs []error
-	for _, diag := range d {
-		if diag.Severity == DiagError {
-			errs = append(errs, diag)
-		}
-	}
-
-	return errs
-}
-
-// A DiagnosticWriter emits diagnostics somehow.
-type DiagnosticWriter interface {
-	WriteDiagnostic(*Diagnostic) error
-	WriteDiagnostics(Diagnostics) error
 }

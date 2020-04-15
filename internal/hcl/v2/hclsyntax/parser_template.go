@@ -10,29 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 )
 
-func (p *parser) ParseTemplate() (Expression, hcl.Diagnostics) {
-	return p.parseTemplate(TokenEOF, false)
-}
-
-func (p *parser) parseTemplate(end TokenType, flushHeredoc bool) (Expression, hcl.Diagnostics) {
-	exprs, passthru, rng, diags := p.parseTemplateInner(end, flushHeredoc)
-
-	if passthru {
-		if len(exprs) != 1 {
-			panic("passthru set with len(exprs) != 1")
-		}
-		return &TemplateWrapExpr{
-			Wrapped:  exprs[0],
-			SrcRange: rng,
-		}, diags
-	}
-
-	return &TemplateExpr{
-		Parts:    exprs,
-		SrcRange: rng,
-	}, diags
-}
-
 func (p *parser) parseTemplateInner(end TokenType, flushHeredoc bool) ([]Expression, bool, hcl.Range, hcl.Diagnostics) {
 	parts, diags := p.parseTemplateParts(end)
 	if flushHeredoc {

@@ -24,7 +24,7 @@ type Expression interface {
 }
 
 // Assert that Expression implements hcl.Expression
-var assertExprImplExpr hcl.Expression = Expression(nil)
+var _ hcl.Expression = Expression(nil)
 
 // LiteralValueExpr is an expression that just always returns a given value.
 type LiteralValueExpr struct {
@@ -437,21 +437,6 @@ func (e *FunctionCallExpr) Range() hcl.Range {
 
 func (e *FunctionCallExpr) StartRange() hcl.Range {
 	return hcl.RangeBetween(e.NameRange, e.OpenParenRange)
-}
-
-// Implementation for hcl.ExprCall.
-func (e *FunctionCallExpr) ExprCall() *hcl.StaticCall {
-	ret := &hcl.StaticCall{
-		Name:      e.Name,
-		NameRange: e.NameRange,
-		Arguments: make([]hcl.Expression, len(e.Args)),
-		ArgsRange: hcl.RangeBetween(e.OpenParenRange, e.CloseParenRange),
-	}
-	// Need to convert our own Expression objects into hcl.Expression.
-	for i, arg := range e.Args {
-		ret.Arguments[i] = arg
-	}
-	return ret
 }
 
 type ConditionalExpr struct {
@@ -877,10 +862,6 @@ func (e *ObjectConsKeyExpr) AsTraversal() hcl.Traversal {
 	}
 
 	return st
-}
-
-func (e *ObjectConsKeyExpr) UnwrapExpression() Expression {
-	return e.Wrapped
 }
 
 // ForExpr represents iteration constructs:

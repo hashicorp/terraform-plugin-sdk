@@ -42,28 +42,6 @@ func AbsTraversalForExpr(expr Expression) (Traversal, Diagnostics) {
 	}
 }
 
-// RelTraversalForExpr is similar to AbsTraversalForExpr but it returns
-// a relative traversal instead. Due to the nature of HCL expressions, the
-// first element of the returned traversal is always a TraverseAttr, and
-// then it will be followed by zero or more other expressions.
-//
-// Any expression accepted by AbsTraversalForExpr is also accepted by
-// RelTraversalForExpr.
-func RelTraversalForExpr(expr Expression) (Traversal, Diagnostics) {
-	traversal, diags := AbsTraversalForExpr(expr)
-	if len(traversal) > 0 {
-		ret := make(Traversal, len(traversal))
-		copy(ret, traversal)
-		root := traversal[0].(TraverseRoot)
-		ret[0] = TraverseAttr{
-			Name:     root.Name,
-			SrcRange: root.SrcRange,
-		}
-		return ret, diags
-	}
-	return traversal, diags
-}
-
 // ExprAsKeyword attempts to interpret the given expression as a static keyword,
 // returning the keyword string if possible, and the empty string if not.
 //

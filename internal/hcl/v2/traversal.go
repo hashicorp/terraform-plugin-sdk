@@ -19,22 +19,6 @@ import (
 // (starts from an existing value).
 type Traversal []Traverser
 
-// TraversalJoin appends a relative traversal to an absolute traversal to
-// produce a new absolute traversal.
-func TraversalJoin(abs Traversal, rel Traversal) Traversal {
-	if abs.IsRelative() {
-		panic("first argument to TraversalJoin must be absolute")
-	}
-	if !rel.IsRelative() {
-		panic("second argument to TraversalJoin must be relative")
-	}
-
-	ret := make(Traversal, len(abs)+len(rel))
-	copy(ret, abs)
-	copy(ret[len(abs):], rel)
-	return ret
-}
-
 // TraverseRel applies the receiving traversal to the given value, returning
 // the resulting value. This is supported only for relative traversals,
 // and will panic if applied to an absolute traversal.
@@ -179,41 +163,6 @@ type TraversalSplit struct {
 	Rel Traversal
 }
 
-// TraverseAbs traverses from a scope to the value resulting from the
-// absolute traversal.
-func (t TraversalSplit) TraverseAbs(ctx *EvalContext) (cty.Value, Diagnostics) {
-	return t.Abs.TraverseAbs(ctx)
-}
-
-// TraverseRel traverses from a given value, assumed to be the result of
-// TraverseAbs on some scope, to a final result for the entire split traversal.
-func (t TraversalSplit) TraverseRel(val cty.Value) (cty.Value, Diagnostics) {
-	return t.Rel.TraverseRel(val)
-}
-
-// Traverse is a convenience function to apply TraverseAbs followed by
-// TraverseRel.
-func (t TraversalSplit) Traverse(ctx *EvalContext) (cty.Value, Diagnostics) {
-	v1, diags := t.TraverseAbs(ctx)
-	if diags.HasErrors() {
-		return cty.DynamicVal, diags
-	}
-	v2, newDiags := t.TraverseRel(v1)
-	diags = append(diags, newDiags...)
-	return v2, diags
-}
-
-// Join concatenates together the Abs and Rel parts to produce a single
-// absolute traversal.
-func (t TraversalSplit) Join() Traversal {
-	return TraversalJoin(t.Abs, t.Rel)
-}
-
-// RootName returns the root name for the absolute part of the split.
-func (t TraversalSplit) RootName() string {
-	return t.Abs.RootName()
-}
-
 // A Traverser is a step within a Traversal.
 type Traverser interface {
 	TraversalStep(cty.Value) (cty.Value, Diagnostics)
@@ -274,20 +223,5 @@ func (tn TraverseIndex) TraversalStep(val cty.Value) (cty.Value, Diagnostics) {
 }
 
 func (tn TraverseIndex) SourceRange() Range {
-	return tn.SrcRange
-}
-
-// TraverseSplat applies the splat operation to its initial value.
-type TraverseSplat struct {
-	isTraverser
-	Each     Traversal
-	SrcRange Range
-}
-
-func (tn TraverseSplat) TraversalStep(val cty.Value) (cty.Value, Diagnostics) {
-	panic("TraverseSplat not yet implemented")
-}
-
-func (tn TraverseSplat) SourceRange() Range {
 	return tn.SrcRange
 }

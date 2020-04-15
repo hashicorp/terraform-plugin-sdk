@@ -122,30 +122,3 @@ type Expression interface {
 	Range() Range
 	StartRange() Range
 }
-
-// OfType filters the receiving block sequence by block type name,
-// returning a new block sequence including only the blocks of the
-// requested type.
-func (els Blocks) OfType(typeName string) Blocks {
-	ret := make(Blocks, 0)
-	for _, el := range els {
-		if el.Type == typeName {
-			ret = append(ret, el)
-		}
-	}
-	return ret
-}
-
-// ByType transforms the receiving block sequence into a map from type
-// name to block sequences of only that type.
-func (els Blocks) ByType() map[string]Blocks {
-	ret := make(map[string]Blocks)
-	for _, el := range els {
-		ty := el.Type
-		if ret[ty] == nil {
-			ret[ty] = make(Blocks, 0, 1)
-		}
-		ret[ty] = append(ret[ty], el)
-	}
-	return ret
-}

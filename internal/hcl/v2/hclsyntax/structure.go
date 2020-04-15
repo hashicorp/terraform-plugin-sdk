@@ -44,7 +44,7 @@ type Body struct {
 }
 
 // Assert that *Body implements hcl.Body
-var assertBodyImplBody hcl.Body = &Body{}
+var _ hcl.Body = &Body{}
 
 func (b *Body) walkChildNodes(w internalWalkFunc) {
 	w(b.Attributes)
@@ -387,8 +387,4 @@ func (b *Block) walkChildNodes(w internalWalkFunc) {
 
 func (b *Block) Range() hcl.Range {
 	return hcl.RangeBetween(b.TypeRange, b.CloseBraceRange)
-}
-
-func (b *Block) DefRange() hcl.Range {
-	return hcl.RangeBetween(b.TypeRange, b.OpenBraceRange)
 }

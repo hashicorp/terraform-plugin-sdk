@@ -1932,32 +1932,6 @@ func (p *parser) recover(end TokenType) Token {
 	}
 }
 
-// recoverOver seeks forward in the token stream until it finds a block
-// starting with TokenType "start", then finds the corresponding end token,
-// leaving the peeker pointed at the token after that end token.
-//
-// The given token type _must_ be a bracketer. For example, if the given
-// start token is TokenOBrace then the parser will be left at the _end_ of
-// the next brace-delimited block encountered, or at EOF if no such block
-// is found or it is unclosed.
-func (p *parser) recoverOver(start TokenType) {
-	end := p.oppositeBracket(start)
-
-	// find the opening bracket first
-Token:
-	for {
-		tok := p.Read()
-		switch tok.Type {
-		case start, TokenEOF:
-			break Token
-		}
-	}
-
-	// Now use our existing recover function to locate the _end_ of the
-	// container we've found.
-	p.recover(end)
-}
-
 func (p *parser) recoverAfterBodyItem() {
 	p.recovery = true
 	var open []TokenType
