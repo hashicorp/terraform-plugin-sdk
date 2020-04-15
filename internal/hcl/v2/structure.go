@@ -1,7 +1,7 @@
 package hcl
 
 import (
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // File is the top-level node that results from parsing a HCL file.

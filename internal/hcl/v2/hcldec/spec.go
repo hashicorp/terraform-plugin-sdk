@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/convert"
+	"github.com/hashicorp/go-cty/cty/function"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/convert"
-	"github.com/zclconf/go-cty/cty/function"
 )
 
 // A Spec is a description of how to decode a hcl.Body to a cty.Value.

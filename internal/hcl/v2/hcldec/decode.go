@@ -1,8 +1,8 @@
 package hcldec
 
 import (
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func decode(body hcl.Body, blockLabels []blockLabel, ctx *hcl.EvalContext, spec Spec, partial bool) (cty.Value, hcl.Body, hcl.Diagnostics) {

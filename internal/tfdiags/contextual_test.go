@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hclsyntax"

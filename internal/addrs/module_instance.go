@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/gocty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hclsyntax"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/apparentlymart/go-dump/dump"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 func TestBlockEmptyValue(t *testing.T) {

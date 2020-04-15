@@ -5,8 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hclsyntax"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // MockBody returns a hcl.Body implementation that works in terms of a

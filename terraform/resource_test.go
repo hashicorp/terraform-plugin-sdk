@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/mitchellh/reflectwalk"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"

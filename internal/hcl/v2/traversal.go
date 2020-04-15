@@ -3,7 +3,7 @@ package hcl
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // A Traversal is a description of traversing through a value through a

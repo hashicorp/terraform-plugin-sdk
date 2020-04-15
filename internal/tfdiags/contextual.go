@@ -1,8 +1,8 @@
 package tfdiags
 
 import (
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/gocty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 )

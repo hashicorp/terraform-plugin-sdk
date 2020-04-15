@@ -5,7 +5,7 @@ import (
 
 	"github.com/apparentlymart/go-dump/dump"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hcldec"

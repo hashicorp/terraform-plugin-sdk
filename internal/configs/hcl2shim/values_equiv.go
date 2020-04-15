@@ -1,7 +1,7 @@
 package hcl2shim
 
 import (
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // ValuesSDKEquivalent returns true if both of the given values seem equivalent

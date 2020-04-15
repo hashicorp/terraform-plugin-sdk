@@ -8,8 +8,8 @@ import (
 	"io"
 	"sort"
 
+	"github.com/hashicorp/go-cty/cty"
 	wordwrap "github.com/mitchellh/go-wordwrap"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type diagnosticTextWriter struct {

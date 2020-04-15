@@ -1,8 +1,8 @@
 package hcl
 
 import (
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/function"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/function"
 )
 
 // An EvalContext provides the variables and functions that should be used
