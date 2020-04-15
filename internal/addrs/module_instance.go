@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
 )
 

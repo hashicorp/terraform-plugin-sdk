@@ -3,7 +3,7 @@ package hcl2shim
 import (
 	"fmt"
 
-	hcl2 "github.com/hashicorp/hcl/v2"
+	hcl2 "github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 )
 
 // SingleAttrBody is a weird implementation of hcl2.Body that acts as if

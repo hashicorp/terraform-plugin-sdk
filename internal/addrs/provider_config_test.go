@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"github.com/go-test/deep"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hclsyntax"
 )
 
 func TestParseAbsProviderConfig(t *testing.T) {

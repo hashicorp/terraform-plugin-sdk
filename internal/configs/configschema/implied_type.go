@@ -1,8 +1,9 @@
 package configschema
 
 import (
-	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hcldec"
 )
 
 // ImpliedType returns the cty.Type that would result from decoding a

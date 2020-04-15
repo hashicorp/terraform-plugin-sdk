@@ -1,7 +1,7 @@
 package configschema
 
 import (
-	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2/hcldec"
 )
 
 var mapLabelNames = []string{"key"}

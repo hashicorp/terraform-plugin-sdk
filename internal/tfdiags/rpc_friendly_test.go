@@ -8,7 +8,8 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/hcl/v2"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 )
 
 func TestDiagnosticsForRPC(t *testing.T) {

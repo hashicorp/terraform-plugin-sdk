@@ -9,7 +9,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/hcl/v2"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/hcl/v2"
 )
 
 func TestBuild(t *testing.T) {
