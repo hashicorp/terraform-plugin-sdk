@@ -2,7 +2,7 @@ package acctest
 
 // Package acctest provides the ability to opt-in to the new binary test driver. The binary
 // test driver allows you to run your acceptance tests with a binary of Terraform instead of
-// a source code version included with the testing code. This allows for a number of important
+// an emulated version packaged inside the SDK. This allows for a number of important
 // enhancements, but most notably a more realistic testing experience and matrix testing
 // against multiple versions of Terraform CLI. This also allows the SDK to be completely
 // separated, at a dependency level, from the Terraform CLI.
