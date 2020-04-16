@@ -8,9 +8,7 @@ import (
 // configuration block using the receiving block schema.
 //
 // ImpliedType always returns a result, even if the given schema is
-// inconsistent. Code that creates configschema.Block objects should be
-// tested using the InternalValidate method to detect any inconsistencies
-// that would cause this method to fall back on defaults and assumptions.
+// inconsistent.
 func (b *Block) ImpliedType() cty.Type {
 	if b == nil {
 		return cty.EmptyObject
@@ -24,11 +22,7 @@ func (b *Block) ImpliedType() cty.Type {
 
 	for name, blockS := range b.BlockTypes {
 		if _, exists := atys[name]; exists {
-			// This indicates an invalid schema, since it's not valid to
-			// define both an attribute and a block type of the same name.
-			// However, we don't raise this here since it's checked by
-			// InternalValidate.
-			continue
+			panic("invalid schema, blocks and attributes cannot have the same name")
 		}
 
 		childType := blockS.Block.ImpliedType()
@@ -49,12 +43,6 @@ func (b *Block) ImpliedType() cty.Type {
 				atys[name] = cty.List(childType)
 			}
 		case NestingSet:
-			// We forbid dynamically-typed attributes inside NestingSet in
-			// InternalValidate, so we will consider that a bug in the caller
-			// if we see it here. (There is no set equivalent to tuple and
-			// object types, because cty's set implementation depends on
-			// knowing the static type in order to properly compute its
-			// internal hashes.)
 			if childType.HasDynamicTypes() {
 				panic("can't use cty.DynamicPseudoType inside a block type with NestingSet")
 			}
@@ -72,9 +60,7 @@ func (b *Block) ImpliedType() cty.Type {
 				atys[name] = cty.Map(childType)
 			}
 		default:
-			// Invalid nesting type is just ignored. It's checked by
-			// InternalValidate.
-			continue
+			panic("invalid nesting type")
 		}
 	}
 
