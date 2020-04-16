@@ -3,8 +3,8 @@ package configschema
 import (
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/convert"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/convert"
 )
 
 // CoerceValue attempts to force the given value to conform to the type

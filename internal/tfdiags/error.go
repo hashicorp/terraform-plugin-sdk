@@ -17,12 +17,8 @@ func (e nativeError) Description() Description {
 	}
 }
 
-func (e nativeError) Source() Source {
-	// No source information available for a native error
-	return Source{}
-}
-
-func (e nativeError) FromExpr() *FromExpr {
-	// Native errors are not expression-related
-	return nil
+func FromError(err error) Diagnostic {
+	return &nativeError{
+		err: err,
+	}
 }

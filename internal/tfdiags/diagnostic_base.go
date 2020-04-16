@@ -2,7 +2,7 @@ package tfdiags
 
 // diagnosticBase can be embedded in other diagnostic structs to get
 // default implementations of Severity and Description. This type also
-// has default implementations of Source and FromExpr that return no source
+// has default implementations of Source that return no source
 // location or expression-related information, so embedders should generally
 // override those method to return more useful results where possible.
 type diagnosticBase struct {
@@ -22,10 +22,10 @@ func (d diagnosticBase) Description() Description {
 	}
 }
 
-func (d diagnosticBase) Source() Source {
-	return Source{}
-}
-
-func (d diagnosticBase) FromExpr() *FromExpr {
-	return nil
+func Diag(sev Severity, summary, detail string) Diagnostic {
+	return &diagnosticBase{
+		severity: sev,
+		summary:  summary,
+		detail:   detail,
+	}
 }

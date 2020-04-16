@@ -3,13 +3,7 @@ package tfdiags
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
 	"sort"
-	"strings"
-
-	"github.com/hashicorp/errwrap"
-	multierror "github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/hcl/v2"
 )
 
 // Diagnostics is a list of diagnostics. Diagnostics is intended to be used
@@ -20,81 +14,6 @@ import (
 // heap allocation to be avoided in the common case where there are no
 // diagnostics to report at all.
 type Diagnostics []Diagnostic
-
-// Append is the main interface for constructing Diagnostics lists, taking
-// an existing list (which may be nil) and appending the new objects to it
-// after normalizing them to be implementations of Diagnostic.
-//
-// The usual pattern for a function that natively "speaks" diagnostics is:
-//
-//     // Create a nil Diagnostics at the start of the function
-//     var diags diag.Diagnostics
-//
-//     // At later points, build on it if errors / warnings occur:
-//     foo, err := DoSomethingRisky()
-//     if err != nil {
-//         diags = diags.Append(err)
-//     }
-//
-//     // Eventually return the result and diagnostics in place of error
-//     return result, diags
-//
-// Append accepts a variety of different diagnostic-like types, including
-// native Go errors and HCL diagnostics. It also knows how to unwrap
-// a multierror.Error into separate error diagnostics. It can be passed
-// another Diagnostics to concatenate the two lists. If given something
-// it cannot handle, this function will panic.
-func (diags Diagnostics) Append(new ...interface{}) Diagnostics {
-	for _, item := range new {
-		if item == nil {
-			continue
-		}
-
-		switch ti := item.(type) {
-		case Diagnostic:
-			diags = append(diags, ti)
-		case Diagnostics:
-			diags = append(diags, ti...) // flatten
-		case diagnosticsAsError:
-			diags = diags.Append(ti.Diagnostics) // unwrap
-		case NonFatalError:
-			diags = diags.Append(ti.Diagnostics) // unwrap
-		case hcl.Diagnostics:
-			for _, hclDiag := range ti {
-				diags = append(diags, hclDiagnostic{hclDiag})
-			}
-		case *hcl.Diagnostic:
-			diags = append(diags, hclDiagnostic{ti})
-		case *multierror.Error:
-			for _, err := range ti.Errors {
-				diags = append(diags, nativeError{err})
-			}
-		case error:
-			switch {
-			case errwrap.ContainsType(ti, Diagnostics(nil)):
-				// If we have an errwrap wrapper with a Diagnostics hiding
-				// inside then we'll unpick it here to get access to the
-				// individual diagnostics.
-				diags = diags.Append(errwrap.GetType(ti, Diagnostics(nil)))
-			case errwrap.ContainsType(ti, hcl.Diagnostics(nil)):
-				// Likewise, if we have HCL diagnostics we'll unpick that too.
-				diags = diags.Append(errwrap.GetType(ti, hcl.Diagnostics(nil)))
-			default:
-				diags = append(diags, nativeError{ti})
-			}
-		default:
-			panic(fmt.Errorf("can't construct diagnostic(s) from %T", item))
-		}
-	}
-
-	// Given the above, we should never end up with a non-nil empty slice
-	// here, but we'll make sure of that so callers can rely on empty == nil
-	if len(diags) == 0 {
-		return nil
-	}
-
-	return diags
-}
 
 // HasErrors returns true if any of the diagnostics in the list have
 // a severity of Error.
@@ -274,36 +193,10 @@ func (sd sortDiagnostics) Len() int {
 func (sd sortDiagnostics) Less(i, j int) bool {
 	iD, jD := sd[i], sd[j]
 	iSev, jSev := iD.Severity(), jD.Severity()
-	iSrc, jSrc := iD.Source(), jD.Source()
 
 	switch {
-
 	case iSev != jSev:
 		return iSev == Warning
-
-	case (iSrc.Subject == nil) != (jSrc.Subject == nil):
-		return iSrc.Subject == nil
-
-	case iSrc.Subject != nil && *iSrc.Subject != *jSrc.Subject:
-		iSubj := iSrc.Subject
-		jSubj := jSrc.Subject
-		switch {
-		case iSubj.Filename != jSubj.Filename:
-			// Path with fewer segments goes first if they are different lengths
-			sep := string(filepath.Separator)
-			iCount := strings.Count(iSubj.Filename, sep)
-			jCount := strings.Count(jSubj.Filename, sep)
-			if iCount != jCount {
-				return iCount < jCount
-			}
-			return iSubj.Filename < jSubj.Filename
-		case iSubj.Start.Byte != jSubj.Start.Byte:
-			return iSubj.Start.Byte < jSubj.Start.Byte
-		case iSubj.End.Byte != jSubj.End.Byte:
-			return iSubj.End.Byte < jSubj.End.Byte
-		}
-		fallthrough
-
 	default:
 		// The remaining properties do not have a defined ordering, so
 		// we'll leave it unspecified. Since we use sort.Stable in

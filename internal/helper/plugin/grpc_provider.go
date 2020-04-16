@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/zclconf/go-cty/cty"
-	ctyconvert "github.com/zclconf/go-cty/cty/convert"
-	"github.com/zclconf/go-cty/cty/msgpack"
+	"github.com/hashicorp/go-cty/cty"
+	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
+	"github.com/hashicorp/go-cty/cty/msgpack"
 	context "golang.org/x/net/context"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"

@@ -1,7 +1,7 @@
 package configschema
 
 import (
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // EmptyValue returns the "empty value" for the recieving block, which for

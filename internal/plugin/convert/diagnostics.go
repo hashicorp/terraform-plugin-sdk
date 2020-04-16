@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
@@ -73,7 +73,7 @@ func ProtoToDiagnostics(ds []*proto.Diagnostic) tfdiags.Diagnostics {
 			newDiag = tfdiags.WholeContainingBody(severity, d.Summary, d.Detail)
 		}
 
-		diags = diags.Append(newDiag)
+		diags = append(diags, newDiag)
 	}
 
 	return diags

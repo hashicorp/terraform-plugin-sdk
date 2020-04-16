@@ -3,7 +3,7 @@ module github.com/hashicorp/terraform-plugin-sdk/v2
 go 1.14
 
 require (
-	github.com/agext/levenshtein v1.2.2
+	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/apparentlymart/go-cidr v1.0.1
 	github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0
@@ -15,6 +15,7 @@ require (
 	github.com/google/go-cmp v0.3.1
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-cleanhttp v0.5.1
+	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/go-hclog v0.9.2 // indirect
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-plugin v1.2.0
