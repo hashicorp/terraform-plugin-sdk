@@ -22,6 +22,10 @@ func (d diagnosticBase) Description() Description {
 	}
 }
 
-func (d diagnosticBase) Source() Source {
-	return Source{}
+func Diag(sev Severity, summary, detail string) Diagnostic {
+	return &diagnosticBase{
+		severity: sev,
+		summary:  summary,
+		detail:   detail,
+	}
 }

@@ -1266,13 +1266,16 @@ func (s *ResourceState) ProviderAddr() (addrs.AbsProviderConfig, error) {
 
 	str := s.Provider
 	traversal, travDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(travDiags)
+	for _, err := range travDiags.Errs() {
+		// ignore warnings, they don't matter in this case
+		diags = append(diags, tfdiags.FromError(err))
+	}
 	if travDiags.HasErrors() {
 		return addrs.AbsProviderConfig{}, diags.Err()
 	}
 
 	addr, addrDiags := addrs.ParseAbsProviderConfig(traversal)
-	diags = diags.Append(addrDiags)
+	diags = append(diags, addrDiags...)
 	return addr, diags.Err()
 }
 

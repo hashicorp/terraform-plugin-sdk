@@ -30,19 +30,17 @@ func parseModuleInstance(traversal hcl.Traversal) (ModuleInstance, tfdiags.Diagn
 	mi, remain, diags := parseModuleInstancePrefix(traversal)
 	if len(remain) != 0 {
 		if len(remain) == len(traversal) {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid module instance address",
-				Detail:   "A module instance address must begin with \"module.\".",
-				Subject:  remain.SourceRange().Ptr(),
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid module instance address",
+				"A module instance address must begin with \"module.\".",
+			))
 		} else {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid module instance address",
-				Detail:   "The module instance address is followed by additional invalid content.",
-				Subject:  remain.SourceRange().Ptr(),
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid module instance address",
+				"The module instance address is followed by additional invalid content.",
+			))
 		}
 	}
 	return mi, diags
@@ -67,13 +65,16 @@ func ParseModuleInstanceStr(str string) (ModuleInstance, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 
 	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
+	for _, err := range parseDiags.Errs() {
+		// ignore warnings, they don't matter in this case
+		diags = append(diags, tfdiags.FromError(err))
+	}
 	if parseDiags.HasErrors() {
 		return nil, diags
 	}
 
 	addr, addrDiags := parseModuleInstance(traversal)
-	diags = diags.Append(addrDiags)
+	diags = append(diags, addrDiags...)
 	return addr, diags
 }
 
@@ -90,12 +91,11 @@ func parseModuleInstancePrefix(traversal hcl.Traversal) (ModuleInstance, hcl.Tra
 		case hcl.TraverseAttr:
 			next = tt.Name
 		default:
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid address operator",
-				Detail:   "Module address prefix must be followed by dot and then a name.",
-				Subject:  remain[0].SourceRange().Ptr(),
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid address operator",
+				"Module address prefix must be followed by dot and then a name.",
+			))
 			break
 		}
 
@@ -103,18 +103,16 @@ func parseModuleInstancePrefix(traversal hcl.Traversal) (ModuleInstance, hcl.Tra
 			break
 		}
 
-		kwRange := remain[0].SourceRange()
 		remain = remain[1:]
 		// If we have the prefix "module" then we should be followed by an
 		// module call name, as an attribute, and then optionally an index step
 		// giving the instance key.
 		if len(remain) == 0 {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid address operator",
-				Detail:   "Prefix \"module.\" must be followed by a module name.",
-				Subject:  &kwRange,
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid address operator",
+				"Prefix \"module.\" must be followed by a module name.",
+			))
 			break
 		}
 
@@ -123,12 +121,11 @@ func parseModuleInstancePrefix(traversal hcl.Traversal) (ModuleInstance, hcl.Tra
 		case hcl.TraverseAttr:
 			moduleName = tt.Name
 		default:
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid address operator",
-				Detail:   "Prefix \"module.\" must be followed by a module name.",
-				Subject:  remain[0].SourceRange().Ptr(),
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid address operator",
+				"Prefix \"module.\" must be followed by a module name.",
+			))
 			break
 		}
 		remain = remain[1:]
@@ -149,21 +146,19 @@ func parseModuleInstancePrefix(traversal hcl.Traversal) (ModuleInstance, hcl.Tra
 					if err == nil {
 						step.InstanceKey = intKey(idxInt)
 					} else {
-						diags = diags.Append(&hcl.Diagnostic{
-							Severity: hcl.DiagError,
-							Summary:  "Invalid address operator",
-							Detail:   fmt.Sprintf("Invalid module index: %s.", err),
-							Subject:  idx.SourceRange().Ptr(),
-						})
+						diags = append(diags, tfdiags.Diag(
+							tfdiags.Error,
+							"Invalid address operator",
+							fmt.Sprintf("Invalid module index: %s.", err),
+						))
 					}
 				default:
 					// Should never happen, because no other types are allowed in traversal indices.
-					diags = diags.Append(&hcl.Diagnostic{
-						Severity: hcl.DiagError,
-						Summary:  "Invalid address operator",
-						Detail:   "Invalid module key: must be either a string or an integer.",
-						Subject:  idx.SourceRange().Ptr(),
-					})
+					diags = append(diags, tfdiags.Diag(
+						tfdiags.Error,
+						"Invalid address operator",
+						"Invalid module key: must be either a string or an integer.",
+					))
 				}
 			}
 		}

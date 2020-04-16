@@ -73,7 +73,7 @@ func ProtoToDiagnostics(ds []*proto.Diagnostic) tfdiags.Diagnostics {
 			newDiag = tfdiags.WholeContainingBody(severity, d.Summary, d.Detail)
 		}
 
-		diags = diags.Append(newDiag)
+		diags = append(diags, newDiag)
 	}
 
 	return diags

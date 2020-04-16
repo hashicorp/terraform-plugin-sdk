@@ -3,7 +3,6 @@ package tfdiags
 type Diagnostic interface {
 	Severity() Severity
 	Description() Description
-	Source() Source
 }
 
 type Severity rune
@@ -18,9 +17,4 @@ const (
 type Description struct {
 	Summary string
 	Detail  string
-}
-
-type Source struct {
-	Subject *SourceRange
-	Context *SourceRange
 }

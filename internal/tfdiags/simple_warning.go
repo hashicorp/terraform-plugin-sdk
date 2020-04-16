@@ -18,8 +18,3 @@ func (e simpleWarning) Description() Description {
 		Summary: string(e),
 	}
 }
-
-func (e simpleWarning) Source() Source {
-	// No source information available for a simple warning
-	return Source{}
-}

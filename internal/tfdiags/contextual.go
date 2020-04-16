@@ -54,13 +54,6 @@ func GetAttribute(d Diagnostic) cty.Path {
 type attributeDiagnostic struct {
 	diagnosticBase
 	attrPath cty.Path
-	subject  *SourceRange // populated only after ElaborateFromConfigBody
-}
-
-func (d *attributeDiagnostic) Source() Source {
-	return Source{
-		Subject: d.subject,
-	}
 }
 
 // WholeContainingBody returns a diagnostic about the body that is an implied
@@ -85,11 +78,4 @@ func WholeContainingBody(severity Severity, summary, detail string) Diagnostic {
 
 type wholeBodyDiagnostic struct {
 	diagnosticBase
-	subject *SourceRange // populated only after ElaborateFromConfigBody
-}
-
-func (d *wholeBodyDiagnostic) Source() Source {
-	return Source{
-		Subject: d.subject,
-	}
 }

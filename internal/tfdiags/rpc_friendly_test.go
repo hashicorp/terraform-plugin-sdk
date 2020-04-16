@@ -12,8 +12,8 @@ import (
 
 func TestDiagnosticsForRPC(t *testing.T) {
 	var diags Diagnostics
-	diags = diags.Append(fmt.Errorf("bad"))
-	diags = diags.Append(SimpleWarning("less bad"))
+	diags = append(diags, FromError(fmt.Errorf("bad")))
+	diags = append(diags, SimpleWarning("less bad"))
 
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)

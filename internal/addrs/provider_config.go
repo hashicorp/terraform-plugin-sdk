@@ -58,33 +58,30 @@ func ParseAbsProviderConfig(traversal hcl.Traversal) (AbsProviderConfig, tfdiags
 		Module: modInst,
 	}
 	if len(remain) < 2 || remain.RootName() != "provider" {
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid provider configuration address",
-			Detail:   "Provider address must begin with \"provider.\", followed by a provider type name.",
-			Subject:  remain.SourceRange().Ptr(),
-		})
+		diags = append(diags, tfdiags.Diag(
+			tfdiags.Error,
+			"Invalid provider configuration address",
+			"Provider address must begin with \"provider.\", followed by a provider type name.",
+		))
 		return ret, diags
 	}
 	if len(remain) > 3 {
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid provider configuration address",
-			Detail:   "Extraneous operators after provider configuration alias.",
-			Subject:  hcl.Traversal(remain[3:]).SourceRange().Ptr(),
-		})
+		diags = append(diags, tfdiags.Diag(
+			tfdiags.Error,
+			"Invalid provider configuration address",
+			"Extraneous operators after provider configuration alias.",
+		))
 		return ret, diags
 	}
 
 	if tt, ok := remain[1].(hcl.TraverseAttr); ok {
 		ret.ProviderConfig.Type = tt.Name
 	} else {
-		diags = diags.Append(&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "Invalid provider configuration address",
-			Detail:   "The prefix \"provider.\" must be followed by a provider type name.",
-			Subject:  remain[1].SourceRange().Ptr(),
-		})
+		diags = append(diags, tfdiags.Diag(
+			tfdiags.Error,
+			"Invalid provider configuration address",
+			"The prefix \"provider.\" must be followed by a provider type name.",
+		))
 		return ret, diags
 	}
 
@@ -92,12 +89,11 @@ func ParseAbsProviderConfig(traversal hcl.Traversal) (AbsProviderConfig, tfdiags
 		if tt, ok := remain[2].(hcl.TraverseAttr); ok {
 			ret.ProviderConfig.Alias = tt.Name
 		} else {
-			diags = diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid provider configuration address",
-				Detail:   "Provider type name must be followed by a configuration alias name.",
-				Subject:  remain[2].SourceRange().Ptr(),
-			})
+			diags = append(diags, tfdiags.Diag(
+				tfdiags.Error,
+				"Invalid provider configuration address",
+				"Provider type name must be followed by a configuration alias name.",
+			))
 			return ret, diags
 		}
 	}
@@ -124,13 +120,16 @@ func ParseAbsProviderConfigStr(str string) (AbsProviderConfig, tfdiags.Diagnosti
 	var diags tfdiags.Diagnostics
 
 	traversal, parseDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	diags = diags.Append(parseDiags)
+	for _, err := range parseDiags.Errs() {
+		// ignore warnings, they don't matter in this case
+		diags = append(diags, tfdiags.FromError(err))
+	}
 	if parseDiags.HasErrors() {
 		return AbsProviderConfig{}, diags
 	}
 
 	addr, addrDiags := ParseAbsProviderConfig(traversal)
-	diags = diags.Append(addrDiags)
+	diags = append(diags, addrDiags...)
 	return addr, diags
 }
 
