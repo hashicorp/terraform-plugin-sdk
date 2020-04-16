@@ -165,6 +165,14 @@ func TestBlockEmptyValue(t *testing.T) {
 			if !test.Want.RawEquals(got) {
 				t.Errorf("wrong result\nschema: %s\ngot: %s\nwant: %s", spew.Sdump(test.Schema), dump.Value(got), dump.Value(test.Want))
 			}
+
+			// The empty value must always conform to the implied type of
+			// the schema.
+			wantTy := test.Schema.ImpliedType()
+			gotTy := got.Type()
+			if errs := gotTy.TestConformance(wantTy); len(errs) > 0 {
+				t.Errorf("empty value has incorrect type\ngot: %#v\nwant: %#v\nerrors: %s", gotTy, wantTy, spew.Sdump(errs))
+			}
 		})
 	}
 }
