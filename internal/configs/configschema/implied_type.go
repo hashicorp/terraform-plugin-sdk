@@ -1,7 +1,7 @@
 package configschema
 
 import (
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // ImpliedType returns the cty.Type that would result from decoding a

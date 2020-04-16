@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 func TestValuesSDKEquivalent(t *testing.T) {
