@@ -8,24 +8,12 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/hcl/v2"
 )
 
 func TestDiagnosticsForRPC(t *testing.T) {
 	var diags Diagnostics
 	diags = diags.Append(fmt.Errorf("bad"))
 	diags = diags.Append(SimpleWarning("less bad"))
-	diags = diags.Append(&hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  "bad bad bad",
-		Detail:   "badily bad bad",
-		Subject: &hcl.Range{
-			Filename: "foo",
-		},
-		Context: &hcl.Range{
-			Filename: "bar",
-		},
-	})
 
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
@@ -51,17 +39,6 @@ func TestDiagnosticsForRPC(t *testing.T) {
 		&rpcFriendlyDiag{
 			Severity_: Warning,
 			Summary_:  "less bad",
-		},
-		&rpcFriendlyDiag{
-			Severity_: Error,
-			Summary_:  "bad bad bad",
-			Detail_:   "badily bad bad",
-			Subject_: &SourceRange{
-				Filename: "foo",
-			},
-			Context_: &SourceRange{
-				Filename: "bar",
-			},
 		},
 	}
 

@@ -23,8 +23,3 @@ func (e simpleWarning) Source() Source {
 	// No source information available for a simple warning
 	return Source{}
 }
-
-func (e simpleWarning) FromExpr() *FromExpr {
-	// Simple warnings are not expression-related
-	return nil
-}
