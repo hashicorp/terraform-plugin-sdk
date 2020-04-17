@@ -234,6 +234,20 @@ type Schema struct {
 	//
 	// ValidateDiagFunc is honored only when the schema's Type is set to TypeInt,
 	// TypeFloat, TypeString, TypeBool, or TypeMap. It is ignored for all other types.
+	//
+	// ValidateDiagFunc is also yielded the cty.Path the SDK has built up to this
+	// attribute. The SDK will automatically set the AttributePath of any returned
+	// Diagnostics to this path. Therefore the developer does not need to set
+	// the AttributePath for primitive types.
+	//
+	// In the case of TypeMap to provide the most precise information, please
+	// set an AttributePath with the additional cty.IndexStep:
+	//
+	//  AttributePath: cty.IndexStringPath("key_name")
+	//
+	// Or alternatively use the passed in path to create the absolute path:
+	//
+	//  AttributePath: append(path, cty.IndexStep{Key: cty.StringVal("key_name")})
 	ValidateDiagFunc SchemaValidateDiagFunc
 
 	// Sensitive ensures that the attribute's value does not get displayed in

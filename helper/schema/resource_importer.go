@@ -24,7 +24,8 @@ type ResourceImporter struct {
 
 	// StateContext is called to convert an ID to one or more InstanceState to
 	// insert into the Terraform state. If this isn't specified, then
-	// the ID is passed straight through.
+	// the ID is passed straight through. This function receives a context
+	// that will cancel if Terraform sends a cancellation signal.
 	StateContext StateContextFunc
 }
 

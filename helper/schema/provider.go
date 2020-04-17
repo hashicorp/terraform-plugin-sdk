@@ -59,7 +59,9 @@ type Provider struct {
 	ConfigureFunc ConfigureFunc
 
 	// ConfigureContextFunc is a function for configuring the provider. If the
-	// provider doesn't need to be configured, this can be omitted.
+	// provider doesn't need to be configured, this can be omitted. This function
+	// receives a context.Context that will cancel when Terraform sends a
+	// cancellation signal. This function can yield Diagnostics
 	ConfigureContextFunc ConfigureContextFunc
 
 	meta interface{}
@@ -232,8 +234,6 @@ func (p *Provider) ValidateResource(
 // given. This is useful for setting things like access keys.
 //
 // This won't be called at all if no provider configuration is given.
-//
-// Configure returns Diagnostics.
 func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) diag.Diagnostics {
 
 	var diags diag.Diagnostics

@@ -45,24 +45,33 @@ type Diagnostic struct {
 	// Severity indicates the level of the Diagnostic. Currently can be set to
 	// either Error or Warning
 	Severity Severity
+
 	// Summary is a short description of the problem, rendered above location
 	// information
 	Summary string
+
 	// Detail is an optional second message rendered below location information
 	// typically used to communicate a potential fix to the user.
 	Detail string
+
 	// AttributePath is a representation of the path starting from the root of
 	// block (resource, datasource, provider) under evaluation by the SDK, to
-	// the attribute that the Diagnostic should be associated to.
+	// the attribute that the Diagnostic should be associated to. Terraform will
+	// use this information to render information on where the problem took
+	// place in the user's configuration.
 	//
-	// It is represented with cty.Path, the SDK currently only supports path
-	// steps of either cty.GetAttrStep (an actual attribute) or cty.IndexStep
-	// (a step with Key of cty.StringVal for map indexes, and cty.NumberVal
-	// list indexes, pathing into sets is not currently supported). Please see
-	// go-cty documentation for more information.
+	// It is represented with cty.Path, which is a list of steps of either
+	// cty.GetAttrStep (an actual attribute) or cty.IndexStep (a step with Key
+	// of cty.StringVal for map indexes, and cty.NumberVal for list indexes).
 	//
-	// Terraform will use this information to render information on where the
-	// problem took place in the user's configuration.
+	// PLEASE NOTE: While cty can support indexing into sets, the SDK and
+	// protocol currently do not. For any Diagnostic related to a schema.TypeSet
+	// or a child of that type, please terminate the path at the schema.TypeSet
+	// and opt for more verbose Summary and Detail to help guide the user.
+	//
+	// Validity of the AttributePath is currently the responsibility of the
+	// developer, Terraform should render the root block (provider, resource,
+	// datasource) in cases where the attribute path is invalid.
 	AttributePath cty.Path
 }
 
@@ -93,10 +102,6 @@ func FromErr(err error) Diagnostic {
 }
 
 // Severity is an enum type marking the severity level of a Diagnostic
-//
-// Valid levels are
-// - Error
-// - Warning
 type Severity int
 
 const (

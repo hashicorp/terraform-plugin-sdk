@@ -129,8 +129,15 @@ type Resource struct {
 	// a ConfigureFunc, this will be nil. This parameter should be used
 	// to store API clients, configuration structures, etc.
 	//
-	// If any errors occur during each of the operation, an error should be
-	// returned.
+	// These functions are passed a context configured to timeout with whatever
+	// was set as the timeout for this operation. Useful for forwarding on to
+	// backend SDK's that accept context. The context will also cancel if
+	// Terraform sends a cancellation signal.
+	//
+	// These functions return diagnostics, allowing developers to build
+	// a list of warnings and errors to be presented to the Terraform user.
+	// The AttributePath of those diagnostics should be built within these
+	// functions, please consult go-cty documentation for building a cty.Path
 	CreateContext CreateContextFunc
 	ReadContext   ReadContextFunc
 	UpdateContext UpdateContextFunc
