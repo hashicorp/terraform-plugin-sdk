@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func TestEnvDefaultFunc(t *testing.T) {
@@ -6791,7 +6791,8 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
-			_, es := schemaMap(tc.Schema).Validate(c)
+			diags := schemaMap(tc.Schema).Validate(c)
+			es := errorDiags(diags).Errors()
 			if len(es) > 0 != tc.Err {
 				if len(es) == 0 {
 					t.Fatalf("expected error")

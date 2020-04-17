@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/mitchellh/copystructure"
 	"github.com/mitchellh/mapstructure"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
@@ -1459,7 +1459,12 @@ func (m schemaMap) validate(
 
 	err = validateRequiredWithAttribute(k, schema, c)
 	if err != nil {
-		return nil, []error{err}
+		return append(diags, diag.Diagnostic{
+			Severity:      diag.Error,
+			Summary:       "RequiredWith",
+			Detail:        err.Error(),
+			AttributePath: path,
+		})
 	}
 
 	// If the value is unknown then we can't validate it yet.

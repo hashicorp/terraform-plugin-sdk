@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/zclconf/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty"
 )
 
 // Diagnostics is a collection of Diagnostic.
