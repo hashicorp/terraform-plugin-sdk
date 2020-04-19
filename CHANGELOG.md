@@ -4,6 +4,10 @@ FEATURES:
 
 * Added validation helper `RequiredWith` [GH-342]
 
+BUG FIXES:
+
+* Binary acceptance test driver: omit test cleanup when state is empty [GH-356]
+
 # 1.9.1 (April 09, 2020)
 
 BUG FIXES:
