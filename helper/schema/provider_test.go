@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -137,12 +138,12 @@ func TestProviderConfigure(t *testing.T) {
 					},
 				},
 
-				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
 					if d.Get("foo").(int) == 42 {
 						return nil, nil
 					}
 
-					return nil, fmt.Errorf("nope")
+					return nil, diag.Diagnostics{diag.FromErr(fmt.Errorf("nope"))}
 				},
 			},
 			Config: map[string]interface{}{
@@ -177,9 +178,9 @@ func TestProviderConfigure(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		err := tc.P.Configure(context.Background(), c)
-		if err != nil != tc.Err {
-			t.Fatalf("%d: %s", i, err)
+		diags := tc.P.Configure(context.Background(), c)
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %s", i, errorDiags(diags))
 		}
 	}
 }
@@ -282,9 +283,212 @@ func TestProviderValidate(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := tc.P.Validate(c)
-		if len(es) > 0 != tc.Err {
-			t.Fatalf("%d: %#v", i, es)
+		diags := tc.P.Validate(c)
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %#v", i, diags)
+		}
+	}
+}
+
+func TestProviderValidate_attributePath(t *testing.T) {
+	cases := []struct {
+		P             *Provider
+		Config        map[string]interface{}
+		ExpectedDiags diag.Diagnostics
+	}{
+		{ // legacy validate path automatically built, even across list
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateFunc: func(v interface{}, k string) ([]string, []error) {
+										return []string{"warn"}, []error{fmt.Errorf("error")}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Warning,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+			},
+		},
+		{ // validate path automatically built, even across list
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}},
+				},
+			},
+		},
+		{ // path is truncated at typeset
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeSet,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeString,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: cty.Path{cty.GetAttrStep{Name: "doesnotmatter"}}}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "baz",
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}},
+				},
+			},
+		},
+		{ // relative path is appended
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeMap,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: cty.Path{cty.IndexStep{Key: cty.StringVal("mapkey")}}}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": map[string]interface{}{
+							"mapkey": "val",
+						},
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}, cty.IndexStep{Key: cty.StringVal("mapkey")}},
+				},
+			},
+		},
+		{ // absolute path is not altered
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeList,
+						Required: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:     TypeMap,
+									Required: true,
+									ValidateDiagFunc: func(v interface{}, path cty.Path) diag.Diagnostics {
+										return diag.Diagnostics{{Severity: diag.Error, AttributePath: append(path, cty.IndexStep{Key: cty.StringVal("mapkey")})}}
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": map[string]interface{}{
+							"mapkey": "val",
+						},
+					},
+				},
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}, cty.IndexStep{Key: cty.NumberIntVal(0)}, cty.GetAttrStep{Name: "bar"}, cty.IndexStep{Key: cty.StringVal("mapkey")}},
+				},
+			},
+		},
+	}
+
+	for i, tc := range cases {
+		c := terraform.NewResourceConfigRaw(tc.Config)
+		diags := tc.P.Validate(c)
+		if len(diags) != len(tc.ExpectedDiags) {
+			t.Fatalf("%d: wrong number of diags, expected %d, got %d", i, len(tc.ExpectedDiags), len(diags))
+		}
+		for j := range diags {
+			if diags[j].Severity != tc.ExpectedDiags[j].Severity {
+				t.Fatalf("%d: expected severity %v, got %v", i, tc.ExpectedDiags[j].Severity, diags[j].Severity)
+			}
+			if !diags[j].AttributePath.Equals(tc.ExpectedDiags[j].AttributePath) {
+				t.Fatalf("%d: attribute paths do not match expected: %v, got %v", i, tc.ExpectedDiags[j].AttributePath, diags[j].AttributePath)
+			}
 		}
 	}
 }
@@ -395,9 +599,9 @@ func TestProviderValidateResource(t *testing.T) {
 
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := tc.P.ValidateResource(tc.Type, c)
-		if len(es) > 0 != tc.Err {
-			t.Fatalf("%d: %#v", i, es)
+		diags := tc.P.ValidateResource(tc.Type, c)
+		if diags.HasError() != tc.Err {
+			t.Fatalf("%d: %#v", i, diags)
 		}
 	}
 }
@@ -551,7 +755,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
 					return nil, nil
 				},
-				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, error) {
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
 					return nil, nil
 				},
 			},

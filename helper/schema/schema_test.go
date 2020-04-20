@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -3654,6 +3656,22 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
+
+		"ValidateFunc and ValidateDiagFunc cannot both be set": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeInt,
+					Required: true,
+					ValidateFunc: func(interface{}, string) ([]string, []error) {
+						return nil, nil
+					},
+					ValidateDiagFunc: func(interface{}, cty.Path) diag.Diagnostics {
+						return nil
+					},
+				},
+			},
+			true,
+		},
 	}
 
 	for tn, tc := range cases {
@@ -4135,7 +4153,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`ingress: should be a list`),
+				fmt.Errorf("Error: Attribute should be a list"),
 			},
 		},
 
@@ -4156,7 +4174,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`strings: should be a list`),
+				fmt.Errorf("Error: Attribute should be a list"),
 			},
 		},
 
@@ -4192,7 +4210,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 
 			Warnings: []string{
-				"\"old_news\": [DEPRECATED] please use 'new_news' instead",
+				"Warning: Attribute is deprecated: please use 'new_news' instead",
 			},
 		},
 
@@ -4582,7 +4600,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Err: false,
 
 			Warnings: []string{
-				"\"old_news\": [DEPRECATED] please use 'new_news' instead",
+				"Warning: Deprecated Attribute: please use 'new_news' instead",
 			},
 		},
 
@@ -4615,7 +4633,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf("\"long_gone\": [REMOVED] no longer supported by Cloud API"),
+				fmt.Errorf("Error: Removed Attribute: no longer supported by Cloud API"),
 			},
 		},
 
@@ -4651,7 +4669,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf("\"blacklist\": conflicts with whitelist"),
+				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with whitelist`),
 			},
 		},
 
@@ -4747,8 +4765,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf("\"blacklist\": conflicts with greenlist"),
-				fmt.Errorf("\"greenlist\": conflicts with blacklist"),
+				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with greenlist`),
+				fmt.Errorf(`Error: ConflictsWith: "greenlist": conflicts with blacklist`),
 			},
 		},
 
@@ -4792,7 +4810,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`"optional_att": conflicts with required_att`),
+				fmt.Errorf(`Error: ConflictsWith: "optional_att": conflicts with required_att`),
 			},
 		},
 
@@ -4819,8 +4837,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`"foo_att": conflicts with bar_att`),
-				fmt.Errorf(`"bar_att": conflicts with foo_att`),
+				fmt.Errorf(`Error: ConflictsWith: "bar_att": conflicts with foo_att`),
+				fmt.Errorf(`Error: ConflictsWith: "foo_att": conflicts with bar_att`),
 			},
 		},
 
@@ -4900,7 +4918,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`something is not right here`),
+				fmt.Errorf(`Error: something is not right here`),
 			},
 		},
 
@@ -5173,34 +5191,48 @@ func TestSchemaMap_Validate(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 
-			ws, es := schemaMap(tc.Schema).Validate(c)
-			if len(es) > 0 != tc.Err {
-				if len(es) == 0 {
+			diags := schemaMap(tc.Schema).Validate(c)
+			if diags.HasError() != tc.Err {
+				if !diags.HasError() {
 					t.Errorf("%q: no errors", tn)
 				}
 
-				for _, e := range es {
+				for _, e := range errorDiags(diags).Errors() {
 					t.Errorf("%q: err: %s", tn, e)
 				}
 
 				t.FailNow()
 			}
 
+			ws := warningDiags(diags).Warnings()
 			if !reflect.DeepEqual(ws, tc.Warnings) {
 				t.Fatalf("%q: warnings:\n\nexpected: %#v\ngot:%#v", tn, tc.Warnings, ws)
 			}
 
+			es := errorDiags(diags).Errors()
 			if tc.Errors != nil {
 				sort.Sort(errorSort(es))
 				sort.Sort(errorSort(tc.Errors))
 
-				if !reflect.DeepEqual(es, tc.Errors) {
+				if !errorEquals(es, tc.Errors) {
 					t.Fatalf("%q: errors:\n\nexpected: %q\ngot: %q", tn, tc.Errors, es)
 				}
 			}
 		})
 
 	}
+}
+
+func errorEquals(a []error, b []error) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i].Error() != b[i].Error() {
+			return false
+		}
+	}
+	return true
 }
 
 func TestSchemaSet_ValidateMaxItems(t *testing.T) {
@@ -5229,7 +5261,7 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("aliases: attribute supports 1 item maximum, config has 2 declared"),
+				fmt.Errorf("Error: List longer than MaxItems: Attribute supports 1 item maximum, config has 2 declared"),
 			},
 		},
 		"#1": {
@@ -5269,22 +5301,23 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 
 	for tn, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := schemaMap(tc.Schema).Validate(c)
+		diags := schemaMap(tc.Schema).Validate(c)
 
-		if len(es) > 0 != tc.Err {
-			if len(es) == 0 {
+		if diags.HasError() != tc.Err {
+			if !diags.HasError() {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range es {
+			for _, e := range errorDiags(diags).Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
+		es := errorDiags(diags).Errors()
 		if tc.Errors != nil {
-			if !reflect.DeepEqual(es, tc.Errors) {
+			if !errorEquals(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
 			}
 		}
@@ -5350,29 +5383,30 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("aliases: attribute supports 2 item as a minimum, config has 1 declared"),
+				fmt.Errorf("Error: List shorter than MinItems: Attribute supports 2 item minimum, config has 1 declared"),
 			},
 		},
 	}
 
 	for tn, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
-		_, es := schemaMap(tc.Schema).Validate(c)
+		diags := schemaMap(tc.Schema).Validate(c)
 
-		if len(es) > 0 != tc.Err {
-			if len(es) == 0 {
+		if diags.HasError() != tc.Err {
+			if !diags.HasError() {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range es {
+			for _, e := range errorDiags(diags).Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
+		es := errorDiags(diags).Errors()
 		if tc.Errors != nil {
-			if !reflect.DeepEqual(es, tc.Errors) {
+			if !errorEquals(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
 			}
 		}
@@ -6442,13 +6476,13 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
-			_, es := schemaMap(tc.Schema).Validate(c)
-			if len(es) > 0 != tc.Err {
-				if len(es) == 0 {
+			diags := schemaMap(tc.Schema).Validate(c)
+			if diags.HasError() != tc.Err {
+				if !diags.HasError() {
 					t.Fatalf("expected error")
 				}
 
-				for _, e := range es {
+				for _, e := range errorDiags(diags).Errors() {
 					t.Fatalf("didn't expect error, got error: %+v", e)
 				}
 
@@ -6757,7 +6791,8 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
-			_, es := schemaMap(tc.Schema).Validate(c)
+			diags := schemaMap(tc.Schema).Validate(c)
+			es := errorDiags(diags).Errors()
 			if len(es) > 0 != tc.Err {
 				if len(es) == 0 {
 					t.Fatalf("expected error")

@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -58,7 +59,9 @@ type Provider struct {
 	ConfigureFunc ConfigureFunc
 
 	// ConfigureContextFunc is a function for configuring the provider. If the
-	// provider doesn't need to be configured, this can be omitted.
+	// provider doesn't need to be configured, this can be omitted. This function
+	// receives a context.Context that will cancel when Terraform sends a
+	// cancellation signal. This function can yield Diagnostics
 	ConfigureContextFunc ConfigureContextFunc
 
 	meta interface{}
@@ -77,7 +80,7 @@ type ConfigureFunc func(*ResourceData) (interface{}, error)
 // the subsequent resources as the meta parameter. This return value is
 // usually used to pass along a configured API client, a configuration
 // structure, etc.
-type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, error)
+type ConfigureContextFunc func(context.Context, *ResourceData) (interface{}, diag.Diagnostics)
 
 // InternalValidate should be called to validate the structure
 // of the provider.
@@ -179,8 +182,7 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 }
 
 // Validate is called once at the beginning with the raw configuration
-// (no interpolation done) and can return a list of warnings and/or
-// errors.
+// (no interpolation done) and can return diagnostics
 //
 // This is called once with the provider configuration only. It may not
 // be called at all if no provider configuration is given.
@@ -188,20 +190,24 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 // This should not assume that any values of the configurations are valid.
 // The primary use case of this call is to check that required keys are
 // set.
-func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
+func (p *Provider) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	if err := p.InternalValidate(); err != nil {
-		return nil, []error{fmt.Errorf(
-			"Internal validation of the provider failed! This is always a bug\n"+
-				"with the provider itself, and not a user issue. Please report\n"+
-				"this bug:\n\n%s", err)}
+		return []diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  "InternalValidate",
+				Detail: fmt.Sprintf("Internal validation of the provider failed! This is always a bug\n"+
+					"with the provider itself, and not a user issue. Please report\n"+
+					"this bug:\n\n%s", err),
+			},
+		}
 	}
 
 	return schemaMap(p.Schema).Validate(c)
 }
 
 // ValidateResource is called once at the beginning with the raw
-// configuration (no interpolation done) and can return a list of warnings
-// and/or errors.
+// configuration (no interpolation done) and can return diagnostics.
 //
 // This is called once per resource.
 //
@@ -210,11 +216,15 @@ func (p *Provider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 // The primary use case of this call is to check that the required keys
 // are set and that the general structure is correct.
 func (p *Provider) ValidateResource(
-	t string, c *terraform.ResourceConfig) ([]string, []error) {
+	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.ResourcesMap[t]
 	if !ok {
-		return nil, []error{fmt.Errorf(
-			"Provider doesn't support resource: %s", t)}
+		return []diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Provider doesn't support resource: %s", t),
+			},
+		}
 	}
 
 	return r.Validate(c)
@@ -224,12 +234,13 @@ func (p *Provider) ValidateResource(
 // given. This is useful for setting things like access keys.
 //
 // This won't be called at all if no provider configuration is given.
-//
-// Configure returns an error if it occurred.
-func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) error {
+func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) diag.Diagnostics {
+
+	var diags diag.Diagnostics
+
 	// No configuration
 	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
-		return nil
+		return diags
 	}
 
 	sm := schemaMap(p.Schema)
@@ -238,26 +249,31 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) e
 	// generate an intermediary "diff" although that is never exposed.
 	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
-		return err
+		return append(diags, diag.FromErr(err))
 	}
 
 	data, err := sm.Data(nil, diff)
 	if err != nil {
-		return err
+		return append(diags, diag.FromErr(err))
 	}
 
-	var meta interface{}
+	if p.ConfigureFunc != nil {
+		meta, err := p.ConfigureFunc(data)
+		if err != nil {
+			return append(diags, diag.FromErr(err))
+		}
+		p.meta = meta
+	}
 	if p.ConfigureContextFunc != nil {
-		meta, err = p.ConfigureContextFunc(ctx, data)
-	} else {
-		meta, err = p.ConfigureFunc(data)
-	}
-	if err != nil {
-		return err
+		meta, ds := p.ConfigureContextFunc(ctx, data)
+		diags = append(diags, ds...)
+		if diags.HasError() {
+			return diags
+		}
+		p.meta = meta
 	}
 
-	p.meta = meta
-	return nil
+	return diags
 }
 
 // Resources returns all the available resource types that this provider
@@ -361,8 +377,7 @@ func (p *Provider) ImportState(
 }
 
 // ValidateDataSource is called once at the beginning with the raw
-// configuration (no interpolation done) and can return a list of warnings
-// and/or errors.
+// configuration (no interpolation done) and can return diagnostics.
 //
 // This is called once per data source instance.
 //
@@ -371,11 +386,15 @@ func (p *Provider) ImportState(
 // The primary use case of this call is to check that the required keys
 // are set and that the general structure is correct.
 func (p *Provider) ValidateDataSource(
-	t string, c *terraform.ResourceConfig) ([]string, []error) {
+	t string, c *terraform.ResourceConfig) diag.Diagnostics {
 	r, ok := p.DataSourcesMap[t]
 	if !ok {
-		return nil, []error{fmt.Errorf(
-			"Provider doesn't support data source: %s", t)}
+		return []diag.Diagnostic{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Provider doesn't support data source: %s", t),
+			},
+		}
 	}
 
 	return r.Validate(c)
