@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // MapKeyLenBetween returns a SchemaValidateFunc which tests if the provided value
 // is of type map and the length of all keys are between min and max (inclusive)
-func MapKeyLenBetween(min, max int) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (warnings []string, errors []error) {
-		v, ok := i.(map[string]interface{})
-		if !ok {
-			errors = append(errors, fmt.Errorf("expected type of %[1]q to be Map, got %[1]T", k))
-			return warnings, errors
-		}
-
-		for key := range v {
+func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
+	return func(v interface{}, path cty.Path) diag.Diagnostics {
+		for key := range v.(map[string]interface{}) {
 			len := len(key)
 			if len < min || len > max {
-				errors = append(errors, fmt.Errorf("expected the length of all keys of %q to be in the range (%d - %d), got %q (length = %d)", k, min, max, key, len))
-				return warnings, errors
+				return diag.Diagnostics{{
+					Severity:      diag.Error,
+					Summary:       fmt.Sprintf("expected the length of all keys to be in the range (%d - %d)", min, max),
+					Detail:        fmt.Sprintf("length = %d", len),
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				}}
 			}
 		}
 
-		return warnings, errors
+		return nil
 	}
 }
 

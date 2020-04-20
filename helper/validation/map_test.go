@@ -3,37 +3,46 @@ package validation
 import (
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 func TestValidationMapKeyLenBetween(t *testing.T) {
 	cases := map[string]struct {
-		Value interface{}
-		Error bool
+		Value         interface{}
+		ExpectedDiags diag.Diagnostics
 	}{
-		"NotMap": {
-			Value: "the map is a lie",
-			Error: true,
-		},
 		"TooLong": {
 			Value: map[string]interface{}{
 				"ABC":    "123",
 				"UVWXYZ": "123456",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"TooShort": {
 			Value: map[string]interface{}{
 				"ABC": "123",
 				"U":   "1",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("U")}),
+				},
+			},
 		},
 		"AllGood": {
 			Value: map[string]interface{}{
 				"AB":    "12",
 				"UVWXY": "12345",
 			},
-			Error: false,
+			ExpectedDiags: nil,
 		},
 	}
 
@@ -41,12 +50,18 @@ func TestValidationMapKeyLenBetween(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := fn(tc.Value, tn)
+			diags := fn(tc.Value, cty.Path{})
 
-			if len(errors) > 0 && !tc.Error {
-				t.Errorf("MapKeyLenBetween(%s) produced an unexpected error", tc.Value)
-			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("MapKeyLenBetween(%s) did not error", tc.Value)
+			if len(diags) != len(tc.ExpectedDiags) {
+				t.Fatalf("%s: wrong number of diags, expected %d, got %d", tn, len(tc.ExpectedDiags), len(diags))
+			}
+			for j := range diags {
+				if diags[j].Severity != tc.ExpectedDiags[j].Severity {
+					t.Fatalf("%s: expected severity %v, got %v", tn, tc.ExpectedDiags[j].Severity, diags[j].Severity)
+				}
+				if !diags[j].AttributePath.Equals(tc.ExpectedDiags[j].AttributePath) {
+					t.Fatalf("%s: attribute paths do not match expected: %v, got %v", tn, tc.ExpectedDiags[j].AttributePath, diags[j].AttributePath)
+				}
 			}
 		})
 	}
