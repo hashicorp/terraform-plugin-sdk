@@ -509,22 +509,22 @@ func TestTest_stepError(t *testing.T) {
 
 func TestTest_factoryError(t *testing.T) {
 	resourceFactoryError := fmt.Errorf("resource factory error")
-
 	factory := func() (terraform.ResourceProvider, error) {
 		return nil, resourceFactoryError
 	}
-
 	mt := new(mockT)
-	Test(mt, TestCase{
-		ProviderFactories: map[string]terraform.ResourceProviderFactory{
-			"test": factory,
-		},
-		Steps: []TestStep{
-			{
-				ExpectError: regexp.MustCompile("resource factory error"),
+
+	func() {
+		defer func() {
+			recover()
+		}()
+		Test(mt, TestCase{
+			ProviderFactories: map[string]terraform.ResourceProviderFactory{
+				"test": factory,
 			},
-		},
-	})
+			IsUnitTest: true,
+		})
+	}()
 
 	if !mt.failed() {
 		t.Fatal("test should've failed")
@@ -751,6 +751,8 @@ func (t *mockT) Fatal(args ...interface{}) {
 	t.FatalCalled = true
 	t.FatalArgs = args
 	t.f = true
+
+	panic("mockT.Fatal")
 }
 
 func (t *mockT) Parallel() {
