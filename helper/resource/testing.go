@@ -450,7 +450,7 @@ type TestStep struct {
 // Set to a file mask in sprintf format where %s is test name
 const envLogPathMask = "TF_LOG_PATH_MASK"
 
-func logOutput(t TestT) (logOutput io.Writer, err error) {
+func logOutput(t *testing.T) (logOutput io.Writer, err error) {
 	logOutput = ioutil.Discard
 
 	logLevel := logging.LogLevel()
@@ -496,7 +496,7 @@ func logOutput(t TestT) (logOutput io.Writer, err error) {
 // Tests will fail if they do not properly handle conditions to allow multiple
 // tests to occur against the same resource or service (e.g. random naming).
 // All other requirements of the Test function also apply to this function.
-func ParallelTest(t TestT, c TestCase) {
+func ParallelTest(t *testing.T, c TestCase) {
 	t.Parallel()
 	Test(t, c)
 }
@@ -511,7 +511,7 @@ func ParallelTest(t TestT, c TestCase) {
 // the "-test.v" flag) is set. Because some acceptance tests take quite
 // long, we require the verbose flag so users are able to see progress
 // output.
-func Test(t TestT, c TestCase) {
+func Test(t *testing.T, c TestCase) {
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
@@ -545,7 +545,9 @@ func Test(t TestT, c TestCase) {
 	for name, pf := range c.ProviderFactories {
 		p, err := pf()
 		if err != nil {
-			t.Fatal(err)
+			t.Fail()
+			t.Log(err)
+			return
 		}
 		providers[name] = p
 	}
@@ -558,7 +560,7 @@ func Test(t TestT, c TestCase) {
 		return
 	}
 
-	RunNewTest(t.(*testing.T), c, providers)
+	RunNewTest(t, c, providers)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
@@ -576,7 +578,7 @@ func testProviderConfig(c TestCase) string {
 // UnitTest is a helper to force the acceptance testing harness to run in the
 // normal unit test suite. This should only be used for resource that don't
 // have any external dependencies.
-func UnitTest(t TestT, c TestCase) {
+func UnitTest(t *testing.T, c TestCase) {
 	c.IsUnitTest = true
 	Test(t, c)
 }
@@ -960,17 +962,6 @@ func TestMatchOutput(name string, r *regexp.Regexp) TestCheckFunc {
 
 		return nil
 	}
-}
-
-// TestT is the interface used to handle the test lifecycle of a test.
-//
-// Users should just use a *testing.T object, which implements this.
-type TestT interface {
-	Error(args ...interface{})
-	Fatal(args ...interface{})
-	Skip(args ...interface{})
-	Name() string
-	Parallel()
 }
 
 // modulePrimaryInstanceState returns the instance state for the given resource

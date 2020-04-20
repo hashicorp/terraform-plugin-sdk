@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -25,39 +23,6 @@ func init() {
 
 	if err := os.Setenv(testEnvVar, "1"); err != nil {
 		panic(err)
-	}
-}
-
-func TestParallelTest(t *testing.T) {
-	mt := new(mockT)
-	ParallelTest(mt, TestCase{})
-
-	if !mt.ParallelCalled {
-		t.Fatal("Parallel() not called")
-	}
-}
-
-func TestTest_factoryError(t *testing.T) {
-	resourceFactoryError := fmt.Errorf("resource factory error")
-
-	factory := func() (*schema.Provider, error) {
-		return nil, resourceFactoryError
-	}
-
-	mt := new(mockT)
-	Test(mt, TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"test": factory,
-		},
-		Steps: []TestStep{
-			{
-				ExpectError: regexp.MustCompile("resource factory error"),
-			},
-		},
-	})
-
-	if !mt.failed() {
-		t.Fatal("test should've failed")
 	}
 }
 
@@ -136,49 +101,6 @@ func TestComposeTestCheckFunc(t *testing.T) {
 			t.Fatalf("Case %d bad: %s", i, err)
 		}
 	}
-}
-
-// mockT implements TestT for testing
-type mockT struct {
-	ErrorCalled    bool
-	ErrorArgs      []interface{}
-	FatalCalled    bool
-	FatalArgs      []interface{}
-	ParallelCalled bool
-	SkipCalled     bool
-	SkipArgs       []interface{}
-
-	f bool
-}
-
-func (t *mockT) Error(args ...interface{}) {
-	t.ErrorCalled = true
-	t.ErrorArgs = args
-	t.f = true
-}
-
-func (t *mockT) Fatal(args ...interface{}) {
-	t.FatalCalled = true
-	t.FatalArgs = args
-	t.f = true
-}
-
-func (t *mockT) Parallel() {
-	t.ParallelCalled = true
-}
-
-func (t *mockT) Skip(args ...interface{}) {
-	t.SkipCalled = true
-	t.SkipArgs = args
-	t.f = true
-}
-
-func (t *mockT) Name() string {
-	return "MockedName"
-}
-
-func (t *mockT) failed() bool {
-	return t.f
 }
 
 func TestTest_Main(t *testing.T) {
