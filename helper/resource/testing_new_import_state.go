@@ -8,12 +8,13 @@ import (
 	tftest "github.com/hashicorp/terraform-plugin-test"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewImportState(t TestT, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 

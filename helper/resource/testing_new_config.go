@@ -4,10 +4,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	tftest "github.com/hashicorp/terraform-plugin-test"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewConfig(t TestT, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
+func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 
