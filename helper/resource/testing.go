@@ -217,20 +217,22 @@ func filterSweeperWithDependencies(name string, source map[string]*Sweeper) map[
 // add the success/fail status to the sweeperRunList.
 func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweeper, sweeperRunList map[string]error, allowFailures bool) error {
 	for _, dep := range s.Dependencies {
-		if depSweeper, ok := sweepers[dep]; ok {
-			log.Printf("[DEBUG] Sweeper (%s) has dependency (%s), running..", s.Name, dep)
-			err := runSweeperWithRegion(region, depSweeper, sweepers, sweeperRunList, allowFailures)
+		depSweeper, ok := sweepers[dep]
 
-			if err != nil {
-				if allowFailures {
-					log.Printf("[ERROR] Error running Sweeper (%s) in region (%s): %s", depSweeper.Name, region, err)
-					continue
-				}
+		if !ok {
+			return fmt.Errorf("sweeper (%s) has dependency (%s), but that sweeper was not found", s.Name, dep)
+		}
 
-				return err
+		log.Printf("[DEBUG] Sweeper (%s) has dependency (%s), running..", s.Name, dep)
+		err := runSweeperWithRegion(region, depSweeper, sweepers, sweeperRunList, allowFailures)
+
+		if err != nil {
+			if allowFailures {
+				log.Printf("[ERROR] Error running Sweeper (%s) in region (%s): %s", depSweeper.Name, region, err)
+				continue
 			}
-		} else {
-			log.Printf("[WARN] Sweeper (%s) has dependency (%s), but that sweeper was not found", s.Name, dep)
+
+			return err
 		}
 	}
 
