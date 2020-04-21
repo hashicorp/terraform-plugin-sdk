@@ -2,8 +2,8 @@ package validation
 
 import (
 	"regexp"
-	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -13,7 +13,7 @@ type testCase struct {
 	expectedErr *regexp.Regexp
 }
 
-func runTestCases(t *testing.T, cases []testCase) {
+func runTestCases(t testing.T, cases []testCase) {
 	matchErr := func(errs []error, r *regexp.Regexp) bool {
 		// err must match one provided
 		for _, err := range errs {
