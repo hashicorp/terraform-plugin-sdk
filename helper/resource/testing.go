@@ -576,7 +576,7 @@ func Test(t TestT, c TestCase) {
 		t.Fatal("Please configure the acctest binary driver")
 	}
 
-	RunNewTest(t.(*testing.T), c, providers)
+	RunNewTest(t, c, providers)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
@@ -985,10 +985,15 @@ func TestMatchOutput(name string, r *regexp.Regexp) TestCheckFunc {
 // Users should just use a *testing.T object, which implements this.
 type TestT interface {
 	Error(args ...interface{})
+	FailNow()
 	Fatal(args ...interface{})
-	Skip(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Helper()
+	Log(args ...interface{})
 	Name() string
 	Parallel()
+	Skip(args ...interface{})
+	SkipNow()
 }
 
 // modulePrimaryInstanceState returns the instance state for the given resource

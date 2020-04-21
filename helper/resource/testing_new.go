@@ -5,7 +5,6 @@ import (
 	"log"
 	"reflect"
 	"strings"
-	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -16,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func runPostTestDestroy(t *testing.T, c TestCase, wd *tftest.WorkingDir) error {
+func runPostTestDestroy(t TestT, c TestCase, wd *tftest.WorkingDir) error {
 	wd.RequireDestroy(t)
 
 	if c.CheckDestroy != nil {
@@ -30,7 +29,7 @@ func runPostTestDestroy(t *testing.T, c TestCase, wd *tftest.WorkingDir) error {
 	return nil
 }
 
-func RunNewTest(t *testing.T, c TestCase, providers map[string]*schema.Provider) {
+func RunNewTest(t TestT, c TestCase, providers map[string]*schema.Provider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
@@ -102,7 +101,7 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]*schema.Provider)
 	}
 }
 
-func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
+func getState(t TestT, wd *tftest.WorkingDir) *terraform.State {
 	jsonState := wd.RequireState(t)
 	state, err := shimStateFromJson(jsonState)
 	if err != nil {
@@ -132,7 +131,7 @@ func planIsEmpty(plan *tfjson.Plan) bool {
 	return true
 }
 
-func testIDRefresh(c TestCase, t *testing.T, wd *tftest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
+func testIDRefresh(c TestCase, t TestT, wd *tftest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 

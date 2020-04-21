@@ -3,7 +3,6 @@ package resource
 import (
 	"reflect"
 	"strings"
-	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 	tftest "github.com/hashicorp/terraform-plugin-test"
@@ -14,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+func testStepNewImportState(t TestT, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 
