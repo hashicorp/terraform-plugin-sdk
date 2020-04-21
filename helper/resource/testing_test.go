@@ -173,6 +173,10 @@ func (t *mockT) Error(args ...interface{}) {
 	t.f = true
 }
 
+func (t *mockT) FailNow() {
+	panic("mockT.FailNow")
+}
+
 func (t *mockT) Fatal(args ...interface{}) {
 	t.FatalCalled = true
 	t.FatalArgs = args
@@ -180,6 +184,14 @@ func (t *mockT) Fatal(args ...interface{}) {
 
 	panic("mockT.Fatal")
 }
+
+func (t *mockT) Fatalf(format string, args ...interface{}) {
+	t.Fatal(format, args)
+}
+
+func (t *mockT) Helper() {}
+
+func (t *mockT) Log(args ...interface{}) {}
 
 func (t *mockT) Parallel() {
 	t.ParallelCalled = true
@@ -189,6 +201,10 @@ func (t *mockT) Skip(args ...interface{}) {
 	t.SkipCalled = true
 	t.SkipArgs = args
 	t.f = true
+}
+
+func (t *mockT) SkipNow() {
+	t.Skip()
 }
 
 func (t *mockT) Name() string {
