@@ -13,19 +13,22 @@ import (
 // is of type map and the length of all keys are between min and max (inclusive)
 func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 	return func(v interface{}, path cty.Path) diag.Diagnostics {
+		var diags diag.Diagnostics
+
 		for key := range v.(map[string]interface{}) {
 			len := len(key)
 			if len < min || len > max {
-				return diag.Diagnostics{{
+				diags = append(diags, diag.Diagnostic{
 					Severity:      diag.Error,
-					Summary:       fmt.Sprintf("expected the length of all keys to be in the range (%d - %d)", min, max),
-					Detail:        fmt.Sprintf("length = %d", len),
+					Summary:       "Bad key length",
+					Detail:        fmt.Sprintf("Key length should be in the range (%d - %d): %s (length = %d)", min, max, key, len),
 					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
-				}}
+				})
+				break
 			}
 		}
 
-		return nil
+		return diags
 	}
 }
 
