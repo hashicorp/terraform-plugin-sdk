@@ -76,40 +76,68 @@ func TestValidationMapKeyLenBetween(t *testing.T) {
 
 func TestValidationMapValueLenBetween(t *testing.T) {
 	cases := map[string]struct {
-		Value interface{}
-		Error bool
+		Value         interface{}
+		ExpectedDiags diag.Diagnostics
 	}{
-		"NotMap": {
-			Value: "the map is a lie",
-			Error: true,
-		},
 		"NotStringValue": {
 			Value: map[string]interface{}{
 				"ABC":    "123",
 				"UVWXYZ": 123456,
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"TooLong": {
 			Value: map[string]interface{}{
 				"ABC":    "123",
 				"UVWXYZ": "123456",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"TooShort": {
 			Value: map[string]interface{}{
 				"ABC": "123",
 				"U":   "1",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("U")}),
+				},
+			},
+		},
+		"TooLongAndTooShort": {
+			Value: map[string]interface{}{
+				"UVWXYZ": "123456",
+				"ABC":    "123",
+				"U":      "1",
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("U")}),
+				},
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"AllGood": {
 			Value: map[string]interface{}{
 				"AB":    "12",
 				"UVWXY": "12345",
 			},
-			Error: false,
+			ExpectedDiags: nil,
 		},
 	}
 
@@ -117,13 +145,9 @@ func TestValidationMapValueLenBetween(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := fn(tc.Value, tn)
+			diags := fn(tc.Value, cty.Path{})
 
-			if len(errors) > 0 && !tc.Error {
-				t.Errorf("MapValueLenBetween(%s) produced an unexpected error", tc.Value)
-			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("MapValueLenBetween(%s) did not error", tc.Value)
-			}
+			checkDiagnostics(t, tn, diags, tc.ExpectedDiags)
 		})
 	}
 }

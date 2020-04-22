@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// MapKeyLenBetween returns a SchemaValidateFunc which tests if the provided value
+// MapKeyLenBetween returns a SchemaValidateDiagFunc which tests if the provided value
 // is of type map and the length of all keys are between min and max (inclusive)
 func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 	return func(v interface{}, path cty.Path) diag.Diagnostics {
@@ -21,8 +21,8 @@ func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 			if len < min || len > max {
 				diags = append(diags, diag.Diagnostic{
 					Severity:      diag.Error,
-					Summary:       "Bad key length",
-					Detail:        fmt.Sprintf("Key length should be in the range (%d - %d): %s (length = %d)", min, max, key, len),
+					Summary:       "Bad map key length",
+					Detail:        fmt.Sprintf("Map key lengths should be in the range (%d - %d): %s (length = %d)", min, max, key, len),
 					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
 				})
 			}
@@ -32,32 +32,39 @@ func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 	}
 }
 
-// MapValueLenBetween returns a SchemaValidateFunc which tests if the provided value
+// MapValueLenBetween returns a SchemaValidateDiagFunc which tests if the provided value
 // is of type map and the length of all values are between min and max (inclusive)
-func MapValueLenBetween(min, max int) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (warnings []string, errors []error) {
-		v, ok := i.(map[string]interface{})
-		if !ok {
-			errors = append(errors, fmt.Errorf("expected type of %[1]q to be Map, got %[1]T", k))
-			return warnings, errors
-		}
+func MapValueLenBetween(min, max int) schema.SchemaValidateDiagFunc {
+	return func(v interface{}, path cty.Path) diag.Diagnostics {
+		var diags diag.Diagnostics
 
-		for _, val := range v {
+		m := v.(map[string]interface{})
+
+		for _, key := range sortedKeys(m) {
+			val := m[key]
+
 			if _, ok := val.(string); !ok {
-				errors = append(errors, fmt.Errorf("expected all values of %[1]q to be strings, found %[2]v (type = %[2]T)", k, val))
-				return warnings, errors
+				diags = append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "Bad map value type",
+					Detail:        fmt.Sprintf("Map values should be strings: %s => %v (type = %T)", key, val, val),
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				})
+				continue
 			}
-		}
 
-		for _, val := range v {
 			len := len(val.(string))
 			if len < min || len > max {
-				errors = append(errors, fmt.Errorf("expected the length of all values of %q to be in the range (%d - %d), got %q (length = %d)", k, min, max, val, len))
-				return warnings, errors
+				diags = append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "Bad map value length",
+					Detail:        fmt.Sprintf("Map value lengths should be in the range (%d - %d): %s => %v (length = %d)", min, max, key, val, len),
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				})
 			}
 		}
 
-		return warnings, errors
+		return diags
 	}
 }
 
