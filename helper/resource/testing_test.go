@@ -174,6 +174,8 @@ func (t *mockT) Error(args ...interface{}) {
 }
 
 func (t *mockT) FailNow() {
+	t.f = true
+
 	panic("mockT.FailNow")
 }
 
@@ -186,7 +188,7 @@ func (t *mockT) Fatal(args ...interface{}) {
 }
 
 func (t *mockT) Fatalf(format string, args ...interface{}) {
-	t.Fatal(format, args)
+	t.Fatal(fmt.Sprintf(format, args...))
 }
 
 func (t *mockT) Helper() {}
