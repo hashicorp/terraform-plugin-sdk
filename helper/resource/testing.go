@@ -537,7 +537,6 @@ func Test(t TestT, c TestCase) {
 	// We require verbose mode so that the user knows what is going on.
 	if !testing.Verbose() && !c.IsUnitTest {
 		t.Fatal("Acceptance tests must be run with the -v flag on tests")
-		return
 	}
 
 	// Run the PreCheck if we have it
@@ -561,7 +560,6 @@ func Test(t TestT, c TestCase) {
 
 	if acctest.TestHelper == nil {
 		t.Fatal("Please configure the acctest binary driver")
-		return
 	}
 
 	RunNewTest(t.(*testing.T), c, providers)

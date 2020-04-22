@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -30,7 +29,18 @@ func init() {
 
 func TestParallelTest(t *testing.T) {
 	mt := new(mockT)
-	ParallelTest(mt, TestCase{})
+
+	// the test will error because the binary driver is unconfigured
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if !strings.HasPrefix(r.(string), "mockT") {
+					panic(r)
+				}
+			}
+		}()
+		ParallelTest(mt, TestCase{IsUnitTest: true})
+	}()
 
 	if !mt.ParallelCalled {
 		t.Fatal("Parallel() not called")
@@ -43,21 +53,27 @@ func TestTest_factoryError(t *testing.T) {
 	factory := func() (*schema.Provider, error) {
 		return nil, resourceFactoryError
 	}
-
 	mt := new(mockT)
-	Test(mt, TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"test": factory,
-		},
-		Steps: []TestStep{
-			{
-				ExpectError: regexp.MustCompile("resource factory error"),
-			},
-		},
-	})
 
-	if !mt.failed() {
-		t.Fatal("test should've failed")
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if !strings.HasPrefix(r.(string), "mockT") {
+					panic(r)
+				}
+			}
+		}()
+		Test(mt, TestCase{
+			ProviderFactories: map[string]func() (*schema.Provider, error){
+				"test": factory,
+			},
+			IsUnitTest: true,
+		})
+	}()
+
+	fatalStr := fmt.Sprint(mt.FatalArgs)
+	if !strings.Contains(fatalStr, resourceFactoryError.Error()) {
+		t.Fatalf("test should've failed with %s, failed with %s", resourceFactoryError, fatalStr)
 	}
 }
 
@@ -161,6 +177,8 @@ func (t *mockT) Fatal(args ...interface{}) {
 	t.FatalCalled = true
 	t.FatalArgs = args
 	t.f = true
+
+	panic("mockT.Fatal")
 }
 
 func (t *mockT) Parallel() {
