@@ -3,6 +3,7 @@ package validation
 import (
 	"fmt"
 	"regexp"
+	"sort"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -15,7 +16,7 @@ func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 	return func(v interface{}, path cty.Path) diag.Diagnostics {
 		var diags diag.Diagnostics
 
-		for key := range v.(map[string]interface{}) {
+		for _, key := range sortedKeys(v.(map[string]interface{})) {
 			len := len(key)
 			if len < min || len > max {
 				diags = append(diags, diag.Diagnostic{
@@ -24,7 +25,6 @@ func MapKeyLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 					Detail:        fmt.Sprintf("Key length should be in the range (%d - %d): %s (length = %d)", min, max, key, len),
 					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
 				})
-				break
 			}
 		}
 
@@ -120,4 +120,18 @@ func MapValueMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
 
 		return warnings, errors
 	}
+}
+
+func sortedKeys(m map[string]interface{}) []string {
+	keys := make([]string, len(m))
+
+	i := 0
+	for key := range m {
+		keys[i] = key
+		i++
+	}
+
+	sort.Strings(keys)
+
+	return keys
 }
