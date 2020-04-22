@@ -46,7 +46,11 @@ func TestTest_factoryError(t *testing.T) {
 
 	func() {
 		defer func() {
-			recover()
+			if r := recover(); r != nil {
+				if !strings.HasPrefix(r.(string), "mockT") {
+					panic(r)
+				}
+			}
 		}()
 		Test(mt, TestCase{
 			ProviderFactories: map[string]func() (*schema.Provider, error){
