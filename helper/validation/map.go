@@ -68,64 +68,75 @@ func MapValueLenBetween(min, max int) schema.SchemaValidateDiagFunc {
 	}
 }
 
-// MapKeyMatch returns a SchemaValidateFunc which tests if the provided value
+// MapKeyMatch returns a SchemaValidateDiagFunc which tests if the provided value
 // is of type map and all keys match a given regexp. Optionally an error message
 // can be provided to return something friendlier than "expected to match some globby regexp".
-func MapKeyMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (warnings []string, errors []error) {
-		v, ok := i.(map[string]interface{})
-		if !ok {
-			errors = append(errors, fmt.Errorf("expected type of %[1]q to be Map, got %[1]T", k))
-			return warnings, errors
-		}
+func MapKeyMatch(r *regexp.Regexp, message string) schema.SchemaValidateDiagFunc {
+	return func(v interface{}, path cty.Path) diag.Diagnostics {
+		var diags diag.Diagnostics
 
-		for key := range v {
+		for _, key := range sortedKeys(v.(map[string]interface{})) {
 			if ok := r.MatchString(key); !ok {
-				if message != "" {
-					errors = append(errors, fmt.Errorf("invalid key %q for %q (%s)", key, k, message))
-					return warnings, errors
+				var detail string
+				if message == "" {
+					detail = fmt.Sprintf("Map key expected to match regular expression %q: %s", r, key)
+				} else {
+					detail = fmt.Sprintf("%s: %s", message, key)
 				}
 
-				errors = append(errors, fmt.Errorf("invalid key %q for %q (expected to match regular expression %q)", key, k, r))
-				return warnings, errors
+				diags = append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "Invalid map key",
+					Detail:        detail,
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				})
 			}
 		}
 
-		return warnings, errors
+		return diags
 	}
 }
 
-// MapValueMatch returns a SchemaValidateFunc which tests if the provided value
+// MapValueMatch returns a SchemaValidateDiagFunc which tests if the provided value
 // is of type map and all values match a given regexp. Optionally an error message
 // can be provided to return something friendlier than "expected to match some globby regexp".
-func MapValueMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (warnings []string, errors []error) {
-		v, ok := i.(map[string]interface{})
-		if !ok {
-			errors = append(errors, fmt.Errorf("expected type of %[1]q to be Map, got %[1]T", k))
-			return warnings, errors
-		}
+func MapValueMatch(r *regexp.Regexp, message string) schema.SchemaValidateDiagFunc {
+	return func(v interface{}, path cty.Path) diag.Diagnostics {
+		var diags diag.Diagnostics
 
-		for _, val := range v {
+		m := v.(map[string]interface{})
+
+		for _, key := range sortedKeys(m) {
+			val := m[key]
+
 			if _, ok := val.(string); !ok {
-				errors = append(errors, fmt.Errorf("expected all values of %[1]q to be strings, found %[2]v (type = %[2]T)", k, val))
-				return warnings, errors
+				diags = append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "Bad map value type",
+					Detail:        fmt.Sprintf("Map values should be strings: %s => %v (type = %T)", key, val, val),
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				})
+				continue
 			}
-		}
 
-		for _, val := range v {
 			if ok := r.MatchString(val.(string)); !ok {
-				if message != "" {
-					errors = append(errors, fmt.Errorf("invalid value %q for %q (%s)", val, k, message))
-					return warnings, errors
+				var detail string
+				if message == "" {
+					detail = fmt.Sprintf("Map value expected to match regular expression %q: %s => %v", r, key, val)
+				} else {
+					detail = fmt.Sprintf("%s: %s => %v", message, key, val)
 				}
 
-				errors = append(errors, fmt.Errorf("invalid value %q for %q (expected to match regular expression %q)", val, k, r))
-				return warnings, errors
+				diags = append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       "Invalid map value",
+					Detail:        detail,
+					AttributePath: append(path, cty.IndexStep{Key: cty.StringVal(key)}),
+				})
 			}
 		}
 
-		return warnings, errors
+		return diags
 	}
 }
 
