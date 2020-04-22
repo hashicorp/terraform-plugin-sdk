@@ -560,7 +560,6 @@ func Test(t TestT, c TestCase) {
 
 	if acctest.TestHelper == nil {
 		t.Fatal("Please configure the acctest binary driver")
-		return
 	}
 
 	RunNewTest(t.(*testing.T), c, providers)
