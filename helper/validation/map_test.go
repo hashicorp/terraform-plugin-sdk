@@ -37,6 +37,23 @@ func TestValidationMapKeyLenBetween(t *testing.T) {
 				},
 			},
 		},
+		"TooLongAndTooShort": {
+			Value: map[string]interface{}{
+				"UVWXYZ": "123456",
+				"ABC":    "123",
+				"U":      "1",
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("U")}),
+				},
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
+		},
 		"AllGood": {
 			Value: map[string]interface{}{
 				"AB":    "12",
@@ -52,17 +69,7 @@ func TestValidationMapKeyLenBetween(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			diags := fn(tc.Value, cty.Path{})
 
-			if len(diags) != len(tc.ExpectedDiags) {
-				t.Fatalf("%s: wrong number of diags, expected %d, got %d", tn, len(tc.ExpectedDiags), len(diags))
-			}
-			for j := range diags {
-				if diags[j].Severity != tc.ExpectedDiags[j].Severity {
-					t.Fatalf("%s: expected severity %v, got %v", tn, tc.ExpectedDiags[j].Severity, diags[j].Severity)
-				}
-				if !diags[j].AttributePath.Equals(tc.ExpectedDiags[j].AttributePath) {
-					t.Fatalf("%s: attribute paths do not match expected: %v, got %v", tn, tc.ExpectedDiags[j].AttributePath, diags[j].AttributePath)
-				}
-			}
+			checkDiagnostics(t, tn, diags, tc.ExpectedDiags)
 		})
 	}
 }
@@ -205,5 +212,19 @@ func TestValidationValueKeyMatch(t *testing.T) {
 				t.Errorf("MapValueMatch(%s) did not error", tc.Value)
 			}
 		})
+	}
+}
+
+func checkDiagnostics(t *testing.T, tn string, got, expected diag.Diagnostics) {
+	if len(got) != len(expected) {
+		t.Fatalf("%s: wrong number of diags, expected %d, got %d", tn, len(expected), len(got))
+	}
+	for j := range got {
+		if got[j].Severity != expected[j].Severity {
+			t.Fatalf("%s: expected severity %v, got %v", tn, expected[j].Severity, got[j].Severity)
+		}
+		if !got[j].AttributePath.Equals(expected[j].AttributePath) {
+			t.Fatalf("%s: attribute paths do not match expected: %v, got %v", tn, expected[j].AttributePath, got[j].AttributePath)
+		}
 	}
 }
