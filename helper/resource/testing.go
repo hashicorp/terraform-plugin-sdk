@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -556,9 +557,9 @@ func Test(t TestT, c TestCase) {
 
 	// Auto-configure all providers.
 	for _, p := range providers {
-		err = p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
-		if err != nil {
-			t.Fatal(err)
+		diags := p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
+		if diags.HasError() {
+			t.Fatal("error configuring provider: %s", diagutils.ErrorDiags(diags))
 		}
 	}
 
