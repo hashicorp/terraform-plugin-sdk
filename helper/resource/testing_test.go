@@ -29,7 +29,18 @@ func init() {
 
 func TestParallelTest(t *testing.T) {
 	mt := new(mockT)
-	ParallelTest(mt, TestCase{})
+
+	// the test will error because the binary driver is unconfigured
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if !strings.HasPrefix(r.(string), "mockT") {
+					panic(r)
+				}
+			}
+		}()
+		ParallelTest(mt, TestCase{IsUnitTest: true})
+	}()
 
 	if !mt.ParallelCalled {
 		t.Fatal("Parallel() not called")
@@ -60,8 +71,9 @@ func TestTest_factoryError(t *testing.T) {
 		})
 	}()
 
-	if !mt.failed() {
-		t.Fatal("test should've failed")
+	fatalStr := fmt.Sprint(mt.FatalArgs)
+	if !strings.Contains(fatalStr, resourceFactoryError.Error()) {
+		t.Fatalf("test should've failed with %s, failed with %s", resourceFactoryError, fatalStr)
 	}
 }
 
