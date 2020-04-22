@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/providers"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -151,7 +152,7 @@ func TestShimResourceApply_create(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -230,7 +231,7 @@ func TestShimResourceApply_Timeout_state(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -381,7 +382,7 @@ func TestShimResourceApply_destroy(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -453,7 +454,7 @@ func TestShimResourceApply_destroyCreate(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !change {

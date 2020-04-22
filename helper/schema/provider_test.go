@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -180,7 +181,7 @@ func TestProviderConfigure(t *testing.T) {
 		c := terraform.NewResourceConfigRaw(tc.Config)
 		diags := tc.P.Configure(context.Background(), c)
 		if diags.HasError() != tc.Err {
-			t.Fatalf("%d: %s", i, errorDiags(diags))
+			t.Fatalf("%d: %s", i, diagutils.ErrorDiags(diags))
 		}
 	}
 }

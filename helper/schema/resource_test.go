@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -46,7 +47,7 @@ func TestResourceApply_create(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -114,7 +115,7 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -180,7 +181,7 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -315,7 +316,7 @@ func TestResourceApply_destroy(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !called {
@@ -377,7 +378,7 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !change {
@@ -479,7 +480,7 @@ func TestResourceApply_update(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	expected := &terraform.InstanceState{
@@ -576,7 +577,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 
 	actual, diags := r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	expected := &terraform.InstanceState{
@@ -603,7 +604,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 
 	actual, diags = r.Apply(context.Background(), s, d, nil)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	expected = &terraform.InstanceState{
@@ -987,7 +988,7 @@ func TestResourceRefresh(t *testing.T) {
 
 	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -1017,7 +1018,7 @@ func TestResourceRefresh_blankId(t *testing.T) {
 
 	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 	if actual != nil {
 		t.Fatalf("bad: %#v", actual)
@@ -1048,7 +1049,7 @@ func TestResourceRefresh_delete(t *testing.T) {
 
 	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if actual != nil {
@@ -1117,7 +1118,7 @@ func TestResourceRefresh_noExists(t *testing.T) {
 
 	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
 	if diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 	if actual != nil {
 		t.Fatalf("should have no state")
@@ -1416,7 +1417,7 @@ func TestResource_ContextTimeout(t *testing.T) {
 	}
 
 	if _, diags := r.Apply(context.Background(), s, d, nil); diags.HasError() {
-		t.Fatalf("err: %s", errorDiags(diags))
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
 	}
 
 	if !deadlineSet {

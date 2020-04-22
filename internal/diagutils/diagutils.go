@@ -1,4 +1,4 @@
-package schema
+package diagutils
 
 import (
 	"errors"
@@ -8,9 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
-type errorDiags diag.Diagnostics
+type ErrorDiags diag.Diagnostics
 
-func (diags errorDiags) Errors() []error {
+func (diags ErrorDiags) Errors() []error {
 	var es []error
 	for i := range diags {
 		if diags[i].Severity == diag.Error {
@@ -24,13 +24,13 @@ func (diags errorDiags) Errors() []error {
 	return es
 }
 
-func (diags errorDiags) Error() string {
+func (diags ErrorDiags) Error() string {
 	return multierror.ListFormatFunc(diags.Errors())
 }
 
-type warningDiags diag.Diagnostics
+type WarningDiags diag.Diagnostics
 
-func (diags warningDiags) Warnings() []string {
+func (diags WarningDiags) Warnings() []string {
 	var ws []string
 	for i := range diags {
 		if diags[i].Severity == diag.Warning {
