@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -5197,19 +5198,19 @@ func TestSchemaMap_Validate(t *testing.T) {
 					t.Errorf("%q: no errors", tn)
 				}
 
-				for _, e := range errorDiags(diags).Errors() {
+				for _, e := range diagutils.ErrorDiags(diags).Errors() {
 					t.Errorf("%q: err: %s", tn, e)
 				}
 
 				t.FailNow()
 			}
 
-			ws := warningDiags(diags).Warnings()
+			ws := diagutils.WarningDiags(diags).Warnings()
 			if !reflect.DeepEqual(ws, tc.Warnings) {
 				t.Fatalf("%q: warnings:\n\nexpected: %#v\ngot:%#v", tn, tc.Warnings, ws)
 			}
 
-			es := errorDiags(diags).Errors()
+			es := diagutils.ErrorDiags(diags).Errors()
 			if tc.Errors != nil {
 				sort.Sort(errorSort(es))
 				sort.Sort(errorSort(tc.Errors))
@@ -5308,14 +5309,14 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range errorDiags(diags).Errors() {
+			for _, e := range diagutils.ErrorDiags(diags).Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
-		es := errorDiags(diags).Errors()
+		es := diagutils.ErrorDiags(diags).Errors()
 		if tc.Errors != nil {
 			if !errorEquals(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
@@ -5397,14 +5398,14 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 				t.Errorf("%q: no errors", tn)
 			}
 
-			for _, e := range errorDiags(diags).Errors() {
+			for _, e := range diagutils.ErrorDiags(diags).Errors() {
 				t.Errorf("%q: err: %s", tn, e)
 			}
 
 			t.FailNow()
 		}
 
-		es := errorDiags(diags).Errors()
+		es := diagutils.ErrorDiags(diags).Errors()
 		if tc.Errors != nil {
 			if !errorEquals(es, tc.Errors) {
 				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
@@ -6482,7 +6483,7 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 					t.Fatalf("expected error")
 				}
 
-				for _, e := range errorDiags(diags).Errors() {
+				for _, e := range diagutils.ErrorDiags(diags).Errors() {
 					t.Fatalf("didn't expect error, got error: %+v", e)
 				}
 
@@ -6792,7 +6793,7 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 		t.Run(tn, func(t *testing.T) {
 			c := terraform.NewResourceConfigRaw(tc.Config)
 			diags := schemaMap(tc.Schema).Validate(c)
-			es := errorDiags(diags).Errors()
+			es := diagutils.ErrorDiags(diags).Errors()
 			if len(es) > 0 != tc.Err {
 				if len(es) == 0 {
 					t.Fatalf("expected error")

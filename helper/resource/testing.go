@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -539,11 +541,6 @@ func Test(t TestT, c TestCase) {
 		t.Fatal("Acceptance tests must be run with the -v flag on tests")
 	}
 
-	// Run the PreCheck if we have it
-	if c.PreCheck != nil {
-		c.PreCheck()
-	}
-
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
 	providers := make(map[string]*schema.Provider)
@@ -556,6 +553,21 @@ func Test(t TestT, c TestCase) {
 	}
 	for name, p := range c.Providers {
 		providers[name] = p
+	}
+
+	// Auto-configure all providers.
+	for _, p := range providers {
+		diags := p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
+		if diags.HasError() {
+			t.Fatal("error configuring provider: %s", diagutils.ErrorDiags(diags))
+		}
+	}
+
+	// Run the PreCheck if we have it.
+	// This is done after the auto-configure to allow providers
+	// to override the default auto-configure parameters.
+	if c.PreCheck != nil {
+		c.PreCheck()
 	}
 
 	if acctest.TestHelper == nil {
