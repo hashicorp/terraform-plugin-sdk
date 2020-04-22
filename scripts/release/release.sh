@@ -1,12 +1,14 @@
 #!/bin/bash
 
 set -e
+set -x
 
-# Prepare will prepare the repository for release
+# release.sh will:
 # 1. Modify changelog
 # 2. Run changelog links script
-# 3. Commit changes
-# 4. Create a Git tag
+# 3. Modify version in meta/meta.go
+# 4. Commit and push changes
+# 5. Create a Git tag
 
 function pleaseUseGNUsed {
     echo "Please install GNU sed to your PATH as 'sed'."
@@ -72,7 +74,7 @@ function commitChanges {
       git tag -a -m "v${TARGET_VERSION}" -s "v${TARGET_VERSION}"
   fi
 
-  git push origin master
+  git push origin "${CIRCLE_BRANCH}"
   git push origin "v${TARGET_VERSION}"
 }
 
