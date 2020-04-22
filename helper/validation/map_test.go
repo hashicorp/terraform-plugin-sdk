@@ -154,26 +154,27 @@ func TestValidationMapValueLenBetween(t *testing.T) {
 
 func TestValidationMapKeyMatch(t *testing.T) {
 	cases := map[string]struct {
-		Value interface{}
-		Error bool
+		Value         interface{}
+		ExpectedDiags diag.Diagnostics
 	}{
-		"NotMap": {
-			Value: "the map is a lie",
-			Error: true,
-		},
 		"NoMatch": {
 			Value: map[string]interface{}{
 				"ABC":    "123",
 				"UVWXYZ": "123456",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"AllGood": {
 			Value: map[string]interface{}{
 				"AB":    "12",
 				"UVABY": "12345",
 			},
-			Error: false,
+			ExpectedDiags: nil,
 		},
 	}
 
@@ -181,46 +182,64 @@ func TestValidationMapKeyMatch(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := fn(tc.Value, tn)
+			diags := fn(tc.Value, cty.Path{})
 
-			if len(errors) > 0 && !tc.Error {
-				t.Errorf("MapKeyMatch(%s) produced an unexpected error", tc.Value)
-			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("MapKeyMatch(%s) did not error", tc.Value)
-			}
+			checkDiagnostics(t, tn, diags, tc.ExpectedDiags)
 		})
 	}
 }
 
 func TestValidationValueKeyMatch(t *testing.T) {
 	cases := map[string]struct {
-		Value interface{}
-		Error bool
+		Value         interface{}
+		ExpectedDiags diag.Diagnostics
 	}{
-		"NotMap": {
-			Value: "the map is a lie",
-			Error: true,
-		},
 		"NotStringValue": {
 			Value: map[string]interface{}{
-				"MNO":    "123",
+				"MNO":    "ABC",
 				"UVWXYZ": 123456,
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"NoMatch": {
 			Value: map[string]interface{}{
 				"MNO":    "ABC",
 				"UVWXYZ": "UVWXYZ",
 			},
-			Error: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
+		},
+		"BothBad": {
+			Value: map[string]interface{}{
+				"MNO":    "123",
+				"UVWXYZ": 123456,
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("MNO")}),
+				},
+				{
+					Severity:      diag.Error,
+					AttributePath: append(cty.Path{}, cty.IndexStep{Key: cty.StringVal("UVWXYZ")}),
+				},
+			},
 		},
 		"AllGood": {
 			Value: map[string]interface{}{
 				"MNO":    "ABC",
 				"UVWXYZ": "UVABY",
 			},
-			Error: false,
+			ExpectedDiags: nil,
 		},
 	}
 
@@ -228,13 +247,9 @@ func TestValidationValueKeyMatch(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			_, errors := fn(tc.Value, tn)
+			diags := fn(tc.Value, cty.Path{})
 
-			if len(errors) > 0 && !tc.Error {
-				t.Errorf("MapValueMatch(%s) produced an unexpected error", tc.Value)
-			} else if len(errors) == 0 && tc.Error {
-				t.Errorf("MapValueMatch(%s) did not error", tc.Value)
-			}
+			checkDiagnostics(t, tn, diags, tc.ExpectedDiags)
 		})
 	}
 }
