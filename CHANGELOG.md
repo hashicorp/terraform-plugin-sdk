@@ -1,17 +1,17 @@
-# 1.10.0 (Unreleased)
+# 1.10.0 (April 23, 2020)
 
 FEATURES:
 
-* Added validation helper `RequiredWith` [GH-342]
+* Added validation helper `RequiredWith` ([#342](https://github.com/hashicorp/terraform-plugin-sdk/issues/342))
 
 BUG FIXES:
 
-* Binary acceptance test driver: omit test cleanup when state is empty [GH-356]
-* Make mockT.Fatal halt execution [GH-396]
+* Binary acceptance test driver: omit test cleanup when state is empty ([#356](https://github.com/hashicorp/terraform-plugin-sdk/issues/356))
+* Make mockT.Fatal halt execution ([#396](https://github.com/hashicorp/terraform-plugin-sdk/issues/396))
 
 DEPENDENCIES:
 
-* `github.com/hashicorp/terraform-plugin-test@v1.2.0` -> `v1.3.0` [GH-400] 
+* `github.com/hashicorp/terraform-plugin-test@v1.2.0` -> `v1.3.0` [[#400](https://github.com/hashicorp/terraform-plugin-sdk/issues/400)] 
 
 # 1.9.1 (April 09, 2020)
 
