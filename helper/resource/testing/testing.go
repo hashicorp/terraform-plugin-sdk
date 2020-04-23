@@ -3,6 +3,8 @@
 // importers of the SDK
 package testing
 
+import "testing"
+
 // T is the interface used to handle the test lifecycle of a test.
 //
 // Users should just use a *testing.T object, which implements this.
@@ -21,4 +23,11 @@ type T interface {
 
 type M interface {
 	Run() int
+}
+
+// Verbose just wraps the official testing package's helper of the same name.
+// This is the final reference to the testing package in non *_test.go files
+// in the SDK.
+func Verbose() bool {
+	return testing.Verbose()
 }

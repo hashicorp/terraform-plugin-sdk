@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
-	gotesting "testing"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
@@ -540,7 +539,7 @@ func Test(t testing.T, c TestCase) {
 	log.SetOutput(logWriter)
 
 	// We require verbose mode so that the user knows what is going on.
-	if !gotesting.Verbose() && !c.IsUnitTest {
+	if !testing.Verbose() && !c.IsUnitTest {
 		t.Fatal("Acceptance tests must be run with the -v flag on tests")
 	}
 
