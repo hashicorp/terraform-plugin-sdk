@@ -2,6 +2,8 @@ module github.com/hashicorp/terraform-plugin-sdk
 
 go 1.12
 
+replace github.com/hashicorp/terraform-plugin-test v1.2.0 => ../terraform-plugin-test
+
 require (
 	github.com/agext/levenshtein v1.2.2
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
@@ -21,7 +23,7 @@ require (
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-hclog v0.9.2
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/hashicorp/go-plugin v1.0.1
+	github.com/hashicorp/go-plugin v1.2.2
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.0.0

@@ -1,6 +1,8 @@
 package plugin
 
 import (
+	"net"
+
 	"github.com/hashicorp/go-plugin"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/internal/tfplugin5"
@@ -41,6 +43,10 @@ type GRPCProviderFunc func() proto.ProviderServer
 type ServeOpts struct {
 	ProviderFunc ProviderFunc
 
+	// Optional net.Listener to receive gRPC requests over go-plugin on.
+	// Can be left nil usually, only exposed for testing purposes.
+	Listener net.Listener
+
 	// Wrapped versions of the above plugins will automatically shimmed and
 	// added to the GRPC functions when possible.
 	GRPCProviderFunc GRPCProviderFunc
@@ -66,6 +72,7 @@ func Serve(opts *ServeOpts) {
 		HandshakeConfig:  Handshake,
 		VersionedPlugins: pluginSet(opts),
 		GRPCServer:       plugin.DefaultGRPCServer,
+		Listener:         opts.Listener,
 	})
 }
 

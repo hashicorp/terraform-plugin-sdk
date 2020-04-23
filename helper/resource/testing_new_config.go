@@ -25,7 +25,9 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 	wd.RequireSetConfig(t, step.Config)
 
 	if !step.PlanOnly {
-		err := wd.Apply()
+		err := runProviderCommand(func() error {
+			return wd.Apply()
+		}, wd, defaultPluginServeOpts(wd, step.providers))
 		if err != nil {
 			return err
 		}
@@ -41,7 +43,10 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 	// Test for perpetual diffs by performing a plan, a refresh, and another plan
 
 	// do a plan
-	wd.RequireCreatePlan(t)
+	runProviderCommand(func() error {
+		wd.RequireCreatePlan(t)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, step.providers))
 	plan := wd.RequireSavedPlan(t)
 
 	if !planIsEmpty(plan) {
@@ -55,11 +60,17 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 
 	// do a refresh
 	if !c.PreventPostDestroyRefresh {
-		wd.RequireRefresh(t)
+		runProviderCommand(func() error {
+			wd.RequireRefresh(t)
+			return nil
+		}, wd, defaultPluginServeOpts(wd, step.providers))
 	}
 
 	// do another plan
-	wd.RequireCreatePlan(t)
+	runProviderCommand(func() error {
+		wd.RequireCreatePlan(t)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, step.providers))
 	plan = wd.RequireSavedPlan(t)
 
 	// check if plan is empty

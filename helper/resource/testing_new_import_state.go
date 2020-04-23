@@ -55,7 +55,13 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 	defer importWd.Close()
 	importWd.RequireSetConfig(t, step.Config)
 	importWd.RequireInit(t)
-	importWd.RequireImport(t, step.ResourceName, importId)
+	err := runProviderCommand(func() error {
+		importWd.RequireImport(t, step.ResourceName, importId)
+		return nil
+	}, importWd, defaultPluginServeOpts(wd, step.providers))
+	if err != nil {
+		t.Fatalf("Error running import: %s", err)
+	}
 	importState := getState(t, wd)
 
 	// Go through the imported state and verify

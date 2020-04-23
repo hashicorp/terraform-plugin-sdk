@@ -3,6 +3,7 @@ package resource
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -23,13 +24,31 @@ func getState(t *testing.T, wd *tftest.WorkingDir) *terraform.State {
 	return state
 }
 
+func logToFile(msg string) {
+	f, err := os.OpenFile("/tmp/tf-sdk-log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write([]byte(msg + "\n"))
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.ResourceProvider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)
 
 	defer func() {
-		wd.RequireDestroy(t)
+		runProviderCommand(func() error {
+			wd.RequireDestroy(t)
+			return nil
+		}, wd, defaultPluginServeOpts(wd, providers))
 
 		if c.CheckDestroy != nil {
 			statePostDestroy := getState(t, wd)
@@ -131,7 +150,10 @@ func testIDRefresh(c TestCase, t *testing.T, wd *tftest.WorkingDir, step TestSte
 	defer wd.RequireSetConfig(t, step.Config)
 
 	// Refresh!
-	wd.RequireRefresh(t)
+	runProviderCommand(func() error {
+		wd.RequireRefresh(t)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, step.providers))
 	state = getState(t, wd)
 
 	// Verify attribute equivalence.
