@@ -8,11 +8,10 @@ import (
 	tftest "github.com/hashicorp/terraform-plugin-test"
 	testing "github.com/mitchellh/go-testing-interface"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *tftest.WorkingDir, step TestStep, cfg string) error {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 
@@ -21,7 +20,14 @@ func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step
 	}
 
 	// get state from check sequence
-	state := getState(t, wd)
+	var state *terraform.State
+	err := runProviderCommand(func() error {
+		state = getState(t, wd)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, step.providers))
+	if err != nil {
+		t.Fatalf("Error getting state: %s", err)
+	}
 
 	// Determine the ID to import
 	var importId string
@@ -50,12 +56,28 @@ func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step
 			t.Fatal("Cannot import state with no specified config")
 		}
 	}
-	importWd := acctest.TestHelper.RequireNewWorkingDir(t)
+	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
 	importWd.RequireSetConfig(t, step.Config)
-	importWd.RequireInit(t)
-	importWd.RequireImport(t, step.ResourceName, importId)
-	importState := getState(t, wd)
+	runProviderCommand(func() error {
+		importWd.RequireInit(t)
+		return nil
+	}, importWd, defaultPluginServeOpts(importWd, step.providers))
+	err = runProviderCommand(func() error {
+		importWd.RequireImport(t, step.ResourceName, importId)
+		return nil
+	}, importWd, defaultPluginServeOpts(importWd, step.providers))
+	if err != nil {
+		t.Fatalf("Error running import: %s", err)
+	}
+	var importState *terraform.State
+	err = runProviderCommand(func() error {
+		importState = getState(t, wd)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, step.providers))
+	if err != nil {
+		t.Fatalf("Error getting state: %s", err)
+	}
 
 	// Go through the imported state and verify
 	if step.ImportStateCheck != nil {
