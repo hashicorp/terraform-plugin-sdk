@@ -7,6 +7,11 @@ FEATURES:
 BUG FIXES:
 
 * Binary acceptance test driver: omit test cleanup when state is empty [GH-356]
+* Make mockT.Fatal halt execution [GH-396]
+
+DEPENDENCIES:
+
+* `github.com/hashicorp/terraform-plugin-test@v1.2.0` -> `v1.3.0` [GH-400] 
 
 # 1.9.1 (April 09, 2020)
 
