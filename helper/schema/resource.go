@@ -330,6 +330,10 @@ func (r *Resource) Apply(
 		return s, append(diags, diag.FromErr(err))
 	}
 
+	if s != nil && data != nil {
+		data.providerMeta = s.ProviderMeta
+	}
+
 	// Instance Diff shoould have the timeout info, need to copy it over to the
 	// ResourceData meta
 	rt := ResourceTimeout{}
@@ -537,6 +541,10 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 		data.timeouts = &rt
 
+		if s != nil {
+			data.providerMeta = s.ProviderMeta
+		}
+
 		exists, err := r.Exists(data, meta)
 		if err != nil {
 			return s, append(diags, diag.FromErr(err))
@@ -552,6 +560,10 @@ func (r *Resource) RefreshWithoutUpgrade(
 		return s, append(diags, diag.FromErr(err))
 	}
 	data.timeouts = &rt
+
+	if s != nil {
+		data.providerMeta = s.ProviderMeta
+	}
 
 	diags = append(diags, r.read(ctx, data, meta)...)
 
