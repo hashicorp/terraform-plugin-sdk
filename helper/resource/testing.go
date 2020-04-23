@@ -538,11 +538,6 @@ func Test(t testing.T, c TestCase) {
 	}
 	log.SetOutput(logWriter)
 
-	// We require verbose mode so that the user knows what is going on.
-	if !testing.Verbose() && !c.IsUnitTest {
-		t.Fatal("Acceptance tests must be run with the -v flag on tests")
-	}
-
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
 	providers := make(map[string]*schema.Provider)
