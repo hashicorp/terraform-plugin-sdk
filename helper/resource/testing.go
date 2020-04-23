@@ -16,9 +16,9 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
+	tftest "github.com/hashicorp/terraform-plugin-test"
 	testing "github.com/mitchellh/go-testing-interface"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
@@ -102,16 +102,7 @@ func TestMain(m interface {
 			os.Exit(1)
 		}
 	} else {
-		if acctest.TestHelper == nil {
-			log.Fatal("Please configure the acctest binary driver")
-		}
-
 		exitCode := m.Run()
-		err := acctest.TestHelper.Close()
-		if err != nil {
-			log.Printf("Error cleaning up temporary test files: %s", err)
-		}
-
 		os.Exit(exitCode)
 	}
 }
@@ -544,15 +535,22 @@ func Test(t testing.T, c TestCase) {
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
 	providers := make(map[string]*schema.Provider)
+	var provider string
 	for name, pf := range c.ProviderFactories {
 		p, err := pf()
 		if err != nil {
 			t.Fatal(err)
 		}
 		providers[name] = p
+		provider = name
 	}
 	for name, p := range c.Providers {
 		providers[name] = p
+		provider = name
+	}
+
+	if len(providers) != 1 {
+		t.Fatalf("Only the provider under test should be set in TestCase, got %d providers. Other providers can be used by adding their provider blocks to their config; they will automatically be downloaded as part of terraform init.", len(providers))
 	}
 
 	// Auto-configure all providers.
@@ -570,11 +568,19 @@ func Test(t testing.T, c TestCase) {
 		c.PreCheck()
 	}
 
-	if acctest.TestHelper == nil {
-		t.Fatal("Please configure the acctest binary driver")
+	sourceDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Error getting working dir: %s", err)
 	}
+	helper := tftest.AutoInitProviderHelper(provider, sourceDir)
+	defer func(helper *tftest.Helper) {
+		err := helper.Close()
+		if err != nil {
+			log.Printf("Error cleaning up temporary test files: %s", err)
+		}
+	}(helper)
 
-	runNewTest(t, c, providers)
+	runNewTest(t, c, providers, helper)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a

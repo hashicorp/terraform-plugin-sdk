@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -611,9 +612,13 @@ func (s *State) ensureHasLineage() {
 			panic(fmt.Errorf("Failed to generate lineage: %v", err))
 		}
 		s.Lineage = lineage
-		log.Printf("[DEBUG] New state was assigned lineage %q\n", s.Lineage)
+		if os.Getenv("TF_ACC") == "" || os.Getenv("TF_ACC_STATE_LINEAGE") == "1" {
+			log.Printf("[DEBUG] New state was assigned lineage %q\n", s.Lineage)
+		}
 	} else {
-		log.Printf("[TRACE] Preserving existing state lineage %q\n", s.Lineage)
+		if os.Getenv("TF_ACC") == "" || os.Getenv("TF_ACC_STATE_LINEAGE") == "1" {
+			log.Printf("[TRACE] Preserving existing state lineage %q\n", s.Lineage)
+		}
 	}
 }
 

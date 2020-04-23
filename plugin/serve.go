@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 
+	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
@@ -34,6 +35,16 @@ type ServeOpts struct {
 	// Wrapped versions of the above plugins will automatically shimmed and
 	// added to the GRPC functions when possible.
 	GRPCProviderFunc GRPCProviderFunc
+
+	// Logger is the logger that go-plugin will use.
+	Logger hclog.Logger
+
+	// TestConfig should only be set when the provider is being tested; it
+	// will opt out of go-plugin's lifecycle management and other features,
+	// and will use the supplied configuration options to control the
+	// plugin's lifecycle and communicate connection information. See the
+	// go-plugin GoDoc for more information.
+	TestConfig *plugin.ServeTestConfig
 }
 
 // Serve serves a plugin. This function never returns and should be the final
@@ -48,7 +59,6 @@ func Serve(opts *ServeOpts) {
 	}
 
 	provider := opts.GRPCProviderFunc()
-
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{
@@ -66,5 +76,7 @@ func Serve(opts *ServeOpts) {
 				return handler(ctx, req)
 			}))...)
 		},
+		Logger: opts.Logger,
+		Test:   opts.TestConfig,
 	})
 }
