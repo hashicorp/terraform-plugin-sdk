@@ -777,7 +777,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if len(v.RequiredWith) > 0 {
-			err := checkKeysAgainstSchemaFlags(k, v.RequiredWith, topSchemaMap)
+			err := checkKeysAgainstSchemaFlags(k, v.RequiredWith, topSchemaMap, v)
 			if err != nil {
 				return fmt.Errorf("RequiredWith: %+v", err)
 			}
