@@ -15,10 +15,10 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
+	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
@@ -86,7 +86,9 @@ func AddTestSweepers(name string, s *Sweeper) {
 	sweeperFuncs[name] = s
 }
 
-func TestMain(m testing.M) {
+func TestMain(m interface {
+	Run() int
+}) {
 	flag.Parse()
 	if *flagSweep != "" {
 		// parse flagSweep contents for regions to run

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-multierror"
+	testinginterface "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -33,10 +34,10 @@ func TestParallelTest(t *testing.T) {
 	// the test will error because the binary driver is unconfigured
 	func() {
 		defer func() {
-			if r := recover(); r != nil {
-				if !strings.HasPrefix(r.(string), "mockT") {
-					panic(r)
-				}
+			r := recover()
+			// this string is hardcoded in github.com/mitchellh/go-testing-interface
+			if s, ok := r.(string); !ok || !strings.HasPrefix(s, "testing.T failed, see logs for output") {
+				panic(r)
 			}
 		}()
 		ParallelTest(mt, TestCase{IsUnitTest: true})
@@ -54,14 +55,16 @@ func TestTest_factoryError(t *testing.T) {
 		return nil, resourceFactoryError
 	}
 	mt := new(mockT)
+	recovered := false
 
 	func() {
 		defer func() {
-			if r := recover(); r != nil {
-				if !strings.HasPrefix(r.(string), "mockT") {
-					panic(r)
-				}
+			r := recover()
+			// this string is hardcoded in github.com/mitchellh/go-testing-interface
+			if s, ok := r.(string); !ok || !strings.HasPrefix(s, "testing.T failed, see logs for output") {
+				panic(r)
 			}
+			recovered = true
 		}()
 		Test(mt, TestCase{
 			ProviderFactories: map[string]func() (*schema.Provider, error){
@@ -71,9 +74,8 @@ func TestTest_factoryError(t *testing.T) {
 		})
 	}()
 
-	fatalStr := fmt.Sprint(mt.FatalArgs)
-	if !strings.Contains(fatalStr, resourceFactoryError.Error()) {
-		t.Fatalf("test should've failed with %s, failed with %s", resourceFactoryError, fatalStr)
+	if !recovered {
+		t.Fatalf("test should've failed fatally")
 	}
 }
 
@@ -156,65 +158,17 @@ func TestComposeTestCheckFunc(t *testing.T) {
 
 // mockT implements TestT for testing
 type mockT struct {
-	ErrorCalled    bool
-	ErrorArgs      []interface{}
-	FatalCalled    bool
-	FatalArgs      []interface{}
+	testinginterface.RuntimeT
+
 	ParallelCalled bool
-	SkipCalled     bool
-	SkipArgs       []interface{}
-
-	f bool
 }
-
-func (t *mockT) Error(args ...interface{}) {
-	t.ErrorCalled = true
-	t.ErrorArgs = args
-	t.f = true
-}
-
-func (t *mockT) FailNow() {
-	t.f = true
-
-	panic("mockT.FailNow")
-}
-
-func (t *mockT) Fatal(args ...interface{}) {
-	t.FatalCalled = true
-	t.FatalArgs = args
-	t.f = true
-
-	panic("mockT.Fatal")
-}
-
-func (t *mockT) Fatalf(format string, args ...interface{}) {
-	t.Fatal(fmt.Sprintf(format, args...))
-}
-
-func (t *mockT) Helper() {}
-
-func (t *mockT) Log(args ...interface{}) {}
 
 func (t *mockT) Parallel() {
 	t.ParallelCalled = true
 }
 
-func (t *mockT) Skip(args ...interface{}) {
-	t.SkipCalled = true
-	t.SkipArgs = args
-	t.f = true
-}
-
-func (t *mockT) SkipNow() {
-	t.Skip()
-}
-
 func (t *mockT) Name() string {
 	return "MockedName"
-}
-
-func (t *mockT) failed() bool {
-	return t.f
 }
 
 func TestTest_Main(t *testing.T) {
