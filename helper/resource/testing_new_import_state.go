@@ -6,9 +6,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	tftest "github.com/hashicorp/terraform-plugin-test"
+	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"

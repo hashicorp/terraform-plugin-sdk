@@ -3,7 +3,8 @@ package schema
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
+	testing "github.com/mitchellh/go-testing-interface"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 

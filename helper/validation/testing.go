@@ -3,7 +3,8 @@ package validation
 import (
 	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/testing"
+	testing "github.com/mitchellh/go-testing-interface"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
