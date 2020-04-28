@@ -22,10 +22,6 @@ import (
 // creation.
 type ModuleInstance []ModuleInstanceStep
 
-var (
-	_ Targetable = ModuleInstance(nil)
-)
-
 func parseModuleInstance(traversal hcl.Traversal) (ModuleInstance, tfdiags.Diagnostics) {
 	mi, remain, diags := parseModuleInstancePrefix(traversal)
 	if len(remain) != 0 {
@@ -242,41 +238,4 @@ func (m ModuleInstance) String() string {
 		sep = "."
 	}
 	return buf.String()
-}
-
-// TargetContains implements Targetable by returning true if the given other
-// address either matches the receiver, is a sub-module-instance of the
-// receiver, or is a targetable absolute address within a module that
-// is contained within the reciever.
-func (m ModuleInstance) TargetContains(other Targetable) bool {
-	switch to := other.(type) {
-
-	case ModuleInstance:
-		if len(to) < len(m) {
-			// Can't be contained if the path is shorter
-			return false
-		}
-		// Other is contained if its steps match for the length of our own path.
-		for i, ourStep := range m {
-			otherStep := to[i]
-			if ourStep != otherStep {
-				return false
-			}
-		}
-		// If we fall out here then the prefixed matched, so it's contained.
-		return true
-
-	case absResource:
-		return m.TargetContains(to.Module)
-
-	case absResourceInstance:
-		return m.TargetContains(to.Module)
-
-	default:
-		return false
-	}
-}
-
-func (m ModuleInstance) targetableSigil() {
-	// ModuleInstance is targetable
 }

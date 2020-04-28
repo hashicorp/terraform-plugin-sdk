@@ -772,23 +772,6 @@ func TestPrepareProviderConfig(t *testing.T) {
 				"foo": cty.False,
 			}),
 		},
-		{
-			Name: "test deprecated default",
-			Schema: map[string]*schema.Schema{
-				"foo": {
-					Type:     schema.TypeString,
-					Optional: true,
-					Default:  "do not use",
-					Removed:  "don't use this",
-				},
-			},
-			ConfigVal: cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.NullVal(cty.String),
-			}),
-			ExpectConfig: cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.NullVal(cty.String),
-			}),
-		},
 	} {
 		t.Run(tc.Name, func(t *testing.T) {
 			server := NewGRPCProviderServer(&schema.Provider{

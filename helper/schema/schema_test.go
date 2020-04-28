@@ -3803,17 +3803,6 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			false,
 		},
 
-		"invalid field name format of a Removed field": {
-			map[string]*Schema{
-				"WithCapitals": {
-					Type:     TypeString,
-					Optional: true,
-					Removed:  "Use with_underscores instead",
-				},
-			},
-			false,
-		},
-
 		"ConfigModeBlock with Elem *Resource": {
 			map[string]*Schema{
 				"block": {
@@ -4879,37 +4868,6 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Err: false,
 
 			Warnings: nil,
-		},
-
-		"Removed attribute usage generates error": {
-			Schema: map[string]*Schema{
-				"long_gone": {
-					Type:     TypeString,
-					Optional: true,
-					Removed:  "no longer supported by Cloud API",
-				},
-			},
-
-			Config: map[string]interface{}{
-				"long_gone": "still here!",
-			},
-
-			Err: true,
-			Errors: []error{
-				fmt.Errorf("Error: Removed Attribute: no longer supported by Cloud API"),
-			},
-		},
-
-		"Removed generates no errors if attr not used": {
-			Schema: map[string]*Schema{
-				"long_gone": {
-					Type:     TypeString,
-					Optional: true,
-					Removed:  "no longer supported by Cloud API",
-				},
-			},
-
-			Err: false,
 		},
 
 		"Conflicting attributes generate error": {

@@ -208,14 +208,6 @@ type Schema struct {
 	// how to address the deprecation.
 	Deprecated string
 
-	// When Removed is set, this attribute has been removed from the schema
-	//
-	// Removed attributes can be left in the Schema to generate informative error
-	// messages for the user when they show up in resource configurations.
-	// This string is the message shown to the user with instructions on
-	// what do to about the removed attribute.
-	Removed string
-
 	// ValidateFunc allows individual fields to define arbitrary validation
 	// logic. It is yielded the provided config value as an interface{} that is
 	// guaranteed to be of the proper Schema type, and it can yield warnings or
@@ -881,7 +873,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: ValidateFunc and ValidateDiagFunc cannot both be set", k)
 		}
 
-		if v.Deprecated == "" && v.Removed == "" {
+		if v.Deprecated == "" {
 			if !isValidFieldName(k) {
 				return fmt.Errorf("%s: Field name may only contain lowercase alphanumeric characters & underscores.", k)
 			}
@@ -2113,15 +2105,6 @@ func (m schemaMap) validateType(
 			Severity:      diag.Warning,
 			Summary:       "Deprecated Attribute",
 			Detail:        schema.Deprecated,
-			AttributePath: path,
-		})
-	}
-
-	if schema.Removed != "" {
-		diags = append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
-			Summary:       "Removed Attribute",
-			Detail:        schema.Removed,
 			AttributePath: path,
 		})
 	}
