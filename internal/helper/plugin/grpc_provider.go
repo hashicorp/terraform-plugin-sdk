@@ -145,7 +145,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto
 		}
 
 		// this is deprecated, so don't set it
-		if attrSchema.Deprecated != "" || attrSchema.Removed != "" {
+		if attrSchema.Deprecated != "" {
 			return val, nil
 		}
 

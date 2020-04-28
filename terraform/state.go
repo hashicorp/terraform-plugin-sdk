@@ -15,13 +15,10 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	multierror "github.com/hashicorp/go-multierror"
 	uuid "github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/copystructure"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
 )
 
 const (
@@ -1256,27 +1253,6 @@ func (s *ResourceState) Untaint() {
 	if s.Primary != nil {
 		s.Primary.Tainted = false
 	}
-}
-
-// ProviderAddr returns the provider address for the receiver, by parsing the
-// string representation saved in state. An error can be returned if the
-// value in state is corrupt.
-func (s *ResourceState) ProviderAddr() (addrs.AbsProviderConfig, error) {
-	var diags tfdiags.Diagnostics
-
-	str := s.Provider
-	traversal, travDiags := hclsyntax.ParseTraversalAbs([]byte(str), "", hcl.Pos{Line: 1, Column: 1})
-	for _, err := range travDiags.Errs() {
-		// ignore warnings, they don't matter in this case
-		diags = append(diags, tfdiags.FromError(err))
-	}
-	if travDiags.HasErrors() {
-		return addrs.AbsProviderConfig{}, diags.Err()
-	}
-
-	addr, addrDiags := addrs.ParseAbsProviderConfig(traversal)
-	diags = append(diags, addrDiags...)
-	return addr, diags.Err()
 }
 
 func (s *ResourceState) init() {

@@ -9,8 +9,6 @@ import (
 	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -94,23 +92,6 @@ func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step
 					r.Primary.ID)
 			}
 
-			// We'll try our best to find the schema for this resource type
-			// so we can ignore Removed fields during validation. If we fail
-			// to find the schema then we won't ignore them and so the test
-			// will need to rely on explicit ImportStateVerifyIgnore, though
-			// this shouldn't happen in any reasonable case.
-			// KEM CHANGE FROM OLD FRAMEWORK: Fail test if this happens.
-			var rsrcSchema *schema.Resource
-			providerAddr, diags := addrs.ParseAbsProviderConfigStr("provider." + r.Provider + "." + r.Type)
-			if diags.HasErrors() {
-				t.Fatalf("Failed to find schema for resource with ID %s", r.Primary)
-			}
-
-			providerType := providerAddr.ProviderConfig.Type
-			if provider, ok := step.providers[providerType]; ok {
-				rsrcSchema = provider.ResourcesMap[r.Type]
-			}
-
 			// don't add empty flatmapped containers, so we can more easily
 			// compare the attributes
 			skipEmpty := func(k, v string) bool {
@@ -149,27 +130,6 @@ func testStepNewImportState(t testing.T, c TestCase, wd *tftest.WorkingDir, step
 				for k := range expected {
 					if strings.HasPrefix(k, v) {
 						delete(expected, k)
-					}
-				}
-			}
-
-			// Also remove any attributes that are marked as "Removed" in the
-			// schema, if we have a schema to check that against.
-			if rsrcSchema != nil {
-				for k := range actual {
-					for _, schema := range rsrcSchema.SchemasForFlatmapPath(k) {
-						if schema.Removed != "" {
-							delete(actual, k)
-							break
-						}
-					}
-				}
-				for k := range expected {
-					for _, schema := range rsrcSchema.SchemasForFlatmapPath(k) {
-						if schema.Removed != "" {
-							delete(expected, k)
-							break
-						}
 					}
 				}
 			}

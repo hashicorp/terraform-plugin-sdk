@@ -754,7 +754,7 @@ func isReservedDataSourceFieldName(name string) bool {
 func isReservedResourceFieldName(name string, s *Schema) bool {
 	// Allow phasing out "id"
 	// See https://github.com/terraform-providers/terraform-provider-aws/pull/1626#issuecomment-328881415
-	if name == "id" && (s.Deprecated != "" || s.Removed != "") {
+	if name == "id" && s.Deprecated != "" {
 		return false
 	}
 
@@ -803,13 +803,6 @@ func (r *Resource) TestResourceData() *ResourceData {
 	return &ResourceData{
 		schema: r.Schema,
 	}
-}
-
-// SchemasForFlatmapPath tries its best to find a sequence of schemas that
-// the given dot-delimited attribute path traverses through in the schema
-// of the receiving Resource.
-func (r *Resource) SchemasForFlatmapPath(path string) []*Schema {
-	return SchemasForFlatmapPath(path, r.Schema)
 }
 
 // Returns true if the resource is "top level" i.e. not a sub-resource.
