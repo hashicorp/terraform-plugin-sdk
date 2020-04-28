@@ -1,3 +1,9 @@
+# 1.11.0 (Unreleased)
+
+BUG FIXES:
+
+* Prevent ConflictsWith/RequiredWith/AtleastOneOf/ExactlyOneOf from self referencing or referencing multi item Lists or Sets [GH-416]
+
 # 1.10.0 (April 23, 2020)
 
 FEATURES:
