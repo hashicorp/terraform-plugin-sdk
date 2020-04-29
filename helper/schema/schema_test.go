@@ -3310,6 +3310,268 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"AtLeastOneOf list index syntax with self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								AtLeastOneOf: []string{"config_block_attr.0.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true, // TODO: AtLeastOneOf self reference is necessary
+		},
+
+		"AtLeastOneOf list index syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					MaxItems: 1,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			false, // TODO: AtLeastOneOf self reference is necessary
+		},
+
+		"AtLeastOneOf list index syntax with list configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf list index syntax with list configuration block missing MaxItems": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf list index syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf list index syntax with set configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf map key syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf map key syntax with list configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								AtLeastOneOf: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf map key syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf map key syntax with set configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								AtLeastOneOf: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf map key syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"map_attr.some_key"},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf string syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"map_attr"},
+				},
+			},
+			false, // TODO: AtLeastOneOf self reference is necessary
+		},
+
+		"AtLeastOneOf string syntax with self reference": {
+			map[string]*Schema{
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"test"},
+				},
+			},
+			true, // TODO: AtLeastOneOf self reference is necessary
+		},
+
 		"ConflictsWith list index syntax with self reference": {
 			map[string]*Schema{
 				"config_block_attr": {
@@ -3570,6 +3832,268 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				},
 			},
 			true,
+		},
+
+		"ExactlyOneOf list index syntax with self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								ExactlyOneOf: []string{"config_block_attr.0.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true, // TODO: ExactlyOneOf self reference is necessary
+		},
+
+		"ExactlyOneOf list index syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					MaxItems: 1,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			false, // TODO: ExactlyOneOf self reference is necessary
+		},
+
+		"ExactlyOneOf list index syntax with list configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf list index syntax with list configuration block missing MaxItems": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf list index syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.0.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf list index syntax with set configuration block missing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.0.missing_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf map key syntax with list configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf map key syntax with list configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								ExactlyOneOf: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf map key syntax with set configuration block existing attribute": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr.nested_attr"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf map key syntax with set configuration block self reference": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:         TypeString,
+								Optional:     true,
+								ExactlyOneOf: []string{"config_block_attr.nested_attr"},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf map key syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"map_attr.some_key"},
+				},
+			},
+			true,
+		},
+
+		"ExactlyOneOf string syntax with map attribute": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"map_attr"},
+				},
+			},
+			false, // TODO: ExactlyOneOf self reference is necessary
+		},
+
+		"ExactlyOneOf string syntax with self reference": {
+			map[string]*Schema{
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"test"},
+				},
+			},
+			true, // TODO: ExactlyOneOf self reference is necessary
 		},
 
 		"Sub-resource invalid": {
