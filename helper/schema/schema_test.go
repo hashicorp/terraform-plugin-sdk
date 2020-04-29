@@ -3600,6 +3600,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
+					MaxItems: 1,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
 							"nested_attr": {
@@ -3611,7 +3612,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			true, // TODO: AtLeastOneOf self reference is necessary
+			false,
 		},
 
 		"AtLeastOneOf list index syntax with list configuration block existing attribute": {
@@ -3635,7 +3636,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					AtLeastOneOf: []string{"config_block_attr.0.nested_attr"},
 				},
 			},
-			false, // TODO: AtLeastOneOf self reference is necessary
+			true,
 		},
 
 		"AtLeastOneOf list index syntax with list configuration block missing attribute": {
@@ -3843,7 +3844,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					AtLeastOneOf: []string{"map_attr"},
 				},
 			},
-			false, // TODO: AtLeastOneOf self reference is necessary
+			true,
 		},
 
 		"AtLeastOneOf string syntax with self reference": {
@@ -3854,7 +3855,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					AtLeastOneOf: []string{"test"},
 				},
 			},
-			true, // TODO: AtLeastOneOf self reference is necessary
+			false,
 		},
 
 		"ConflictsWith list index syntax with self reference": {
@@ -4124,6 +4125,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				"config_block_attr": {
 					Type:     TypeList,
 					Optional: true,
+					MaxItems: 1,
 					Elem: &Resource{
 						Schema: map[string]*Schema{
 							"nested_attr": {
@@ -4135,7 +4137,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			true, // TODO: ExactlyOneOf self reference is necessary
+			false,
 		},
 
 		"ExactlyOneOf list index syntax with list configuration block existing attribute": {
@@ -4159,7 +4161,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ExactlyOneOf: []string{"config_block_attr.0.nested_attr"},
 				},
 			},
-			false, // TODO: ExactlyOneOf self reference is necessary
+			true,
 		},
 
 		"ExactlyOneOf list index syntax with list configuration block missing attribute": {
@@ -4367,7 +4369,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					ExactlyOneOf: []string{"map_attr"},
 				},
 			},
-			false, // TODO: ExactlyOneOf self reference is necessary
+			true,
 		},
 
 		"ExactlyOneOf string syntax with self reference": {
@@ -4378,7 +4380,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					AtLeastOneOf: []string{"test"},
 				},
 			},
-			true, // TODO: ExactlyOneOf self reference is necessary
+			false,
 		},
 
 		"Sub-resource invalid": {
