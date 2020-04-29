@@ -1026,18 +1026,20 @@ func indexesIntoTypeSet(key string) bool {
 
 func checkIfIndexesIntoTypeSet(key string, f TestCheckFunc) TestCheckFunc {
 	return func(s *terraform.State) error {
-		if s.IsBinaryDrivenTest && indexesIntoTypeSet(key) {
-			return fmt.Errorf("Test check address %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", key)
+		err := f(s)
+		if err != nil && s.IsBinaryDrivenTest && indexesIntoTypeSet(key) {
+			return fmt.Errorf("Error in test check: %s\nTest check address %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", err, key)
 		}
-		return f(s)
+		return err
 	}
 }
 
 func checkIfIndexesIntoTypeSetPair(keyFirst, keySecond string, f TestCheckFunc) TestCheckFunc {
 	return func(s *terraform.State) error {
-		if s.IsBinaryDrivenTest && (indexesIntoTypeSet(keyFirst) || indexesIntoTypeSet(keySecond)) {
-			return fmt.Errorf("Test check address %q or %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", keyFirst, keySecond)
+		err := f(s)
+		if err != nil && s.IsBinaryDrivenTest && (indexesIntoTypeSet(keyFirst) || indexesIntoTypeSet(keySecond)) {
+			return fmt.Errorf("Error in test check: %s\nTest check address %q or %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", err, keyFirst, keySecond)
 		}
-		return f(s)
+		return err
 	}
 }
