@@ -1426,15 +1426,12 @@ func detailedErrorMessage(err error) string {
 }
 
 // indexesIntoTypeSet is a heuristic to try and identify if a flatmap style
-// string address uses a precalculated TypeSet hash, which are always 10 digits
-// long and are a number
+// string address uses a precalculated TypeSet hash, which are integers and
+// typically are large and obviously not a list index
 func indexesIntoTypeSet(key string) bool {
 	for _, part := range strings.Split(key, ".") {
-		if len(part) == 10 {
-			if _, err := strconv.Atoi(part); err == nil {
-				log.Printf("[WARN] Check likely indexes into TypeSet: '%s'\nThis is not possible in V1 of the SDK while using the binary driver, this check will be skipped.\nPlease disable the driver for this TestCase with DisableBinaryDriver: true.", key)
-				return true
-			}
+		if i, err := strconv.Atoi(part); err == nil && i > 100 {
+			return true
 		}
 	}
 	return false
@@ -1443,7 +1440,7 @@ func indexesIntoTypeSet(key string) bool {
 func checkIfIndexesIntoTypeSet(key string, f TestCheckFunc) TestCheckFunc {
 	return func(s *terraform.State) error {
 		if s.IsBinaryDrivenTest && indexesIntoTypeSet(key) {
-			return nil
+			return fmt.Errorf("Test check address %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", key)
 		}
 		return f(s)
 	}
@@ -1452,7 +1449,7 @@ func checkIfIndexesIntoTypeSet(key string, f TestCheckFunc) TestCheckFunc {
 func checkIfIndexesIntoTypeSetPair(keyFirst, keySecond string, f TestCheckFunc) TestCheckFunc {
 	return func(s *terraform.State) error {
 		if s.IsBinaryDrivenTest && (indexesIntoTypeSet(keyFirst) || indexesIntoTypeSet(keySecond)) {
-			return nil
+			return fmt.Errorf("Test check address %q or %q likely indexes into TypeSet\nThis is not possible in V1 of the SDK while using the binary driver\nPlease disable the driver for this TestCase with DisableBinaryDriver: true", keyFirst, keySecond)
 		}
 		return f(s)
 	}
