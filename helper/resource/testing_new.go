@@ -30,7 +30,7 @@ func runPostTestDestroy(t testing.T, c TestCase, wd *tftest.WorkingDir) error {
 	return nil
 }
 
-func RunNewTest(t testing.T, c TestCase, providers map[string]*schema.Provider) {
+func runNewTest(t testing.T, c TestCase, providers map[string]*schema.Provider) {
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 	wd := acctest.TestHelper.RequireNewWorkingDir(t)

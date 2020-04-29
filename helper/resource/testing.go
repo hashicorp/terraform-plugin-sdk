@@ -573,7 +573,7 @@ func Test(t testing.T, c TestCase) {
 		t.Fatal("Please configure the acctest binary driver")
 	}
 
-	RunNewTest(t, c, providers)
+	runNewTest(t, c, providers)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
