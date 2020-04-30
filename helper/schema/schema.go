@@ -749,7 +749,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if len(v.RequiredWith) > 0 {
-			err := checkKeysAgainstSchemaFlags(k, v.RequiredWith, topSchemaMap, v, false)
+			err := checkKeysAgainstSchemaFlags(k, v.RequiredWith, topSchemaMap, v, true)
 			if err != nil {
 				return fmt.Errorf("RequiredWith: %+v", err)
 			}
@@ -889,9 +889,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 	return nil
 }
 
-func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap, self *Schema, requireSelfReference bool) error {
-	var foundSelfReference bool
-
+func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap, self *Schema, allowSelfReference bool) error {
 	for _, key := range keys {
 		parts := strings.Split(key, ".")
 		sm := topSchemaMap
@@ -930,12 +928,8 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 			return fmt.Errorf("%s cannot find target attribute (%s), sm: %#v", k, key, sm)
 		}
 
-		if target == self {
-			if !requireSelfReference {
-				return fmt.Errorf("%s cannot reference self (%s)", k, key)
-			}
-
-			foundSelfReference = true
+		if target == self && !allowSelfReference {
+			return fmt.Errorf("%s cannot reference self (%s)", k, key)
 		}
 
 		if target.Required {
@@ -945,10 +939,6 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 		if len(target.ComputedWhen) > 0 {
 			return fmt.Errorf("%s cannot contain Computed(When) attribute (%s)", k, key)
 		}
-	}
-
-	if requireSelfReference && !foundSelfReference {
-		return fmt.Errorf("%s must reference self for AtLeastOneOf/ExactlyOneOf", k)
 	}
 
 	return nil
