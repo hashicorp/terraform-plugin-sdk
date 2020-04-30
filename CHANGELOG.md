@@ -1,3 +1,9 @@
+# 1.11.1 (Unreleased)
+
+BUG FIXES:
+
+* More accurate results for `schema.ResourceData.HasChange` when dealing with a Set inside another Set. [GH-362]
+
 # 1.11.0 (April 30, 2020)
 
 BUG FIXES:
