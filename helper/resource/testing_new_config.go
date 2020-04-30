@@ -36,6 +36,13 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 				t.Fatal(err)
 			}
 		}
+
+		if step.CtyCheck != nil {
+			err := step.CtyCheck(state, step.providers)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 
 	// Test for perpetual diffs by performing a plan, a refresh, and another plan

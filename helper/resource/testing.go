@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/logutils"
 	"github.com/hashicorp/terraform-plugin-sdk/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/ctytest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/internal/command/format"
@@ -390,6 +391,9 @@ type TestStep struct {
 	//
 	// If this is nil, no check is done on this step.
 	Check TestCheckFunc
+
+	// TODO doc
+	CtyCheck ctytest.CtyCheckFunc
 
 	// Destroy will create a destroy plan if set to true.
 	Destroy bool

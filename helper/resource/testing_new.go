@@ -51,6 +51,7 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.Resourc
 	var appliedCfg string
 
 	for i, step := range c.Steps {
+		step.providers = providers
 
 		if step.PreConfig != nil {
 			step.PreConfig()
@@ -68,7 +69,6 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.Resourc
 		}
 
 		if step.ImportState {
-			step.providers = providers
 			err := testStepNewImportState(t, c, wd, step, appliedCfg)
 			if err != nil {
 				t.Fatal(err)
