@@ -20,14 +20,17 @@ func NewServiceBuilder(services []ServiceRegistration) ServiceBuilder {
 // Services registered with this Service Builder.
 func (s ServiceBuilder) DataSources() (*map[string]*Resource, error) {
 	dataSources := make(map[string]*Resource)
+	dataSourceRegistrationSource := make(map[string]string)
 
 	for _, service := range s.services {
 		for k, v := range service.SupportedDataSources() {
 			if existing := dataSources[k]; existing != nil {
-				return nil, fmt.Errorf("An existing Data Source exists for %q", k)
+				existingRegName := dataSourceRegistrationSource[k]
+				return nil, fmt.Errorf("Both %q and %q register Data Source %q!", existingRegName, service.Name(), k)
 			}
 
 			dataSources[k] = v
+			dataSourceRegistrationSource[k] = service.Name()
 		}
 	}
 
@@ -38,14 +41,17 @@ func (s ServiceBuilder) DataSources() (*map[string]*Resource, error) {
 // Services registered with this Service Builder.
 func (s ServiceBuilder) Resources() (*map[string]*Resource, error) {
 	resources := make(map[string]*Resource)
+	resourceRegistrationSource := make(map[string]string)
 
 	for _, service := range s.services {
 		for k, v := range service.SupportedResources() {
 			if existing := resources[k]; existing != nil {
-				return nil, fmt.Errorf("An existing Resource exists for %q", k)
+				existingRegName := resourceRegistrationSource[k]
+				return nil, fmt.Errorf("Both %q and %q register Resource %q!", existingRegName, service.Name(), k)
 			}
 
 			resources[k] = v
+			resourceRegistrationSource[k] = service.Name()
 		}
 	}
 

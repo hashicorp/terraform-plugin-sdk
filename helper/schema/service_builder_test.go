@@ -15,6 +15,7 @@ func TestServiceBuilder_DataSources(t *testing.T) {
 			name: "none defined",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name:        "first",
 					dataSources: map[string]*Resource{},
 				},
 			},
@@ -25,6 +26,7 @@ func TestServiceBuilder_DataSources(t *testing.T) {
 			name: "single item",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					dataSources: map[string]*Resource{
 						"hello_world": {},
 					},
@@ -39,6 +41,7 @@ func TestServiceBuilder_DataSources(t *testing.T) {
 			name: "multiple items same service",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					dataSources: map[string]*Resource{
 						"hello": {},
 						"world": {},
@@ -55,12 +58,14 @@ func TestServiceBuilder_DataSources(t *testing.T) {
 			name: "multiple items different service",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					dataSources: map[string]*Resource{
 						"hello": {},
 						"world": {},
 					},
 				},
 				testServiceRegistration{
+					name: "second",
 					dataSources: map[string]*Resource{
 						"rick":  {},
 						"morty": {},
@@ -79,11 +84,13 @@ func TestServiceBuilder_DataSources(t *testing.T) {
 			name: "conflicting items different services",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					dataSources: map[string]*Resource{
 						"hello": {},
 					},
 				},
 				testServiceRegistration{
+					name: "second",
 					dataSources: map[string]*Resource{
 						"hello": {},
 					},
@@ -135,6 +142,7 @@ func TestServiceBuilder_Resources(t *testing.T) {
 			name: "none defined",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name:      "first",
 					resources: map[string]*Resource{},
 				},
 			},
@@ -145,6 +153,7 @@ func TestServiceBuilder_Resources(t *testing.T) {
 			name: "single item",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					resources: map[string]*Resource{
 						"hello_world": {},
 					},
@@ -159,6 +168,7 @@ func TestServiceBuilder_Resources(t *testing.T) {
 			name: "multiple items same service",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					resources: map[string]*Resource{
 						"hello": {},
 						"world": {},
@@ -175,12 +185,14 @@ func TestServiceBuilder_Resources(t *testing.T) {
 			name: "multiple items different service",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					dataSources: map[string]*Resource{
 						"hello": {},
 						"world": {},
 					},
 				},
 				testServiceRegistration{
+					name: "second",
 					dataSources: map[string]*Resource{
 						"rick":  {},
 						"morty": {},
@@ -199,11 +211,13 @@ func TestServiceBuilder_Resources(t *testing.T) {
 			name: "conflicting items different services",
 			services: []ServiceRegistration{
 				testServiceRegistration{
+					name: "first",
 					resources: map[string]*Resource{
 						"hello": {},
 					},
 				},
 				testServiceRegistration{
+					name: "second",
 					resources: map[string]*Resource{
 						"hello": {},
 					},
@@ -245,12 +259,13 @@ func TestServiceBuilder_Resources(t *testing.T) {
 }
 
 type testServiceRegistration struct {
+	name        string
 	dataSources map[string]*Resource
 	resources   map[string]*Resource
 }
 
 func (r testServiceRegistration) Name() string {
-	return "test"
+	return r.name
 }
 func (r testServiceRegistration) WebsiteCategories() []string {
 	return []string{}
