@@ -16,7 +16,7 @@ func NewServiceBuilder(services []ServiceRegistration) ServiceBuilder {
 	}
 }
 
-// Resources returns a canonical list of Data Sources supported by the
+// DataSources returns a canonical list of Data Sources supported by the
 // Services registered with this Service Builder.
 func (s ServiceBuilder) DataSources() (*map[string]*Resource, error) {
 	dataSources := make(map[string]*Resource)
