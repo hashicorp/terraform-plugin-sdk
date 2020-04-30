@@ -1,9 +1,9 @@
-# 1.11.0 (Unreleased)
+# 1.11.0 (April 30, 2020)
 
 BUG FIXES:
 
-* Better error messaging when indexing into TypeSet for test checks, while the binary driver is enabled (currently not supported) [GH-417]
-* Prevent ConflictsWith from self referencing and prevent referencing multi item Lists or Sets [GH-416] [GH-423] [GH-426]
+* Better error messaging when indexing into TypeSet for test checks, while the binary driver is enabled (currently not supported) ([#417](https://github.com/hashicorp/terraform-plugin-sdk/issues/417))
+* Prevent ConflictsWith from self referencing and prevent referencing multi item Lists or Sets ([#416](https://github.com/hashicorp/terraform-plugin-sdk/issues/416)] [[#423](https://github.com/hashicorp/terraform-plugin-sdk/issues/423)] [[#426](https://github.com/hashicorp/terraform-plugin-sdk/issues/426))
 
 # 1.10.0 (April 23, 2020)
 
