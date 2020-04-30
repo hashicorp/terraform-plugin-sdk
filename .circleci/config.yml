@@ -92,14 +92,12 @@ workflows:
           filters:
             branches:
               only:
-                - master
                 - v1-maint
           type: approval
       - "docker-go112 release":
           filters:
             branches:
               only:
-                - master
                 - v1-maint
           requires:
             - trigger-release
