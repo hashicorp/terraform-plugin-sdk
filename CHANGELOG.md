@@ -3,7 +3,7 @@
 BUG FIXES:
 
 * Better error messaging when indexing into TypeSet for test checks, while the binary driver is enabled (currently not supported) [GH-417]
-* Prevent ConflictsWith/RequiredWith/AtleastOneOf/ExactlyOneOf from self referencing or referencing multi item Lists or Sets [GH-416]
+* Prevent ConflictsWith from self referencing and prevent referencing multi item Lists or Sets [GH-416] [GH-423]
 
 # 1.10.0 (April 23, 2020)
 
