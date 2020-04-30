@@ -239,6 +239,9 @@ type Schema struct {
 
 	// When Removed is set, this attribute has been removed from the schema
 	//
+	// Deprecated: This field will be removed in version 2 without replacement
+	// as the functionality is not necessary.
+	//
 	// Removed attributes can be left in the Schema to generate informative error
 	// messages for the user when they show up in resource configurations.
 	// This string is the message shown to the user with instructions on
