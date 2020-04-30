@@ -894,7 +894,7 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 		parts := strings.Split(key, ".")
 		sm := topSchemaMap
 		var target *Schema
-		for _, part := range parts {
+		for idx, part := range parts {
 			// Skip index fields if 0
 			partInt, err := strconv.Atoi(part)
 
@@ -917,7 +917,8 @@ func checkKeysAgainstSchemaFlags(k string, keys []string, topSchemaMap schemaMap
 				continue
 			}
 
-			if target.Type == TypeSet || target.MaxItems != 1 {
+			// Skip Type/MaxItems check if not the last element
+			if (target.Type == TypeSet || target.MaxItems != 1) && idx+1 != len(parts) {
 				return fmt.Errorf("%s configuration block reference (%s) can only be used with TypeList and MaxItems: 1 configuration blocks", k, key)
 			}
 

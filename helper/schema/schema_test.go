@@ -3546,6 +3546,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"AtLeastOneOf string syntax with list attribute": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"list_attr"},
+				},
+			},
+			false,
+		},
+
+		"AtLeastOneOf string syntax with list configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr"},
+				},
+			},
+			false,
+		},
+
 		"AtLeastOneOf string syntax with map attribute": {
 			map[string]*Schema{
 				"map_attr": {
@@ -3557,6 +3596,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					Type:         TypeBool,
 					Optional:     true,
 					AtLeastOneOf: []string{"map_attr"},
+				},
+			},
+			false,
+		},
+
+		"AtLeastOneOf string syntax with set attribute": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"set_attr"},
+				},
+			},
+			false,
+		},
+
+		"AtLeastOneOf string syntax with set configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					AtLeastOneOf: []string{"config_block_attr"},
 				},
 			},
 			false,
@@ -3808,6 +3886,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"ConflictsWith string syntax with list attribute": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"list_attr"},
+				},
+			},
+			false,
+		},
+
+		"ConflictsWith string syntax with list configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr"},
+				},
+			},
+			false,
+		},
+
 		"ConflictsWith string syntax with map attribute": {
 			map[string]*Schema{
 				"map_attr": {
@@ -3819,6 +3936,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					Type:          TypeBool,
 					Optional:      true,
 					ConflictsWith: []string{"map_attr"},
+				},
+			},
+			false,
+		},
+
+		"ConflictsWith string syntax with set attribute": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"set_attr"},
+				},
+			},
+			false,
+		},
+
+		"ConflictsWith string syntax with set configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:          TypeBool,
+					Optional:      true,
+					ConflictsWith: []string{"config_block_attr"},
 				},
 			},
 			false,
@@ -4071,6 +4227,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"ExactlyOneOf string syntax with list attribute": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"list_attr"},
+				},
+			},
+			false,
+		},
+
+		"ExactlyOneOf string syntax with list configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr"},
+				},
+			},
+			false,
+		},
+
 		"ExactlyOneOf string syntax with map attribute": {
 			map[string]*Schema{
 				"map_attr": {
@@ -4082,6 +4277,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					Type:         TypeBool,
 					Optional:     true,
 					ExactlyOneOf: []string{"map_attr"},
+				},
+			},
+			false,
+		},
+
+		"ExactlyOneOf string syntax with set attribute": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"set_attr"},
+				},
+			},
+			false,
+		},
+
+		"ExactlyOneOf string syntax with set configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					ExactlyOneOf: []string{"config_block_attr"},
 				},
 			},
 			false,
@@ -4334,6 +4568,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"RequiredWith string syntax with list attribute": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"list_attr"},
+				},
+			},
+			false,
+		},
+
+		"RequiredWith string syntax with list configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"config_block_attr"},
+				},
+			},
+			false,
+		},
+
 		"RequiredWith string syntax with map attribute": {
 			map[string]*Schema{
 				"map_attr": {
@@ -4345,6 +4618,45 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					Type:         TypeBool,
 					Optional:     true,
 					RequiredWith: []string{"map_attr"},
+				},
+			},
+			false,
+		},
+
+		"RequiredWith string syntax with set attribute": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"set_attr"},
+				},
+			},
+			false,
+		},
+
+		"RequiredWith string syntax with set configuration block": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+				"test": {
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"config_block_attr"},
 				},
 			},
 			false,
