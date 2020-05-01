@@ -551,9 +551,6 @@ func Test(t testing.T, c TestCase) {
 		}
 		providers[name] = p
 	}
-	for name, p := range c.Providers {
-		providers[name] = p
-	}
 
 	// Auto-configure all providers.
 	for _, p := range providers {
