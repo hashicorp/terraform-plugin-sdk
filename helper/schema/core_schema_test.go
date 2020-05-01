@@ -32,7 +32,7 @@ func testResource(block *configschema.Block) *configschema.Block {
 
 func TestSchemaMapCoreConfigSchema(t *testing.T) {
 	// these are global so if new tests are written we should probably employ a mutex
-	DescriptionKind = configschema.StringMarkdown
+	DescriptionKind = StringMarkdown
 	SchemaDescriptionBuilder = func(s *Schema) string {
 		if s.Required && s.Description != "" {
 			return fmt.Sprintf("**Required** %s", s.Description)
