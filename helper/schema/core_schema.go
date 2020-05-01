@@ -8,10 +8,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
+// StringKind represents the format a string is in.
+type StringKind configschema.StringKind
+
+const (
+	// StringPlain indicates a string is plain-text and requires no processing for display.
+	StringPlain = StringKind(configschema.StringPlain)
+
+	// StringMarkdown indicates a string is in markdown format and may
+	// require additional processing to display.
+	StringMarkdown = StringKind(configschema.StringMarkdown)
+)
+
 var (
 	// DescriptionKind is the default StringKind of descriptions in this provider.
 	// It defaults to StringPlain but can be globally switched to StringMarkdown.
-	DescriptionKind = configschema.StringPlain
+	DescriptionKind = StringPlain
 
 	// SchemaDescriptionBuilder converts helper/schema.Schema Descriptions to configschema.Attribute
 	// and Block Descriptions. This method can be used to modify the description text prior to it
@@ -137,7 +149,7 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 	}
 
 	desc := SchemaDescriptionBuilder(s)
-	descKind := DescriptionKind
+	descKind := configschema.StringKind(DescriptionKind)
 	if desc == "" {
 		// fallback to plain text if empty
 		descKind = configschema.StringPlain
@@ -164,7 +176,7 @@ func (s *Schema) coreConfigSchemaBlock() *configschema.NestedBlock {
 		ret.Block = *nested
 
 		desc := SchemaDescriptionBuilder(s)
-		descKind := DescriptionKind
+		descKind := configschema.StringKind(DescriptionKind)
 		if desc == "" {
 			// fallback to plain text if empty
 			descKind = configschema.StringPlain
@@ -273,7 +285,7 @@ func (r *Resource) CoreConfigSchema() *configschema.Block {
 	block := r.coreConfigSchema()
 
 	desc := ResourceDescriptionBuilder(r)
-	descKind := DescriptionKind
+	descKind := configschema.StringKind(DescriptionKind)
 	if desc == "" {
 		// fallback to plain text if empty
 		descKind = configschema.StringPlain
