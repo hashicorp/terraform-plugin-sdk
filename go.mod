@@ -29,7 +29,7 @@ require (
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/copystructure v1.0.0
-	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.4
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
