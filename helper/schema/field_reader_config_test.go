@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
