@@ -34,7 +34,7 @@ function init {
 
 function getTargetVersion {
   # parse target version from CHANGELOG
-  sed -n 's/^# \([0-9]\+\.[0-9]\+\.[0-9]\+\) (Unreleased)$/\1/p' CHANGELOG.md || \
+  sed -n 's/^# \([0-9]\+\.[0-9]\+\.[0-9]\+\(-[0-9a-zA-Z.]\+\)\?\) (Unreleased)$/\1/p' CHANGELOG.md || \
      (echo "\nTarget version not found in changelog, exiting" && \
        exit 1)
 }
