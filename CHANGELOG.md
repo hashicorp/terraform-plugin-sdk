@@ -1,20 +1,20 @@
-# 2.0.0-rc.1 (May 05, 2020)
+# 2.0.0-rc.1 (Unreleased)
 
 BREAKING CHANGES
 
 * The SDK no longer supports protocol 4 (Terraform 0.11 and below). Providers built on the SDK after v2 will need Terraform 0.12 to be used.
 * The new, previously optional binary acceptance testing framework is now the default and only available mode for testing. Test code and provider code will no longer reside in the same process. Providers also will have their processes stopped and restarted multiple times during a test. This more accurately mirrors the behavior of providers in production.
-* Updated type signatures for some functions to include context.Context support. These include helpers in the helper/customdiff package, the CustomizeDiffFunc type, and the StateUpgradeFunc type. ([#276](https://github.com/hashicorp/terraform-plugin-sdk/issues/276))
-* The Partial and SetPartial methods on schema.ResourceData have been removed, as they were rarely necessary and poorly understood. ([#318](https://github.com/hashicorp/terraform-plugin-sdk/issues/318))
-* The terraform.ResourceProvider interface has been removed. The *schema.Provider type should be used directly, instead. ([#316](https://github.com/hashicorp/terraform-plugin-sdk/issues/316))
-* Deprecated helper/validation functions have been removed. ([#333](https://github.com/hashicorp/terraform-plugin-sdk/issues/333))
-* PromoteSingle’s use is discouraged, and so it has been removed from helper/schema.Schema. ([#337](https://github.com/hashicorp/terraform-plugin-sdk/issues/337))
-* schema.UnsafeSetFieldRaw’s use is discouraged, and so it has been removed. ([#339](https://github.com/hashicorp/terraform-plugin-sdk/issues/339))
+* Updated type signatures for some functions to include context.Context support. These include helpers in the helper/customdiff package, the CustomizeDiffFunc type, and the StateUpgradeFunc type. [GH-276]
+* The Partial and SetPartial methods on schema.ResourceData have been removed, as they were rarely necessary and poorly understood. [GH-318]
+* The terraform.ResourceProvider interface has been removed. The *schema.Provider type should be used directly, instead. [GH-316]
+* Deprecated helper/validation functions have been removed. [GH-333]
+* PromoteSingle’s use is discouraged, and so it has been removed from helper/schema.Schema. [GH-337]
+* schema.UnsafeSetFieldRaw’s use is discouraged, and so it has been removed. [GH-339]
 * Calls to schema.ResourceData.Set that would return an error now panic by default. TF_SCHEMA_PANIC_ON_ERROR can be set to a falsey value to disable this behavior.
-* schema.Resource.Refresh has been removed, as it is unused in protocol 5. ([#370](https://github.com/hashicorp/terraform-plugin-sdk/issues/370))
-* The Removed field has been removed from helper/schema.Schema, which means providers can no longer specify error messages when a recently removed field is used. This functionality had a lot of bugs and corner cases that worked in unexpected ways, and so was removed. ([#414](https://github.com/hashicorp/terraform-plugin-sdk/issues/414))
-* The helper/encryption package has been removed, following our [published guidance](https://www.terraform.io/docs/extend/best-practices/sensitive-state.html#don-39-t-encrypt-state). ([#436](https://github.com/hashicorp/terraform-plugin-sdk/issues/436))
-* In scenarios where the Go testing package was used, the github.com/mitchellh/go-testing-interface package may be required instead. ([#406](https://github.com/hashicorp/terraform-plugin-sdk/issues/406))
+* schema.Resource.Refresh has been removed, as it is unused in protocol 5. [GH-370]
+* The Removed field has been removed from helper/schema.Schema, which means providers can no longer specify error messages when a recently removed field is used. This functionality had a lot of bugs and corner cases that worked in unexpected ways, and so was removed. [GH-414]
+* The helper/encryption package has been removed, following our [published guidance](https://www.terraform.io/docs/extend/best-practices/sensitive-state.html#don-39-t-encrypt-state). [GH-436]
+* In scenarios where the Go testing package was used, the github.com/mitchellh/go-testing-interface package may be required instead. [GH-406]
 * <details><summary>A number of exported variables, functions, types, and interfaces that were not meant to be part of the SDK’s interface have been removed. Most plugins should not notice they are gone.</summary>
   
   The removals include:
@@ -436,26 +436,26 @@ BREAKING CHANGES
   </details>
 
 FEATURES
-* Many functions in the SDK now have support for context.Context, including CreateContextFunc, ReadContextFunc, UpdateContextFunc, and DeleteContextFunc, analogs to the existing CreateFunc, ReadFunc, UpdateFunc, and DeleteFuncs. This offers more accurate cancellation and timeouts. ([#276](https://github.com/hashicorp/terraform-plugin-sdk/issues/276))
+* Many functions in the SDK now have support for context.Context, including CreateContextFunc, ReadContextFunc, UpdateContextFunc, and DeleteContextFunc, analogs to the existing CreateFunc, ReadFunc, UpdateFunc, and DeleteFuncs. This offers more accurate cancellation and timeouts. [GH-276]
 * Many functions in the SDK now return a new diag.Diagnostics type, like the new CreateContextFunc, ReadContextFunc, UpdateContextFunc, DeleteContextFunc, and a new ValidateDiagFunc. When using these Diagnostics, Terraform will now indicate more precisely-scoped errors, and providers now have the ability to display warnings.
-* A new feature, provider metadata, is shipping as part of Terraform 0.13. This feature allows module authors to give information to providers without the information being persisted to state, which is useful for indicating metadata about modules. This is experimental new functionality and its usage should be closely coordinated with the Terraform core team to ensure that limitations are understood. [See the PR in Terraform core for more information.](https://github.com/hashicorp/terraform/pull/22583) ([#405](https://github.com/hashicorp/terraform-plugin-sdk/issues/405))
+* A new feature, provider metadata, is shipping as part of Terraform 0.13. This feature allows module authors to give information to providers without the information being persisted to state, which is useful for indicating metadata about modules. This is experimental new functionality and its usage should be closely coordinated with the Terraform core team to ensure that limitations are understood. [See the PR in Terraform core for more information.](https://github.com/hashicorp/terraform/pull/22583) [GH-405]
 
 DEPRECATIONS
 * The ExistsFunc defined on a schema.Resource is now deprecated. This logic can be achieved in the ReadFunc for that schema.Resource instead, and often was duplicated unnecessarily.
 * Functions that got context- or diagnostics-aware counterparts--like CreateFunc, ReadFunc, UpdateFunc, DeleteFunc, and ValidateFunc--are now deprecated in favor of their context- and/or diagnostics-aware counterparts.
 
 ENHANCEMENTS
-* A number of new map validators that take advantage of the Diagnostics support have been added. ([#304](https://github.com/hashicorp/terraform-plugin-sdk/issues/304))
-* schema.Resource and schema.Schema now have optional Description fields, which will surface information for user-facing interfaces for the provider. These fields can hold plain text or markdown, depending on the global DescriptionKind setting. ([#349](https://github.com/hashicorp/terraform-plugin-sdk/issues/349))
+* A number of new map validators that take advantage of the Diagnostics support have been added. [GH-304]
+* schema.Resource and schema.Schema now have optional Description fields, which will surface information for user-facing interfaces for the provider. These fields can hold plain text or markdown, depending on the global DescriptionKind setting. [GH-349]
 
 BUG FIXES
-* helper/acctest.RandIntRange will now correctly return an integer between min and max; previously, it would return an integer between 0 and max-min. ([#300](https://github.com/hashicorp/terraform-plugin-sdk/issues/300))
-* NonRetryableError and RetryableError will now throw an explicit error if they’re given a nil error. Before unspecified and confusing behavior would arise. ([#199](https://github.com/hashicorp/terraform-plugin-sdk/issues/199))
-* TypeSet hash values are no longer collapsed into a single value when they consist only of Computed attributes. ([#197](https://github.com/hashicorp/terraform-plugin-sdk/issues/197))
-* Computed attributes now have stronger validation around what properties can be set on their schema.Schema. ([#336](https://github.com/hashicorp/terraform-plugin-sdk/issues/336))
-* Using a schema.Resource as the Elem on a TypeMap now returns an error; previously, unspecified and confusing behavior was exhibited. ([#338](https://github.com/hashicorp/terraform-plugin-sdk/issues/338))
-* Using TestCheckResourceAttrPair to compare the same attribute on the same resource will now throw an error. ([#335](https://github.com/hashicorp/terraform-plugin-sdk/issues/335))
-* Test sweeping will now error if a dependency sweeper is specified but doesn’t exist. ([#398](https://github.com/hashicorp/terraform-plugin-sdk/issues/398))
+* helper/acctest.RandIntRange will now correctly return an integer between min and max; previously, it would return an integer between 0 and max-min. [GH-300]
+* NonRetryableError and RetryableError will now throw an explicit error if they’re given a nil error. Before unspecified and confusing behavior would arise. [GH-199]
+* TypeSet hash values are no longer collapsed into a single value when they consist only of Computed attributes. [GH-197]
+* Computed attributes now have stronger validation around what properties can be set on their schema.Schema. [GH-336]
+* Using a schema.Resource as the Elem on a TypeMap now returns an error; previously, unspecified and confusing behavior was exhibited. [GH-338]
+* Using TestCheckResourceAttrPair to compare the same attribute on the same resource will now throw an error. [GH-335]
+* Test sweeping will now error if a dependency sweeper is specified but doesn’t exist. [GH-398]
 
 ---
 
