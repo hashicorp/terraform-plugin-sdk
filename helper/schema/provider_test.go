@@ -144,7 +144,7 @@ func TestProviderConfigure(t *testing.T) {
 						return nil, nil
 					}
 
-					return nil, diag.Diagnostics{diag.FromErr(fmt.Errorf("nope"))}
+					return nil, diag.Errorf("nope")
 				},
 			},
 			Config: map[string]interface{}{

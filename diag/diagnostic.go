@@ -93,14 +93,6 @@ func (d Diagnostic) Validate() error {
 	return nil
 }
 
-// FromErr will convert an error into a Diagnostic
-func FromErr(err error) Diagnostic {
-	return Diagnostic{
-		Severity: Error,
-		Summary:  err.Error(),
-	}
-}
-
 // Severity is an enum type marking the severity level of a Diagnostic
 type Severity int
 
