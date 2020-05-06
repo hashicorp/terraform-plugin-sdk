@@ -243,12 +243,9 @@ func (p *Provider) ValidateResource(
 //
 // This won't be called at all if no provider configuration is given.
 func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) diag.Diagnostics {
-
-	var diags diag.Diagnostics
-
 	// No configuration
 	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
-		return diags
+		return nil
 	}
 
 	sm := schemaMap(p.Schema)
@@ -257,31 +254,30 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 	// generate an intermediary "diff" although that is never exposed.
 	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
-		return append(diags, diag.FromErr(err))
+		return diag.FromErr(err)
 	}
 
 	data, err := sm.Data(nil, diff)
 	if err != nil {
-		return append(diags, diag.FromErr(err))
+		return diag.FromErr(err)
 	}
 
 	if p.ConfigureFunc != nil {
 		meta, err := p.ConfigureFunc(data)
 		if err != nil {
-			return append(diags, diag.FromErr(err))
+			return diag.FromErr(err)
 		}
 		p.meta = meta
 	}
 	if p.ConfigureContextFunc != nil {
-		meta, ds := p.ConfigureContextFunc(ctx, data)
-		diags = append(diags, ds...)
+		meta, diags := p.ConfigureContextFunc(ctx, data)
 		if diags.HasError() {
 			return diags
 		}
 		p.meta = meta
 	}
 
-	return diags
+	return nil
 }
 
 // Resources returns all the available resource types that this provider
