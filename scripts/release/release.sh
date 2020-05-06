@@ -30,13 +30,27 @@ function init {
   fi
 
   TARGET_VERSION="$(getTargetVersion)"
+  TARGET_VERSION_CORE="$(getVersionCore)"
+  TARGET_VERSION_PRERELEASE="$(getVersionPrerelease)"
 }
+
+semverRegex='\([0-9]\+\.[0-9]\+\.[0-9]\+\)\(-\?\)\([0-9a-zA-Z.]\+\)\?'
 
 function getTargetVersion {
   # parse target version from CHANGELOG
-  sed -n 's/^# \([0-9]\+\.[0-9]\+\.[0-9]\+\(-[0-9a-zA-Z.]\+\)\?\) (Unreleased)$/\1/p' CHANGELOG.md || \
+  sed -n 's/^# '"$semverRegex"' (Unreleased)$/\1\2\3/p' CHANGELOG.md || \
      (echo "\nTarget version not found in changelog, exiting" && \
        exit 1)
+}
+
+function getVersionCore {
+    # extract major.minor.patch version, e.g. 1.2.3
+    echo "${TARGET_VERSION}" | sed -n 's/'"$semverRegex"'/\1/p'
+}
+
+function getVersionPrerelease {
+    # extract prerelease version, e.g. rc.1
+    echo "${TARGET_VERSION}" | sed -n 's/'"$semverRegex"'/\3/p'
 }
 
 function modifyChangelog {
@@ -57,8 +71,8 @@ function changelogMain {
 }
 
 function modifyVersionFiles {
-  sed -i "s/var SDKVersion =.*/var SDKVersion = \"${TARGET_VERSION}\"/" meta/meta.go
-  sed -i "s/var SDKPrerelease =.*/var SDKPrerelease = \"\"/" meta/meta.go
+  sed -i "s/var SDKVersion =.*/var SDKVersion = \"${TARGET_VERSION_CORE}\"/" meta/meta.go
+  sed -i "s/var SDKPrerelease =.*/var SDKPrerelease = \"${TARGET_VERSION_PRERELEASE}\"/" meta/meta.go
 }
 
 function commitChanges {
