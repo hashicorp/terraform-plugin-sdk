@@ -1,16 +1,16 @@
-# 1.12.0 (Unreleased)
+# 1.12.0 (May 06, 2020)
 
 FEATURES:
 
-* Allow disabling binary testing via `TF_DISABLE_BINARY_TESTING` environment variable. [GH-441]
+* Allow disabling binary testing via `TF_DISABLE_BINARY_TESTING` environment variable. ([#441](https://github.com/hashicorp/terraform-plugin-sdk/issues/441))
 
 BUG FIXES:
 
-* More accurate results for `schema.ResourceData.HasChange` when dealing with a Set inside another Set. [GH-362]
+* More accurate results for `schema.ResourceData.HasChange` when dealing with a Set inside another Set. ([#362](https://github.com/hashicorp/terraform-plugin-sdk/issues/362))
 
 DEPRECATED:
 
-* helper/encryption: In line with sensitive state best practices, the `helper/encryption` package is deprecated. [GH-437]
+* helper/encryption: In line with sensitive state best practices, the `helper/encryption` package is deprecated. ([#437](https://github.com/hashicorp/terraform-plugin-sdk/issues/437))
 
 # 1.11.0 (April 30, 2020)
 
