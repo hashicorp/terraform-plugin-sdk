@@ -1,3 +1,9 @@
+# 2.0.0-rc.2 (Unreleased)
+
+ENHANCEMENTS
+
+* Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
+
 # 2.0.0-rc.1 (May 05, 2020)
 
 BREAKING CHANGES
