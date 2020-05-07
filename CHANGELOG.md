@@ -1,3 +1,9 @@
+# 1.13.0 (Unreleased)
+
+DEPRECATIONS:
+
+* Formally deprecate DisableBinaryDriver [GH-450]
+
 # 1.12.0 (May 06, 2020)
 
 FEATURES:
