@@ -2,7 +2,8 @@
 
 DEPRECATIONS:
 
-* Formally deprecate DisableBinaryDriver [GH-450]
+* Deprecate `DisableBinaryDriver` [GH-450]
+* Deprecate the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages [GH-453]
 
 # 1.12.0 (May 06, 2020)
 
