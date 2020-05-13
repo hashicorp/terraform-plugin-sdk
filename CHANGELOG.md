@@ -3,6 +3,7 @@
 ENHANCEMENTS
 
 * Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
+* Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side [GH-438]
 
 # 2.0.0-rc.1 (May 05, 2020)
 
