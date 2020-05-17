@@ -138,6 +138,29 @@ func (d *ResourceData) HasChanges(keys ...string) bool {
 	return false
 }
 
+// HasChangesBeyond returns whether keys outside the given keys have been changed.
+//
+// This function only works with root attribute keys.
+func (d *ResourceData) HasChangesBeyond(keys ...string) bool {
+	for attr := range d.diff.Attributes {
+		rootAttr := strings.Split(attr, ".")[0]
+		var skipAttr bool
+
+		for _, key := range keys {
+			if rootAttr == key {
+				skipAttr = true
+				break
+			}
+		}
+
+		if !skipAttr && d.HasChange(rootAttr) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // HasChange returns whether or not the given key has been changed.
 func (d *ResourceData) HasChange(key string) bool {
 	o, n := d.GetChange(key)
@@ -150,6 +173,25 @@ func (d *ResourceData) HasChange(key string) bool {
 	}
 
 	return !reflect.DeepEqual(o, n)
+}
+
+// HasChangeBeyond returns whether keys outside the given key have been changed.
+//
+// This function only works with root attribute keys.
+func (d *ResourceData) HasChangeBeyond(key string) bool {
+	for attr := range d.diff.Attributes {
+		rootAttr := strings.Split(attr, ".")[0]
+
+		if rootAttr == key {
+			continue
+		}
+
+		if d.HasChange(rootAttr) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Partial turns partial state mode on/off.
