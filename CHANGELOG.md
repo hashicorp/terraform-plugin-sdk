@@ -1,9 +1,9 @@
-# 1.13.0 (Unreleased)
+# 1.13.0 (May 20, 2020)
 
 DEPRECATIONS:
 
-* Deprecate `DisableBinaryDriver` [GH-450]
-* Deprecate the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages [GH-453]
+* Deprecate `DisableBinaryDriver` ([#450](https://github.com/hashicorp/terraform-plugin-sdk/issues/450))
+* Deprecate the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages ([#453](https://github.com/hashicorp/terraform-plugin-sdk/issues/453))
 
 # 1.12.0 (May 06, 2020)
 
