@@ -8209,48 +8209,26 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 	}
 }
 
-func Test_panicOnErrDefaultTrue(t *testing.T) {
-	oldEnv := os.Getenv(PanicOnErr)
+func TestPanicOnErrorDefaultsFalse(t *testing.T) {
+	oldEnv := os.Getenv("TF_ACC")
 
-	os.Setenv(PanicOnErr, "")
-	if !schemaMap(nil).panicOnError() {
-		t.Fatalf("Empty %s should default to true", PanicOnErr)
-	}
-
-	os.Setenv(PanicOnErr, oldEnv)
-}
-
-func Test_panicOnErrParsableTrue(t *testing.T) {
-	oldEnv := os.Getenv(PanicOnErr)
-
-	os.Setenv(PanicOnErr, "true")
-	if !schemaMap(nil).panicOnError() {
-		t.Fatalf("Parsable truthy %s should return true", PanicOnErr)
-	}
-
-	os.Setenv(PanicOnErr, oldEnv)
-}
-
-func Test_panicOnErrParsableFalse(t *testing.T) {
-	oldEnv := os.Getenv(PanicOnErr)
-
-	os.Setenv(PanicOnErr, "false")
+	os.Setenv("TF_ACC", "")
 	if schemaMap(nil).panicOnError() {
-		t.Fatalf("Parsable falsy %s should return false", PanicOnErr)
+		t.Fatalf("panicOnError should be false when TF_ACC is empty")
 	}
 
-	os.Setenv(PanicOnErr, oldEnv)
+	os.Setenv("TF_ACC", oldEnv)
 }
 
-func Test_panicOnErrUnparsableDefaultTrue(t *testing.T) {
-	oldEnv := os.Getenv(PanicOnErr)
+func TestPanicOnErrorTF_ACCSet(t *testing.T) {
+	oldEnv := os.Getenv("TF_ACC")
 
-	os.Setenv(PanicOnErr, "FOO")
+	os.Setenv("TF_ACC", "1")
 	if !schemaMap(nil).panicOnError() {
-		t.Fatalf("Any set value for %s should return true", PanicOnErr)
+		t.Fatalf("panicOnError should be true when TF_ACC is not empty")
 	}
 
-	os.Setenv(PanicOnErr, oldEnv)
+	os.Setenv("TF_ACC", oldEnv)
 }
 
 func TestValidateRequiredWithAttributes(t *testing.T) {

@@ -3,7 +3,6 @@ package schema
 import (
 	"fmt"
 	"math"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -2230,10 +2229,6 @@ func TestResourceDataSet(t *testing.T) {
 			},
 		},
 	}
-
-	oldEnv := os.Getenv(PanicOnErr)
-	os.Setenv(PanicOnErr, "false")
-	defer os.Setenv(PanicOnErr, oldEnv)
 
 	for i, tc := range cases {
 		d, err := schemaMap(tc.Schema).Data(tc.State, tc.Diff)
