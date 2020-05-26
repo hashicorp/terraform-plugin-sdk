@@ -31,9 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Name of ENV variable which (if not empty) prefers panic over error
-const PanicOnErr = "TF_SCHEMA_PANIC_ON_ERROR"
-
 // Schema is used to describe the structure of a value.
 //
 // Read the documentation of the struct elements for important details.
@@ -471,18 +468,7 @@ type InternalMap = schemaMap
 type schemaMap map[string]*Schema
 
 func (m schemaMap) panicOnError() bool {
-	if env := os.Getenv(PanicOnErr); env == "" {
-		// default to true
-		return true
-	} else if b, err := strconv.ParseBool(env); err == nil {
-		// allow opt out
-		return b
-	} else {
-		// default to true for anything set, this is backwards compatible
-		// with the previous implementation
-		log.Printf("[WARN] %s=%s not parsable: %s, defaulting to true", PanicOnErr, env, err)
-		return true
-	}
+	return os.Getenv("TF_ACC") != ""
 }
 
 // Data returns a ResourceData for the given schema, state, and diff.

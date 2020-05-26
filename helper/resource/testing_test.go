@@ -18,11 +18,6 @@ import (
 )
 
 func init() {
-	// TODO: Remove when we remove the guard on id checks
-	if err := os.Setenv("TF_ACC_IDONLY", "1"); err != nil {
-		panic(err)
-	}
-
 	if err := os.Setenv(testEnvVar, "1"); err != nil {
 		panic(err)
 	}
