@@ -5,6 +5,10 @@ ENHANCEMENTS
 * Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
 * Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side [GH-438]
 
+BREAKING CHANGES
+
+* Removed `schema.PanicOnErr/TF_SCHEMA_PANIC_ON_ERR` environment variable. `d.Set()` errors are now logged in production and panic during acceptance tests (`TF_ACC=1`). [GH-462]
+
 # 2.0.0-rc.1 (May 05, 2020)
 
 BREAKING CHANGES
