@@ -167,8 +167,12 @@ func (d *ResourceData) Set(key string, value interface{}) error {
 	}
 
 	err := d.setWriter.WriteField(strings.Split(key, "."), value)
-	if err != nil && d.panicOnError {
-		panic(err)
+	if err != nil {
+		if d.panicOnError {
+			panic(err)
+		} else {
+			log.Printf("[ERROR] setting state: %s", err)
+		}
 	}
 	return err
 }
