@@ -1,3 +1,9 @@
+# 1.13.1 (Unreleased)
+
+BUG FIXES:
+
+* Remove deprecation for `d.Partial` [GH-463]
+
 # 1.13.0 (May 20, 2020)
 
 DEPRECATIONS:
