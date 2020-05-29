@@ -3,6 +3,7 @@
 BUG FIXES:
 
 * Remove deprecation for `d.Partial` [GH-463]
+* Fix bug when serializing bool in TypeMap [GH-465]
 
 # 1.13.0 (May 20, 2020)
 
