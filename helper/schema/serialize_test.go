@@ -157,10 +157,12 @@ func TestSerializeForHash(t *testing.T) {
 				},
 			},
 			Value: map[string]interface{}{
-				"foo": "bar",
-				"baz": "foo",
+				"bool":   true,
+				"float":  1.2,
+				"int":    1,
+				"string": "value",
 			},
-			Expected: "[baz:foo;foo:bar;];",
+			Expected: "[bool:true;float:1.2;int:1;string:value;];",
 		},
 
 		{
