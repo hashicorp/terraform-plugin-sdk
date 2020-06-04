@@ -1,9 +1,9 @@
-# 1.13.1 (Unreleased)
+# 1.13.1 (June 04, 2020)
 
 BUG FIXES:
 
-* Remove deprecation for `d.Partial` [GH-463]
-* Fix bug when serializing bool in TypeMap [GH-465]
+* Remove deprecation for `d.Partial` ([#463](https://github.com/hashicorp/terraform-plugin-sdk/issues/463))
+* Fix bug when serializing bool in TypeMap ([#465](https://github.com/hashicorp/terraform-plugin-sdk/issues/465))
 
 # 1.13.0 (May 20, 2020)
 
