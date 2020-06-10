@@ -14,6 +14,10 @@ BREAKING CHANGES
 * Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. [GH-471]
 * The `resource.TestCase.Providers` and `resource.TestCaseProviderFactories` maps must now have exactly one entry set between both of them, meaning one or the other should be used. Only the provider under test should be present in these maps. Providers that tests rely upon can be used by setting provider blocks in the test case, where `terraform init` will pick them up automatically. [GH-471]
 
+BUG FIXES
+
+* Restored `d.Partial` and noted the edgecase it covers and odd Terraform behavior. [GH-472]
+
 # 2.0.0-rc.1 (May 05, 2020)
 
 BREAKING CHANGES
