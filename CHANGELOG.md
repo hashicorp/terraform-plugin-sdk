@@ -1,3 +1,9 @@
+# 1.14.0 (Unreleased)
+
+FEATURES:
+
+* Bump hashicorp/go-plugin to v1.2.0 which should enable grpc reflection [GH-468]
+
 # 1.13.1 (June 04, 2020)
 
 BUG FIXES:
