@@ -33,6 +33,7 @@ type ResourceData struct {
 	multiReader *MultiLevelFieldReader
 	setWriter   *MapFieldWriter
 	newState    *terraform.InstanceState
+	partial     bool
 	once        sync.Once
 	isNew       bool
 
@@ -139,6 +140,21 @@ func (d *ResourceData) HasChange(key string) bool {
 	}
 
 	return !reflect.DeepEqual(o, n)
+}
+
+// Partial is a legacy function that was used for capturing state of specific
+// attributes if an update only partially worked. Enabling this flag without
+// setting any specific keys with the now removed SetPartial has a useful side
+// effect of preserving all of the resource's previous state. Although confusing,
+// it has been discovered that during an update when an error is returned, the
+// proposed config is set into state, even without any calls to d.Set.
+//
+// In practice this default behavior goes mostly unnoticed since Terraform
+// refreshes between operations by default. The state situation discussed is
+// subject to further investigation and potential change. Until then, this
+// function has been preserved for the specific usecase.
+func (d *ResourceData) Partial(on bool) {
+	d.partial = on
 }
 
 // Set sets the value for the given key.
@@ -287,7 +303,9 @@ func (d *ResourceData) State() *terraform.InstanceState {
 	rawMap := make(map[string]interface{})
 	for k := range d.schema {
 		source := getSourceSet
-
+		if d.partial {
+			source = getSourceState
+		}
 		raw := d.get([]string{k}, source)
 		if raw.Exists && !raw.Computed {
 			rawMap[k] = raw.Value
