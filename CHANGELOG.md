@@ -1,28 +1,28 @@
-# 2.0.0-rc.2 (Unreleased)
+# 2.0.0-rc.2 (June 11, 2020)
 
 FEATURES
 
-* The test driver was reworked to allow for test coverage, race detection, and debugger support. [GH-471]
-* A new `plugin.Debug` function allows starting the provider in a standalone mode that's compatible with debuggers, and outputs information on how to drive the standalone provider with Terraform. [GH-471]
+* The test driver was reworked to allow for test coverage, race detection, and debugger support. ([#471](https://github.com/hashicorp/terraform-plugin-sdk/issues/471))
+* A new `plugin.Debug` function allows starting the provider in a standalone mode that's compatible with debuggers, and outputs information on how to drive the standalone provider with Terraform. ([#471](https://github.com/hashicorp/terraform-plugin-sdk/issues/471))
 
 BREAKING CHANGES
 
-* Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side [GH-438]
-* Removed `schema.PanicOnErr/TF_SCHEMA_PANIC_ON_ERR` environment variable. `d.Set()` errors are now logged in production and panic during acceptance tests (`TF_ACC=1`). [GH-462]
-* Running provider tests now requires Terraform 0.12.26 or higher. [GH-471]
-* Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. [GH-471]
-* The `resource.TestCase.Providers` and `resource.TestCaseProviderFactories` maps must now have exactly one entry set between both of them, meaning one or the other should be used. Only the provider under test should be present in these maps. Providers that tests rely upon can be used by setting provider blocks in the test case, where `terraform init` will pick them up automatically. [GH-471]
-* The `TF_LOG_PATH_MASK` used to filter provider logs by test name when running tests has been removed. [GH-473]
+* Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side ([#438](https://github.com/hashicorp/terraform-plugin-sdk/issues/438))
+* Removed `schema.PanicOnErr/TF_SCHEMA_PANIC_ON_ERR` environment variable. `d.Set()` errors are now logged in production and panic during acceptance tests (`TF_ACC=1`). ([#462](https://github.com/hashicorp/terraform-plugin-sdk/issues/462))
+* Running provider tests now requires Terraform 0.12.26 or higher. ([#471](https://github.com/hashicorp/terraform-plugin-sdk/issues/471))
+* Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. ([#471](https://github.com/hashicorp/terraform-plugin-sdk/issues/471))
+* The `resource.TestCase.Providers` and `resource.TestCaseProviderFactories` maps must now have exactly one entry set between both of them, meaning one or the other should be used. Only the provider under test should be present in these maps. Providers that tests rely upon can be used by setting provider blocks in the test case, where `terraform init` will pick them up automatically. ([#471](https://github.com/hashicorp/terraform-plugin-sdk/issues/471))
+* The `TF_LOG_PATH_MASK` used to filter provider logs by test name when running tests has been removed. ([#473](https://github.com/hashicorp/terraform-plugin-sdk/issues/473))
 
 ENHANCEMENTS
 
-* Added a `schema.Provider.UserAgent` method to generate a User-Agent string [GH-474]
-* Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
+* Added a `schema.Provider.UserAgent` method to generate a User-Agent string ([#474](https://github.com/hashicorp/terraform-plugin-sdk/issues/474))
+* Convenience methods were added to the `diag` package to simplify common error cases ([#449](https://github.com/hashicorp/terraform-plugin-sdk/issues/449))
 
 BUG FIXES
 
-* Restored `d.Partial` and noted the edgecase it covers and odd Terraform behavior. [GH-472]
-* Provider log output now respects the `TF_LOG` and `TF_LOG_PATH` environment variables when running tests. [GH-473]
+* Restored `d.Partial` and noted the edgecase it covers and odd Terraform behavior. ([#472](https://github.com/hashicorp/terraform-plugin-sdk/issues/472))
+* Provider log output now respects the `TF_LOG` and `TF_LOG_PATH` environment variables when running tests. ([#473](https://github.com/hashicorp/terraform-plugin-sdk/issues/473))
 
 # 2.0.0-rc.1 (May 05, 2020)
 
