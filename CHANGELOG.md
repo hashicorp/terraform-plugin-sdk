@@ -12,6 +12,7 @@ BREAKING CHANGES
 * Running provider tests now requires Terraform 0.12.26 or higher. [GH-471]
 * Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. [GH-471]
 * The `resource.TestCase.Providers` and `resource.TestCaseProviderFactories` maps must now have exactly one entry set between both of them, meaning one or the other should be used. Only the provider under test should be present in these maps. Providers that tests rely upon can be used by setting provider blocks in the test case, where `terraform init` will pick them up automatically. [GH-471]
+* The `TF_LOG_PATH_MASK` used to filter provider logs by test name when running tests has been removed. [GH-473]
 
 ENHANCEMENTS
 
@@ -21,6 +22,7 @@ ENHANCEMENTS
 BUG FIXES
 
 * Restored `d.Partial` and noted the edgecase it covers and odd Terraform behavior. [GH-472]
+* Provider log output now respects the `TF_LOG` and `TF_LOG_PATH` environment variables when running tests. [GH-473]
 
 # 2.0.0-rc.1 (May 05, 2020)
 
