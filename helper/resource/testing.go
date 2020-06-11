@@ -5,17 +5,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/logutils"
 	tftest "github.com/hashicorp/terraform-plugin-test"
 	testing "github.com/mitchellh/go-testing-interface"
 
@@ -451,49 +447,6 @@ type TestStep struct {
 	providers map[string]*schema.Provider
 }
 
-// Set to a file mask in sprintf format where %s is test name
-const envLogPathMask = "TF_LOG_PATH_MASK"
-
-func logOutput(t testing.T) (logOutput io.Writer, err error) {
-	logOutput = ioutil.Discard
-
-	logLevel := logging.LogLevel()
-	if logLevel == "" {
-		return
-	}
-
-	logOutput = os.Stderr
-
-	if logPath := os.Getenv(logging.EnvLogFile); logPath != "" {
-		var err error
-		logOutput, err = os.OpenFile(logPath, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if logPathMask := os.Getenv(envLogPathMask); logPathMask != "" {
-		// Escape special characters which may appear if we have subtests
-		testName := strings.Replace(t.Name(), "/", "__", -1)
-
-		logPath := fmt.Sprintf(logPathMask, testName)
-		var err error
-		logOutput, err = os.OpenFile(logPath, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// This was the default since the beginning
-	logOutput = &logutils.LevelFilter{
-		Levels:   logging.ValidLevels,
-		MinLevel: logutils.LogLevel(logLevel),
-		Writer:   logOutput,
-	}
-
-	return
-}
-
 // ParallelTest performs an acceptance test on a resource, allowing concurrency
 // with other ParallelTest.
 //
@@ -526,11 +479,7 @@ func Test(t testing.T, c TestCase) {
 		return
 	}
 
-	logWriter, err := logOutput(t)
-	if err != nil {
-		t.Error(fmt.Errorf("error setting up logging: %s", err))
-	}
-	log.SetOutput(logWriter)
+	logging.SetOutput()
 
 	// get instances of all providers, so we can use the individual
 	// resources to shim the state during the tests.
