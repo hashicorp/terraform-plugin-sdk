@@ -3,12 +3,12 @@
 ENHANCEMENTS
 
 * Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
-* Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side [GH-438]
 * The test driver was reworked to allow for test coverage, race detection, and debugger support. [GH-471]
 * A new `plugin.Debug` function allows starting the provider in a standalone mode that's compatible with debuggers, and outputs information on how to drive the standalone provider with Terraform. [GH-471]
 
 BREAKING CHANGES
 
+* Removed the `helper/mutexkv`, `helper/pathorcontents`, `httpclient`, and `helper/hashcode` packages. These packages can be easily replicated in plugin code if necessary or the v1 versions can be used side-by-side [GH-438]
 * Removed `schema.PanicOnErr/TF_SCHEMA_PANIC_ON_ERR` environment variable. `d.Set()` errors are now logged in production and panic during acceptance tests (`TF_ACC=1`). [GH-462]
 * Running provider tests now requires Terraform 0.12.26 or higher. [GH-471]
 * Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. [GH-471]
