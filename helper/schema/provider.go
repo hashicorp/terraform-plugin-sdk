@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -14,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+const uaEnvVar = "TF_APPEND_USER_AGENT"
 
 var ReservedProviderFields = []string{
 	"alias",
@@ -433,6 +437,25 @@ func (p *Provider) DataSources() []terraform.DataSource {
 // version of Terraform, the Plugin SDK, and the provider used to generate the
 // request. `name` should be the hyphen-separated reporting name of the
 // provider, and `version` should be the version of the provider.
+//
+// If TF_APPEND_USER_AGENT is set, its value will be appended to the returned
+// string.
 func (p *Provider) UserAgent(name, version string) string {
-	return fmt.Sprintf("Terraform/%s (+https://www.terraform.io) Terraform-Plugin-SDK/%s %s/%s", p.TerraformVersion, meta.SDKVersionString(), name, version)
+	ua := fmt.Sprintf("Terraform/%s (+https://www.terraform.io) Terraform-Plugin-SDK/%s", p.TerraformVersion, meta.SDKVersionString())
+	if name != "" {
+		ua += " " + name
+		if version != "" {
+			ua += "/" + version
+		}
+	}
+
+	if add := os.Getenv(uaEnvVar); add != "" {
+		add = strings.TrimSpace(add)
+		if len(add) > 0 {
+			ua += " " + add
+			log.Printf("[DEBUG] Using modified User-Agent: %s", ua)
+		}
+	}
+
+	return ua
 }

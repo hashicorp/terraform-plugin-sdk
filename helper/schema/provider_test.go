@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -778,5 +780,50 @@ func TestProvider_InternalValidate(t *testing.T) {
 		if err.Error() != tc.ExpectedErr.Error() {
 			t.Fatalf("%d: Errors don't match. Expected: %#v Given: %#v", i, tc.ExpectedErr, err)
 		}
+	}
+}
+
+func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
+	if oldenv, isSet := os.LookupEnv(uaEnvVar); isSet {
+		defer os.Setenv(uaEnvVar, oldenv)
+	} else {
+		defer os.Unsetenv(uaEnvVar)
+	}
+
+	expectedBase := "Terraform/4.5.6 (+https://www.terraform.io) Terraform-Plugin-SDK/" + meta.SDKVersionString()
+
+	testCases := []struct {
+		providerName    string
+		providerVersion string
+		envVarValue     string
+		expected        string
+	}{
+		{"", "", "", expectedBase},
+		{"", "", " ", expectedBase},
+		{"", "", " \n", expectedBase},
+		{"", "", "test/1", expectedBase + " test/1"},
+		{"", "", "test/1 (comment)", expectedBase + " test/1 (comment)"},
+		{"My-Provider", "", "", expectedBase + " My-Provider"},
+		{"My-Provider", "", " ", expectedBase + " My-Provider"},
+		{"My-Provider", "", " \n", expectedBase + " My-Provider"},
+		{"My-Provider", "", "test/1", expectedBase + " My-Provider test/1"},
+		{"My-Provider", "", "test/1 (comment)", expectedBase + " My-Provider test/1 (comment)"},
+		{"My-Provider", "1.2.3", "", expectedBase + " My-Provider/1.2.3"},
+		{"My-Provider", "1.2.3", " ", expectedBase + " My-Provider/1.2.3"},
+		{"My-Provider", "1.2.3", " \n", expectedBase + " My-Provider/1.2.3"},
+		{"My-Provider", "1.2.3", "test/1", expectedBase + " My-Provider/1.2.3 test/1"},
+		{"My-Provider", "1.2.3", "test/1 (comment)", expectedBase + " My-Provider/1.2.3 test/1 (comment)"},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			os.Unsetenv(uaEnvVar)
+			os.Setenv(uaEnvVar, tc.envVarValue)
+			p := &Provider{TerraformVersion: "4.5.6"}
+			givenUA := p.UserAgent(tc.providerName, tc.providerVersion)
+			if givenUA != tc.expected {
+				t.Fatalf("Expected User-Agent '%s' does not match '%s'", tc.expected, givenUA)
+			}
+		})
 	}
 }
