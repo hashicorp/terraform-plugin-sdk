@@ -1,8 +1,7 @@
 # 2.0.0-rc.2 (Unreleased)
 
-ENHANCEMENTS
+FEATURES
 
-* Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
 * The test driver was reworked to allow for test coverage, race detection, and debugger support. [GH-471]
 * A new `plugin.Debug` function allows starting the provider in a standalone mode that's compatible with debuggers, and outputs information on how to drive the standalone provider with Terraform. [GH-471]
 
@@ -13,6 +12,11 @@ BREAKING CHANGES
 * Running provider tests now requires Terraform 0.12.26 or higher. [GH-471]
 * Removed `acctest` package, as it is no longer needed. The calls to `acctest.UseBinaryDriver` can be deleted; they're no longer necessary. [GH-471]
 * The `resource.TestCase.Providers` and `resource.TestCaseProviderFactories` maps must now have exactly one entry set between both of them, meaning one or the other should be used. Only the provider under test should be present in these maps. Providers that tests rely upon can be used by setting provider blocks in the test case, where `terraform init` will pick them up automatically. [GH-471]
+
+ENHANCEMENTS
+
+* Added a `schema.Provider.UserAgent` method to generate a User-Agent string [GH-474]
+* Convenience methods were added to the `diag` package to simplify common error cases [GH-449]
 
 BUG FIXES
 
