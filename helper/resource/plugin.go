@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
@@ -56,6 +57,9 @@ func runProviderCommand(f func() error, wd *tftest.WorkingDir, opts *plugin.Serv
 	if err != nil {
 		return err
 	}
+
+	// plugin.DebugServe hijacks our log output location, so let's reset it
+	logging.SetOutput()
 
 	reattachInfo := map[string]plugin.ReattachConfig{}
 	var namespaces []string
