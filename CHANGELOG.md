@@ -1,8 +1,8 @@
-# 1.14.0 (Unreleased)
+# 1.14.0 (June 17, 2020)
 
 FEATURES:
 
-* Bump hashicorp/go-plugin to v1.2.0 which should enable grpc reflection [GH-468]
+* Bump hashicorp/go-plugin to v1.2.0 which should enable grpc reflection ([#468](https://github.com/hashicorp/terraform-plugin-sdk/issues/468))
 
 # 1.13.1 (June 04, 2020)
 
