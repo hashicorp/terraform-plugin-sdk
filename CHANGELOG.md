@@ -1,3 +1,9 @@
+# 1.15.0 (Unreleased)
+
+FEATURES:
+
+* The binary test driver will now automatically install and verify the signature of a `terraform` binary if needed [GH-491]
+
 # 1.14.0 (June 17, 2020)
 
 FEATURES:
