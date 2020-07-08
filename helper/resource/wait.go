@@ -73,6 +73,13 @@ func Retry(timeout time.Duration, f RetryFunc) error {
 // RetryFunc is the function retried until it succeeds.
 type RetryFunc func() *RetryError
 
+func (e *RetryError) Error() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
 // RetryError is the required return type of RetryFunc. It forces client code
 // to choose whether or not a given error is retryable.
 type RetryError struct {
