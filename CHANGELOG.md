@@ -1,8 +1,8 @@
-# 1.15.0 (Unreleased)
+# 1.15.0 (July 08, 2020)
 
 FEATURES:
 
-* The binary test driver will now automatically install and verify the signature of a `terraform` binary if needed [GH-491]
+* The binary test driver will now automatically install and verify the signature of a `terraform` binary if needed ([#491](https://github.com/hashicorp/terraform-plugin-sdk/issues/491))
 
 # 1.14.0 (June 17, 2020)
 
