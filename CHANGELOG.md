@@ -1,3 +1,9 @@
+# 2.0.0-rc.3 (Unreleased)
+
+BUG FIXES
+
+* Fixed a bug in the test driver that caused errors for Windows users on versions of Terraform below 0.13.0-beta2. [GH-499]
+
 # 2.0.0-rc.2 (June 11, 2020)
 
 FEATURES
