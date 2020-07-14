@@ -163,9 +163,9 @@ func testIDRefresh(c TestCase, t testing.T, wd *tftest.WorkingDir, step TestStep
 	// Refresh!
 	runProviderCommand(func() error {
 		wd.RequireRefresh(t)
+		state = getState(t, wd)
 		return nil
 	}, wd, defaultPluginServeOpts(wd, step.providers))
-	state = getState(t, wd)
 
 	// Verify attribute equivalence.
 	actualR := state.RootModule().Resources[c.IDRefreshName]
