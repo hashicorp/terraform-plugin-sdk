@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	grpcpluginctx "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -22,6 +23,18 @@ const uaEnvVar = "TF_APPEND_USER_AGENT"
 var ReservedProviderFields = []string{
 	"alias",
 	"version",
+}
+
+// StopContext returns a context safe for global use that will cancel
+// when Terraform requests a stop. This function should only be called
+// within a ConfigureContextFunc, passing in the request scoped context
+// received in that method.
+//
+// Deprecated: The use of a global context is discouraged. Please use the new
+// context aware CRUD methods.
+func StopContext(ctx context.Context) (context.Context, bool) {
+	stopContext, ok := ctx.Value(grpcpluginctx.StopContextKey).(context.Context)
+	return stopContext, ok
 }
 
 // Provider represents a resource provider in Terraform, and properly
@@ -74,7 +87,7 @@ type Provider struct {
 	// ConfigureContextFunc is a function for configuring the provider. If the
 	// provider doesn't need to be configured, this can be omitted. This function
 	// receives a context.Context that will cancel when Terraform sends a
-	// cancellation signal. This function can yield Diagnostics
+	// cancellation signal. This function can yield Diagnostics.
 	ConfigureContextFunc ConfigureContextFunc
 
 	meta interface{}

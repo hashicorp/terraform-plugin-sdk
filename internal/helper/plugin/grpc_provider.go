@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,11 +11,11 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
 	"github.com/hashicorp/go-cty/cty/msgpack"
-	context "golang.org/x/net/context"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	c "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plans/objchange"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
@@ -510,9 +511,12 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
-	// TODO: hack, pass a context with global cancel hooked up.. on the request
-	// scoped context...
-	ctxHack := context.WithValue(ctx, "StopContext", s.StopContext(context.Background()))
+	// TODO: remove global stop context hack
+	// This attaches a global stop synchro'd context onto the provider.Configure
+	// request scoped context. This provides a substitute for the removed provider.StopContext()
+	// function. Ideally a provider should migrate to the context aware API that receives
+	// request scoped contexts, however this is a large undertaking for very large providers.
+	ctxHack := context.WithValue(ctx, c.StopContextKey, s.StopContext(context.Background()))
 	diags := s.provider.Configure(ctxHack, config)
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 
