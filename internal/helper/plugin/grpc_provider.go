@@ -37,9 +37,16 @@ type GRPCProviderServer struct {
 	stopMu   sync.Mutex
 }
 
-func mergeStop(stopCh chan struct{}, cancel context.CancelFunc) {
-	<-stopCh
-	cancel()
+// mergeStop is called in a goroutine and waits for the global stop signal
+// and propagates cancellation to the passed in ctx/cancel func. The ctx is
+// also passed to this function and waited upon so no goroutine leak is caused.
+func mergeStop(ctx context.Context, cancel context.CancelFunc, stopCh chan struct{}) {
+	select {
+	case <-ctx.Done():
+		return
+	case <-stopCh:
+		cancel()
+	}
 }
 
 // StopContext derives a new context from the passed in grpc context.
@@ -50,10 +57,7 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 	defer s.stopMu.Unlock()
 
 	stoppable, cancel := context.WithCancel(ctx)
-	// It's important to pass the reference to the current stopCh.
-	// Closing over with an anonymous function and referencing s.stopCh
-	// across a goroutine is unsafe, given a new stopCh is set in Stop()
-	go mergeStop(s.stopCh, cancel)
+	go mergeStop(stoppable, cancel, s.stopCh)
 	return stoppable
 }
 
@@ -506,7 +510,10 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
-	diags := s.provider.Configure(ctx, config)
+	// TODO: hack, pass a context with global cancel hooked up.. on the request
+	// scoped context...
+	ctxHack := context.WithValue(ctx, "StopContext", s.StopContext(context.Background()))
+	diags := s.provider.Configure(ctxHack, config)
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 
 	return resp, nil
