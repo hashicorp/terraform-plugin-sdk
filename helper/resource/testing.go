@@ -469,6 +469,13 @@ func ParallelTest(t testing.T, c TestCase) {
 // long, we require the verbose flag so users are able to see progress
 // output.
 func Test(t testing.T, c TestCase) {
+	// don't bring down the entire test runner if the test panics
+	defer func() {
+		if err := recover(); err != nil {
+			t.Errorf("panic running test: %s", err)
+		}
+	}()
+
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
