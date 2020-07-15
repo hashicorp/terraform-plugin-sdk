@@ -1,7 +1,12 @@
 # 2.0.0-rc.3 (Unreleased)
 
+FEATURES
+
+* Provide deprecated method for receiving a global context that receives stop cancellation. [GH-502]
+
 BUG FIXES
 
+* Remove deprecation warnings which cause spam and crashes in provider acceptance tests. [GH-503]
 * Fixed a bug in the test driver that caused errors for Windows users on versions of Terraform below 0.13.0-beta2. [GH-499]
 * Fixed a bug in teh test driver that caused timeouts when using the `IDRefreshName` on `resource.TestCase`s. [GH-501]
 
