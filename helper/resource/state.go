@@ -276,6 +276,5 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 //
 // Deprecated: Please use WaitForStateContext to ensure proper plugin shutdown
 func (conf *StateChangeConf) WaitForState() (interface{}, error) {
-	log.Printf("[WARN] WaitForState is deprecated, please use WaitForStateContext")
 	return conf.WaitForStateContext(context.Background())
 }
