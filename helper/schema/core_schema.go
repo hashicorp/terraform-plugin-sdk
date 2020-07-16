@@ -93,9 +93,14 @@ func (m schemaMap) CoreConfigSchema() *configschema.Block {
 		case SchemaConfigModeBlock:
 			ret.BlockTypes[name] = schema.coreConfigSchemaBlock()
 		default: // SchemaConfigModeAuto, or any other invalid value
-			if schema.Computed && !schema.Optional {
+			if schema.Computed && !schema.Optional && !schema.HasAnySensitive() {
 				// Computed-only schemas are always handled as attributes,
-				// because they never appear in configuration.
+				// because they never appear in configuration. However,
+				// we make an exception for computed schemas that are
+				// either themselves sensitive or contain sensitive attributes,
+				// because "sensitive" is a schema-level idea rather than a
+				// type-level idea and so we can't talk about it within the
+				// realm of value types.
 				ret.Attributes[name] = schema.coreConfigSchemaAttribute()
 				continue
 			}
@@ -160,7 +165,7 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 		Optional:        opt,
 		Required:        reqd,
 		Computed:        s.Computed,
-		Sensitive:       s.Sensitive,
+		Sensitive:       s.HasAnySensitive(),
 		Description:     desc,
 		DescriptionKind: descKind,
 		Deprecated:      s.Deprecated != "",

@@ -360,6 +360,27 @@ func (s *Schema) ZeroValue() interface{} {
 	}
 }
 
+// HasAnySensitive returns true if either the receiving schema or any nested
+// schema within it is marked as "sensitive".
+func (s *Schema) HasAnySensitive() bool {
+	if s.Sensitive {
+		return true // easy case
+	}
+	switch elem := s.Elem.(type) {
+	case *Resource:
+		for _, childS := range elem.Schema {
+			if childS.HasAnySensitive() {
+				return true
+			}
+		}
+	case *Schema:
+		if elem.Sensitive {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Schema) finalizeDiff(d *terraform.ResourceAttrDiff, customized bool) *terraform.ResourceAttrDiff {
 	if d == nil {
 		return d
