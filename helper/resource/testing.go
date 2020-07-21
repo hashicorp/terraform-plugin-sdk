@@ -498,9 +498,9 @@ func Test(t testing.T, c TestCase) {
 		provider = name
 	}
 
-	if len(providers) != 1 {
-		t.Fatalf("Only the provider under test should be set in TestCase, got %d providers. Other providers can be used by adding their provider blocks to their config; they will automatically be downloaded as part of terraform init.", len(providers))
-	}
+	// if len(providers) != 1 {
+	// 	t.Fatalf("Only the provider under test should be set in TestCase, got %d providers. Other providers can be used by adding their provider blocks to their config; they will automatically be downloaded as part of terraform init.", len(providers))
+	// }
 
 	// Auto-configure all providers.
 	for _, p := range providers {
