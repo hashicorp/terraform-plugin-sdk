@@ -15,6 +15,8 @@ type testCase struct {
 }
 
 func runTestCases(t testing.T, cases []testCase) {
+	t.Helper()
+
 	matchErr := func(errs []error, r *regexp.Regexp) bool {
 		// err must match one provided
 		for _, err := range errs {

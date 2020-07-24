@@ -463,6 +463,7 @@ type TestStep struct {
 // tests to occur against the same resource or service (e.g. random naming).
 // All other requirements of the Test function also apply to this function.
 func ParallelTest(t testing.T, c TestCase) {
+	t.Helper()
 	t.Parallel()
 	Test(t, c)
 }
@@ -478,6 +479,8 @@ func ParallelTest(t testing.T, c TestCase) {
 // long, we require the verbose flag so users are able to see progress
 // output.
 func Test(t testing.T, c TestCase) {
+	t.Helper()
+
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
@@ -544,6 +547,8 @@ func testProviderConfig(c TestCase) string {
 // normal unit test suite. This should only be used for resource that don't
 // have any external dependencies.
 func UnitTest(t testing.T, c TestCase) {
+	t.Helper()
+
 	c.IsUnitTest = true
 	Test(t, c)
 }

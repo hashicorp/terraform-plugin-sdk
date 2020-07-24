@@ -10,6 +10,8 @@ import (
 )
 
 func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
+	t.Helper()
+
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 

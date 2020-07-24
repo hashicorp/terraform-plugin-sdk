@@ -12,6 +12,8 @@ import (
 )
 
 func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+	t.Helper()
+
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 
