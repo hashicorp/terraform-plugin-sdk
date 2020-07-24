@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	tftest "github.com/hashicorp/terraform-plugin-test"
+	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -21,10 +21,10 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 
 	// get state from check sequence
 	var state *terraform.State
-	err := runProviderCommand(func() error {
+	err := runProviderCommand(t, func() error {
 		state = getState(t, wd)
 		return nil
-	}, wd, defaultPluginServeOpts(wd, step.providers))
+	}, wd, c.ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error getting state: %s", err)
 	}
@@ -59,22 +59,28 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
 	importWd.RequireSetConfig(t, step.Config)
-	runProviderCommand(func() error {
+
+	err = runProviderCommand(t, func() error {
 		importWd.RequireInit(t)
 		return nil
-	}, importWd, defaultPluginServeOpts(importWd, step.providers))
-	err = runProviderCommand(func() error {
+	}, importWd, c.ProviderFactories)
+	if err != nil {
+		t.Fatalf("Error running init: %s", err)
+	}
+
+	err = runProviderCommand(t, func() error {
 		importWd.RequireImport(t, step.ResourceName, importId)
 		return nil
-	}, importWd, defaultPluginServeOpts(importWd, step.providers))
+	}, importWd, c.ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error running import: %s", err)
 	}
+
 	var importState *terraform.State
-	err = runProviderCommand(func() error {
+	err = runProviderCommand(t, func() error {
 		importState = getState(t, wd)
 		return nil
-	}, wd, defaultPluginServeOpts(wd, step.providers))
+	}, wd, c.ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error getting state: %s", err)
 	}
