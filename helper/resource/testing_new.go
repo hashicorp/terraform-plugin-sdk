@@ -118,6 +118,8 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 }
 
 func getState(t testing.T, wd *tftest.WorkingDir) *terraform.State {
+	t.Helper()
+
 	jsonState := wd.RequireState(t)
 	state, err := shimStateFromJson(jsonState)
 	if err != nil {
@@ -148,6 +150,8 @@ func planIsEmpty(plan *tfjson.Plan) bool {
 }
 
 func testIDRefresh(c TestCase, t testing.T, wd *tftest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
+	t.Helper()
+
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
 
