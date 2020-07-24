@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,13 +11,12 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
-	tftest "github.com/hashicorp/terraform-plugin-test"
+	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -278,15 +276,30 @@ type TestCase struct {
 	// acceptance tests, such as verifying that keys are setup.
 	PreCheck func()
 
+	// ProviderFactories can be specified for the providers that are valid.
+	//
+	// These are the providers that can be referenced within the test. Each key
+	// is an individually addressable provider. Typically you will only pass a
+	// single value here for the provider you are testing. Aliases are not
+	// supported by the test framework, so to use multiple provider instances,
+	// you should add additional copies to this map with unique names. To set
+	// their configuration, you would reference them similar to the following:
+	//
+	//  provider "my_factory_key" {
+	//    # ...
+	//  }
+	//
+	//  resource "my_resource" "mr" {
+	//    provider = my_factory_key
+	//
+	//    # ...
+	//  }
+	ProviderFactories map[string]func() (*schema.Provider, error)
+
 	// Providers is the ResourceProvider that will be under test.
 	//
-	// Alternately, ProviderFactories can be specified for the providers
-	// that are valid. This takes priority over Providers.
-	//
-	// The end effect of each is the same: specifying the providers that
-	// are used within the tests.
-	Providers         map[string]*schema.Provider
-	ProviderFactories map[string]func() (*schema.Provider, error)
+	// Deprecated: Providers is deprecated, please use ProviderFactories
+	Providers map[string]*schema.Provider
 
 	// PreventPostDestroyRefresh can be set to true for cases where data sources
 	// are tested alongside real resources
@@ -441,10 +454,6 @@ type TestStep struct {
 	// fields that can't be refreshed and don't matter.
 	ImportStateVerify       bool
 	ImportStateVerifyIgnore []string
-
-	// provider s is used internally to maintain a reference to the
-	// underlying providers during the tests
-	providers map[string]*schema.Provider
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency
@@ -481,32 +490,19 @@ func Test(t testing.T, c TestCase) {
 
 	logging.SetOutput()
 
-	// get instances of all providers, so we can use the individual
-	// resources to shim the state during the tests.
-	providers := make(map[string]*schema.Provider)
-	var provider string
-	for name, pf := range c.ProviderFactories {
-		p, err := pf()
-		if err != nil {
-			t.Fatal(err)
-		}
-		providers[name] = p
-		provider = name
-	}
-	for name, p := range c.Providers {
-		providers[name] = p
-		provider = name
-	}
+	// Copy any explicitly passed providers to factories, this is for backwards compatibility.
+	if len(c.Providers) > 0 {
+		c.ProviderFactories = map[string]func() (*schema.Provider, error){}
 
-	if len(providers) != 1 {
-		t.Fatalf("Only the provider under test should be set in TestCase, got %d providers. Other providers can be used by adding their provider blocks to their config; they will automatically be downloaded as part of terraform init.", len(providers))
-	}
-
-	// Auto-configure all providers.
-	for _, p := range providers {
-		diags := p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
-		if diags.HasError() {
-			t.Fatal("error configuring provider: %s", diagutils.ErrorDiags(diags))
+		t.Log("TestCase.Providers is deprecated, please use ProviderFactories")
+		for name, p := range c.Providers {
+			if _, ok := c.ProviderFactories[name]; ok {
+				t.Fatalf("ProviderFactory for %q already exists, cannot overwrite with Provider", name)
+			}
+			prov := p
+			c.ProviderFactories[name] = func() (*schema.Provider, error) {
+				return prov, nil
+			}
 		}
 	}
 
@@ -521,7 +517,7 @@ func Test(t testing.T, c TestCase) {
 	if err != nil {
 		t.Fatalf("Error getting working dir: %s", err)
 	}
-	helper := tftest.AutoInitProviderHelper(provider, sourceDir)
+	helper := tftest.AutoInitProviderHelper(sourceDir)
 	defer func(helper *tftest.Helper) {
 		err := helper.Close()
 		if err != nil {
@@ -529,7 +525,7 @@ func Test(t testing.T, c TestCase) {
 		}
 	}(helper)
 
-	runNewTest(t, c, providers, helper)
+	runNewTest(t, c, helper)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
