@@ -506,7 +506,7 @@ func Test(t testing.T, c TestCase) {
 	for _, p := range providers {
 		diags := p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
 		if diags.HasError() {
-			t.Fatal("error configuring provider: %s", diagutils.ErrorDiags(diags))
+			t.Fatalf("error configuring provider: %s", diagutils.ErrorDiags(diags))
 		}
 	}
 
