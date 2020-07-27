@@ -497,7 +497,6 @@ func Test(t testing.T, c TestCase) {
 	if len(c.Providers) > 0 {
 		c.ProviderFactories = map[string]func() (*schema.Provider, error){}
 
-		t.Log("TestCase.Providers is deprecated, please use ProviderFactories")
 		for name, p := range c.Providers {
 			if _, ok := c.ProviderFactories[name]; ok {
 				t.Fatalf("ProviderFactory for %q already exists, cannot overwrite with Provider", name)
