@@ -18,17 +18,23 @@ import (
 func runPostTestDestroy(t testing.T, c TestCase, wd *tftest.WorkingDir, factories map[string]func() (*schema.Provider, error)) error {
 	t.Helper()
 
-	runProviderCommand(t, func() error {
+	err := runProviderCommand(t, func() error {
 		wd.RequireDestroy(t)
 		return nil
 	}, wd, factories)
+	if err != nil {
+		return err
+	}
 
 	if c.CheckDestroy != nil {
 		var statePostDestroy *terraform.State
-		runProviderCommand(t, func() error {
+		err := runProviderCommand(t, func() error {
 			statePostDestroy = getState(t, wd)
 			return nil
 		}, wd, factories)
+		if err != nil {
+			return err
+		}
 
 		if err := c.CheckDestroy(statePostDestroy); err != nil {
 			return err
@@ -47,10 +53,14 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 
 	defer func() {
 		var statePreDestroy *terraform.State
-		runProviderCommand(t, func() error {
+		err := runProviderCommand(t, func() error {
 			statePreDestroy = getState(t, wd)
 			return nil
 		}, wd, c.ProviderFactories)
+		if err != nil {
+			t.Fatalf("Error retrieving state, there may be dangling resources: %s", err.Error())
+			return
+		}
 
 		if !stateIsEmpty(statePreDestroy) {
 			runPostTestDestroy(t, c, wd, c.ProviderFactories)
@@ -62,10 +72,14 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 	providerCfg := testProviderConfig(c)
 
 	wd.RequireSetConfig(t, providerCfg)
-	runProviderCommand(t, func() error {
+	err := runProviderCommand(t, func() error {
 		wd.RequireInit(t)
 		return nil
 	}, wd, c.ProviderFactories)
+	if err != nil {
+		t.Fatalf("Error running init: %s", err.Error())
+		return
+	}
 
 	// use this to track last step succesfully applied
 	// acts as default for import tests
@@ -168,11 +182,14 @@ func testIDRefresh(c TestCase, t testing.T, wd *tftest.WorkingDir, step TestStep
 	defer wd.RequireSetConfig(t, step.Config)
 
 	// Refresh!
-	runProviderCommand(t, func() error {
+	err := runProviderCommand(t, func() error {
 		wd.RequireRefresh(t)
 		state = getState(t, wd)
 		return nil
 	}, wd, c.ProviderFactories)
+	if err != nil {
+		return err
+	}
 
 	// Verify attribute equivalence.
 	actualR := state.RootModule().Resources[c.IDRefreshName]
