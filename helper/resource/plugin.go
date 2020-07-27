@@ -13,11 +13,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
 	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 )
@@ -72,13 +70,6 @@ func runProviderCommand(t testing.T, f func() error, wd *tftest.WorkingDir, fact
 		// keep track of the running factory, so we can make sure it's
 		// shut down.
 		wg.Add(1)
-
-		// PT: should this actually be called here? does it not get called by TF itself already?
-		// PC: it should be. Why was it added? Did something not work without it?
-		diags := provider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
-		if diags.HasError() {
-			return fmt.Errorf("unable to configure provider %q: %w", providerName, diagutils.ErrorDiags(diags))
-		}
 
 		// configure the settings our plugin will be served with
 		// the GRPCProviderFunc wraps a non-gRPC provider server
