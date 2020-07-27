@@ -26,17 +26,7 @@ func init() {
 func TestParallelTest(t *testing.T) {
 	mt := new(mockT)
 
-	// the test will error because the binary driver is unconfigured
-	func() {
-		defer func() {
-			r := recover()
-			// this string is hardcoded in github.com/mitchellh/go-testing-interface
-			if s, ok := r.(string); !ok || !strings.HasPrefix(s, "testing.T failed, see logs for output") {
-				panic(r)
-			}
-		}()
-		ParallelTest(mt, TestCase{IsUnitTest: true})
-	}()
+	ParallelTest(mt, TestCase{IsUnitTest: true})
 
 	if !mt.ParallelCalled {
 		t.Fatal("Parallel() not called")
