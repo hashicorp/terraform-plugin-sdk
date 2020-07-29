@@ -491,7 +491,7 @@ func Test(t testing.T, c TestCase) {
 		return
 	}
 
-	logging.SetOutput()
+	logging.SetOutput(t)
 
 	// Copy any explicitly passed providers to factories, this is for backwards compatibility.
 	if len(c.Providers) > 0 {
