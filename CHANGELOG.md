@@ -3,6 +3,7 @@
 FEATURES
 
 * Provide deprecated method for receiving a global context that receives stop cancellation. [GH-502]
+* Support multiple providers in reattach mode [GH-512]
 
 BUG FIXES
 
