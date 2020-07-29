@@ -94,7 +94,7 @@ func runProviderCommand(t testing.T, f func() error, wd *tftest.WorkingDir, fact
 
 		// plugin.DebugServe hijacks our log output location, so let's
 		// reset it
-		logging.SetOutput()
+		logging.SetOutput(t)
 
 		// when the provider exits, remove one from the waitgroup
 		// so we can track when everything is done
