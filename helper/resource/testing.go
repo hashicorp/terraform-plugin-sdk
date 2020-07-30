@@ -548,13 +548,16 @@ func Test(t testing.T, c TestCase) {
 // testProviderConfig takes the list of Providers in a TestCase and returns a
 // config with only empty provider blocks. This is useful for Import, where no
 // config is provided, but the providers must be defined.
-func testProviderConfig(c TestCase) string {
+func testProviderConfig(c TestCase) (string, error) {
 	var lines []string
 	var requiredProviders []string
 	for p := range c.Providers {
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
 	}
 	for p, v := range c.ExternalProviders {
+		if _, ok := c.Providers[p]; ok {
+			return "", fmt.Errorf("Provider %q set in both Providers and ExternalProviders for TestCase. Must be set in only one.", p)
+		}
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
 		var providerBlock string
 		if v.VersionConstraint != "" {
@@ -573,7 +576,7 @@ func testProviderConfig(c TestCase) string {
 		lines = append([]string{fmt.Sprintf("terraform {\nrequired_providers {\n%s}\n}\n\n", strings.Join(requiredProviders, ""))}, lines...)
 	}
 
-	return strings.Join(lines, "")
+	return strings.Join(lines, ""), nil
 }
 
 // UnitTest is a helper to force the acceptance testing harness to run in the
