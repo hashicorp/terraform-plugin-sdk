@@ -301,6 +301,14 @@ type TestCase struct {
 	// Deprecated: Providers is deprecated, please use ProviderFactories
 	Providers map[string]*schema.Provider
 
+	// ExternalProviders are providers the TestCase relies on that should
+	// be downloaded from the registry during init. This is only really
+	// necessary to set if you're using import, as providers in your config
+	// will be automatically retrieved during init. Import doesn't use a
+	// config, however, so we allow manually specifying them here to be
+	// downloaded for import tests.
+	ExternalProviders []string
+
 	// PreventPostDestroyRefresh can be set to true for cases where data sources
 	// are tested alongside real resources
 	PreventPostDestroyRefresh bool
@@ -536,6 +544,9 @@ func Test(t testing.T, c TestCase) {
 func testProviderConfig(c TestCase) string {
 	var lines []string
 	for p := range c.Providers {
+		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
+	}
+	for p := range c.ExternalProviders {
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
 	}
 
