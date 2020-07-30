@@ -110,7 +110,7 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 		}
 
 		if step.Config != "" {
-			err := testStepNewConfig(t, c, wd, step)
+			err := testStepNewConfig(t, c, wd, step, i)
 			if step.ExpectError != nil {
 				if err == nil {
 					t.Fatal("Expected an error but got none")

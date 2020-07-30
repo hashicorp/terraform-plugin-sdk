@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
+func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, stepNo int) error {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()
@@ -86,9 +86,9 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		} else {
 			planJSON, err := json.Marshal(plan)
 			if err != nil {
-				t.Fatalf("After applying this test step, the plan was not empty, and we couldn't marshal it to JSON (err: %v). %s", spewConf.Sdump(plan))
+				t.Fatalf("After applying test step #%d, the plan was not empty, and we couldn't marshal it to JSON (err: %v). %s", stepNo, err, spewConf.Sdump(plan))
 			} else {
-				t.Fatalf("After applying this test step, the plan was not empty. %s", string(planJSON))
+				t.Fatalf("After applying test step #%d, the plan was not empty. %s", stepNo, string(planJSON))
 			}
 		}
 	}
@@ -126,8 +126,12 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if step.ExpectNonEmptyPlan {
 			t.Log("[INFO] Got non-empty plan, as expected")
 		} else {
-
-			t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty. %s", spewConf.Sdump(plan))
+			planJSON, err := json.Marshal(plan)
+			if err != nil {
+				t.Fatalf("After applying test step #%d and performing a `terraform refresh`, the plan was not empty, and we couldn't marshal it to JSON (err: %v). %s", stepNo, err, spewConf.Sdump(plan))
+			} else {
+				t.Fatalf("After apply test step #%d and performing a `terraform refresh`, the plan was not empty. %s", stepNo, string(planJSON))
+			}
 		}
 	}
 
