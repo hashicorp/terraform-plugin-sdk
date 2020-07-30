@@ -558,6 +558,9 @@ func testProviderConfig(c TestCase) (string, error) {
 		if _, ok := c.Providers[p]; ok {
 			return "", fmt.Errorf("Provider %q set in both Providers and ExternalProviders for TestCase. Must be set in only one.", p)
 		}
+		if _, ok := c.ProviderFactories[p]; ok {
+			return "", fmt.Errorf("Provider %q set in both ProviderFactories and ExternalProviders for TestCase. Must be set in only one.", p)
+		}
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
 		var providerBlock string
 		if v.VersionConstraint != "" {
