@@ -2,6 +2,7 @@ package resource
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -13,6 +14,9 @@ import (
 
 func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, stepNo int) error {
 	t.Helper()
+
+	log.Printf("[DEBUG] starting test step %d", stepNo)
+	defer log.Printf("[DEBUG] finished test step %d", stepNo)
 
 	spewConf := spew.NewDefaultConfig()
 	spewConf.SortKeys = true
