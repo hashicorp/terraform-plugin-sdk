@@ -242,7 +242,7 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 	return runE
 }
 
-const testEnvVar = "TF_ACC"
+const TestEnvVar = "TF_ACC"
 
 // TestCheckFunc is the callback type used with acceptance tests to check
 // the state of a resource. The state passed in is the latest state known,
@@ -499,10 +499,10 @@ func Test(t testing.T, c TestCase) {
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
-	if os.Getenv(testEnvVar) == "" && !c.IsUnitTest {
+	if os.Getenv(TestEnvVar) == "" && !c.IsUnitTest {
 		t.Skip(fmt.Sprintf(
 			"Acceptance tests skipped unless env '%s' set",
-			testEnvVar))
+			TestEnvVar))
 		return
 	}
 
