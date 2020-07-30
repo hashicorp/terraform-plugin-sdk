@@ -1,19 +1,19 @@
-# 2.0.0 (Unreleased)
+# 2.0.0 (July 30, 2020)
 
 FEATURES
 
-* Provide deprecated method for receiving a global context that receives stop cancellation. [GH-502]
-* Support multiple providers in reattach mode [GH-512]
-* Allow setting `ExternalProviders` in `resource.TestCase` to control what providers are downloaded with `terraform init` for a test. [GH-516]
-* Restore `resource.TestEnvVar` [GH-519]
+* Provide deprecated method for receiving a global context that receives stop cancellation. ([#502](https://github.com/hashicorp/terraform-plugin-sdk/issues/502))
+* Support multiple providers in reattach mode ([#512](https://github.com/hashicorp/terraform-plugin-sdk/issues/512))
+* Allow setting `ExternalProviders` in `resource.TestCase` to control what providers are downloaded with `terraform init` for a test. ([#516](https://github.com/hashicorp/terraform-plugin-sdk/issues/516))
+* Restore `resource.TestEnvVar` ([#519](https://github.com/hashicorp/terraform-plugin-sdk/issues/519))
 
 BUG FIXES
 
-* Remove deprecation warnings which cause spam and crashes in provider acceptance tests. [GH-503]
-* Fixed a bug in the test driver that caused errors for Windows users on versions of Terraform below 0.13.0-beta2. [GH-499]
-* Fixed a bug in the test driver that caused timeouts when using the `IDRefreshName` on `resource.TestCase`s. [GH-501]
-* Fixed a bug where data sources would not always reflect changes in their configs in the same `resource.TestStep` that the config changed. [GH-515]
-* Fixed a bug that would prevent errors from being handled by ExpectError handlers during testing. [GH-518]
+* Remove deprecation warnings which cause spam and crashes in provider acceptance tests. ([#503](https://github.com/hashicorp/terraform-plugin-sdk/issues/503))
+* Fixed a bug in the test driver that caused errors for Windows users on versions of Terraform below 0.13.0-beta2. ([#499](https://github.com/hashicorp/terraform-plugin-sdk/issues/499))
+* Fixed a bug in the test driver that caused timeouts when using the `IDRefreshName` on `resource.TestCase`s. ([#501](https://github.com/hashicorp/terraform-plugin-sdk/issues/501))
+* Fixed a bug where data sources would not always reflect changes in their configs in the same `resource.TestStep` that the config changed. ([#515](https://github.com/hashicorp/terraform-plugin-sdk/issues/515))
+* Fixed a bug that would prevent errors from being handled by ExpectError handlers during testing. ([#518](https://github.com/hashicorp/terraform-plugin-sdk/issues/518))
 
 # 2.0.0-rc.2 (June 11, 2020)
 
