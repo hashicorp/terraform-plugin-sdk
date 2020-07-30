@@ -37,8 +37,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	// require a refresh before applying
 	// failing to do this will result in data sources not being updated
 	err := runProviderCommand(t, func() error {
-		wd.RequireRefresh(t)
-		return nil
+		return wd.Refresh()
 	}, wd, c.ProviderFactories)
 	if err != nil {
 		return err
@@ -72,8 +71,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 	// do a plan
 	err = runProviderCommand(t, func() error {
-		wd.RequireCreatePlan(t)
-		return nil
+		return wd.CreatePlan()
 	}, wd, c.ProviderFactories)
 	if err != nil {
 		return err
@@ -100,8 +98,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	// do a refresh
 	if !c.PreventPostDestroyRefresh {
 		err := runProviderCommand(t, func() error {
-			wd.RequireRefresh(t)
-			return nil
+			return wd.Refresh()
 		}, wd, c.ProviderFactories)
 		if err != nil {
 			return err
@@ -110,8 +107,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 	// do another plan
 	err = runProviderCommand(t, func() error {
-		wd.RequireCreatePlan(t)
-		return nil
+		return wd.CreatePlan()
 	}, wd, c.ProviderFactories)
 	if err != nil {
 		return err
