@@ -5,6 +5,7 @@ FEATURES
 * Provide deprecated method for receiving a global context that receives stop cancellation. [GH-502]
 * Support multiple providers in reattach mode [GH-512]
 * Allow setting `ExternalProviders` in `resource.TestCase` to control what providers are downloaded with `terraform init` for a test. [GH-516]
+* Restore `resource.TestEnvVar` [GH-519]
 
 BUG FIXES
 
