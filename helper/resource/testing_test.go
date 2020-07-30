@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	if err := os.Setenv(testEnvVar, "1"); err != nil {
+	if err := os.Setenv(TestEnvVar, "1"); err != nil {
 		panic(err)
 	}
 }
