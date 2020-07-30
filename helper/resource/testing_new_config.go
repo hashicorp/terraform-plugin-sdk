@@ -34,6 +34,16 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 	wd.RequireSetConfig(t, step.Config)
 
+	// require a refresh before applying
+	// failing to do this will result in data sources not being updated
+	err := runProviderCommand(t, func() error {
+		wd.RequireRefresh(t)
+		return nil
+	}, wd, c.ProviderFactories)
+	if err != nil {
+		return err
+	}
+
 	if !step.PlanOnly {
 		err := runProviderCommand(t, func() error {
 			return wd.Apply()
@@ -61,7 +71,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	// Test for perpetual diffs by performing a plan, a refresh, and another plan
 
 	// do a plan
-	err := runProviderCommand(t, func() error {
+	err = runProviderCommand(t, func() error {
 		wd.RequireCreatePlan(t)
 		return nil
 	}, wd, c.ProviderFactories)
