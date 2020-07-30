@@ -69,10 +69,13 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 		wd.Close()
 	}()
 
-	providerCfg := testProviderConfig(c)
+	providerCfg, err := testProviderConfig(c)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	wd.RequireSetConfig(t, providerCfg)
-	err := runProviderCommand(t, func() error {
+	err = runProviderCommand(t, func() error {
 		wd.RequireInit(t)
 		return nil
 	}, wd, c.ProviderFactories)
@@ -177,12 +180,15 @@ func testIDRefresh(c TestCase, t testing.T, wd *tftest.WorkingDir, step TestStep
 
 	// Temporarily set the config to a minimal provider config for the refresh
 	// test. After the refresh we can reset it.
-	cfg := testProviderConfig(c)
+	cfg, err := testProviderConfig(c)
+	if err != nil {
+		return err
+	}
 	wd.RequireSetConfig(t, cfg)
 	defer wd.RequireSetConfig(t, step.Config)
 
 	// Refresh!
-	err := runProviderCommand(t, func() error {
+	err = runProviderCommand(t, func() error {
 		wd.RequireRefresh(t)
 		state = getState(t, wd)
 		return nil
