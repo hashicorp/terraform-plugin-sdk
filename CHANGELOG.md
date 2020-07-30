@@ -1,4 +1,4 @@
-# 2.0.0-rc.3 (Unreleased)
+# 2.0.0 (Unreleased)
 
 FEATURES
 
