@@ -307,7 +307,7 @@ type TestCase struct {
 	// will be automatically retrieved during init. Import doesn't use a
 	// config, however, so we allow manually specifying them here to be
 	// downloaded for import tests.
-	ExternalProviders []string
+	ExternalProviders map[string]ExternalProvider
 
 	// PreventPostDestroyRefresh can be set to true for cases where data sources
 	// are tested alongside real resources
@@ -332,6 +332,13 @@ type TestCase struct {
 	// IDRefreshIgnore is a list of configuration keys that will be ignored.
 	IDRefreshName   string
 	IDRefreshIgnore []string
+}
+
+// ExternalProvider holds information about third-party providers that should
+// be downloaded by Terraform as part of running the test step.
+type ExternalProvider struct {
+	VersionConstraint string // the version constraint for the provider
+	Source            string // the provider source
 }
 
 // TestStep is a single apply sequence of a test, done within the
@@ -543,11 +550,27 @@ func Test(t testing.T, c TestCase) {
 // config is provided, but the providers must be defined.
 func testProviderConfig(c TestCase) string {
 	var lines []string
+	var requiredProviders []string
 	for p := range c.Providers {
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
 	}
-	for p := range c.ExternalProviders {
+	for p, v := range c.ExternalProviders {
 		lines = append(lines, fmt.Sprintf("provider %q {}\n", p))
+		var providerBlock string
+		if v.VersionConstraint != "" {
+			providerBlock = fmt.Sprintf("%s\nversion = %q", providerBlock, v.VersionConstraint)
+		}
+		if v.Source != "" {
+			providerBlock = fmt.Sprintf("%s\nsource = %q", providerBlock, v.Source)
+		}
+		if providerBlock != "" {
+			providerBlock = fmt.Sprintf("%s = {%s\n}\n", p, providerBlock)
+		}
+		requiredProviders = append(requiredProviders, providerBlock)
+	}
+
+	if len(requiredProviders) > 0 {
+		lines = append([]string{fmt.Sprintf("terraform {\nrequired_providers {\n%s}\n}\n\n", strings.Join(requiredProviders, ""))}, lines...)
 	}
 
 	return strings.Join(lines, "")
