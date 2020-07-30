@@ -25,29 +25,38 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	idRefresh := c.IDRefreshName != ""
 
 	if !step.Destroy {
+		log.Printf("[DEBUG] getting state for non-destroy step #%d", stepNo)
 		var state *terraform.State
 		err := runProviderCommand(t, func() error {
 			state = getState(t, wd)
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
+			log.Printf("[DEBUG] error getting state for non-destroy step #%d", stepNo)
 			return err
 		}
+		log.Printf("[DEBUG] running taint for non-destroy step #%d", stepNo)
 		if err := testStepTaint(state, step); err != nil {
 			t.Fatalf("Error when tainting resources: %s", err)
 		}
+		log.Printf("[DEBUG] ran taint for non-destroy step #%d", stepNo)
 	}
 
+	log.Printf("[DEBUG] setting config for step #%d", stepNo)
 	wd.RequireSetConfig(t, step.Config)
+	log.Printf("[DEBUG] set config for step #%d", stepNo)
 
 	if !step.PlanOnly {
+		log.Printf("[DEBUG] applying step #%d", stepNo)
 		err := runProviderCommand(t, func() error {
 			return wd.Apply()
 		}, wd, c.ProviderFactories)
 		if err != nil {
 			return err
 		}
+		log.Printf("[DEBUG] applied step #%d", stepNo)
 
+		log.Printf("[DEBUG] getting state for step #%d", stepNo)
 		var state *terraform.State
 		err = runProviderCommand(t, func() error {
 			state = getState(t, wd)
@@ -56,6 +65,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if err != nil {
 			return err
 		}
+		log.Printf("[DEBUG] got state for step #%d", stepNo)
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
 			if err := step.Check(state); err != nil {
@@ -67,6 +77,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	// Test for perpetual diffs by performing a plan, a refresh, and another plan
 
 	// do a plan
+	log.Printf("[DEBUG] running plan to test for perpetual diffs in step #%d", stepNo)
 	err := runProviderCommand(t, func() error {
 		wd.RequireCreatePlan(t)
 		return nil
@@ -74,6 +85,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] ran plan to test for perpetual diffs in step #%d", stepNo)
 
 	var plan *tfjson.Plan
 	err = runProviderCommand(t, func() error {
@@ -99,6 +111,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 	// do a refresh
 	if !c.PreventPostDestroyRefresh {
+		log.Printf("[DEBUG] running refresh to test for perpetual diffs in step #%d", stepNo)
 		err := runProviderCommand(t, func() error {
 			wd.RequireRefresh(t)
 			return nil
@@ -106,8 +119,10 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if err != nil {
 			return err
 		}
+		log.Printf("[DEBUG] ran refresh to test for perpetual diffs in step #%d", stepNo)
 	}
 
+	log.Printf("[DEBUG] running second plan to test for perpetual diffs in step #%d", stepNo)
 	// do another plan
 	err = runProviderCommand(t, func() error {
 		wd.RequireCreatePlan(t)
@@ -116,6 +131,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] ran second plan to test for perpetual diffs in step #%d", stepNo)
 
 	err = runProviderCommand(t, func() error {
 		plan = wd.RequireSavedPlan(t)
