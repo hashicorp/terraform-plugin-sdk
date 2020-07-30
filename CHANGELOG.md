@@ -12,6 +12,7 @@ BUG FIXES
 * Fixed a bug in the test driver that caused errors for Windows users on versions of Terraform below 0.13.0-beta2. [GH-499]
 * Fixed a bug in the test driver that caused timeouts when using the `IDRefreshName` on `resource.TestCase`s. [GH-501]
 * Fixed a bug where data sources would not always reflect changes in their configs in the same `resource.TestStep` that the config changed. [GH-515]
+* Fixed a bug that would prevent errors from being handled by ExpectError handlers during testing. [GH-518]
 
 # 2.0.0-rc.2 (June 11, 2020)
 
