@@ -1332,33 +1332,20 @@ func (m schemaMap) diffSet(
 							}
 							subSchema := schemaList[len(schemaList)-1]
 
-							var oldIsZero bool
+							var verb string
 							switch subSchema.Type {
 							case TypeBool:
-								ov := subV.Old == "true"
-								oldIsZero = ov == subSchema.ZeroValue()
+								verb = "%t"
 							case TypeInt:
-								ov, err := strconv.Atoi(subV.Old)
-								if err != nil {
-									return err
-								}
-								oldIsZero = ov == subSchema.ZeroValue()
+								verb = "%d"
 							case TypeFloat:
-								ov, err := strconv.ParseFloat(subV.Old, 64)
-								if err != nil {
-									return err
-								}
-								oldIsZero = ov == subSchema.ZeroValue()
+								verb = "%f"
 							case TypeString:
-								oldIsZero = subV.Old == subSchema.ZeroValue()
-							case TypeList, TypeSet:
-								// TODO
-							case TypeMap:
-								// TODO
+								verb = "%s"
 							default:
 								return fmt.Errorf("%s: unknown type %#v", k, schema.Type)
 							}
-							if oldIsZero {
+							if fmt.Sprintf(verb, subSchema.ZeroValue()) == subV.Old {
 								subV.NewRemoved = false
 								subV.New = subV.Old
 							}
