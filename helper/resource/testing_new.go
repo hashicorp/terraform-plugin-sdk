@@ -116,14 +116,14 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 			err := testStepNewConfig(t, c, wd, step)
 			if step.ExpectError != nil {
 				if err == nil {
-					t.Fatal("Expected an error but got none")
+					t.Fatal("Step %d, expected an error but got none")
 				}
 				if !step.ExpectError.MatchString(err.Error()) {
-					t.Fatalf("Expected an error with pattern, no match on: %s", err)
+					t.Fatalf("Step %d, expected an error with pattern, no match on: %s", err)
 				}
 			} else {
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("Step %d error: %s", err)
 				}
 			}
 			appliedCfg = step.Config
