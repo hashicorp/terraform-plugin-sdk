@@ -1,3 +1,9 @@
+# 2.0.1 (Unreleased)
+
+BUG FIXES
+
+* Restored reporting of failed test step [GH-524]
+
 # 2.0.0 (July 30, 2020)
 
 FEATURES
