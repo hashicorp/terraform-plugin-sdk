@@ -88,7 +88,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		} else {
 			var stdout string
 			err = runProviderCommand(t, func() error {
-				stdout = wd.RequireSavedPlanRaw(t)
+				stdout = wd.RequireSavedPlanStdout(t)
 				return nil
 			}, wd, c.ProviderFactories)
 			if err != nil {
@@ -131,7 +131,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		} else {
 			var stdout string
 			err = runProviderCommand(t, func() error {
-				stdout = wd.RequireSavedPlanRaw(t)
+				stdout = wd.RequireSavedPlanStdout(t)
 				return nil
 			}, wd, c.ProviderFactories)
 			if err != nil {
