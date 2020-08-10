@@ -1,9 +1,9 @@
-# 2.0.1 (Unreleased)
+# 2.0.1 (August 10, 2020)
 
 BUG FIXES
 
-* Restored reporting of failed test step number [GH-524]
-* Restored output of a test that failed with unexpected diff to V1 style output [GH-526]
+* Restored reporting of failed test step number ([#524](https://github.com/hashicorp/terraform-plugin-sdk/issues/524))
+* Restored output of a test that failed with unexpected diff to V1 style output ([#526](https://github.com/hashicorp/terraform-plugin-sdk/issues/526))
 
 # 2.0.0 (July 30, 2020)
 
