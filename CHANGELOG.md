@@ -3,6 +3,7 @@
 BUG FIXES
 
 * Restored reporting of failed test step number [GH-524]
+* Restored output of a test that failed with unexpected diff to V1 style output [GH-526]
 
 # 2.0.0 (July 30, 2020)
 
