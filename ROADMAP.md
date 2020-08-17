@@ -9,7 +9,7 @@ With the release of v2.0.0 we will continue to make improvements to the SDK to e
  
 ## Planned
 ### Protocol-native provider development packages
-As part of a project to enhance the Terraform Provider developer experience redesign the Terraform Plugin SDK, we will be releasing packages to interact with the Terraform protocol directly, with little to no abstraction. Future packages will build on these to offer abstractions and frameworks similar to the current SDK’s experience. Providers may wish to make use of these packages for more complex resources that need advanced behavior not supported natively in our current SDK.
+As part of a project to enhance the Terraform Provider developer experience, we will be releasing packages to interact with the Terraform protocol directly, with little to no abstraction. Future packages will build on these to offer abstractions and frameworks similar to the current SDK’s experience. Providers may wish to make use of these packages for more complex resources that need advanced behavior not supported natively in our current SDK.
  
 ### Terraform Provider Resource Mux (terraform-plugin-mux)
 To pave the way for new opt-in behaviors and SDK improvements, we will be releasing a terraform-plugin-mux package that lets provider developers utilize multiple SDKs in the same provider on a per resource basis.
