@@ -15,4 +15,7 @@ As part of a project to enhance the Terraform Provider developer experience, we 
 To pave the way for new opt-in behaviors and SDK improvements, we will be releasing a terraform-plugin-mux package that lets provider developers utilize multiple SDKs in the same provider on a per resource basis.
  
 ### terraform-exec Module
+
+**Repository:** https://github.com/hashicorp/terraform-exec
+
 Our goal is to introduce a new Go module that enables programmatic interaction with Terraform. This approach offers provider developers a more reliable and sustainable way to interact with Terraform and this library will support running Terraform CLI commands from Go binaries, obtaining state and schema output as terraform-json types. 
