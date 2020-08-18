@@ -29,7 +29,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		fmt.Errorf("Error getting state: %v", err)
+		return fmt.Errorf("Error getting state: %v", err)
 	}
 
 	// Determine the ID to import
