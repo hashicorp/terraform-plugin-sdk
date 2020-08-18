@@ -78,7 +78,7 @@ func Debug(ctx context.Context, providerAddr string, opts *ServeOpts) error {
 	}()
 	config, closeCh, err := DebugServe(ctx, opts)
 	if err != nil {
-		return fmt.Errorf("Error launching debug server: %w", err)
+		return fmt.Errorf("Error launching debug server: %v", err)
 	}
 	go func() {
 		select {
@@ -91,7 +91,7 @@ func Debug(ctx context.Context, providerAddr string, opts *ServeOpts) error {
 		providerAddr: config,
 	})
 	if err != nil {
-		return fmt.Errorf("Error building reattach string: %w", err)
+		return fmt.Errorf("Error building reattach string: %v", err)
 	}
 
 	fmt.Printf("Provider server started; to attach Terraform, set TF_REATTACH_PROVIDERS to the following:\n%s\n", string(reattachStr))

@@ -29,7 +29,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		fmt.Errorf("Error getting state: %w", err)
+		fmt.Errorf("Error getting state: %v", err)
 	}
 
 	// Determine the ID to import
@@ -66,14 +66,14 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 		return importWd.Init()
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		return fmt.Errorf("Error running init: %w", err)
+		return fmt.Errorf("Error running init: %v", err)
 	}
 
 	err = runProviderCommand(t, func() error {
 		return importWd.Import(step.ResourceName, importId)
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		return fmt.Errorf("Error running import: %w", err)
+		return fmt.Errorf("Error running import: %v", err)
 	}
 
 	var importState *terraform.State
@@ -82,7 +82,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		return fmt.Errorf("Error getting state after import: %w", err)
+		return fmt.Errorf("Error getting state after import: %v", err)
 	}
 
 	// Go through the imported state and verify
