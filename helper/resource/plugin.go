@@ -78,7 +78,7 @@ func runProviderCommand(t testing.T, f func() error, wd *tftest.WorkingDir, fact
 
 		provider, err := factory()
 		if err != nil {
-			return fmt.Errorf("unable to create provider %q from factory: %w", providerName, err)
+			return fmt.Errorf("unable to create provider %q from factory: %v", providerName, err)
 		}
 
 		// keep track of the running factory, so we can make sure it's
@@ -103,7 +103,7 @@ func runProviderCommand(t testing.T, f func() error, wd *tftest.WorkingDir, fact
 		// let's actually start the provider server
 		config, closeCh, err := plugin.DebugServe(ctx, opts)
 		if err != nil {
-			return fmt.Errorf("unable to serve provider %q: %w", providerName, err)
+			return fmt.Errorf("unable to serve provider %q: %v", providerName, err)
 		}
 
 		// plugin.DebugServe hijacks our log output location, so let's

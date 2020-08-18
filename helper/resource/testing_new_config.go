@@ -26,7 +26,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
-			return fmt.Errorf("Error retrieving state: %w", err)
+			return fmt.Errorf("Error retrieving state: %v", err)
 		}
 		if err := testStepTaint(state, step); err != nil {
 			t.Fatalf("Error when tainting resources: %s", err)
@@ -41,7 +41,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		return wd.Refresh()
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		return fmt.Errorf("Error running refresh: %w", err)
+		return fmt.Errorf("Error running refresh: %v", err)
 	}
 	if !step.PlanOnly {
 		err = runProviderCommand(t, func() error {
@@ -57,7 +57,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
-			return fmt.Errorf("error retrieving state: %w", err)
+			return fmt.Errorf("error retrieving state: %v", err)
 		}
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
