@@ -1,3 +1,9 @@
+# 1.16.0 (Unreleased)
+
+FEATURES:
+
+* Backported reattach mode for binary acceptance testing. Set `TF_ACCTEST_REATTACH` to `1` when using binary testing to enable reattach mode, which will allow debugging the provider under test and accurate test coverage results. [GH-527]
+
 # 1.15.0 (July 08, 2020)
 
 FEATURES:
