@@ -118,6 +118,19 @@ func (d *ResourceData) getRaw(key string, level getSource) getResult {
 	return d.get(parts, level)
 }
 
+// GetResourceId returns the underlying state resource identifier.
+func (d *ResourceData) GetResourceId() string {
+	if d.newState != nil {
+		return d.newState.ID
+	}
+
+	if d.state != nil {
+		return d.state.ID
+	}
+
+	return ""
+}
+
 // HasChanges returns whether or not any of the given keys has been changed.
 func (d *ResourceData) HasChanges(keys ...string) bool {
 	for _, key := range keys {
@@ -202,6 +215,8 @@ func (d *ResourceData) IsNewResource() bool {
 }
 
 // Id returns the ID of the resource.
+//
+// Deprecated: Use GetResourceId instead.
 func (d *ResourceData) Id() string {
 	var result string
 
@@ -237,9 +252,10 @@ func (d *ResourceData) ConnInfo() map[string]string {
 
 // SetId sets the ID of the resource. If the value is blank, then the
 // resource is destroyed.
+//
+// Deprecated: Use SetResourceId and optionally Set("id", ...) instead.
 func (d *ResourceData) SetId(v string) {
-	d.once.Do(d.init)
-	d.newState.ID = v
+	d.SetResourceId(v)
 
 	// once we transition away from the legacy state types, "id" will no longer
 	// be a special field, and will become a normal attribute.
@@ -260,6 +276,14 @@ func (d *ResourceData) SetConnInfo(v map[string]string) {
 	d.newState.Ephemeral.ConnInfo = v
 }
 
+// SetResourceId sets the underlying state resource identifier.
+//
+// If the value is blank, then the resource is destroyed.
+func (d *ResourceData) SetResourceId(v string) {
+	d.once.Do(d.init)
+	d.newState.ID = v
+}
+
 // SetType sets the ephemeral type for the data. This is only required
 // for importing.
 func (d *ResourceData) SetType(t string) {
@@ -271,7 +295,7 @@ func (d *ResourceData) SetType(t string) {
 // calls.
 func (d *ResourceData) State() *terraform.InstanceState {
 	var result terraform.InstanceState
-	result.ID = d.Id()
+	result.ID = d.GetResourceId()
 	result.Meta = d.meta
 
 	// If we have no ID, then this resource doesn't exist and we just
@@ -353,8 +377,14 @@ func (d *ResourceData) State() *terraform.InstanceState {
 		}
 	}
 
-	if v := d.Id(); v != "" {
-		result.Attributes["id"] = d.Id()
+	// Deprecated id attribute handling
+	// Ensure existing id attribute is always passed through
+	// to match previous d.Id() != "" behavior, but unlike
+	// previous behavior do not consider resource identifier.
+	if d.newState != nil && d.newState.Attributes["id"] != "" {
+		result.Attributes["id"] = d.newState.Attributes["id"]
+	} else if d.state != nil && d.state.Attributes["id"] != "" {
+		result.Attributes["id"] = d.state.Attributes["id"]
 	}
 
 	if d.state != nil {

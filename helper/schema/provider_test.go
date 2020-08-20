@@ -633,7 +633,7 @@ func TestProviderImportState_default(t *testing.T) {
 	}
 }
 
-func TestProviderImportState_setsId(t *testing.T) {
+func TestProviderImportState_setsId_Id(t *testing.T) {
 	var val string
 	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
 		val = d.Id()
@@ -662,10 +662,69 @@ func TestProviderImportState_setsId(t *testing.T) {
 	}
 }
 
-func TestProviderImportState_setsType(t *testing.T) {
+func TestProviderImportState_setsId_GetResourceId(t *testing.T) {
+	var val string
+	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+		val = d.GetResourceId()
+		return []*ResourceData{d}, nil
+	}
+
+	p := &Provider{
+		ResourcesMap: map[string]*Resource{
+			"foo": {
+				Importer: &ResourceImporter{
+					State: stateFunc,
+				},
+			},
+		},
+	}
+
+	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
+		Type: "foo",
+	}, "bar")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if val != "bar" {
+		t.Fatal("should set id")
+	}
+}
+
+func TestProviderImportState_setsType_SetId(t *testing.T) {
 	var tVal string
 	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
 		d.SetId("foo")
+		tVal = d.State().Ephemeral.Type
+		return []*ResourceData{d}, nil
+	}
+
+	p := &Provider{
+		ResourcesMap: map[string]*Resource{
+			"foo": {
+				Importer: &ResourceImporter{
+					State: stateFunc,
+				},
+			},
+		},
+	}
+
+	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
+		Type: "foo",
+	}, "bar")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if tVal != "foo" {
+		t.Fatal("should set type")
+	}
+}
+
+func TestProviderImportState_setsType_SetResourceId(t *testing.T) {
+	var tVal string
+	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+		d.SetResourceId("foo")
 		tVal = d.State().Ephemeral.Type
 		return []*ResourceData{d}, nil
 	}

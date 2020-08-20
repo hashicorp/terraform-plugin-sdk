@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestResourceApply_create(t *testing.T) {
+func TestResourceApply_create_SetId(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
@@ -70,7 +70,59 @@ func TestResourceApply_create(t *testing.T) {
 	}
 }
 
-func TestResourceApply_Timeout_state(t *testing.T) {
+func TestResourceApply_create_SetResourceId(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	called := false
+	r.Create = func(d *ResourceData, m interface{}) error {
+		called = true
+		d.SetResourceId("foo")
+		return nil
+	}
+
+	var s *terraform.InstanceState = nil
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "42",
+			},
+		},
+	}
+
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !called {
+		t.Fatal("not called")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"foo": "42",
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "2",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceApply_Timeout_state_SetId(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
@@ -126,6 +178,74 @@ func TestResourceApply_Timeout_state(t *testing.T) {
 		ID: "foo",
 		Attributes: map[string]string{
 			"id":  "foo",
+			"foo": "42",
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "2",
+			TimeoutKey:       expectedForValues(40, 0, 80, 40, 0),
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Not equal in Timeout State:\n\texpected: %#v\n\tactual: %#v", expected.Meta, actual.Meta)
+	}
+}
+
+func TestResourceApply_Timeout_state_SetResourceId(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: &ResourceTimeout{
+			Create: DefaultTimeout(40 * time.Minute),
+			Update: DefaultTimeout(80 * time.Minute),
+			Delete: DefaultTimeout(40 * time.Minute),
+		},
+	}
+
+	called := false
+	r.Create = func(d *ResourceData, m interface{}) error {
+		called = true
+		d.SetResourceId("foo")
+		return nil
+	}
+
+	var s *terraform.InstanceState = nil
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "42",
+			},
+		},
+	}
+
+	diffTimeout := &ResourceTimeout{
+		Create: DefaultTimeout(40 * time.Minute),
+		Update: DefaultTimeout(80 * time.Minute),
+		Delete: DefaultTimeout(40 * time.Minute),
+	}
+
+	if err := diffTimeout.DiffEncode(d); err != nil {
+		t.Fatalf("Error encoding timeout to diff: %s", err)
+	}
+
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !called {
+		t.Fatal("not called")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
 			"foo": "42",
 		},
 		Meta: map[string]interface{}{
@@ -197,7 +317,7 @@ func TestResourceApply_Timeout_destroy(t *testing.T) {
 	}
 }
 
-func TestResourceDiff_Timeout_diff(t *testing.T) {
+func TestResourceDiff_Timeout_diff_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -214,6 +334,64 @@ func TestResourceDiff_Timeout_diff(t *testing.T) {
 
 	r.Create = func(d *ResourceData, m interface{}) error {
 		d.SetId("foo")
+		return nil
+	}
+
+	conf := terraform.NewResourceConfigRaw(
+		map[string]interface{}{
+			"foo": 42,
+			TimeoutsConfigKey: map[string]interface{}{
+				"create": "2h",
+			},
+		},
+	)
+	var s *terraform.InstanceState
+
+	actual, err := r.Diff(context.Background(), s, conf, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "42",
+			},
+		},
+	}
+
+	diffTimeout := &ResourceTimeout{
+		Create: DefaultTimeout(120 * time.Minute),
+		Update: DefaultTimeout(80 * time.Minute),
+		Delete: DefaultTimeout(40 * time.Minute),
+	}
+
+	if err := diffTimeout.DiffEncode(expected); err != nil {
+		t.Fatalf("Error encoding timeout to diff: %s", err)
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Not equal Meta in Timeout Diff:\n\texpected: %#v\n\tactual: %#v", expected.Meta, actual.Meta)
+	}
+}
+
+func TestResourceDiff_Timeout_diff_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: &ResourceTimeout{
+			Create: DefaultTimeout(40 * time.Minute),
+			Update: DefaultTimeout(80 * time.Minute),
+			Delete: DefaultTimeout(40 * time.Minute),
+		},
+	}
+
+	r.Create = func(d *ResourceData, m interface{}) error {
+		d.SetResourceId("foo")
 		return nil
 	}
 
@@ -328,7 +506,7 @@ func TestResourceApply_destroy(t *testing.T) {
 	}
 }
 
-func TestResourceApply_destroyCreate(t *testing.T) {
+func TestResourceApply_destroyCreate_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -400,7 +578,78 @@ func TestResourceApply_destroyCreate(t *testing.T) {
 	}
 }
 
-func TestResourceApply_destroyPartial(t *testing.T) {
+func TestResourceApply_destroyCreate_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+
+			"tags": {
+				Type:     TypeMap,
+				Optional: true,
+				Computed: true,
+			},
+		},
+	}
+
+	change := false
+	r.Create = func(d *ResourceData, m interface{}) error {
+		change = d.HasChange("tags")
+		d.SetResourceId("foo")
+		return nil
+	}
+	r.Delete = func(d *ResourceData, m interface{}) error {
+		return nil
+	}
+
+	var s *terraform.InstanceState = &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"foo":       "bar",
+			"tags.Name": "foo",
+		},
+	}
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New:         "42",
+				RequiresNew: true,
+			},
+			"tags.Name": {
+				Old:         "foo",
+				New:         "foo",
+				RequiresNew: true,
+			},
+		},
+	}
+
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !change {
+		t.Fatal("should have change")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"foo":       "42",
+			"tags.%":    "1",
+			"tags.Name": "foo",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceApply_destroyPartial_NoIdAttribute(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -435,6 +684,54 @@ func TestResourceApply_destroyPartial(t *testing.T) {
 	expected := &terraform.InstanceState{
 		ID: "bar",
 		Attributes: map[string]string{
+			"foo": "42",
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "3",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected:\n%#v\n\ngot:\n%#v", expected, actual)
+	}
+}
+
+func TestResourceApply_destroyPartial_WithIdAttribute(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		SchemaVersion: 3,
+	}
+
+	r.Delete = func(d *ResourceData, m interface{}) error {
+		d.Set("foo", 42)
+		return fmt.Errorf("some error")
+	}
+
+	s := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"id":  "bar",
+			"foo": "12",
+		},
+	}
+
+	d := &terraform.InstanceDiff{
+		Destroy: true,
+	}
+
+	actual, err := r.Apply(context.Background(), s, d, nil)
+	if err == nil {
+		t.Fatal("should error")
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
 			"id":  "bar",
 			"foo": "42",
 		},
@@ -448,7 +745,7 @@ func TestResourceApply_destroyPartial(t *testing.T) {
 	}
 }
 
-func TestResourceApply_update(t *testing.T) {
+func TestResourceApply_update_NoIdAttribute(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -486,13 +783,61 @@ func TestResourceApply_update(t *testing.T) {
 	expected := &terraform.InstanceState{
 		ID: "foo",
 		Attributes: map[string]string{
+			"foo": "42",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected:\n%#v\n\ngot:\n%#v", expected, actual)
+	}
+}
+
+func TestResourceApply_update_WithIdAttribute(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	r.Update = func(d *ResourceData, m interface{}) error {
+		d.Set("foo", 42)
+		return nil
+	}
+
+	s := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"id":  "foo",
+			"foo": "12",
+		},
+	}
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "13",
+			},
+		},
+	}
+
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
 			"id":  "foo",
 			"foo": "42",
 		},
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
+		t.Fatalf("expected:\n%#v\n\ngot:\n%#v", expected, actual)
 	}
 }
 
@@ -540,7 +885,7 @@ func TestResourceApply_updateNoCallback(t *testing.T) {
 	}
 }
 
-func TestResourceApply_isNewResource(t *testing.T) {
+func TestResourceApply_isNewResource_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -618,6 +963,83 @@ func TestResourceApply_isNewResource(t *testing.T) {
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("actual: %#v\nexpected: %#v",
 			actual, expected)
+	}
+}
+
+func TestResourceApply_isNewResource_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeString,
+				Optional: true,
+			},
+		},
+	}
+
+	updateFunc := func(d *ResourceData, m interface{}) error {
+		d.Set("foo", "updated")
+		if d.IsNewResource() {
+			d.Set("foo", "new-resource")
+		}
+		return nil
+	}
+	r.Create = func(d *ResourceData, m interface{}) error {
+		d.SetResourceId("foo")
+		d.Set("foo", "created")
+		return updateFunc(d, m)
+	}
+	r.Update = updateFunc
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "bla-blah",
+			},
+		},
+	}
+
+	// positive test
+	var s *terraform.InstanceState = nil
+
+	actual, diags := r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"foo": "new-resource",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("actual: %#v\nexpected: %#v",
+			actual, expected)
+	}
+
+	// negative test
+	s = &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"foo": "new-resource",
+		},
+	}
+
+	actual, diags = r.Apply(context.Background(), s, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	expected = &terraform.InstanceState{
+		ID: "foo",
+		Attributes: map[string]string{
+			"foo": "updated",
+		},
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("actual: %#v\nexpected: %#v", actual, expected)
 	}
 }
 
@@ -949,7 +1371,7 @@ func TestResourceInternalValidate(t *testing.T) {
 	}
 }
 
-func TestResourceRefresh(t *testing.T) {
+func TestResourceRefresh_NoIdAttribute(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
 		Schema: map[string]*Schema{
@@ -978,6 +1400,53 @@ func TestResourceRefresh(t *testing.T) {
 	expected := &terraform.InstanceState{
 		ID: "bar",
 		Attributes: map[string]string{
+			"foo": "13",
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "2",
+		},
+	}
+
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("actual: %#v\nexpected: %#v", actual, expected)
+	}
+}
+
+func TestResourceRefresh_WithIdAttribute(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	r.Read = func(d *ResourceData, m interface{}) error {
+		if m != 42 {
+			return fmt.Errorf("meta not passed")
+		}
+
+		return d.Set("foo", d.Get("foo").(int)+1)
+	}
+
+	s := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"id":  "bar",
+			"foo": "12",
+		},
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
 			"id":  "bar",
 			"foo": "13",
 		},
@@ -992,11 +1461,11 @@ func TestResourceRefresh(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
+		t.Fatalf("actual: %#v\nexpected: %#v", actual, expected)
 	}
 }
 
-func TestResourceRefresh_blankId(t *testing.T) {
+func TestResourceRefresh_blankId_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -1025,7 +1494,36 @@ func TestResourceRefresh_blankId(t *testing.T) {
 	}
 }
 
-func TestResourceRefresh_delete(t *testing.T) {
+func TestResourceRefresh_blankId_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	r.Read = func(d *ResourceData, m interface{}) error {
+		d.SetResourceId("foo")
+		return nil
+	}
+
+	s := &terraform.InstanceState{
+		ID:         "",
+		Attributes: map[string]string{},
+	}
+
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+	if actual != nil {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceRefresh_delete_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -1037,6 +1535,38 @@ func TestResourceRefresh_delete(t *testing.T) {
 
 	r.Read = func(d *ResourceData, m interface{}) error {
 		d.SetId("")
+		return nil
+	}
+
+	s := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"foo": "12",
+		},
+	}
+
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if actual != nil {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceRefresh_delete_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+	}
+
+	r.Read = func(d *ResourceData, m interface{}) error {
+		d.SetResourceId("")
 		return nil
 	}
 
@@ -1145,6 +1675,9 @@ func TestResourceData(t *testing.T) {
 	}
 
 	data := r.Data(state)
+	if actual, expected := data.GetResourceId(), "foo"; actual != expected {
+		t.Fatalf("expected: %s, got: %s", expected, actual)
+	}
 	if data.Id() != "foo" {
 		t.Fatalf("err: %s", data.Id())
 	}
@@ -1175,6 +1708,9 @@ func TestResourceData_blank(t *testing.T) {
 	}
 
 	data := r.Data(nil)
+	if actual, expected := data.GetResourceId(), ""; actual != expected {
+		t.Fatalf("expected: %s, got: %s", expected, actual)
+	}
 	if data.Id() != "" {
 		t.Fatalf("err: %s", data.Id())
 	}
@@ -1210,6 +1746,9 @@ func TestResourceData_timeouts(t *testing.T) {
 	}
 
 	data := r.Data(nil)
+	if actual, expected := data.GetResourceId(), ""; actual != expected {
+		t.Fatalf("expected: %s, got: %s", expected, actual)
+	}
 	if data.Id() != "" {
 		t.Fatalf("err: %s", data.Id())
 	}
@@ -1386,7 +1925,7 @@ func TestResource_ValidateUpgradeState(t *testing.T) {
 	}
 }
 
-func TestResource_ContextTimeout(t *testing.T) {
+func TestResource_ContextTimeout_SetId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
 			"foo": {
@@ -1402,6 +1941,45 @@ func TestResource_ContextTimeout(t *testing.T) {
 	var deadlineSet bool
 	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) diag.Diagnostics {
 		d.SetId("foo")
+		_, deadlineSet = ctx.Deadline()
+		return nil
+	}
+
+	var s *terraform.InstanceState = nil
+
+	d := &terraform.InstanceDiff{
+		Attributes: map[string]*terraform.ResourceAttrDiff{
+			"foo": {
+				New: "42",
+			},
+		},
+	}
+
+	if _, diags := r.Apply(context.Background(), s, d, nil); diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !deadlineSet {
+		t.Fatal("context does not have timeout")
+	}
+}
+
+func TestResource_ContextTimeout_SetResourceId(t *testing.T) {
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: &ResourceTimeout{
+			Create: DefaultTimeout(40 * time.Minute),
+		},
+	}
+
+	var deadlineSet bool
+	r.CreateContext = func(ctx context.Context, d *ResourceData, m interface{}) diag.Diagnostics {
+		d.SetResourceId("foo")
 		_, deadlineSet = ctx.Deadline()
 		return nil
 	}

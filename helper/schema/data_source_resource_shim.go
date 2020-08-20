@@ -25,7 +25,7 @@ func DataSourceResourceShim(name string, dataSource *Resource) *Resource {
 
 	dataSource.Create = CreateFunc(dataSource.Read)
 	dataSource.Delete = func(d *ResourceData, meta interface{}) error {
-		d.SetId("")
+		d.SetResourceId("")
 		return nil
 	}
 	dataSource.Update = nil // should already be nil, but let's make sure
