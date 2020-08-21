@@ -55,12 +55,26 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if err != nil {
 			return err
 		}
+		if step.Destroy {
+			err = runProviderCommand(t, func() error {
+				return wd.Destroy()
+			}, wd, c.ProviderFactories)
+			if err != nil {
+				return err
+			}
+		}
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
 			if err := step.Check(state); err != nil {
 				t.Fatal(err)
 			}
 		}
+	}
+
+	// if we destroyed the resources in this step, the plans will all be non-empty
+	// since Terraform will want to re-create all of the resources
+	if step.Destroy {
+		return nil
 	}
 
 	// Test for perpetual diffs by performing a plan, a refresh, and another plan
