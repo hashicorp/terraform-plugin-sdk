@@ -14,7 +14,7 @@ Terraform itself is a tool for building, changing, and versioning infrastructure
 | 0.12 | Yes* | Yes |
 | 0.13 | Yes* | Yes |
 
-* SDK v1.x supports both Terraform 0.12 and 0.13, but in order to maintain compatibility with Terraform 0.11, it cannot take advantage of new features that are only available in newer versions.
+ * SDK v1.x supports both Terraform 0.12 and 0.13, but in order to maintain compatibility with Terraform 0.11, it cannot take advantage of new features that are only available in newer versions.
 
 ## Documentation
 
