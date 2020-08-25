@@ -6,6 +6,16 @@ This SDK enables building Terraform plugin which allows Terraform's users to man
 
 Terraform itself is a tool for building, changing, and versioning infrastructure safely and efficiently. You can find more about Terraform on its [website](https://www.terraform.io) and [its GitHub repository](https://github.com/hashicorp/terraform).
 
+## Terraform CLI Compatibility
+
+| Terraform CLI | SDK v1.x | SDK v2.x |
+|---|---|---|
+| 0.11 | Yes | No |
+| 0.12 | Yes* | Yes |
+| 0.13 | Yes* | Yes |
+
+* SDK v1.x supports both Terraform 0.12 and 0.13, but in order to maintain compatibility with Terraform 0.11, it cannot take advantage of new features that are only available in newer versions.
+
 ## Documentation
 
 See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) section on the website.
