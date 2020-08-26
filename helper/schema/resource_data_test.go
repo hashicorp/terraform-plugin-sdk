@@ -1518,6 +1518,410 @@ func TestResourceDataHasChanges(t *testing.T) {
 	}
 }
 
+func TestResourceDataHasChangesExcept(t *testing.T) {
+	testCases := map[string]struct {
+		Schema   map[string]*Schema
+		State    *terraform.InstanceState
+		Diff     *terraform.InstanceDiff
+		Keys     []string
+		Expected bool
+	}{
+		"single self string diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test1",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self": {
+						Old: "test1",
+						New: "test2",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: false,
+		},
+
+		"single self map diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeMap,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self.Name": {
+						Old: "foo",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: false,
+		},
+
+		"single self set diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeInt},
+					Set:      func(a interface{}) int { return a.(int) },
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self.#":  "1",
+					"self.80": "80",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self.#": {
+						Old: "1",
+						New: "0",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: false,
+		},
+
+		"single other string diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other": {
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: true,
+		},
+
+		// https://github.com/hashicorp/terraform/issues/927
+		"single other map diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other.foo": {
+						Old: "",
+						New: "bar",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: true,
+		},
+
+		"single other set diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeInt},
+					Set:      func(a interface{}) int { return a.(int) },
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"other.#":  "1",
+					"other.80": "80",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other.#": {
+						Old: "1",
+						New: "0",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: true,
+		},
+
+		"single other and self diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other": {
+						Old: "",
+						New: "test",
+					},
+					"self": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self"},
+
+			Expected: true,
+		},
+
+		"multiple only other diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self1": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self2": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self1", "self2"},
+
+			Expected: true,
+		},
+
+		"multiple only self diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self1": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self2": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self1": {
+						Old: "",
+						New: "test",
+					},
+					"self2": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self1", "self2"},
+
+			Expected: false,
+		},
+
+		"multiple partial self diff one of two": {
+			Schema: map[string]*Schema{
+				"self1": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self2": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self1": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self1", "self2"},
+
+			Expected: false,
+		},
+
+		"multiple partial self diff one of three": {
+			Schema: map[string]*Schema{
+				"self1": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self2": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self3": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self1": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self1", "self2", "self3"},
+
+			Expected: false,
+		},
+
+		"multiple partial self diff two of three": {
+			Schema: map[string]*Schema{
+				"self1": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self2": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self3": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self1": {
+						Old: "",
+						New: "test",
+					},
+					"self2": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Keys: []string{"self1", "self2", "self3"},
+
+			Expected: false,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		t.Run(testName, func(t *testing.T) {
+			d, err := schemaMap(testCase.Schema).Data(testCase.State, testCase.Diff)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			actual := d.HasChangesExcept(testCase.Keys...)
+			if actual != testCase.Expected {
+				t.Errorf("expected: %t, got: %t", testCase.Expected, actual)
+			}
+		})
+	}
+}
+
 func TestResourceDataHasChange(t *testing.T) {
 	cases := []struct {
 		Schema map[string]*Schema
@@ -1683,6 +2087,246 @@ func TestResourceDataHasChange(t *testing.T) {
 		if actual != tc.Change {
 			t.Fatalf("Bad: %d %#v", i, actual)
 		}
+	}
+}
+
+func TestResourceDataHasChangeExcept(t *testing.T) {
+	testCases := map[string]struct {
+		Schema   map[string]*Schema
+		State    *terraform.InstanceState
+		Diff     *terraform.InstanceDiff
+		Key      string
+		Expected bool
+	}{
+		"self string diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test1",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self": {
+						Old: "test1",
+						New: "test2",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: false,
+		},
+
+		"self map diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeMap,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self.Name": {
+						Old: "foo",
+						New: "foo",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: false,
+		},
+
+		"self set diff": {
+			Schema: map[string]*Schema{
+				"self": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeInt},
+					Set:      func(a interface{}) int { return a.(int) },
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self.#":  "1",
+					"self.80": "80",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"self.#": {
+						Old: "1",
+						New: "0",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: false,
+		},
+
+		"other string diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other": {
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: true,
+		},
+
+		// https://github.com/hashicorp/terraform/issues/927
+		"other map diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"self": "test",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other.foo": {
+						Old: "",
+						New: "bar",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: true,
+		},
+
+		"other set diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem:     &Schema{Type: TypeInt},
+					Set:      func(a interface{}) int { return a.(int) },
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"other.#":  "1",
+					"other.80": "80",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other.#": {
+						Old: "1",
+						New: "0",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: true,
+		},
+
+		"other and self diff": {
+			Schema: map[string]*Schema{
+				"other": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"self": {
+					Type:     TypeString,
+					Optional: true,
+				},
+			},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"other": {
+						Old: "",
+						New: "test",
+					},
+					"self": {
+						Old: "",
+						New: "test",
+					},
+				},
+			},
+
+			Key: "self",
+
+			Expected: true,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		t.Run(testName, func(t *testing.T) {
+			d, err := schemaMap(testCase.Schema).Data(testCase.State, testCase.Diff)
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			actual := d.HasChangeExcept(testCase.Key)
+			if actual != testCase.Expected {
+				t.Errorf("expected: %t, got: %t", testCase.Expected, actual)
+			}
+		})
 	}
 }
 
