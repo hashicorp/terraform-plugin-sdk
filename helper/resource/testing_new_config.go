@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test/v2"
@@ -12,9 +11,6 @@ import (
 
 func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
 	t.Helper()
-
-	spewConf := spew.NewDefaultConfig()
-	spewConf.SortKeys = true
 
 	var idRefreshCheck *terraform.ResourceState
 	idRefresh := c.IDRefreshName != ""
@@ -90,8 +86,15 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		if step.ExpectNonEmptyPlan {
 			t.Log("[INFO] Got non-empty plan, as expected")
 		} else {
-
-			t.Fatalf("After applying this test step, the plan was not empty. %s", spewConf.Sdump(plan))
+			var stdout string
+			err = runProviderCommand(t, func() error {
+				stdout = wd.RequireSavedPlanStdout(t)
+				return nil
+			}, wd, c.ProviderFactories)
+			if err != nil {
+				return err
+			}
+			t.Fatalf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
 		}
 	}
 
@@ -126,8 +129,15 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		if step.ExpectNonEmptyPlan {
 			t.Log("[INFO] Got non-empty plan, as expected")
 		} else {
-
-			t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty. %s", spewConf.Sdump(plan))
+			var stdout string
+			err = runProviderCommand(t, func() error {
+				stdout = wd.RequireSavedPlanStdout(t)
+				return nil
+			}, wd, c.ProviderFactories)
+			if err != nil {
+				return err
+			}
+			t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
 		}
 	}
 

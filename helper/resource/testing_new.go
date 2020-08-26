@@ -99,7 +99,7 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.Resourc
 				t.Fatal(err)
 			}
 			if skip {
-				log.Printf("[WARN] Skipping step %d", i)
+				log.Printf("[WARN] Skipping step %d/%d", i+1, len(c.Steps))
 				continue
 			}
 		}
@@ -117,14 +117,14 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.Resourc
 			err := testStepNewConfig(t, c, wd, step)
 			if step.ExpectError != nil {
 				if err == nil {
-					t.Fatal("Expected an error but got none")
+					t.Fatalf("Step %d/%d, expected an error but got none", i+1, len(c.Steps))
 				}
 				if !step.ExpectError.MatchString(err.Error()) {
-					t.Fatalf("Expected an error with pattern, no match on: %s", err)
+					t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", i+1, len(c.Steps), err)
 				}
 			} else {
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("Step %d/%d error: %s", i+1, len(c.Steps), err)
 				}
 			}
 			appliedCfg = step.Config

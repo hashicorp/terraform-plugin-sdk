@@ -78,9 +78,9 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 
 	var importState *terraform.State
 	err = runProviderCommand(t, func() error {
-		importState = getState(t, wd)
+		importState = getState(t, importWd)
 		return nil
-	}, wd, c.ProviderFactories)
+	}, importWd, c.ProviderFactories)
 	if err != nil {
 		return fmt.Errorf("Error getting state after import: %v", err)
 	}
