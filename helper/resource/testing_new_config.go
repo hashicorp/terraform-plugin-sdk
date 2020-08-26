@@ -82,20 +82,16 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		return err
 	}
 
-	if !planIsEmpty(plan) {
-		if step.ExpectNonEmptyPlan {
-			t.Log("[INFO] Got non-empty plan, as expected")
-		} else {
-			var stdout string
-			err = runProviderCommand(t, func() error {
-				stdout = wd.RequireSavedPlanStdout(t)
-				return nil
-			}, wd, c.ProviderFactories)
-			if err != nil {
-				return err
-			}
-			t.Fatalf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
+	if !planIsEmpty(plan) && !step.ExpectNonEmptyPlan {
+		var stdout string
+		err = runProviderCommand(t, func() error {
+			stdout = wd.RequireSavedPlanStdout(t)
+			return nil
+		}, wd, c.ProviderFactories)
+		if err != nil {
+			return err
 		}
+		t.Fatalf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
 	}
 
 	// do a refresh
@@ -125,20 +121,16 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	}
 
 	// check if plan is empty
-	if !planIsEmpty(plan) {
-		if step.ExpectNonEmptyPlan {
-			t.Log("[INFO] Got non-empty plan, as expected")
-		} else {
-			var stdout string
-			err = runProviderCommand(t, func() error {
-				stdout = wd.RequireSavedPlanStdout(t)
-				return nil
-			}, wd, c.ProviderFactories)
-			if err != nil {
-				return err
-			}
-			t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
+	if !planIsEmpty(plan) && !step.ExpectNonEmptyPlan {
+		var stdout string
+		err = runProviderCommand(t, func() error {
+			stdout = wd.RequireSavedPlanStdout(t)
+			return nil
+		}, wd, c.ProviderFactories)
+		if err != nil {
+			return err
 		}
+		t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
 	}
 
 	// ID-ONLY REFRESH
