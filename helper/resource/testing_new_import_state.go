@@ -109,7 +109,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 			// Find the existing resource
 			var oldR *terraform.ResourceState
 			for _, r2 := range old {
-				if r2.Primary != nil && r2.Primary.ID == r.Primary.ID && r2.Type == r.Type {
+				if r2.Primary != nil && r2.Primary.ID == r.Primary.ID && r2.Type == r.Type && r2.Provider == r.Provider {
 					oldR = r2
 					break
 				}
