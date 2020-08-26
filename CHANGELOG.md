@@ -1,3 +1,9 @@
+# 2.0.2 (Unreleased)
+
+BUG FIXES
+
+* Fixed bug where state is read from the wrong workspace during import tests. [GH-552]
+
 # 2.0.1 (August 10, 2020)
 
 BUG FIXES
