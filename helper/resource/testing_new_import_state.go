@@ -71,11 +71,10 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 	}
 
 	err = runProviderCommand(t, func() error {
-		importWd.RequireImport(t, step.ResourceName, importId)
-		return nil
+		return importWd.Import(step.ResourceName, importId)
 	}, importWd, c.ProviderFactories)
 	if err != nil {
-		t.Fatalf("Error running import: %s", err)
+		return err
 	}
 
 	var importState *terraform.State
