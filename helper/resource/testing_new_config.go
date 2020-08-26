@@ -1,6 +1,8 @@
 package resource
 
 import (
+	"fmt"
+
 	tfjson "github.com/hashicorp/terraform-json"
 	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
@@ -24,7 +26,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 			return err
 		}
 		if err := testStepTaint(state, step); err != nil {
-			t.Fatalf("Error when tainting resources: %s", err)
+			return fmt.Errorf("Error when tainting resources: %s", err)
 		}
 	}
 
@@ -58,7 +60,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
 			if err := step.Check(state); err != nil {
-				t.Fatal(err)
+				return err
 			}
 		}
 	}
@@ -91,7 +93,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if err != nil {
 			return err
 		}
-		t.Fatalf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
+		return fmt.Errorf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
 	}
 
 	// do a refresh
@@ -130,7 +132,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		if err != nil {
 			return err
 		}
-		t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
+		return fmt.Errorf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
 	}
 
 	// ID-ONLY REFRESH
@@ -164,7 +166,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		// caught a different bug.
 		if idRefreshCheck != nil {
 			if err := testIDRefresh(c, t, wd, step, idRefreshCheck); err != nil {
-				t.Fatalf(
+				return fmt.Errorf(
 					"[ERROR] Test: ID-only test failed: %s", err)
 			}
 		}
