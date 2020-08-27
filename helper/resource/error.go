@@ -26,6 +26,12 @@ func (e *NotFoundError) Error() string {
 	return "couldn't find resource"
 }
 
+// IsNotFoundError returns true if the error is of type resource.NotFoundError.
+func IsNotFoundError(err error) bool {
+	_, ok := err.(*NotFoundError)
+	return ok
+}
+
 // UnexpectedStateError is returned when Refresh returns a state that's neither in Target nor Pending
 type UnexpectedStateError struct {
 	LastError     error
