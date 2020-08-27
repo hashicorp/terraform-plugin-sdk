@@ -83,3 +83,11 @@ func (e *TimeoutError) Error() string {
 	return fmt.Sprintf("timeout while waiting for %s%s",
 		expectedState, suffix)
 }
+
+// IsTimeoutErrorWithoutLastError returns true if the error matches all these conditions:
+//  * err is of type resource.TimeoutError
+//  * TimeoutError.LastError is nil
+func IsTimeoutErrorWithoutLastError(err error) bool {
+	timeoutErr, ok := err.(*TimeoutError)
+	return ok && timeoutErr.LastError == nil
+}
