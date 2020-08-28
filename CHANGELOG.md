@@ -6,6 +6,7 @@ BUG FIXES
 * Fixed bug where the resource could belong to another provider when finding the resource state to check during import tests [GH-522]
 * Removed excessive logging when ExpectNonEmptyPlan was successfully matched [GH-556]
 * Fixed bug where state from data sources, which can't be imported, would be surfaced during ImportStateVerify [GH-555]
+* Fixed bug that ignored ExpectError when during ImportStateVerify [GH-550]
 
 # 2.0.1 (August 10, 2020)
 
