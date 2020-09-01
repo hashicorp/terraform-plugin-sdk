@@ -98,8 +98,14 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		// Run any configured checks
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
-			if err := step.Check(state); err != nil {
-				return err
+			if step.Destroy {
+				if err := step.Check(stateBeforeApplication); err != nil {
+					return fmt.Errorf("Check failed: %w", err)
+				}
+			} else {
+				if err := step.Check(state); err != nil {
+					return fmt.Errorf("Check failed: %w", err)
+				}
 			}
 		}
 	}
