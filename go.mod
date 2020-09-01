@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-json v0.5.0
-	github.com/hashicorp/terraform-plugin-test/v2 v2.0.0
+	github.com/hashicorp/terraform-plugin-test/v2 v2.0.1-0.20200901104947-ff3345b5b0ac
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/kylelemons/godebug v1.1.0 // indirect

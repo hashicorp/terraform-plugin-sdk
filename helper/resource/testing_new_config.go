@@ -30,14 +30,14 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		}
 	}
 
-	err := wd.SetConfig(t, step.Config)
+	err := wd.SetConfig(step.Config)
 	if err != nil {
-		return fmt.Error("Error setting config: %w", err)
+		return fmt.Errorf("Error setting config: %w", err)
 	}
 
 	// require a refresh before applying
 	// failing to do this will result in data sources not being updated
-	err := runProviderCommand(t, func() error {
+	err = runProviderCommand(t, func() error {
 		return wd.Refresh()
 	}, wd, c.ProviderFactories)
 	if err != nil {
@@ -126,7 +126,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 	var plan *tfjson.Plan
 	err = runProviderCommand(t, func() error {
 		var err error
-		plan, err = wd.SavedPlan(t)
+		plan, err = wd.SavedPlan()
 		return err
 	}, wd, c.ProviderFactories)
 	if err != nil {
@@ -137,7 +137,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		var stdout string
 		err = runProviderCommand(t, func() error {
 			var err error
-			stdout, err = wd.SavedPlanStdout(t)
+			stdout, err = wd.SavedPlanStdout()
 			return err
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -171,7 +171,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 	err = runProviderCommand(t, func() error {
 		var err error
-		plan, err = wd.SavedPlan(t)
+		plan, err = wd.SavedPlan()
 		return err
 	}, wd, c.ProviderFactories)
 	if err != nil {
@@ -183,7 +183,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 		var stdout string
 		err = runProviderCommand(t, func() error {
 			var err error
-			stdout, err = wd.SavedPlanStdout(t)
+			stdout, err = wd.SavedPlanStdout()
 			return err
 		}, wd, c.ProviderFactories)
 		if err != nil {
