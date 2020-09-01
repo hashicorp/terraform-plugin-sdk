@@ -73,9 +73,6 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 
 		// Apply the diff, creating real resources
 		err = runProviderCommand(t, func() error {
-			if step.Destroy {
-				return wd.Destroy()
-			}
 			return wd.Apply()
 		}, wd, c.ProviderFactories)
 		if err != nil {
