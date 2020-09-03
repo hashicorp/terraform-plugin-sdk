@@ -73,7 +73,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 		return importWd.Import(step.ResourceName, importId)
 	}, wd, c.ProviderFactories)
 	if err != nil {
-		return fmt.Errorf("Error running import: %v", err)
+		return err
 	}
 
 	var importState *terraform.State
