@@ -25,7 +25,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 			return fmt.Errorf("Error retrieving state: %v", err)
 		}
 		if err := testStepTaint(state, step); err != nil {
-			t.Fatalf("Error when tainting resources: %s", err)
+			return fmt.Errorf("Error when tainting resources: %s", err)
 		}
 	}
 
@@ -58,7 +58,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		if step.Check != nil {
 			state.IsBinaryDrivenTest = true
 			if err := step.Check(state); err != nil {
-				t.Fatal(err)
+				return err
 			}
 		}
 	}
@@ -91,7 +91,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		if err != nil {
 			return err
 		}
-		t.Fatalf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
+		return fmt.Errorf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
 	}
 
 	// do a refresh
@@ -130,7 +130,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		if err != nil {
 			return err
 		}
-		t.Fatalf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
+		fmt.Errorf("After applying this test step and performing a `terraform refresh`, the plan was not empty.\nstdout\n\n%s", stdout)
 	}
 
 	// ID-ONLY REFRESH
@@ -164,7 +164,7 @@ func testStepNewConfig(t *testing.T, c TestCase, wd *tftest.WorkingDir, step Tes
 		// caught a different bug.
 		if idRefreshCheck != nil {
 			if err := testIDRefresh(c, t, wd, step, idRefreshCheck); err != nil {
-				t.Fatalf(
+				fmt.Errorf(
 					"[ERROR] Test: ID-only test failed: %s", err)
 			}
 		}
