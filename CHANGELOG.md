@@ -8,6 +8,7 @@ BUG FIXES
 * Fixed bug where state from data sources, which can't be imported, would be surfaced during ImportStateVerify [GH-555]
 * Fixed bug that ignored ExpectError when testing state imports [GH-550]
 * Fixed bug that sometimes prevented TestStep numbers from appearing in error output [GH-557]
+* Fixed bug that would ignore `TestStep.Destroy` when running tests. [GH-563]
 
 # 2.0.1 (August 10, 2020)
 
