@@ -107,8 +107,17 @@ func RunNewTest(t *testing.T, c TestCase, providers map[string]terraform.Resourc
 		if step.ImportState {
 			step.providers = providers
 			err := testStepNewImportState(t, c, wd, step, appliedCfg)
-			if err != nil {
-				t.Fatal(err)
+			if step.ExpectError != nil {
+				if err == nil {
+					t.Fatalf("Step %d/%d error running import: expected an error but got none", i+1, len(c.Steps))
+				}
+				if !step.ExpectError.MatchString(err.Error()) {
+					t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", i+1, len(c.Steps), step.ExpectError.String(), err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Step %d/%d error running import: %s", i+1, len(c.Steps), err)
+				}
 			}
 			continue
 		}
