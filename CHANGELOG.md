@@ -4,6 +4,19 @@ FEATURES:
 
 * Backported reattach mode for binary acceptance testing. Set `TF_ACCTEST_REATTACH` to `1` when using binary testing to enable reattach mode, which will allow debugging the provider under test and accurate test coverage results. [GH-527]
 
+ENHANCEMENTS:
+
+* Improved plan output for unexpected diffs when using binary testing [GH-553]
+
+BUG FIXES:
+
+* Fixed a bug with binary testing that would use the wrong state when verifying import state [GH-553]
+* Restored TestStep numbers in various outputs for binary testing [GH-553]
+* Made resource detection when verifying import state more robust [GH-553]
+* Removed excessive logging when using binary acceptance testing [GH-553]
+* Fixed a bug that would sometimes bypass ExpectNonEmptyError during binary testing [GH-553]
+* Fixed binary testing to respect `TestStep.Destroy` and more accurately mirror the legacy testing behavior [GH-553]
+
 # 1.15.0 (July 08, 2020)
 
 FEATURES:
