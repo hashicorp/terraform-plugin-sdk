@@ -1,14 +1,14 @@
-# 2.0.2 (Unreleased)
+# 2.0.2 (September 10, 2020)
 
 BUG FIXES
 
-* Fixed bug where state is read from the wrong workspace during import tests. [GH-552]
-* Fixed bug where the resource could belong to another provider when finding the resource state to check during import tests [GH-522]
-* Removed excessive logging when ExpectNonEmptyPlan was successfully matched [GH-556]
-* Fixed bug where state from data sources, which can't be imported, would be surfaced during ImportStateVerify [GH-555]
-* Fixed bug that ignored ExpectError when testing state imports [GH-550]
-* Fixed bug that sometimes prevented TestStep numbers from appearing in error output [GH-557]
-* Fixed bug that would ignore `TestStep.Destroy` when running tests. [GH-563]
+* Fixed bug where state is read from the wrong workspace during import tests. ([#552](https://github.com/hashicorp/terraform-plugin-sdk/issues/552))
+* Fixed bug where the resource could belong to another provider when finding the resource state to check during import tests ([#522](https://github.com/hashicorp/terraform-plugin-sdk/issues/522))
+* Removed excessive logging when ExpectNonEmptyPlan was successfully matched ([#556](https://github.com/hashicorp/terraform-plugin-sdk/issues/556))
+* Fixed bug where state from data sources, which can't be imported, would be surfaced during ImportStateVerify ([#555](https://github.com/hashicorp/terraform-plugin-sdk/issues/555))
+* Fixed bug that ignored ExpectError when testing state imports ([#550](https://github.com/hashicorp/terraform-plugin-sdk/issues/550))
+* Fixed bug that sometimes prevented TestStep numbers from appearing in error output ([#557](https://github.com/hashicorp/terraform-plugin-sdk/issues/557))
+* Fixed bug that would ignore `TestStep.Destroy` when running tests. ([#563](https://github.com/hashicorp/terraform-plugin-sdk/issues/563))
 
 # 2.0.1 (August 10, 2020)
 
