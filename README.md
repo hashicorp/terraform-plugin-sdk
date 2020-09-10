@@ -8,13 +8,15 @@ Terraform itself is a tool for building, changing, and versioning infrastructure
 
 ## Terraform CLI Compatibility
 
-| Terraform CLI | SDK v1.x | SDK v2.x |
-|---|---|---|
-| 0.11 | Yes | No |
-| 0.12 | Yes* | Yes |
-| 0.13 | Yes* | Yes |
+Terraform 0.12.0 or later is needed for version 2.0.0 and later of the Plugin SDK.
 
-_* SDK v1.x supports both Terraform 0.12 and 0.13, but in order to maintain compatibility with Terraform 0.11, it cannot take advantage of new features that are only available in newer versions._
+When running provider tests, Terraform 0.12.26 or later is needed for version 2.0.0 and later of the Plugin SDK. Users can still use any version after 0.12.0.
+
+## Go Compatibility
+
+The Terraform Plugin SDK is built in Go, and uses the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the SDK.
+
+Currently, that means Go **1.14** or later must be used when building a provider with the SDK.
 
 ## Documentation
 
