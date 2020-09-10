@@ -4,6 +4,18 @@ This SDK enables building Terraform plugin which allows Terraform's users to man
 
 Terraform itself is a tool for building, changing, and versioning infrastructure safely and efficiently. You can find more about Terraform on its [website](https://www.terraform.io) and [its GitHub repository](https://github.com/hashicorp/terraform).
 
+## Terraform CLI Compatibility
+
+The v1 major release of the Terraform Plugin SDK supports Terraform 0.11 and later.
+
+It cannot, however, take advantage of all newer features and capabilities in releases of Terraform after 0.11.
+
+Testing using the reattach-based binary test driver, which is opt-in, requires the test runner to be using Terraform 0.12.26 or later. Only test runners, not users, have this requirement.
+
+## Go Compatibility
+
+The Terraform Plugin SDK is built in Go, and uses the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the SDK.
+
 ## Documentation
 
 See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) section on the website.
