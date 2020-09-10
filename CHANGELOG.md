@@ -9,7 +9,6 @@ BUG FIXES
 * Fixed bug that ignored ExpectError when testing state imports [GH-550]
 * Fixed bug that sometimes prevented TestStep numbers from appearing in error output [GH-557]
 * Fixed bug that would ignore `TestStep.Destroy` when running tests. [GH-563]
-* Fixed bug where reattach info would not be supplied during tests. [GH-567]
 
 # 2.0.1 (August 10, 2020)
 
