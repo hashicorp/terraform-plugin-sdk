@@ -1,3 +1,9 @@
+# 2.0.3 (Unreleased)
+
+BUG FIXES
+
+* Fixed a bug that would incorrectly mark tests using TestStep.ImportStateVerify as failed if they tested a resource with custom timeouts [GH-576]
+
 # 2.0.2 (September 10, 2020)
 
 BUG FIXES
