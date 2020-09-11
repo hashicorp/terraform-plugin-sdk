@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, wd *plugintest.WorkingDir, step TestStep, cfg string) error {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()

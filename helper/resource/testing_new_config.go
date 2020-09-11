@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	tfjson "github.com/hashicorp/terraform-json"
-	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep) error {
+func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step TestStep) error {
 	t.Helper()
 
 	var idRefreshCheck *terraform.ResourceState
