@@ -23,8 +23,12 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 
 	// get state from check sequence
 	var state *terraform.State
-	err := runProviderCommand(t, func() error {
-		state = getState(t, wd)
+	var err error
+	err = runProviderCommand(t, func() error {
+		state, err = getState(t, wd)
+		if err != nil {
+			return err
+		}
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {
@@ -60,11 +64,13 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 	}
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
-	importWd.RequireSetConfig(t, step.Config)
+	err = importWd.SetConfig(step.Config)
+	if err != nil {
+		t.Fatalf("Error setting test config: %s", err)
+	}
 
 	err = runProviderCommand(t, func() error {
-		importWd.RequireInit(t)
-		return nil
+		return importWd.Init()
 	}, importWd, c.ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error running init: %s", err)
@@ -79,7 +85,10 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 
 	var importState *terraform.State
 	err = runProviderCommand(t, func() error {
-		importState = getState(t, importWd)
+		importState, err = getState(t, importWd)
+		if err != nil {
+			return err
+		}
 		return nil
 	}, importWd, c.ProviderFactories)
 	if err != nil {
