@@ -18,8 +18,12 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 
 	if !step.Destroy {
 		var state *terraform.State
-		err := runProviderCommand(t, func() error {
-			state = getState(t, wd)
+		var err error
+		err = runProviderCommand(t, func() error {
+			state, err = getState(t, wd)
+			if err != nil {
+				return err
+			}
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -64,7 +68,10 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		// check function
 		var stateBeforeApplication *terraform.State
 		err = runProviderCommand(t, func() error {
-			stateBeforeApplication = getState(t, wd)
+			stateBeforeApplication, err = getState(t, wd)
+			if err != nil {
+				return err
+			}
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -85,7 +92,10 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		// Get the new state
 		var state *terraform.State
 		err = runProviderCommand(t, func() error {
-			state = getState(t, wd)
+			state, err = getState(t, wd)
+			if err != nil {
+				return err
+			}
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -194,7 +204,10 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 	// empty, find the first resource and test it.
 	var state *terraform.State
 	err = runProviderCommand(t, func() error {
-		state = getState(t, wd)
+		state, err = getState(t, wd)
+		if err != nil {
+			return err
+		}
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {

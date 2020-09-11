@@ -19,8 +19,7 @@ func runPostTestDestroy(t testing.T, c TestCase, wd *plugintest.WorkingDir, fact
 	t.Helper()
 
 	err := runProviderCommand(t, func() error {
-		wd.RequireDestroy(t)
-		return nil
+		return wd.Destroy()
 	}, wd, factories)
 	if err != nil {
 		return err
@@ -44,8 +43,12 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 
 	defer func() {
 		var statePreDestroy *terraform.State
-		err := runProviderCommand(t, func() error {
-			statePreDestroy = getState(t, wd)
+		var err error
+		err = runProviderCommand(t, func() error {
+			statePreDestroy, err = getState(t, wd)
+			if err != nil {
+				return err
+			}
 			return nil
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -68,10 +71,12 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 		t.Fatal(err)
 	}
 
-	wd.RequireSetConfig(t, providerCfg)
+	err = wd.SetConfig(providerCfg)
+	if err != nil {
+		t.Fatalf("Error setting test config: %s", err)
+	}
 	err = runProviderCommand(t, func() error {
-		wd.RequireInit(t)
-		return nil
+		return wd.Init()
 	}, wd, c.ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error running init: %s", err.Error())
@@ -137,15 +142,18 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 	}
 }
 
-func getState(t testing.T, wd *plugintest.WorkingDir) *terraform.State {
+func getState(t testing.T, wd *plugintest.WorkingDir) (*terraform.State, error) {
 	t.Helper()
 
-	jsonState := wd.RequireState(t)
+	jsonState, err := wd.State()
+	if err != nil {
+		return nil, err
+	}
 	state, err := shimStateFromJson(jsonState)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return state
+	return state, nil
 }
 
 func stateIsEmpty(state *terraform.State) bool {
@@ -187,13 +195,27 @@ func testIDRefresh(c TestCase, t testing.T, wd *plugintest.WorkingDir, step Test
 	if err != nil {
 		return err
 	}
-	wd.RequireSetConfig(t, cfg)
-	defer wd.RequireSetConfig(t, step.Config)
+	err = wd.SetConfig(cfg)
+	if err != nil {
+		t.Fatalf("Error setting import test config: %s", err)
+	}
+	defer func() {
+		err = wd.SetConfig(step.Config)
+		if err != nil {
+			t.Fatalf("Error resetting test config: %s", err)
+		}
+	}()
 
 	// Refresh!
 	err = runProviderCommand(t, func() error {
-		wd.RequireRefresh(t)
-		state = getState(t, wd)
+		err = wd.Refresh()
+		if err != nil {
+			t.Fatalf("Error running terraform refresh: %s", err)
+		}
+		state, err = getState(t, wd)
+		if err != nil {
+			return err
+		}
 		return nil
 	}, wd, c.ProviderFactories)
 	if err != nil {
