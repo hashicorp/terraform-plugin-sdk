@@ -171,6 +171,26 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 				}
 			}
 
+			// timeouts are only _sometimes_ added to state. To
+			// account for this, just don't compare timeouts at
+			// all.
+			for k := range actual {
+				if strings.HasPrefix(k, "timeouts.") {
+					delete(actual, k)
+				}
+				if k == "timeouts" {
+					delete(actual, k)
+				}
+			}
+			for k := range expected {
+				if strings.HasPrefix(k, "timeouts.") {
+					delete(expected, k)
+				}
+				if k == "timeouts" {
+					delete(expected, k)
+				}
+			}
+
 			if !reflect.DeepEqual(actual, expected) {
 				// Determine only the different attributes
 				for k, v := range expected {
