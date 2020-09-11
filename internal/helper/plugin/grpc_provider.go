@@ -1040,6 +1040,11 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto
 		// Normalize the value and fill in any missing blocks.
 		newStateVal = objchange.NormalizeObjectFromLegacySDK(newStateVal, schemaBlock)
 
+		timeouts, ok := newStateVal.AsValueMap()[schema.TimeoutsConfigKey]
+		if ok {
+			newStateVal = copyTimeoutValues(newStateVal, cty.NullVal(timeouts.Type()))
+		}
+
 		newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
