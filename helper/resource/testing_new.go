@@ -8,14 +8,14 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	tfjson "github.com/hashicorp/terraform-json"
-	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func runPostTestDestroy(t testing.T, c TestCase, wd *tftest.WorkingDir, factories map[string]func() (*schema.Provider, error), statePreDestroy *terraform.State) error {
+func runPostTestDestroy(t testing.T, c TestCase, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), statePreDestroy *terraform.State) error {
 	t.Helper()
 
 	err := runProviderCommand(t, func() error {
@@ -35,7 +35,7 @@ func runPostTestDestroy(t testing.T, c TestCase, wd *tftest.WorkingDir, factorie
 	return nil
 }
 
-func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
+func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()
@@ -137,7 +137,7 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 	}
 }
 
-func getState(t testing.T, wd *tftest.WorkingDir) *terraform.State {
+func getState(t testing.T, wd *plugintest.WorkingDir) *terraform.State {
 	t.Helper()
 
 	jsonState := wd.RequireState(t)
@@ -169,7 +169,7 @@ func planIsEmpty(plan *tfjson.Plan) bool {
 	return true
 }
 
-func testIDRefresh(c TestCase, t testing.T, wd *tftest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
+func testIDRefresh(c TestCase, t testing.T, wd *plugintest.WorkingDir, step TestStep, r *terraform.ResourceState) error {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()
