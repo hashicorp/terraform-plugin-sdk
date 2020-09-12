@@ -63,7 +63,10 @@ func runNewTest(t testing.T, c TestCase, helper *tftest.Helper) {
 		}
 
 		if !stateIsEmpty(statePreDestroy) {
-			runPostTestDestroy(t, c, wd, c.ProviderFactories)
+			err := runPostTestDestroy(t, c, wd, c.ProviderFactories)
+			if err != nil {
+				t.Fatalf("Error running post-test destroy, there may be dangling resources: %s", err.Error())
+			}
 		}
 
 		wd.Close()
