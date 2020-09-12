@@ -141,8 +141,6 @@ func testStepNewConfig(t testing.T, c TestCase, wd *tftest.WorkingDir, step Test
 			return fmt.Errorf("Error retrieving formatted plan output: %w", err)
 		}
 		return fmt.Errorf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
-	} else if step.ExpectNonEmptyPlan && planIsEmpty(plan) {
-		return fmt.Errorf("Expected a non-empty plan, but got an empty plan!")
 	}
 
 	// do a refresh
