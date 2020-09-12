@@ -18,6 +18,10 @@ The Terraform Plugin SDK is built in Go, and uses the [support policy](https://g
 
 Currently, that means Go **1.14** or later must be used when building a provider with the SDK.
 
+## Getting Started
+
+See the [Call APIs with Terraform Providers](https://learn.hashicorp.com/collections/terraform/providers) guide on [learn.hashicorp.com](https://learn.hashicorp.com) for a guided tour of provider development.
+
 ## Documentation
 
 See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) section on the website.
@@ -50,6 +54,10 @@ See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) secti
 ## Migrating to SDK v1 from built-in SDK
 
 Migrating to the standalone SDK v1 is covered on the [Plugin SDK section](https://www.terraform.io/docs/extend/plugin-sdk.html) of the website.
+
+## Migrating to SDK v2 from SDK v1
+
+Migrating to the v2 release of the SDK is covered in the [v2 Upgrade Guide](https://www.terraform.io/docs/extend/guides/v2-upgrade-guide.html) of the website.
 
 ## Versioning
 
