@@ -1,11 +1,11 @@
-# 2.0.3 (Unreleased)
+# 2.0.3 (September 15, 2020)
 
 BUG FIXES
 
-* Fixed a bug that would incorrectly mark tests using TestStep.ImportStateVerify as failed if they tested a resource with custom timeouts [GH-576]
-* Fixed a bug where errors destroying infrastructure after tests wouldn't be reported [GH-581]
-* Fixed a bug where test steps that expected a non-empty plan would fail because they had an empty plan, erroneously [GH-580]
-* Fixed a bug where the plan output shown when an unexpected diff was encountered during testing would be shown in JSON instead of a human-readable format [GH-584]
+* Fixed a bug that would incorrectly mark tests using TestStep.ImportStateVerify as failed if they tested a resource with custom timeouts ([#576](https://github.com/hashicorp/terraform-plugin-sdk/issues/576))
+* Fixed a bug where errors destroying infrastructure after tests wouldn't be reported ([#581](https://github.com/hashicorp/terraform-plugin-sdk/issues/581))
+* Fixed a bug where test steps that expected a non-empty plan would fail because they had an empty plan, erroneously ([#580](https://github.com/hashicorp/terraform-plugin-sdk/issues/580))
+* Fixed a bug where the plan output shown when an unexpected diff was encountered during testing would be shown in JSON instead of a human-readable format ([#584](https://github.com/hashicorp/terraform-plugin-sdk/issues/584))
 
 # 2.0.2 (September 10, 2020)
 
