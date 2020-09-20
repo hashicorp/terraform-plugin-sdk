@@ -332,6 +332,8 @@ type TestCase struct {
 	// IDRefreshIgnore is a list of configuration keys that will be ignored.
 	IDRefreshName   string
 	IDRefreshIgnore []string
+
+	ConfigDir string
 }
 
 // ExternalProvider holds information about third-party providers that should
