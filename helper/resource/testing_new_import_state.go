@@ -58,13 +58,13 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 	// Create working directory for import tests
 	if step.Config == "" {
 		step.Config = cfg
-		if step.Config == "" {
+		if step.Config == "" && c.ConfigDir == "" {
 			t.Fatal("Cannot import state with no specified config")
 		}
 	}
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
-	err = importWd.SetConfig(step.Config)
+	err = importWd.SetConfig(step.Config, c.ConfigDir)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
 	}

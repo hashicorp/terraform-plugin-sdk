@@ -88,7 +88,7 @@ func (wd *WorkingDir) relativeConfigDir() (string, error) {
 // This must be called at least once before any call to Init, Plan, Apply, or
 // Destroy to establish the configuration. Any previously-set configuration is
 // discarded and any saved plan is cleared.
-func (wd *WorkingDir) SetConfig(cfg string) error {
+func (wd *WorkingDir) SetConfig(cfg string, fixtureDir string) error {
 	// Each call to SetConfig creates a new directory under our baseDir.
 	// We create them within so that our final cleanup step will delete them
 	// automatically without any additional tracking.
@@ -96,7 +96,19 @@ func (wd *WorkingDir) SetConfig(cfg string) error {
 	if err != nil {
 		return err
 	}
+
+	if fixtureDir != "" {
+		err = copyFiles(fixtureDir, configDir)
+		if err != nil {
+			return err
+		}
+	}
+
 	configFilename := filepath.Join(configDir, "terraform_plugin_test.tf")
+	if _, err := os.Stat(configFilename); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
 	err = ioutil.WriteFile(configFilename, []byte(cfg), 0700)
 	if err != nil {
 		return err
@@ -170,14 +182,55 @@ func (wd *WorkingDir) planFilename() string {
 // CreatePlan runs "terraform plan" to create a saved plan file, which if successful
 // will then be used for the next call to Apply.
 func (wd *WorkingDir) CreatePlan() error {
-	_, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out("tfplan"), tfexec.Dir(wd.configDir))
+	opts := []tfexec.PlanOption{
+		tfexec.Reattach(wd.reattachInfo),
+		tfexec.Refresh(false),
+		tfexec.Out("tfplan"),
+		tfexec.Dir(wd.configDir),
+	}
+
+	// auto VarFiles are not picked up when using the tfexec.Dir option I think...
+	files, err := ioutil.ReadDir(wd.configDir)
+	if err != nil {
+		return fmt.Errorf("unable to read files in config dir: %w", err)
+	}
+	for _, f := range files {
+		if filepath.Ext(f.Name()) != ".tfvars" {
+			continue
+		}
+
+		opts = append(opts, tfexec.VarFile(filepath.Join(wd.configDir, f.Name())))
+	}
+
+	_, err = wd.tf.Plan(context.Background(), opts...)
 	return err
 }
 
 // CreateDestroyPlan runs "terraform plan -destroy" to create a saved plan
 // file, which if successful will then be used for the next call to Apply.
 func (wd *WorkingDir) CreateDestroyPlan() error {
-	_, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out("tfplan"), tfexec.Destroy(true), tfexec.Dir(wd.configDir))
+	opts := []tfexec.PlanOption{
+		tfexec.Reattach(wd.reattachInfo),
+		tfexec.Refresh(false),
+		tfexec.Out("tfplan"),
+		tfexec.Destroy(true),
+		tfexec.Dir(wd.configDir),
+	}
+
+	// auto VarFiles are not picked up when using the tfexec.Dir option I think...
+	files, err := ioutil.ReadDir(wd.configDir)
+	if err != nil {
+		return fmt.Errorf("unable to read files in config dir: %w", err)
+	}
+	for _, f := range files {
+		if filepath.Ext(f.Name()) != ".tfvars" {
+			continue
+		}
+
+		opts = append(opts, tfexec.VarFile(filepath.Join(wd.configDir, f.Name())))
+	}
+
+	_, err = wd.tf.Plan(context.Background(), opts...)
 	return err
 }
 
@@ -186,9 +239,12 @@ func (wd *WorkingDir) CreateDestroyPlan() error {
 // this will apply the saved plan. Otherwise, it will implicitly create a new
 // plan and apply it.
 func (wd *WorkingDir) Apply() error {
-	args := []tfexec.ApplyOption{tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false)}
+	opts := []tfexec.ApplyOption{
+		tfexec.Reattach(wd.reattachInfo),
+		tfexec.Refresh(false),
+	}
 	if wd.HasSavedPlan() {
-		args = append(args, tfexec.DirOrPlan("tfplan"))
+		opts = append(opts, tfexec.DirOrPlan("tfplan"))
 	} else {
 		// we need to use a relative config dir here or we get an
 		// error about Terraform not having any configuration. See
@@ -198,9 +254,23 @@ func (wd *WorkingDir) Apply() error {
 		if err != nil {
 			return err
 		}
-		args = append(args, tfexec.DirOrPlan(configDir))
+		opts = append(opts, tfexec.DirOrPlan(configDir))
+
+		// auto VarFiles are not picked up when using the tfexec.Dir option I think...
+		files, err := ioutil.ReadDir(wd.configDir)
+		if err != nil {
+			return fmt.Errorf("unable to read files in config dir: %w", err)
+		}
+		for _, f := range files {
+			if filepath.Ext(f.Name()) != ".tfvars" {
+				continue
+			}
+
+			opts = append(opts, tfexec.VarFile(filepath.Join(wd.configDir, f.Name())))
+		}
 	}
-	return wd.tf.Apply(context.Background(), args...)
+
+	return wd.tf.Apply(context.Background(), opts...)
 }
 
 // Destroy runs "terraform destroy". It does not consider or modify any saved
@@ -267,7 +337,26 @@ func (wd *WorkingDir) Import(resource, id string) error {
 
 // Refresh runs terraform refresh
 func (wd *WorkingDir) Refresh() error {
-	return wd.tf.Refresh(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.State(filepath.Join(wd.baseDir, "terraform.tfstate")), tfexec.Dir(wd.configDir))
+	opts := []tfexec.RefreshCmdOption{
+		tfexec.Reattach(wd.reattachInfo),
+		tfexec.State(filepath.Join(wd.baseDir, "terraform.tfstate")),
+		tfexec.Dir(wd.configDir),
+	}
+
+	// auto VarFiles are not picked up when using the tfexec.Dir option I think...
+	files, err := ioutil.ReadDir(wd.configDir)
+	if err != nil {
+		return fmt.Errorf("unable to read files in config dir: %w", err)
+	}
+	for _, f := range files {
+		if filepath.Ext(f.Name()) != ".tfvars" {
+			continue
+		}
+
+		opts = append(opts, tfexec.VarFile(filepath.Join(wd.configDir, f.Name())))
+	}
+
+	return wd.tf.Refresh(context.Background(), opts...)
 }
 
 // Schemas returns an object describing the provider schemas.
