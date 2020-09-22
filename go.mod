@@ -28,9 +28,9 @@ require (
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20191115094559-17f92b0546e8
-	github.com/hashicorp/terraform-exec v0.9.0
+	github.com/hashicorp/terraform-exec v0.10.0
 	github.com/hashicorp/terraform-json v0.5.0
-	github.com/hashicorp/terraform-plugin-test/v2 v2.1.1
+	github.com/hashicorp/terraform-plugin-test/v2 v2.1.2
 	github.com/hashicorp/terraform-svchost v0.0.0-20191011084731-65d371908596
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
