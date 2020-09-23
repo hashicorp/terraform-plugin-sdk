@@ -16,6 +16,8 @@ BUG FIXES:
 * Removed excessive logging when using binary acceptance testing [GH-553]
 * Fixed a bug that would sometimes bypass ExpectNonEmptyError during binary testing [GH-553]
 * Fixed binary testing to respect `TestStep.Destroy` and more accurately mirror the legacy testing behavior [GH-553]
+* Fixed a bug with ExpectNonEmptyPlan tests when using binary testing [GH-590]
+* Surfaced errors when running destroy after tests when using binary testing [GH-590]
 
 # 1.15.0 (July 08, 2020)
 
