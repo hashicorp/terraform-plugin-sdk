@@ -1,23 +1,23 @@
-# 1.16.0 (Unreleased)
+# 1.16.0 (September 24, 2020)
 
 FEATURES:
 
-* Backported reattach mode for binary acceptance testing. Set `TF_ACCTEST_REATTACH` to `1` when using binary testing to enable reattach mode, which will allow debugging the provider under test and accurate test coverage results. [GH-527]
+* Backported reattach mode for binary acceptance testing. Set `TF_ACCTEST_REATTACH` to `1` when using binary testing to enable reattach mode, which will allow debugging the provider under test and accurate test coverage results. ([#527](https://github.com/hashicorp/terraform-plugin-sdk/issues/527))
 
 ENHANCEMENTS:
 
-* Improved plan output for unexpected diffs when using binary testing [GH-553]
+* Improved plan output for unexpected diffs when using binary testing ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
 
 BUG FIXES:
 
-* Fixed a bug with binary testing that would use the wrong state when verifying import state [GH-553]
-* Restored TestStep numbers in various outputs for binary testing [GH-553]
-* Made resource detection when verifying import state more robust [GH-553]
-* Removed excessive logging when using binary acceptance testing [GH-553]
-* Fixed a bug that would sometimes bypass ExpectNonEmptyError during binary testing [GH-553]
-* Fixed binary testing to respect `TestStep.Destroy` and more accurately mirror the legacy testing behavior [GH-553]
-* Fixed a bug with ExpectNonEmptyPlan tests when using binary testing [GH-590]
-* Surfaced errors when running destroy after tests when using binary testing [GH-590]
+* Fixed a bug with binary testing that would use the wrong state when verifying import state ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Restored TestStep numbers in various outputs for binary testing ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Made resource detection when verifying import state more robust ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Removed excessive logging when using binary acceptance testing ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Fixed a bug that would sometimes bypass ExpectNonEmptyError during binary testing ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Fixed binary testing to respect `TestStep.Destroy` and more accurately mirror the legacy testing behavior ([#553](https://github.com/hashicorp/terraform-plugin-sdk/issues/553))
+* Fixed a bug with ExpectNonEmptyPlan tests when using binary testing ([#590](https://github.com/hashicorp/terraform-plugin-sdk/issues/590))
+* Surfaced errors when running destroy after tests when using binary testing ([#590](https://github.com/hashicorp/terraform-plugin-sdk/issues/590))
 
 # 1.15.0 (July 08, 2020)
 
