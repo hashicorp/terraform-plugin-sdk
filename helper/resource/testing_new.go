@@ -162,12 +162,6 @@ func stateIsEmpty(state *terraform.State) bool {
 
 func planIsEmpty(plan *tfjson.Plan) bool {
 	for _, rc := range plan.ResourceChanges {
-		if rc.Mode == tfjson.DataResourceMode {
-			// Skip data sources as the current implementation ignores
-			// existing state and they are all re-read every time
-			continue
-		}
-
 		for _, a := range rc.Change.Actions {
 			if a != tfjson.ActionNoop {
 				return false
