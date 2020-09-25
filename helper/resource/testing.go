@@ -258,6 +258,10 @@ type ImportStateCheckFunc func([]*terraform.InstanceState) error
 // generation for ImportState tests.
 type ImportStateIdFunc func(*terraform.State) (string, error)
 
+// SkipOnErrorFunc is a function to determine whether an error should cause a
+// test to be skipped.
+type SkipOnErrorFunc func(error) bool
+
 // TestCase is a single acceptance test case used to test the apply/destroy
 // lifecycle of a resource in a specific configuration.
 //
@@ -322,6 +326,11 @@ type TestCase struct {
 	// CheckDestroy is called after the resource is finally destroyed
 	// to allow the tester to test that the resource is truly gone.
 	CheckDestroy TestCheckFunc
+
+	// SkipOnError allows the construction of tests that we want to skip if
+	// they fail with particular errors. The error is passed to a function that
+	// determines whether to skip the test.
+	SkipOnError SkipOnErrorFunc
 
 	// Steps are the apply sequences done within the context of the
 	// same state. Each step can have its own check to verify correctness.
