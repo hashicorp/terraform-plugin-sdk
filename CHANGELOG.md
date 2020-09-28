@@ -1,3 +1,8 @@
+# 2.0.4 (Unreleased)
+
+BUG FIXES
+* Fix a bug that would pass the post-destroy state to `helper/resource.TestCase.CheckDestroy` instead of the documented pre-destroy state [GH-591]
+
 # 2.0.3 (September 15, 2020)
 
 BUG FIXES
