@@ -144,7 +144,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		var stdout string
 		err = runProviderCommand(t, func() error {
 			var err error
-			stdout, err = wd.SavedPlanStdout()
+			stdout, err = wd.SavedPlanRawStdout()
 			return err
 		}, wd, c.ProviderFactories)
 		if err != nil {
@@ -188,7 +188,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		var stdout string
 		err = runProviderCommand(t, func() error {
 			var err error
-			stdout, err = wd.SavedPlanStdout()
+			stdout, err = wd.SavedPlanRawStdout()
 			return err
 		}, wd, c.ProviderFactories)
 		if err != nil {
