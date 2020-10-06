@@ -1,9 +1,9 @@
-# 2.0.4 (Unreleased)
+# 2.0.4 (October 06, 2020)
 
 BUG FIXES
-* Fix a bug that would pass the post-destroy state to `helper/resource.TestCase.CheckDestroy` instead of the documented pre-destroy state [GH-591]
-* Clean up the final remaining places where test numbers or dangling resources warnings could be omitted from errors [GH-578]
-* Stop considering plans empty when they include data source changes [GH-594]
+* Fix a bug that would pass the post-destroy state to `helper/resource.TestCase.CheckDestroy` instead of the documented pre-destroy state ([#591](https://github.com/hashicorp/terraform-plugin-sdk/issues/591))
+* Clean up the final remaining places where test numbers or dangling resources warnings could be omitted from errors ([#578](https://github.com/hashicorp/terraform-plugin-sdk/issues/578))
+* Stop considering plans empty when they include data source changes ([#594](https://github.com/hashicorp/terraform-plugin-sdk/issues/594))
 
 # 2.0.3 (September 15, 2020)
 
