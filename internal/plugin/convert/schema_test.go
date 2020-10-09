@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 
 	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
@@ -27,24 +28,28 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			&proto.SchemaBlock{
 				Attributes: []*proto.SchemaAttribute{
 					{
-						Name:     "computed",
-						Type:     []byte(`["list","bool"]`),
+						Name: "computed",
+						Type: tftypes.List{
+							ElementType: tftypes.Bool,
+						},
 						Computed: true,
 					},
 					{
 						Name:     "optional",
-						Type:     []byte(`"string"`),
+						Type:     tftypes.String,
 						Optional: true,
 					},
 					{
-						Name:     "optional_computed",
-						Type:     []byte(`["map","bool"]`),
+						Name: "optional_computed",
+						Type: tftypes.Map{
+							AttributeType: tftypes.Bool,
+						},
 						Optional: true,
 						Computed: true,
 					},
 					{
 						Name:     "required",
-						Type:     []byte(`"number"`),
+						Type:     tftypes.Number,
 						Required: true,
 					},
 				},
@@ -96,7 +101,7 @@ func TestConvertSchemaBlocks(t *testing.T) {
 							Attributes: []*proto.SchemaAttribute{
 								{
 									Name:     "foo",
-									Type:     []byte(`"dynamic"`),
+									Type:     tftypes.DynamicPseudoType,
 									Required: true,
 								},
 							},
@@ -199,24 +204,28 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			&proto.SchemaBlock{
 				Attributes: []*proto.SchemaAttribute{
 					{
-						Name:     "computed",
-						Type:     []byte(`["list","bool"]`),
+						Name: "computed",
+						Type: tftypes.List{
+							ElementType: tftypes.Bool,
+						},
 						Computed: true,
 					},
 					{
 						Name:     "optional",
-						Type:     []byte(`"string"`),
+						Type:     tftypes.String,
 						Optional: true,
 					},
 					{
-						Name:     "optional_computed",
-						Type:     []byte(`["map","bool"]`),
+						Name: "optional_computed",
+						Type: tftypes.Map{
+							AttributeType: tftypes.Bool,
+						},
 						Optional: true,
 						Computed: true,
 					},
 					{
 						Name:     "required",
-						Type:     []byte(`"number"`),
+						Type:     tftypes.Number,
 						Required: true,
 					},
 				},
@@ -268,7 +277,7 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 							Attributes: []*proto.SchemaAttribute{
 								{
 									Name:     "foo",
-									Type:     []byte(`"dynamic"`),
+									Type:     tftypes.DynamicPseudoType,
 									Required: true,
 								},
 							},

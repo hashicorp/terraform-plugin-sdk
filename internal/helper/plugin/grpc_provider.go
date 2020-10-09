@@ -12,13 +12,14 @@ import (
 	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
 	"github.com/hashicorp/go-cty/cty/msgpack"
 
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	c "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plans/objchange"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -62,9 +63,9 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 	return stoppable
 }
 
-func (s *GRPCProviderServer) GetSchema(_ context.Context, req *proto.GetProviderSchema_Request) (*proto.GetProviderSchema_Response, error) {
+func (s *GRPCProviderServer) GetProviderSchema(_ context.Context, req *proto.GetProviderSchemaRequest) (*proto.GetProviderSchemaResponse, error) {
 
-	resp := &proto.GetProviderSchema_Response{
+	resp := &proto.GetProviderSchemaResponse{
 		ResourceSchemas:   make(map[string]*proto.Schema),
 		DataSourceSchemas: make(map[string]*proto.Schema),
 	}
@@ -112,12 +113,12 @@ func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema
 	return dat.CoreConfigSchema()
 }
 
-func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto.PrepareProviderConfig_Request) (*proto.PrepareProviderConfig_Response, error) {
-	resp := &proto.PrepareProviderConfig_Response{}
+func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto.PrepareProviderConfigRequest) (*proto.PrepareProviderConfigResponse, error) {
+	resp := &proto.PrepareProviderConfigResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
 
-	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -210,17 +211,17 @@ func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *proto
 		return resp, nil
 	}
 
-	resp.PreparedConfig = &proto.DynamicValue{Msgpack: preparedConfigMP}
+	resp.PreparedConfig = &proto.DynamicValue{MsgPack: preparedConfigMP}
 
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *proto.ValidateResourceTypeConfig_Request) (*proto.ValidateResourceTypeConfig_Response, error) {
-	resp := &proto.ValidateResourceTypeConfig_Response{}
+func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *proto.ValidateResourceTypeConfigRequest) (*proto.ValidateResourceTypeConfigResponse, error) {
+	resp := &proto.ValidateResourceTypeConfigResponse{}
 
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -233,12 +234,12 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *proto.ValidateDataSourceConfig_Request) (*proto.ValidateDataSourceConfig_Response, error) {
-	resp := &proto.ValidateDataSourceConfig_Response{}
+func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *proto.ValidateDataSourceConfigRequest) (*proto.ValidateDataSourceConfigResponse, error) {
+	resp := &proto.ValidateDataSourceConfigResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
 
-	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -257,8 +258,8 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *pr
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *proto.UpgradeResourceState_Request) (*proto.UpgradeResourceState_Response, error) {
-	resp := &proto.UpgradeResourceState_Response{}
+func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *proto.UpgradeResourceStateRequest) (*proto.UpgradeResourceStateResponse, error) {
+	resp := &proto.UpgradeResourceStateResponse{}
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
 	if !ok {
@@ -282,8 +283,8 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *prot
 			return resp, nil
 		}
 	// if there's a JSON state, we need to decode it.
-	case len(req.RawState.Json) > 0:
-		err = json.Unmarshal(req.RawState.Json, &jsonMap)
+	case len(req.RawState.JSON) > 0:
+		err = json.Unmarshal(req.RawState.JSON, &jsonMap)
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -329,7 +330,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *prot
 		return resp, nil
 	}
 
-	resp.UpgradedState = &proto.DynamicValue{Msgpack: newStateMP}
+	resp.UpgradedState = &proto.DynamicValue{MsgPack: newStateMP}
 	return resp, nil
 }
 
@@ -479,7 +480,7 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 	}
 }
 
-func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*proto.Stop_Response, error) {
+func (s *GRPCProviderServer) StopProvider(_ context.Context, _ *proto.StopProviderRequest) (*proto.StopProviderResponse, error) {
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -488,15 +489,15 @@ func (s *GRPCProviderServer) Stop(_ context.Context, _ *proto.Stop_Request) (*pr
 	// reset the stop signal
 	s.stopCh = make(chan struct{})
 
-	return &proto.Stop_Response{}, nil
+	return &proto.StopProviderResponse{}, nil
 }
 
-func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure_Request) (*proto.Configure_Response, error) {
-	resp := &proto.Configure_Response{}
+func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *proto.ConfigureProviderRequest) (*proto.ConfigureProviderResponse, error) {
+	resp := &proto.ConfigureProviderResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
 
-	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -523,8 +524,8 @@ func (s *GRPCProviderServer) Configure(ctx context.Context, req *proto.Configure
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadResource_Request) (*proto.ReadResource_Response, error) {
-	resp := &proto.ReadResource_Response{
+func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadResourceRequest) (*proto.ReadResourceResponse, error) {
+	resp := &proto.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
 		// persist it in the state.
@@ -538,7 +539,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	stateVal, err := msgpack.Unmarshal(req.CurrentState.Msgpack, schemaBlock.ImpliedType())
+	stateVal, err := msgpack.Unmarshal(req.CurrentState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -561,7 +562,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 
 	pmSchemaBlock := s.getProviderMetaSchemaBlock()
 	if pmSchemaBlock != nil && req.ProviderMeta != nil {
-		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.Msgpack, pmSchemaBlock.ImpliedType())
+		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.MsgPack, pmSchemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -584,7 +585,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		}
 		resp.NewState = &proto.DynamicValue{
-			Msgpack: newStateMP,
+			MsgPack: newStateMP,
 		}
 		return resp, nil
 	}
@@ -608,14 +609,14 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *proto.ReadRe
 	}
 
 	resp.NewState = &proto.DynamicValue{
-		Msgpack: newStateMP,
+		MsgPack: newStateMP,
 	}
 
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.PlanResourceChange_Request) (*proto.PlanResourceChange_Response, error) {
-	resp := &proto.PlanResourceChange_Response{}
+func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.PlanResourceChangeRequest) (*proto.PlanResourceChangeResponse, error) {
+	resp := &proto.PlanResourceChangeResponse{}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
 	// shim the legacy type system of the SDK onto the Terraform type system
@@ -623,7 +624,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 	// forward to any new SDK implementations, since setting it prevents us
 	// from catching certain classes of provider bug that can lead to
 	// confusing downstream errors.
-	resp.LegacyTypeSystem = true
+	resp.UnsafeToUseLegacyTypeSystem = true
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
 	if !ok {
@@ -632,7 +633,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	priorStateVal, err := msgpack.Unmarshal(req.PriorState.Msgpack, schemaBlock.ImpliedType())
+	priorStateVal, err := msgpack.Unmarshal(req.PriorState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -640,7 +641,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 
 	create := priorStateVal.IsNull()
 
-	proposedNewStateVal, err := msgpack.Unmarshal(req.ProposedNewState.Msgpack, schemaBlock.ImpliedType())
+	proposedNewStateVal, err := msgpack.Unmarshal(req.ProposedNewState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -670,7 +671,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 
 	pmSchemaBlock := s.getProviderMetaSchemaBlock()
 	if pmSchemaBlock != nil && req.ProviderMeta != nil {
-		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.Msgpack, pmSchemaBlock.ImpliedType())
+		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.MsgPack, pmSchemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -768,7 +769,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 		return resp, nil
 	}
 	resp.PlannedState = &proto.DynamicValue{
-		Msgpack: plannedMP,
+		MsgPack: plannedMP,
 	}
 
 	// encode any timeouts into the diff Meta
@@ -841,8 +842,8 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto.ApplyResourceChange_Request) (*proto.ApplyResourceChange_Response, error) {
-	resp := &proto.ApplyResourceChange_Response{
+func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto.ApplyResourceChangeRequest) (*proto.ApplyResourceChangeResponse, error) {
+	resp := &proto.ApplyResourceChangeResponse{
 		// Start with the existing state as a fallback
 		NewState: req.PriorState,
 	}
@@ -854,13 +855,13 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	priorStateVal, err := msgpack.Unmarshal(req.PriorState.Msgpack, schemaBlock.ImpliedType())
+	priorStateVal, err := msgpack.Unmarshal(req.PriorState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
 	}
 
-	plannedStateVal, err := msgpack.Unmarshal(req.PlannedState.Msgpack, schemaBlock.ImpliedType())
+	plannedStateVal, err := msgpack.Unmarshal(req.PlannedState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -941,7 +942,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 
 	pmSchemaBlock := s.getProviderMetaSchemaBlock()
 	if pmSchemaBlock != nil && req.ProviderMeta != nil {
-		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.Msgpack, pmSchemaBlock.ImpliedType())
+		providerSchemaVal, err := msgpack.Unmarshal(req.ProviderMeta.MsgPack, pmSchemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -964,7 +965,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 			return resp, nil
 		}
 		resp.NewState = &proto.DynamicValue{
-			Msgpack: newStateMP,
+			MsgPack: newStateMP,
 		}
 		return resp, nil
 	}
@@ -987,7 +988,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 		return resp, nil
 	}
 	resp.NewState = &proto.DynamicValue{
-		Msgpack: newStateMP,
+		MsgPack: newStateMP,
 	}
 
 	meta, err := json.Marshal(newInstanceState.Meta)
@@ -1003,19 +1004,19 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 	// forward to any new SDK implementations, since setting it prevents us
 	// from catching certain classes of provider bug that can lead to
 	// confusing downstream errors.
-	resp.LegacyTypeSystem = true
+	resp.UnsafeToUseLegacyTypeSystem = true
 
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto.ImportResourceState_Request) (*proto.ImportResourceState_Response, error) {
-	resp := &proto.ImportResourceState_Response{}
+func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto.ImportResourceStateRequest) (*proto.ImportResourceStateResponse, error) {
+	resp := &proto.ImportResourceStateResponse{}
 
 	info := &terraform.InstanceInfo{
 		Type: req.TypeName,
 	}
 
-	newInstanceStates, err := s.provider.ImportState(ctx, info, req.Id)
+	newInstanceStates, err := s.provider.ImportState(ctx, info, req.ID)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -1052,10 +1053,10 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto
 			return resp, nil
 		}
 
-		importedResource := &proto.ImportResourceState_ImportedResource{
+		importedResource := &proto.ImportedResource{
 			TypeName: resourceType,
 			State: &proto.DynamicValue{
-				Msgpack: newStateMP,
+				MsgPack: newStateMP,
 			},
 			Private: meta,
 		}
@@ -1066,12 +1067,12 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *proto
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.ReadDataSource_Request) (*proto.ReadDataSource_Response, error) {
-	resp := &proto.ReadDataSource_Response{}
+func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.ReadDataSourceRequest) (*proto.ReadDataSourceResponse, error) {
+	resp := &proto.ReadDataSourceResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
 
-	configVal, err := msgpack.Unmarshal(req.Config.Msgpack, schemaBlock.ImpliedType())
+	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -1119,43 +1120,37 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 		return resp, nil
 	}
 	resp.State = &proto.DynamicValue{
-		Msgpack: newStateMP,
+		MsgPack: newStateMP,
 	}
 	return resp, nil
 }
 
-func pathToAttributePath(path cty.Path) *proto.AttributePath {
-	var steps []*proto.AttributePath_Step
+func pathToAttributePath(path cty.Path) *tftypes.AttributePath {
+	var steps []tftypes.AttributePathStep
 
 	for _, step := range path {
 		switch s := step.(type) {
 		case cty.GetAttrStep:
-			steps = append(steps, &proto.AttributePath_Step{
-				Selector: &proto.AttributePath_Step_AttributeName{
-					AttributeName: s.Name,
-				},
-			})
+			steps = append(steps,
+				tftypes.AttributeName(s.Name),
+			)
 		case cty.IndexStep:
 			ty := s.Key.Type()
 			switch ty {
 			case cty.Number:
 				i, _ := s.Key.AsBigFloat().Int64()
-				steps = append(steps, &proto.AttributePath_Step{
-					Selector: &proto.AttributePath_Step_ElementKeyInt{
-						ElementKeyInt: i,
-					},
-				})
+				steps = append(steps,
+					tftypes.ElementKeyInt(i),
+				)
 			case cty.String:
-				steps = append(steps, &proto.AttributePath_Step{
-					Selector: &proto.AttributePath_Step_ElementKeyString{
-						ElementKeyString: s.Key.AsString(),
-					},
-				})
+				steps = append(steps,
+					tftypes.ElementKeyString(s.Key.AsString()),
+				)
 			}
 		}
 	}
 
-	return &proto.AttributePath{Steps: steps}
+	return &tftypes.AttributePath{Steps: steps}
 }
 
 // helper/schema throws away timeout values from the config and stores them in
@@ -1432,7 +1427,7 @@ func validateConfigNulls(v cty.Value, path cty.Path) []*proto.Diagnostic {
 				}
 
 				diags = append(diags, &proto.Diagnostic{
-					Severity:  proto.Diagnostic_ERROR,
+					Severity:  proto.DiagnosticSeverityError,
 					Summary:   "Null value found in list",
 					Detail:    "Null values are not allowed for this attribute value.",
 					Attribute: convert.PathToAttributePath(p),

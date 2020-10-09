@@ -7,9 +7,10 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5/server"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 const (
@@ -63,7 +64,7 @@ func Serve(opts *ServeOpts) {
 		HandshakeConfig: Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{
 			5: {
-				ProviderPluginName: &gRPCProviderPlugin{
+				ProviderPluginName: &tfprotov5server.GRPCProviderPlugin{
 					GRPCProvider: func() proto.ProviderServer {
 						return provider
 					},

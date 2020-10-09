@@ -12,7 +12,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-test/deep v1.0.3
 	github.com/golang/mock v1.4.3
-	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
 	github.com/google/go-cmp v0.5.0
 	github.com/hashicorp/errwrap v1.0.0
@@ -28,6 +27,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.10.0
 	github.com/hashicorp/terraform-json v0.5.0
+	github.com/hashicorp/terraform-plugin-go v0.0.0-20201020231029-49daeca5241c
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -37,9 +37,8 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mitchellh/reflectwalk v1.0.1
 	github.com/pierrec/lz4 v2.0.5+incompatible
-	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
 	github.com/zclconf/go-cty v1.2.1
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
-	google.golang.org/grpc v1.30.0
+	google.golang.org/grpc v1.32.0
 )
