@@ -11,11 +11,11 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	testing "github.com/mitchellh/go-testing-interface"
 )

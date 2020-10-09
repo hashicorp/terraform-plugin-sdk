@@ -13,10 +13,10 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/msgpack"
 
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -80,11 +80,11 @@ func TestUpgradeState_jsonState(t *testing.T) {
 		},
 	})
 
-	req := &proto.UpgradeResourceState_Request{
+	req := &proto.UpgradeResourceStateRequest{
 		TypeName: "test",
 		Version:  0,
 		RawState: &proto.RawState{
-			Json: []byte(`{"id":"bar","zero":0}`),
+			JSON: []byte(`{"id":"bar","zero":0}`),
 		},
 	}
 
@@ -100,7 +100,7 @@ func TestUpgradeState_jsonState(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedState.Msgpack, r.CoreConfigSchema().ImpliedType())
+	val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,11 +221,11 @@ func TestUpgradeState_removedAttr(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			req := &proto.UpgradeResourceState_Request{
+			req := &proto.UpgradeResourceStateRequest{
 				TypeName: tc.name,
 				Version:  0,
 				RawState: &proto.RawState{
-					Json: []byte(tc.raw),
+					JSON: []byte(tc.raw),
 				},
 			}
 			resp, err := server.UpgradeResourceState(nil, req)
@@ -239,7 +239,7 @@ func TestUpgradeState_removedAttr(t *testing.T) {
 				}
 				t.Fatal("error")
 			}
-			val, err := msgpack.Unmarshal(resp.UpgradedState.Msgpack, p.ResourcesMap[tc.name].CoreConfigSchema().ImpliedType())
+			val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, p.ResourcesMap[tc.name].CoreConfigSchema().ImpliedType())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -338,7 +338,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 		},
 	})
 
-	testReqs := []*proto.UpgradeResourceState_Request{
+	testReqs := []*proto.UpgradeResourceStateRequest{
 		{
 			TypeName: "test",
 			Version:  0,
@@ -374,7 +374,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 			TypeName: "test",
 			Version:  2,
 			RawState: &proto.RawState{
-				Json: []byte(`{"id":"bar","two":2}`),
+				JSON: []byte(`{"id":"bar","two":2}`),
 			},
 		},
 		{
@@ -391,7 +391,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 			TypeName: "test",
 			Version:  3,
 			RawState: &proto.RawState{
-				Json: []byte(`{"id":"bar","three":3}`),
+				JSON: []byte(`{"id":"bar","three":3}`),
 			},
 		},
 		{
@@ -408,7 +408,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 			TypeName: "test",
 			Version:  4,
 			RawState: &proto.RawState{
-				Json: []byte(`{"id":"bar","four":4}`),
+				JSON: []byte(`{"id":"bar","four":4}`),
 			},
 		},
 	}
@@ -427,7 +427,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 				t.Fatal("error")
 			}
 
-			val, err := msgpack.Unmarshal(resp.UpgradedState.Msgpack, r.CoreConfigSchema().ImpliedType())
+			val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -462,7 +462,7 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 		},
 	})
 
-	testReqs := []*proto.UpgradeResourceState_Request{
+	testReqs := []*proto.UpgradeResourceStateRequest{
 		{
 			TypeName: "test",
 			Version:  0,
@@ -487,7 +487,7 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 			TypeName: "test",
 			Version:  1,
 			RawState: &proto.RawState{
-				Json: []byte(`{"id":"bar","one":1}`),
+				JSON: []byte(`{"id":"bar","one":1}`),
 			},
 		},
 	}
@@ -506,7 +506,7 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 				t.Fatal("error")
 			}
 
-			val, err := msgpack.Unmarshal(resp.UpgradedState.Msgpack, r.CoreConfigSchema().ImpliedType())
+			val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -559,13 +559,13 @@ func TestPlanResourceChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testReq := &proto.PlanResourceChange_Request{
+	testReq := &proto.PlanResourceChangeRequest{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
-			Msgpack: priorState,
+			MsgPack: priorState,
 		},
 		ProposedNewState: &proto.DynamicValue{
-			Msgpack: proposedState,
+			MsgPack: proposedState,
 		},
 	}
 
@@ -574,7 +574,7 @@ func TestPlanResourceChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	plannedStateVal, err := msgpack.Unmarshal(resp.PlannedState.Msgpack, schema.ImpliedType())
+	plannedStateVal, err := msgpack.Unmarshal(resp.PlannedState.MsgPack, schema.ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -624,13 +624,13 @@ func TestApplyResourceChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testReq := &proto.ApplyResourceChange_Request{
+	testReq := &proto.ApplyResourceChangeRequest{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
-			Msgpack: priorState,
+			MsgPack: priorState,
 		},
 		PlannedState: &proto.DynamicValue{
-			Msgpack: plannedState,
+			MsgPack: plannedState,
 		},
 	}
 
@@ -639,7 +639,7 @@ func TestApplyResourceChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newStateVal, err := msgpack.Unmarshal(resp.NewState.Msgpack, schema.ImpliedType())
+	newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -785,9 +785,9 @@ func TestPrepareProviderConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			testReq := &proto.PrepareProviderConfig_Request{
+			testReq := &proto.PrepareProviderConfigRequest{
 				Config: &proto.DynamicValue{
-					Msgpack: rawConfig,
+					MsgPack: rawConfig,
 				},
 			}
 
@@ -807,12 +807,12 @@ func TestPrepareProviderConfig(t *testing.T) {
 
 			// we should have no errors past this point
 			for _, d := range resp.Diagnostics {
-				if d.Severity == proto.Diagnostic_ERROR {
+				if d.Severity == proto.DiagnosticSeverityError {
 					t.Fatal(resp.Diagnostics)
 				}
 			}
 
-			val, err := msgpack.Unmarshal(resp.PreparedConfig.Msgpack, block.ImpliedType())
+			val, err := msgpack.Unmarshal(resp.PreparedConfig.MsgPack, block.ImpliedType())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1392,13 +1392,13 @@ func TestStopContext_grpc(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testReq := &proto.ApplyResourceChange_Request{
+	testReq := &proto.ApplyResourceChangeRequest{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
-			Msgpack: priorState,
+			MsgPack: priorState,
 		},
 		PlannedState: &proto.DynamicValue{
-			Msgpack: plannedState,
+			MsgPack: plannedState,
 		},
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1458,13 +1458,13 @@ func TestStopContext_stop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testReq := &proto.ApplyResourceChange_Request{
+	testReq := &proto.ApplyResourceChangeRequest{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
-			Msgpack: priorState,
+			MsgPack: priorState,
 		},
 		PlannedState: &proto.DynamicValue{
-			Msgpack: plannedState,
+			MsgPack: plannedState,
 		},
 	}
 
@@ -1476,7 +1476,7 @@ func TestStopContext_stop(t *testing.T) {
 		}
 		close(doneCh)
 	}()
-	server.Stop(context.Background(), &proto.Stop_Request{})
+	server.StopProvider(context.Background(), &proto.StopProviderRequest{})
 	select {
 	case <-doneCh:
 	case <-time.After(5 * time.Second):
@@ -1523,13 +1523,13 @@ func TestStopContext_stopReset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testReq := &proto.ApplyResourceChange_Request{
+	testReq := &proto.ApplyResourceChangeRequest{
 		TypeName: "test",
 		PriorState: &proto.DynamicValue{
-			Msgpack: priorState,
+			MsgPack: priorState,
 		},
 		PlannedState: &proto.DynamicValue{
-			Msgpack: plannedState,
+			MsgPack: plannedState,
 		},
 	}
 
@@ -1545,7 +1545,7 @@ func TestStopContext_stopReset(t *testing.T) {
 		}
 		close(d)
 	}(doneCh)
-	server.Stop(context.Background(), &proto.Stop_Request{})
+	server.StopProvider(context.Background(), &proto.StopProviderRequest{})
 	select {
 	case <-doneCh:
 	case <-time.After(5 * time.Second):
@@ -1564,7 +1564,7 @@ func TestStopContext_stopReset(t *testing.T) {
 		}
 		close(d)
 	}(doneCh)
-	server.Stop(context.Background(), &proto.Stop_Request{})
+	server.StopProvider(context.Background(), &proto.StopProviderRequest{})
 	select {
 	case <-doneCh:
 	case <-time.After(5 * time.Second):
