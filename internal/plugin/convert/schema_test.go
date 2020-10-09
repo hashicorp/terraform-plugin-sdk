@@ -7,8 +7,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/go-cty/cty"
 
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 var (
@@ -20,12 +20,12 @@ var (
 // Test that we can convert configschema to protobuf types and back again.
 func TestConvertSchemaBlocks(t *testing.T) {
 	tests := map[string]struct {
-		Block *proto.Schema_Block
+		Block *proto.SchemaBlock
 		Want  *configschema.Block
 	}{
 		"attributes": {
-			&proto.Schema_Block{
-				Attributes: []*proto.Schema_Attribute{
+			&proto.SchemaBlock{
+				Attributes: []*proto.SchemaAttribute{
 					{
 						Name:     "computed",
 						Type:     []byte(`["list","bool"]`),
@@ -72,28 +72,28 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 		},
 		"blocks": {
-			&proto.Schema_Block{
-				BlockTypes: []*proto.Schema_NestedBlock{
+			&proto.SchemaBlock{
+				BlockTypes: []*proto.SchemaNestedBlock{
 					{
 						TypeName: "list",
-						Nesting:  proto.Schema_NestedBlock_LIST,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeList,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "map",
-						Nesting:  proto.Schema_NestedBlock_MAP,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeMap,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "set",
-						Nesting:  proto.Schema_NestedBlock_SET,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeSet,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "single",
-						Nesting:  proto.Schema_NestedBlock_SINGLE,
-						Block: &proto.Schema_Block{
-							Attributes: []*proto.Schema_Attribute{
+						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
+						Block: &proto.SchemaBlock{
+							Attributes: []*proto.SchemaAttribute{
 								{
 									Name:     "foo",
 									Type:     []byte(`"dynamic"`),
@@ -130,22 +130,22 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 		},
 		"deep block nesting": {
-			&proto.Schema_Block{
-				BlockTypes: []*proto.Schema_NestedBlock{
+			&proto.SchemaBlock{
+				BlockTypes: []*proto.SchemaNestedBlock{
 					{
 						TypeName: "single",
-						Nesting:  proto.Schema_NestedBlock_SINGLE,
-						Block: &proto.Schema_Block{
-							BlockTypes: []*proto.Schema_NestedBlock{
+						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
+						Block: &proto.SchemaBlock{
+							BlockTypes: []*proto.SchemaNestedBlock{
 								{
 									TypeName: "list",
-									Nesting:  proto.Schema_NestedBlock_LIST,
-									Block: &proto.Schema_Block{
-										BlockTypes: []*proto.Schema_NestedBlock{
+									Nesting:  proto.SchemaNestedBlockNestingModeList,
+									Block: &proto.SchemaBlock{
+										BlockTypes: []*proto.SchemaNestedBlock{
 											{
 												TypeName: "set",
-												Nesting:  proto.Schema_NestedBlock_SET,
-												Block:    &proto.Schema_Block{},
+												Nesting:  proto.SchemaNestedBlockNestingModeSet,
+												Block:    &proto.SchemaBlock{},
 											},
 										},
 									},
@@ -192,12 +192,12 @@ func TestConvertSchemaBlocks(t *testing.T) {
 // Test that we can convert configschema to protobuf types and back again.
 func TestConvertProtoSchemaBlocks(t *testing.T) {
 	tests := map[string]struct {
-		Want  *proto.Schema_Block
+		Want  *proto.SchemaBlock
 		Block *configschema.Block
 	}{
 		"attributes": {
-			&proto.Schema_Block{
-				Attributes: []*proto.Schema_Attribute{
+			&proto.SchemaBlock{
+				Attributes: []*proto.SchemaAttribute{
 					{
 						Name:     "computed",
 						Type:     []byte(`["list","bool"]`),
@@ -244,28 +244,28 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 		},
 		"blocks": {
-			&proto.Schema_Block{
-				BlockTypes: []*proto.Schema_NestedBlock{
+			&proto.SchemaBlock{
+				BlockTypes: []*proto.SchemaNestedBlock{
 					{
 						TypeName: "list",
-						Nesting:  proto.Schema_NestedBlock_LIST,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeList,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "map",
-						Nesting:  proto.Schema_NestedBlock_MAP,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeMap,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "set",
-						Nesting:  proto.Schema_NestedBlock_SET,
-						Block:    &proto.Schema_Block{},
+						Nesting:  proto.SchemaNestedBlockNestingModeSet,
+						Block:    &proto.SchemaBlock{},
 					},
 					{
 						TypeName: "single",
-						Nesting:  proto.Schema_NestedBlock_SINGLE,
-						Block: &proto.Schema_Block{
-							Attributes: []*proto.Schema_Attribute{
+						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
+						Block: &proto.SchemaBlock{
+							Attributes: []*proto.SchemaAttribute{
 								{
 									Name:     "foo",
 									Type:     []byte(`"dynamic"`),
@@ -302,22 +302,22 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 		},
 		"deep block nesting": {
-			&proto.Schema_Block{
-				BlockTypes: []*proto.Schema_NestedBlock{
+			&proto.SchemaBlock{
+				BlockTypes: []*proto.SchemaNestedBlock{
 					{
 						TypeName: "single",
-						Nesting:  proto.Schema_NestedBlock_SINGLE,
-						Block: &proto.Schema_Block{
-							BlockTypes: []*proto.Schema_NestedBlock{
+						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
+						Block: &proto.SchemaBlock{
+							BlockTypes: []*proto.SchemaNestedBlock{
 								{
 									TypeName: "list",
-									Nesting:  proto.Schema_NestedBlock_LIST,
-									Block: &proto.Schema_Block{
-										BlockTypes: []*proto.Schema_NestedBlock{
+									Nesting:  proto.SchemaNestedBlockNestingModeList,
+									Block: &proto.SchemaBlock{
+										BlockTypes: []*proto.SchemaNestedBlock{
 											{
 												TypeName: "set",
-												Nesting:  proto.Schema_NestedBlock_SET,
-												Block:    &proto.Schema_Block{},
+												Nesting:  proto.SchemaNestedBlockNestingModeSet,
+												Block:    &proto.SchemaBlock{},
 											},
 										},
 									},
