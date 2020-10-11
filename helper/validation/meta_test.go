@@ -99,3 +99,38 @@ func TestValidationAny(t *testing.T) {
 		},
 	})
 }
+
+func TestToDiagFunc(t *testing.T) {
+	runDiagTestCases(t, []diagTestCase{
+		{
+			val: 43,
+			f: ToDiagFunc(Any(
+				IntAtLeast(42),
+				IntAtMost(5),
+			)),
+		},
+		{
+			val: "foo",
+			f: ToDiagFunc(All(
+				StringLenBetween(1, 10),
+				StringIsNotWhiteSpace,
+			)),
+		},
+		{
+			val: 7,
+			f: ToDiagFunc(Any(
+				IntAtLeast(42),
+				IntAtMost(5),
+			)),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to be at least \\(42\\), got 7"),
+		},
+		{
+			val: 7,
+			f: ToDiagFunc(Any(
+				IntAtLeast(42),
+				IntAtMost(5),
+			)),
+			expectedErr: regexp.MustCompile("expected [\\w]+ to be at most \\(5\\), got 7"),
+		},
+	})
+}
