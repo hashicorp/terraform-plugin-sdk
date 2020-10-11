@@ -64,7 +64,10 @@ func Any(validators ...schema.SchemaValidateFunc) schema.SchemaValidateFunc {
 func ToDiagFunc(validator schema.SchemaValidateFunc) schema.SchemaValidateDiagFunc {
 	return func(i interface{}, p cty.Path) diag.Diagnostics {
 		var diags diag.Diagnostics
-		ws, es := validator(i, "")
+
+		attr := p[len(p)-1].(cty.GetAttrStep)
+		ws, es := validator(i, attr.Name)
+
 		for _, w := range ws {
 			diags = append(diags, diag.Diagnostic{
 				Severity:      diag.Warning,
