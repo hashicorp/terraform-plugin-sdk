@@ -2,10 +2,11 @@ package validation
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"reflect"
 )
 
 // NoZeroValues is a SchemaValidateFunc which tests if the provided value is
