@@ -104,7 +104,7 @@ func (wd *WorkingDir) SetConfig(cfg string, fixtureDir string) error {
 		}
 	}
 
-	configFilename := filepath.Join(configDir, "terraform_plugin_test.tf")
+	configFilename := filepath.Join(configDir, "override.tf")
 	if _, err := os.Stat(configFilename); err != nil && !os.IsNotExist(err) {
 		return err
 	}
