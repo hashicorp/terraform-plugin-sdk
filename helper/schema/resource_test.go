@@ -825,6 +825,7 @@ func TestResourceInternalValidate(t *testing.T) {
 				Schema: map[string]*Schema{
 					"id": {
 						Type:       TypeString,
+						Computed:   true,
 						Optional:   true,
 						Deprecated: "Use x_id instead",
 					},
