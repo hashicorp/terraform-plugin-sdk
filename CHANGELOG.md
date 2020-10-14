@@ -1,3 +1,8 @@
+# 2.1.0 (Unreleased)
+
+FEATURES
+* Relaxed validation in `InternalValidate` for explicitly set `id` attributes [GH-613]
+
 # 2.0.4 (October 06, 2020)
 
 BUG FIXES
