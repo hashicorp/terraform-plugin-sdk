@@ -1,15 +1,130 @@
 package convert
 
 import (
-	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"sort"
 
+	"github.com/hashicorp/go-cty/cty"
 	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
+
+func tftypeFromCtyType(in cty.Type) (tftypes.Type, error) {
+	switch {
+	case in.Equals(cty.String):
+		return tftypes.String, nil
+	case in.Equals(cty.Number):
+		return tftypes.Number, nil
+	case in.Equals(cty.Bool):
+		return tftypes.Bool, nil
+	case in.Equals(cty.DynamicPseudoType):
+		return tftypes.DynamicPseudoType, nil
+	case in.IsSetType():
+		elemType, err := tftypeFromCtyType(in.ElementType())
+		if err != nil {
+			return nil, err
+		}
+		return tftypes.Set{
+			ElementType: elemType,
+		}, nil
+	case in.IsListType():
+		elemType, err := tftypeFromCtyType(in.ElementType())
+		if err != nil {
+			return nil, err
+		}
+		return tftypes.List{
+			ElementType: elemType,
+		}, nil
+	case in.IsTupleType():
+		elemTypes := make([]tftypes.Type, 0, in.Length())
+		for _, typ := range in.TupleElementTypes() {
+			elemType, err := tftypeFromCtyType(typ)
+			if err != nil {
+				return nil, err
+			}
+			elemTypes = append(elemTypes, elemType)
+		}
+		return tftypes.Tuple{
+			ElementTypes: elemTypes,
+		}, nil
+	case in.IsMapType():
+		elemType, err := tftypeFromCtyType(in.ElementType())
+		if err != nil {
+			return nil, err
+		}
+		return tftypes.Map{
+			AttributeType: elemType,
+		}, nil
+	case in.IsObjectType():
+		attrTypes := make(map[string]tftypes.Type, in.Length())
+		for key, typ := range in.AttributeTypes() {
+			attrType, err := tftypeFromCtyType(typ)
+			if err != nil {
+				return nil, err
+			}
+			attrTypes[key] = attrType
+		}
+		return tftypes.Object{
+			AttributeTypes: attrTypes,
+		}, nil
+	}
+	return nil, fmt.Errorf("unknown cty type %s", in.GoString())
+}
+
+func ctyTypeFromTFType(in tftypes.Type) (cty.Type, error) {
+	switch {
+	case in.Is(tftypes.String):
+		return cty.String, nil
+	case in.Is(tftypes.Bool):
+		return cty.Bool, nil
+	case in.Is(tftypes.Number):
+		return cty.Number, nil
+	case in.Is(tftypes.DynamicPseudoType):
+		return cty.DynamicPseudoType, nil
+	case in.Is(tftypes.List{}):
+		elemType, err := ctyTypeFromTFType(in.(tftypes.List).ElementType)
+		if err != nil {
+			return cty.Type{}, err
+		}
+		return cty.List(elemType), nil
+	case in.Is(tftypes.Set{}):
+		elemType, err := ctyTypeFromTFType(in.(tftypes.Set).ElementType)
+		if err != nil {
+			return cty.Type{}, err
+		}
+		return cty.Set(elemType), nil
+	case in.Is(tftypes.Map{}):
+		elemType, err := ctyTypeFromTFType(in.(tftypes.Map).AttributeType)
+		if err != nil {
+			return cty.Type{}, err
+		}
+		return cty.Map(elemType), nil
+	case in.Is(tftypes.Tuple{}):
+		elemTypes := make([]cty.Type, 0, len(in.(tftypes.Tuple).ElementTypes))
+		for _, typ := range in.(tftypes.Tuple).ElementTypes {
+			elemType, err := ctyTypeFromTFType(typ)
+			if err != nil {
+				return cty.Type{}, err
+			}
+			elemTypes = append(elemTypes, elemType)
+		}
+		return cty.Tuple(elemTypes), nil
+	case in.Is(tftypes.Object{}):
+		attrTypes := make(map[string]cty.Type, len(in.(tftypes.Object).AttributeTypes))
+		for k, v := range in.(tftypes.Object).AttributeTypes {
+			attrType, err := ctyTypeFromTFType(v)
+			if err != nil {
+				return cty.Type{}, err
+			}
+			attrTypes[k] = attrType
+		}
+		return cty.Object(attrTypes), nil
+	}
+	return cty.Type{}, fmt.Errorf("unknown tftypes.Type %s", in)
+}
 
 // ConfigSchemaToProto takes a *configschema.Block and converts it to a
 // proto.SchemaBlock for a grpc response.
@@ -34,12 +149,11 @@ func ConfigSchemaToProto(b *configschema.Block) *proto.SchemaBlock {
 			Deprecated:      a.Deprecated,
 		}
 
-		ty, err := tftypes.ParseType(a.Type)
+		var err error
+		attr.Type, err = tftypeFromCtyType(a.Type)
 		if err != nil {
 			panic(err)
 		}
-
-		attr.Type = ty
 
 		block.Attributes = append(block.Attributes, attr)
 	}
@@ -112,12 +226,9 @@ func ProtoToConfigSchema(b *proto.SchemaBlock) *configschema.Block {
 			Deprecated:      a.Deprecated,
 		}
 
-		ty, err := a.Type.MarshalJSON()
+		var err error
+		attr.Type, err = ctyTypeFromTFType(a.Type)
 		if err != nil {
-			panic(err)
-		}
-
-		if err := json.Unmarshal(ty, &attr.Type); err != nil {
 			panic(err)
 		}
 
