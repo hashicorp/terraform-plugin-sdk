@@ -2,6 +2,7 @@
 
 FEATURES
 * Relaxed validation in `InternalValidate` for explicitly set `id` attributes [GH-613]
+* Ported TypeSet test check funcs essential for migrating to V2 of the SDK [GH-614]
 
 # 2.0.4 (October 06, 2020)
 
