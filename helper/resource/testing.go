@@ -471,6 +471,15 @@ type TestStep struct {
 	// fields that can't be refreshed and don't matter.
 	ImportStateVerify       bool
 	ImportStateVerifyIgnore []string
+
+	// Variables is a map of Terraform configuration variables, written to terraform.tfvars.json.
+	//
+	// These variables must be declared in the test Terraform configuration,
+	// provided either by Config or TestCase.ConfigDir, to take effect.
+	//
+	// The values are automatically converted from standard Go types to
+	// the JSON equivalent.
+	Variables map[string]interface{}
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency

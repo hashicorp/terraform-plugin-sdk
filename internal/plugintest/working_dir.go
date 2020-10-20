@@ -3,11 +3,13 @@ package plugintest
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -88,7 +90,7 @@ func (wd *WorkingDir) relativeConfigDir() (string, error) {
 // This must be called at least once before any call to Init, Plan, Apply, or
 // Destroy to establish the configuration. Any previously-set configuration is
 // discarded and any saved plan is cleared.
-func (wd *WorkingDir) SetConfig(cfg string, fixtureDir string) error {
+func (wd *WorkingDir) SetConfig(cfg string, fixtureDir string, variables map[string]interface{}) error {
 	// Each call to SetConfig creates a new directory under our baseDir.
 	// We create them within so that our final cleanup step will delete them
 	// automatically without any additional tracking.
@@ -97,21 +99,46 @@ func (wd *WorkingDir) SetConfig(cfg string, fixtureDir string) error {
 		return err
 	}
 
+	configFilename := filepath.Join(configDir, "terraform_plugin_test.tf")
+
 	if fixtureDir != "" {
 		err = copyFiles(fixtureDir, configDir)
 		if err != nil {
 			return err
 		}
+
+		configFilename = filepath.Join(configDir, "override.tf")
 	}
 
-	configFilename := filepath.Join(configDir, "override.tf")
-	if _, err := os.Stat(configFilename); err != nil && !os.IsNotExist(err) {
-		return err
+	if cfg != "" {
+		if _, err := os.Stat(configFilename); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+
+		err := ioutil.WriteFile(configFilename, []byte(cfg), 0700)
+
+		if err != nil {
+			return fmt.Errorf("error writing %s: %w", configFilename, err)
+		}
 	}
 
-	err = ioutil.WriteFile(configFilename, []byte(cfg), 0700)
-	if err != nil {
-		return err
+	if len(variables) > 0 {
+		variablesFilename := filepath.Join(configDir, "terraform.tfvars.json")
+		variablesJSON, err := json.Marshal(variables)
+
+		if err != nil {
+			return fmt.Errorf("error converting variables to JSON: %w", err)
+		}
+
+		if _, err := os.Stat(variablesFilename); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+
+		err = ioutil.WriteFile(variablesFilename, variablesJSON, 0700)
+
+		if err != nil {
+			return fmt.Errorf("error writing %s: %w", variablesFilename, err)
+		}
 	}
 
 	tf, err := tfexec.NewTerraform(wd.baseDir, wd.terraformExec)
@@ -195,7 +222,7 @@ func (wd *WorkingDir) CreatePlan() error {
 		return fmt.Errorf("unable to read files in config dir: %w", err)
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".tfvars" {
+		if filepath.Ext(f.Name()) != ".tfvars" && !strings.HasSuffix(f.Name(), ".tfvars.json") {
 			continue
 		}
 
@@ -223,7 +250,7 @@ func (wd *WorkingDir) CreateDestroyPlan() error {
 		return fmt.Errorf("unable to read files in config dir: %w", err)
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".tfvars" {
+		if filepath.Ext(f.Name()) != ".tfvars" && !strings.HasSuffix(f.Name(), ".tfvars.json") {
 			continue
 		}
 
@@ -262,7 +289,7 @@ func (wd *WorkingDir) Apply() error {
 			return fmt.Errorf("unable to read files in config dir: %w", err)
 		}
 		for _, f := range files {
-			if filepath.Ext(f.Name()) != ".tfvars" {
+			if filepath.Ext(f.Name()) != ".tfvars" && !strings.HasSuffix(f.Name(), ".tfvars.json") {
 				continue
 			}
 
@@ -349,7 +376,7 @@ func (wd *WorkingDir) Refresh() error {
 		return fmt.Errorf("unable to read files in config dir: %w", err)
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".tfvars" {
+		if filepath.Ext(f.Name()) != ".tfvars" && !strings.HasSuffix(f.Name(), ".tfvars.json") {
 			continue
 		}
 

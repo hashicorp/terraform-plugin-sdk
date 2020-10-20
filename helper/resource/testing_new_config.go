@@ -34,7 +34,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		}
 	}
 
-	err := wd.SetConfig(step.Config, c.ConfigDir)
+	err := wd.SetConfig(step.Config, c.ConfigDir, step.Variables)
 	if err != nil {
 		return fmt.Errorf("Error setting config: %w", err)
 	}

@@ -64,7 +64,7 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 	}
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
-	err = importWd.SetConfig(step.Config, c.ConfigDir)
+	err = importWd.SetConfig(step.Config, c.ConfigDir, step.Variables)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
 	}
