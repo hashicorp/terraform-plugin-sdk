@@ -333,6 +333,14 @@ type TestCase struct {
 	IDRefreshName   string
 	IDRefreshIgnore []string
 
+	// ConfigDir is a relative directory path for the base Terraform configuration of the test.
+	//
+	// When running Terraform operations for the test, Terraform will
+	// be executed with copies of the files of this directory as its
+	// working directory. This setting can be combined with
+	// TestStep.Config to override portions of the Terraform
+	// configuration or omitted in preference of only specifying the
+	// Terraform configuration via each TestStep.Config.
 	ConfigDir string
 }
 
@@ -384,9 +392,18 @@ type TestStep struct {
 	// Plan, Apply testing
 	//---------------------------------------------------------------
 
-	// Config a string of the configuration to give to Terraform. If this
-	// is set, then the TestCase will execute this step with the same logic
-	// as a `terraform apply`.
+	// Config is a string of the Terraform configuration for execution.
+	//
+	// If this is set when the TestCase ConfigDir is not set, then
+	// no base configuration for the test exists and this value will
+	// be the final configuration.
+	//
+	// If this is set in addition to TestCase ConfigDir, then the
+	// configuration from the directory is the base configuration and
+	// this value will be written as an override.tf file and follow
+	// the documented override behaviors. See also:
+	// https://www.terraform.io/docs/configuration/override.html
+
 	Config string
 
 	// Check is called after the Config is applied. Use this step to
