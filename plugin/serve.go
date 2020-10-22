@@ -10,7 +10,6 @@ import (
 	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/server"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
 )
 
 const (
@@ -55,7 +54,7 @@ func Serve(opts *ServeOpts) {
 	// automatically wrap the plugins in the grpc shims.
 	if opts.GRPCProviderFunc == nil && opts.ProviderFunc != nil {
 		opts.GRPCProviderFunc = func() proto.ProviderServer {
-			return grpcplugin.NewGRPCProviderServer(opts.ProviderFunc())
+			return schema.NewGRPCProviderServer(opts.ProviderFunc())
 		}
 	}
 
@@ -73,7 +72,7 @@ func Serve(opts *ServeOpts) {
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
 			return grpc.NewServer(append(opts, grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-				ctx = provider.(*grpcplugin.GRPCProviderServer).StopContext(ctx)
+				ctx = provider.(*schema.GRPCProviderServer).StopContext(ctx)
 				return handler(ctx, req)
 			}))...)
 		},

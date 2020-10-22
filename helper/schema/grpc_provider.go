@@ -1,4 +1,4 @@
-package plugin
+package schema
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 
 	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	c "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
@@ -25,7 +24,7 @@ import (
 
 const newExtraKey = "_new_extra_shim"
 
-func NewGRPCProviderServer(p *schema.Provider) *GRPCProviderServer {
+func NewGRPCProviderServer(p *Provider) *GRPCProviderServer {
 	return &GRPCProviderServer{
 		provider: p,
 		stopCh:   make(chan struct{}),
@@ -34,7 +33,7 @@ func NewGRPCProviderServer(p *schema.Provider) *GRPCProviderServer {
 
 // GRPCProviderServer handles the server, or plugin side of the rpc connection.
 type GRPCProviderServer struct {
-	provider *schema.Provider
+	provider *Provider
 	stopCh   chan struct{}
 	stopMu   sync.Mutex
 }
@@ -96,11 +95,11 @@ func (s *GRPCProviderServer) GetProviderSchema(_ context.Context, req *proto.Get
 }
 
 func (s *GRPCProviderServer) getProviderSchemaBlock() *configschema.Block {
-	return schema.InternalMap(s.provider.Schema).CoreConfigSchema()
+	return InternalMap(s.provider.Schema).CoreConfigSchema()
 }
 
 func (s *GRPCProviderServer) getProviderMetaSchemaBlock() *configschema.Block {
-	return schema.InternalMap(s.provider.ProviderMetaSchema).CoreConfigSchema()
+	return InternalMap(s.provider.ProviderMetaSchema).CoreConfigSchema()
 }
 
 func (s *GRPCProviderServer) getResourceSchemaBlock(name string) *configschema.Block {
@@ -306,7 +305,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *prot
 
 	// now we need to turn the state into the default json representation, so
 	// that it can be re-decoded using the actual schema.
-	val, err := schema.JSONMapToStateValue(jsonMap, schemaBlock)
+	val, err := JSONMapToStateValue(jsonMap, schemaBlock)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -339,7 +338,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *prot
 // map[string]interface{}.
 // upgradeFlatmapState returns the json map along with the corresponding schema
 // version.
-func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version int, m map[string]string, res *schema.Resource) (map[string]interface{}, int, error) {
+func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version int, m map[string]string, res *Resource) (map[string]interface{}, int, error) {
 	// this will be the version we've upgraded so, defaulting to the given
 	// version in case no migration was called.
 	upgradedVersion := version
@@ -407,11 +406,11 @@ func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version in
 		return nil, 0, err
 	}
 
-	jsonMap, err := schema.StateValueToJSONMap(newConfigVal, schemaType)
+	jsonMap, err := StateValueToJSONMap(newConfigVal, schemaType)
 	return jsonMap, upgradedVersion, err
 }
 
-func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, m map[string]interface{}, res *schema.Resource) (map[string]interface{}, error) {
+func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, m map[string]interface{}, res *Resource) (map[string]interface{}, error) {
 	var err error
 
 	for _, upgrader := range res.StateUpgraders {
@@ -773,7 +772,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *proto.
 	}
 
 	// encode any timeouts into the diff Meta
-	t := &schema.ResourceTimeout{}
+	t := &ResourceTimeout{}
 	if err := t.ConfigDecode(res, cfg); err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -893,7 +892,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 			Destroy:    true,
 		}
 	} else {
-		diff, err = schema.DiffFromValues(ctx, priorStateVal, plannedStateVal, stripResourceModifiers(res))
+		diff, err = DiffFromValues(ctx, priorStateVal, plannedStateVal, stripResourceModifiers(res))
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
@@ -972,7 +971,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *proto
 
 	// We keep the null val if we destroyed the resource, otherwise build the
 	// entire object, even if the new state was nil.
-	newStateVal, err = schema.StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
+	newStateVal, err = StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -1106,7 +1105,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *proto.Read
 		return resp, nil
 	}
 
-	newStateVal, err := schema.StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
+	newStateVal, err := StateValueFromInstanceState(newInstanceState, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
@@ -1166,9 +1165,9 @@ func copyTimeoutValues(to cty.Value, from cty.Value) cty.Value {
 	// because we can't determine if a single block was null from the flatmapped
 	// values. This needs to conform to the correct schema for marshaling, so
 	// change the value to null rather than deleting it from the object map.
-	timeouts, ok := toAttrs[schema.TimeoutsConfigKey]
+	timeouts, ok := toAttrs[TimeoutsConfigKey]
 	if ok {
-		toAttrs[schema.TimeoutsConfigKey] = cty.NullVal(timeouts.Type())
+		toAttrs[TimeoutsConfigKey] = cty.NullVal(timeouts.Type())
 	}
 
 	// if from is null then there are no timeouts to copy
@@ -1177,7 +1176,7 @@ func copyTimeoutValues(to cty.Value, from cty.Value) cty.Value {
 	}
 
 	fromAttrs := from.AsValueMap()
-	timeouts, ok = fromAttrs[schema.TimeoutsConfigKey]
+	timeouts, ok = fromAttrs[TimeoutsConfigKey]
 
 	// timeouts shouldn't be unknown, but don't copy possibly invalid values either
 	if !ok || timeouts.IsNull() || !timeouts.IsWhollyKnown() {
@@ -1185,7 +1184,7 @@ func copyTimeoutValues(to cty.Value, from cty.Value) cty.Value {
 		return cty.ObjectVal(toAttrs)
 	}
 
-	toAttrs[schema.TimeoutsConfigKey] = timeouts
+	toAttrs[TimeoutsConfigKey] = timeouts
 
 	return cty.ObjectVal(toAttrs)
 }
@@ -1194,16 +1193,16 @@ func copyTimeoutValues(to cty.Value, from cty.Value) cty.Value {
 // StateFuncs and CustomizeDiffs removed. This will be used during apply to
 // create a diff from a planned state where the diff modifications have already
 // been applied.
-func stripResourceModifiers(r *schema.Resource) *schema.Resource {
+func stripResourceModifiers(r *Resource) *Resource {
 	if r == nil {
 		return nil
 	}
 	// start with a shallow copy
-	newResource := new(schema.Resource)
+	newResource := new(Resource)
 	*newResource = *r
 
 	newResource.CustomizeDiff = nil
-	newResource.Schema = map[string]*schema.Schema{}
+	newResource.Schema = map[string]*Schema{}
 
 	for k, s := range r.Schema {
 		newResource.Schema[k] = stripSchema(s)
@@ -1212,20 +1211,20 @@ func stripResourceModifiers(r *schema.Resource) *schema.Resource {
 	return newResource
 }
 
-func stripSchema(s *schema.Schema) *schema.Schema {
+func stripSchema(s *Schema) *Schema {
 	if s == nil {
 		return nil
 	}
 	// start with a shallow copy
-	newSchema := new(schema.Schema)
+	newSchema := new(Schema)
 	*newSchema = *s
 
 	newSchema.StateFunc = nil
 
 	switch e := newSchema.Elem.(type) {
-	case *schema.Schema:
+	case *Schema:
 		newSchema.Elem = stripSchema(e)
-	case *schema.Resource:
+	case *Resource:
 		newSchema.Elem = stripResourceModifiers(e)
 	}
 
