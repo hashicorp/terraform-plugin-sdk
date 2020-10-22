@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	grpcpluginctx "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
@@ -466,4 +467,9 @@ func (p *Provider) UserAgent(name, version string) string {
 	}
 
 	return ua
+}
+
+// GRPCProvider returns a gRPC server, for use with terraform-plugin-mux.
+func (p *Provider) GRPCProvider() tfprotov5.ProviderServer {
+	return NewGRPCProviderServer(p)
 }

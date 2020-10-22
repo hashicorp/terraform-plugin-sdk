@@ -14,7 +14,6 @@ import (
 	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	grpcplugin "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	testing "github.com/mitchellh/go-testing-interface"
@@ -77,7 +76,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 		// from go-plugin.
 		opts := &plugin.ServeOpts{
 			GRPCProviderFunc: func() proto.ProviderServer {
-				return grpcplugin.NewGRPCProviderServer(provider)
+				return schema.NewGRPCProviderServer(provider)
 			},
 			Logger: hclog.New(&hclog.LoggerOptions{
 				Name:   "plugintest",
