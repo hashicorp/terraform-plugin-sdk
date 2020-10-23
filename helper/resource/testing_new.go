@@ -113,9 +113,10 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 				if !step.ExpectError.MatchString(err.Error()) {
 					t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", i+1, len(c.Steps), step.ExpectError.String(), err)
 				}
-			} else if err != nil && c.SkipOnError != nil && c.SkipOnError(err) {
-				t.Skipf("[WARN] Skipping test, step %d/%d error passed SkipOnError: %s", i+1, len(c.Steps), err)
 			} else {
+				if c.ErrorCheck != nil {
+					err = c.ErrorCheck(err)
+				}
 				if err != nil {
 					t.Fatalf("Step %d/%d error running import: %s", i+1, len(c.Steps), err)
 				}
@@ -132,9 +133,10 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 				if !step.ExpectError.MatchString(err.Error()) {
 					t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", i+1, len(c.Steps), err)
 				}
-			} else if err != nil && c.SkipOnError != nil && c.SkipOnError(err) {
-				t.Skipf("[WARN] Skipping test, step %d/%d error passed SkipOnError: %s", i+1, len(c.Steps), err)
 			} else {
+				if c.ErrorCheck != nil {
+					err = c.ErrorCheck(err)
+				}
 				if err != nil {
 					t.Fatalf("Step %d/%d error: %s", i+1, len(c.Steps), err)
 				}
