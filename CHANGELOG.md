@@ -1,9 +1,9 @@
-# 2.1.0 (Unreleased)
+# 2.1.0 (October 27, 2020)
 
 FEATURES
-* Relaxed validation in `InternalValidate` for explicitly set `id` attributes [GH-613]
-* Ported TypeSet test check funcs essential for migrating to V2 of the SDK [GH-614]
-* Improved debug output for how to manually invoke the Terraform CLI [GH-615]
+* Relaxed validation in `InternalValidate` for explicitly set `id` attributes ([#613](https://github.com/hashicorp/terraform-plugin-sdk/issues/613))
+* Ported TypeSet test check funcs essential for migrating to V2 of the SDK ([#614](https://github.com/hashicorp/terraform-plugin-sdk/issues/614))
+* Improved debug output for how to manually invoke the Terraform CLI ([#615](https://github.com/hashicorp/terraform-plugin-sdk/issues/615))
 
 # 2.0.4 (October 06, 2020)
 
