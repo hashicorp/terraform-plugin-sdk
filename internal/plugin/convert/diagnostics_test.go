@@ -6,8 +6,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	proto "github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfplugin5"
 )
 
 func TestDiagnostics(t *testing.T) {
@@ -31,7 +32,7 @@ func TestDiagnostics(t *testing.T) {
 		"error": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				return append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "simple error",
 				})
 			},
@@ -45,7 +46,7 @@ func TestDiagnostics(t *testing.T) {
 		"detailed error": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				return append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "simple error",
 					Detail:   "detailed error",
 				})
@@ -61,7 +62,7 @@ func TestDiagnostics(t *testing.T) {
 		"warning": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				return append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_WARNING,
+					Severity: proto.DiagnosticSeverityWarning,
 					Summary:  "simple warning",
 				})
 			},
@@ -75,7 +76,7 @@ func TestDiagnostics(t *testing.T) {
 		"detailed warning": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				return append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_WARNING,
+					Severity: proto.DiagnosticSeverityWarning,
 					Summary:  "simple warning",
 					Detail:   "detailed warning",
 				})
@@ -91,10 +92,10 @@ func TestDiagnostics(t *testing.T) {
 		"multi error": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "first error",
 				}, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "second error",
 				})
 				return diags
@@ -113,10 +114,10 @@ func TestDiagnostics(t *testing.T) {
 		"warning and error": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_WARNING,
+					Severity: proto.DiagnosticSeverityWarning,
 					Summary:  "warning",
 				}, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "error",
 				})
 				return diags
@@ -135,16 +136,13 @@ func TestDiagnostics(t *testing.T) {
 		"attr error": {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.Diagnostic_ERROR,
+					Severity: proto.DiagnosticSeverityError,
 					Summary:  "error",
 					Detail:   "error detail",
-					Attribute: &proto.AttributePath{
-						Steps: []*proto.AttributePath_Step{
-							{
-								Selector: &proto.AttributePath_Step_AttributeName{
-									AttributeName: "attribute_name",
-								},
-							},
+					Attribute: &tftypes.AttributePath{
+						Steps: []tftypes.AttributePathStep{
+
+							tftypes.AttributeName("attribute_name"),
 						},
 					},
 				})
@@ -163,83 +161,47 @@ func TestDiagnostics(t *testing.T) {
 			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
 				diags = append(diags,
 					&proto.Diagnostic{
-						Severity: proto.Diagnostic_ERROR,
+						Severity: proto.DiagnosticSeverityError,
 						Summary:  "error 1",
 						Detail:   "error 1 detail",
-						Attribute: &proto.AttributePath{
-							Steps: []*proto.AttributePath_Step{
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "attr",
-									},
-								},
+						Attribute: &tftypes.AttributePath{
+							Steps: []tftypes.AttributePathStep{
+								tftypes.AttributeName("attr"),
 							},
 						},
 					},
 					&proto.Diagnostic{
-						Severity: proto.Diagnostic_ERROR,
+						Severity: proto.DiagnosticSeverityError,
 						Summary:  "error 2",
 						Detail:   "error 2 detail",
-						Attribute: &proto.AttributePath{
-							Steps: []*proto.AttributePath_Step{
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "attr",
-									},
-								},
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "sub",
-									},
-								},
+						Attribute: &tftypes.AttributePath{
+							Steps: []tftypes.AttributePathStep{
+								tftypes.AttributeName("attr"),
+								tftypes.AttributeName("sub"),
 							},
 						},
 					},
 					&proto.Diagnostic{
-						Severity: proto.Diagnostic_WARNING,
+						Severity: proto.DiagnosticSeverityWarning,
 						Summary:  "warning",
 						Detail:   "warning detail",
-						Attribute: &proto.AttributePath{
-							Steps: []*proto.AttributePath_Step{
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "attr",
-									},
-								},
-								{
-									Selector: &proto.AttributePath_Step_ElementKeyInt{
-										ElementKeyInt: 1,
-									},
-								},
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "sub",
-									},
-								},
+						Attribute: &tftypes.AttributePath{
+							Steps: []tftypes.AttributePathStep{
+								tftypes.AttributeName("attr"),
+								tftypes.ElementKeyInt(1),
+								tftypes.AttributeName("sub"),
 							},
 						},
 					},
 					&proto.Diagnostic{
-						Severity: proto.Diagnostic_ERROR,
+						Severity: proto.DiagnosticSeverityError,
 						Summary:  "error 3",
 						Detail:   "error 3 detail",
-						Attribute: &proto.AttributePath{
-							Steps: []*proto.AttributePath_Step{
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "attr",
-									},
-								},
-								{
-									Selector: &proto.AttributePath_Step_ElementKeyString{
-										ElementKeyString: "idx",
-									},
-								},
-								{
-									Selector: &proto.AttributePath_Step_AttributeName{
-										AttributeName: "sub",
-									},
-								},
+						Attribute: &tftypes.AttributePath{
+							Steps: []tftypes.AttributePathStep{
+								tftypes.AttributeName("attr"),
+								tftypes.ElementKeyString("idx"),
+								tftypes.AttributeName("sub"),
 							},
 						},
 					},
@@ -309,7 +271,6 @@ func TestDiagnostics(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			// we take the
 			diags := ProtoToDiags(tc.Cons(nil))
 
 			flat := flattenDiags(diags)
