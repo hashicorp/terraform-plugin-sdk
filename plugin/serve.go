@@ -1,8 +1,6 @@
 package plugin
 
 import (
-	"context"
-
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -63,7 +61,7 @@ func Serve(opts *ServeOpts) {
 		HandshakeConfig: Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{
 			5: {
-				ProviderPluginName: &tfprotov5server.GRPCProviderPlugin{
+				ProviderPluginName: &tf5server.GRPCProviderPlugin{
 					GRPCProvider: func() proto.ProviderServer {
 						return provider
 					},
@@ -71,10 +69,7 @@ func Serve(opts *ServeOpts) {
 			},
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(append(opts, grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-				ctx = provider.(*schema.GRPCProviderServer).StopContext(ctx)
-				return handler(ctx, req)
-			}))...)
+			return grpc.NewServer(opts...)
 		},
 		Logger: opts.Logger,
 		Test:   opts.TestConfig,
