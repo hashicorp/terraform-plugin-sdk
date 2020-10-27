@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
-	grpcpluginctx "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -34,7 +33,7 @@ var ReservedProviderFields = []string{
 // Deprecated: The use of a global context is discouraged. Please use the new
 // context aware CRUD methods.
 func StopContext(ctx context.Context) (context.Context, bool) {
-	stopContext, ok := ctx.Value(grpcpluginctx.StopContextKey).(context.Context)
+	stopContext, ok := ctx.Value(StopContextKey).(context.Context)
 	return stopContext, ok
 }
 

@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
-	c "github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/plugin/context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plans/objchange"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -516,7 +515,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *proto.C
 	// request scoped context. This provides a substitute for the removed provider.StopContext()
 	// function. Ideally a provider should migrate to the context aware API that receives
 	// request scoped contexts, however this is a large undertaking for very large providers.
-	ctxHack := context.WithValue(ctx, c.StopContextKey, s.StopContext(context.Background()))
+	ctxHack := context.WithValue(ctx, StopContextKey, s.StopContext(context.Background()))
 	diags := s.provider.Configure(ctxHack, config)
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 
