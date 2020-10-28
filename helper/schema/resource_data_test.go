@@ -1334,6 +1334,24 @@ func TestResourceDataGetOkExists(t *testing.T) {
 	}
 }
 
+func TestResourceDataGetResourceId(t *testing.T) {
+	expected := "state-id"
+	d := &ResourceData{
+		state: &terraform.InstanceState{
+			ID: expected,
+			Attributes: map[string]string{
+				"id": "state-id-attribute",
+			},
+		},
+	}
+
+	actual := d.GetResourceId()
+
+	if actual != expected {
+		t.Fatalf("expected: %s, got: %s", expected, actual)
+	}
+}
+
 func TestResourceDataTimeout(t *testing.T) {
 	cases := []struct {
 		Name     string
@@ -3063,9 +3081,9 @@ func TestResourceDataState_schema(t *testing.T) {
 
 		// Set an ID so that the state returned is not nil
 		idSet := false
-		if d.Id() == "" {
+		if d.GetResourceId() == "" {
 			idSet = true
-			d.SetId("foo")
+			d.SetResourceId("foo")
 		}
 
 		actual := d.State()
@@ -3073,7 +3091,6 @@ func TestResourceDataState_schema(t *testing.T) {
 		// If we set an ID, then undo what we did so the comparison works
 		if actual != nil && idSet {
 			actual.ID = ""
-			delete(actual.Attributes, "id")
 		}
 
 		if !reflect.DeepEqual(actual, tc.Result) {
@@ -3187,7 +3204,7 @@ func TestResourceData_nonStringValuesInMap(t *testing.T) {
 	}
 }
 
-func TestResourceDataSetConnInfo(t *testing.T) {
+func TestResourceDataSetConnInfo_SetId(t *testing.T) {
 	d := &ResourceData{}
 	d.SetId("foo")
 	d.SetConnInfo(map[string]string{
@@ -3204,9 +3221,44 @@ func TestResourceDataSetConnInfo(t *testing.T) {
 	}
 }
 
-func TestResourceDataSetMeta_Timeouts(t *testing.T) {
+func TestResourceDataSetConnInfo_SetResourceId(t *testing.T) {
+	d := &ResourceData{}
+	d.SetResourceId("foo")
+	d.SetConnInfo(map[string]string{
+		"foo": "bar",
+	})
+
+	expected := map[string]string{
+		"foo": "bar",
+	}
+
+	actual := d.State()
+	if !reflect.DeepEqual(actual.Ephemeral.ConnInfo, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceDataSetMeta_Timeouts_SetId(t *testing.T) {
 	d := &ResourceData{}
 	d.SetId("foo")
+
+	rt := ResourceTimeout{
+		Create: DefaultTimeout(7 * time.Minute),
+	}
+
+	d.timeouts = &rt
+
+	expected := expectedForValues(7, 0, 0, 0, 0)
+
+	actual := d.State()
+	if !reflect.DeepEqual(actual.Meta[TimeoutKey], expected) {
+		t.Fatalf("Bad Meta_timeout match:\n\texpected: %#v\n\tgot: %#v", expected, actual.Meta[TimeoutKey])
+	}
+}
+
+func TestResourceDataSetMeta_Timeouts_SetResourceId(t *testing.T) {
+	d := &ResourceData{}
+	d.SetResourceId("foo")
 
 	rt := ResourceTimeout{
 		Create: DefaultTimeout(7 * time.Minute),
@@ -3272,9 +3324,46 @@ func TestResourceDataSetId_override(t *testing.T) {
 	}
 }
 
-func TestResourceDataSetType(t *testing.T) {
+func TestResourceDataSetResourceId(t *testing.T) {
+	d := &ResourceData{
+		state: &terraform.InstanceState{
+			ID: "state-id",
+			Attributes: map[string]string{
+				"id": "state-id-attribute",
+			},
+		},
+	}
+	d.SetResourceId("test")
+
+	actual := d.State()
+
+	// SetResourceId should set both the ID field as well as the attribute, to aid in
+	// transitioning to the new type system.
+	if actual.ID != "test" {
+		t.Fatalf("ID not updated: %#v", actual)
+	}
+
+	d.SetResourceId("")
+	actual = d.State()
+	if actual != nil {
+		t.Fatalf("State not removed: %#v", actual)
+	}
+}
+
+func TestResourceDataSetType_SetId(t *testing.T) {
 	d := &ResourceData{}
 	d.SetId("foo")
+	d.SetType("bar")
+
+	actual := d.State()
+	if v := actual.Ephemeral.Type; v != "bar" {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func TestResourceDataSetType_SetResourceId(t *testing.T) {
+	d := &ResourceData{}
+	d.SetResourceId("foo")
 	d.SetType("bar")
 
 	actual := d.State()

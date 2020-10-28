@@ -361,7 +361,7 @@ func (r *Resource) Apply(
 			}
 
 			// Make sure the ID is gone.
-			data.SetId("")
+			data.SetResourceId("")
 		}
 
 		// If we're only destroying, and not creating, then return
@@ -380,7 +380,7 @@ func (r *Resource) Apply(
 		data.timeouts = &rt
 	}
 
-	if data.Id() == "" {
+	if data.GetResourceId() == "" {
 		// We're creating, it is a new resource.
 		data.MarkNewResource()
 		diags = append(diags, r.create(ctx, data, meta)...)
@@ -823,6 +823,6 @@ func NoopContext(context.Context, *ResourceData, interface{}) diag.Diagnostics {
 // which sets the resource ID to empty string (to remove it from state)
 // and returns no error.
 func RemoveFromState(d *ResourceData, _ interface{}) error {
-	d.SetId("")
+	d.SetResourceId("")
 	return nil
 }

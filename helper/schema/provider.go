@@ -356,6 +356,9 @@ func (p *Provider) ImportState(
 
 	// Create the data
 	data := r.Data(nil)
+	// Deprecated id attribute handling
+	// Note this requires using SetId() with unsafeWriteField for backwards
+	// compatibility until a major version can switch to SetResourceId()
 	data.SetId(id)
 	data.SetType(info.Type)
 

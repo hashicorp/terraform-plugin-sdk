@@ -584,7 +584,7 @@ func TestPlanResourceChange(t *testing.T) {
 	}
 }
 
-func TestApplyResourceChange(t *testing.T) {
+func TestApplyResourceChange_SetId(t *testing.T) {
 	r := &schema.Resource{
 		SchemaVersion: 4,
 		Schema: map[string]*schema.Schema{
@@ -595,6 +595,72 @@ func TestApplyResourceChange(t *testing.T) {
 		},
 		CreateContext: func(_ context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			rd.SetId("bar")
+			return nil
+		},
+	}
+
+	server := NewGRPCProviderServer(&schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test": r,
+		},
+	})
+
+	schema := r.CoreConfigSchema()
+	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A proposed state with only the ID unknown will produce a nil diff, and
+	// should return the proposed state value.
+	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"id": cty.UnknownVal(cty.String),
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testReq := &proto.ApplyResourceChange_Request{
+		TypeName: "test",
+		PriorState: &proto.DynamicValue{
+			Msgpack: priorState,
+		},
+		PlannedState: &proto.DynamicValue{
+			Msgpack: plannedState,
+		},
+	}
+
+	resp, err := server.ApplyResourceChange(context.Background(), testReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newStateVal, err := msgpack.Unmarshal(resp.NewState.Msgpack, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id := newStateVal.GetAttr("id").AsString()
+	if id != "bar" {
+		t.Fatalf("incorrect final state: %#v\n", newStateVal)
+	}
+}
+
+func TestApplyResourceChange_SetResourceId(t *testing.T) {
+	r := &schema.Resource{
+		SchemaVersion: 4,
+		Schema: map[string]*schema.Schema{
+			"foo": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+		},
+		CreateContext: func(_ context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
+			rd.SetResourceId("bar")
 			return nil
 		},
 	}
@@ -1364,7 +1430,7 @@ func TestStopContext_grpc(t *testing.T) {
 		},
 		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
-			rd.SetId("bar")
+			rd.SetResourceId("bar")
 			return nil
 		},
 	}
@@ -1430,7 +1496,7 @@ func TestStopContext_stop(t *testing.T) {
 		},
 		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
-			rd.SetId("bar")
+			rd.SetResourceId("bar")
 			return nil
 		},
 	}
@@ -1495,7 +1561,7 @@ func TestStopContext_stopReset(t *testing.T) {
 		},
 		CreateContext: func(ctx context.Context, rd *schema.ResourceData, _ interface{}) diag.Diagnostics {
 			<-ctx.Done()
-			rd.SetId("bar")
+			rd.SetResourceId("bar")
 			return nil
 		},
 	}
