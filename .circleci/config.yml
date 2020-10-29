@@ -16,13 +16,13 @@ commands:
 jobs:
   "docker-go114 build":
     docker:
-      - image: circleci/golang:1.14
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.14
     steps:
       - get_dependencies
       - run: go build ./...
   "docker-go114 test":
     docker:
-      - image: circleci/golang:1.14
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.14
         environment:
           TF_ACC_TERRAFORM_VERSION: "0.12.26"
     parameters:
@@ -44,19 +44,19 @@ jobs:
           path: << parameters.test_results >>
   "docker-go114 vet":
     docker:
-      - image: circleci/golang:1.14
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.14
     steps:
       - get_dependencies
       - run: go vet ./...
   "docker-go114 gofmt":
     docker:
-      - image: circleci/golang:1.14
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.14
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
   "docker-go114 release":
     docker:
-      - image: circleci/golang:1.14
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.14
     steps:
       - add_ssh_keys:
           fingerprints:
