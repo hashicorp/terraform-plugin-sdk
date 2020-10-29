@@ -128,6 +128,18 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 		// we need just foo. So let's fix that.
 		providerName = strings.TrimPrefix(providerName, "terraform-provider-")
 
+		// If the user has supplied the same provider in both
+		// ProviderFactories and ProtoV5ProviderFactories, they made a
+		// mistake and we should exit early.
+		for _, ns := range namespaces {
+			reattachString := strings.TrimSuffix(host, "/") + "/" +
+				strings.TrimSuffix(ns, "/") + "/" +
+				providerName
+			if _, ok := reattachInfo[reattachString]; ok {
+				return fmt.Errorf("Provider %s registered in both TestCase.ProviderFactories and TestCase.ProtoV5ProviderFactories: please use one or the other, or supply a muxed provider to TestCase.ProtoV5ProviderFactories.", providerName)
+			}
+		}
+
 		provider, err := factory()
 		if err != nil {
 			return fmt.Errorf("unable to create provider %q from factory: %w", providerName, err)
@@ -182,9 +194,10 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 		// for every namespace that different Terraform versions
 		// may expect.
 		for _, ns := range namespaces {
-			reattachInfo[strings.TrimSuffix(host, "/")+"/"+
-				strings.TrimSuffix(ns, "/")+"/"+
-				providerName] = tfexecConfig
+			reattachString := strings.TrimSuffix(host, "/") + "/" +
+				strings.TrimSuffix(ns, "/") + "/" +
+				providerName
+			reattachInfo[reattachString] = tfexecConfig
 		}
 	}
 
