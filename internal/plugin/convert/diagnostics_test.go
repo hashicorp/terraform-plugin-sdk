@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
@@ -20,19 +20,19 @@ func TestDiagnostics(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		Cons func([]*proto.Diagnostic) []*proto.Diagnostic
+		Cons func([]*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic
 		Want []diagFlat
 	}{
 		"nil": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
 				return diags
 			},
 			nil,
 		},
 		"error": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				return append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				return append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "simple error",
 				})
 			},
@@ -44,9 +44,9 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"detailed error": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				return append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				return append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "simple error",
 					Detail:   "detailed error",
 				})
@@ -60,9 +60,9 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"warning": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				return append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityWarning,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				return append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityWarning,
 					Summary:  "simple warning",
 				})
 			},
@@ -74,9 +74,9 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"detailed warning": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				return append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityWarning,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				return append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityWarning,
 					Summary:  "simple warning",
 					Detail:   "detailed warning",
 				})
@@ -90,12 +90,12 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"multi error": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				diags = append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "first error",
-				}, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+				}, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "second error",
 				})
 				return diags
@@ -112,12 +112,12 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"warning and error": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityWarning,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				diags = append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityWarning,
 					Summary:  "warning",
-				}, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+				}, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "error",
 				})
 				return diags
@@ -134,9 +134,9 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"attr error": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
-				diags = append(diags, &proto.Diagnostic{
-					Severity: proto.DiagnosticSeverityError,
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
+				diags = append(diags, &tfprotov5.Diagnostic{
+					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "error",
 					Detail:   "error detail",
 					Attribute: &tftypes.AttributePath{
@@ -158,10 +158,10 @@ func TestDiagnostics(t *testing.T) {
 			},
 		},
 		"multi attr": {
-			func(diags []*proto.Diagnostic) []*proto.Diagnostic {
+			func(diags []*tfprotov5.Diagnostic) []*tfprotov5.Diagnostic {
 				diags = append(diags,
-					&proto.Diagnostic{
-						Severity: proto.DiagnosticSeverityError,
+					&tfprotov5.Diagnostic{
+						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 1",
 						Detail:   "error 1 detail",
 						Attribute: &tftypes.AttributePath{
@@ -170,8 +170,8 @@ func TestDiagnostics(t *testing.T) {
 							},
 						},
 					},
-					&proto.Diagnostic{
-						Severity: proto.DiagnosticSeverityError,
+					&tfprotov5.Diagnostic{
+						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 2",
 						Detail:   "error 2 detail",
 						Attribute: &tftypes.AttributePath{
@@ -181,8 +181,8 @@ func TestDiagnostics(t *testing.T) {
 							},
 						},
 					},
-					&proto.Diagnostic{
-						Severity: proto.DiagnosticSeverityWarning,
+					&tfprotov5.Diagnostic{
+						Severity: tfprotov5.DiagnosticSeverityWarning,
 						Summary:  "warning",
 						Detail:   "warning detail",
 						Attribute: &tftypes.AttributePath{
@@ -193,8 +193,8 @@ func TestDiagnostics(t *testing.T) {
 							},
 						},
 					},
-					&proto.Diagnostic{
-						Severity: proto.DiagnosticSeverityError,
+					&tfprotov5.Diagnostic{
+						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 3",
 						Detail:   "error 3 detail",
 						Attribute: &tftypes.AttributePath{

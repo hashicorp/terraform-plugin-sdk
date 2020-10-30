@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/server"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -24,7 +24,7 @@ var Handshake = plugin.HandshakeConfig{
 }
 
 type ProviderFunc func() *schema.Provider
-type GRPCProviderFunc func() proto.ProviderServer
+type GRPCProviderFunc func() tfprotov5.ProviderServer
 
 // ServeOpts are the configurations to serve a plugin.
 type ServeOpts struct {
@@ -51,7 +51,7 @@ func Serve(opts *ServeOpts) {
 	// since the plugins may not yet be aware of the new protocol, we
 	// automatically wrap the plugins in the grpc shims.
 	if opts.GRPCProviderFunc == nil && opts.ProviderFunc != nil {
-		opts.GRPCProviderFunc = func() proto.ProviderServer {
+		opts.GRPCProviderFunc = func() tfprotov5.ProviderServer {
 			return schema.NewGRPCProviderServer(opts.ProviderFunc())
 		}
 	}
@@ -62,7 +62,7 @@ func Serve(opts *ServeOpts) {
 		VersionedPlugins: map[int]plugin.PluginSet{
 			5: {
 				ProviderPluginName: &tf5server.GRPCProviderPlugin{
-					GRPCProvider: func() proto.ProviderServer {
+					GRPCProvider: func() tfprotov5.ProviderServer {
 						return provider
 					},
 				},

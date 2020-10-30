@@ -10,13 +10,13 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	testing "github.com/mitchellh/go-testing-interface"
 
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func runPostTestDestroy(t testing.T, c TestCase, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), v5factories map[string]func() (proto.ProviderServer, error), statePreDestroy *terraform.State) error {
+func runPostTestDestroy(t testing.T, c TestCase, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), v5factories map[string]func() (tfprotov5.ProviderServer, error), statePreDestroy *terraform.State) error {
 	t.Helper()
 
 	err := runProviderCommand(t, func() error {
