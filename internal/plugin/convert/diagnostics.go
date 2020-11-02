@@ -5,52 +5,52 @@ import (
 
 	"github.com/hashicorp/go-cty/cty"
 
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
 // AppendProtoDiag appends a new diagnostic from a warning string or an error.
 // This panics if d is not a string or error.
-func AppendProtoDiag(diags []*proto.Diagnostic, d interface{}) []*proto.Diagnostic {
+func AppendProtoDiag(diags []*tfprotov5.Diagnostic, d interface{}) []*tfprotov5.Diagnostic {
 	switch d := d.(type) {
 	case cty.PathError:
 		ap := PathToAttributePath(d.Path)
-		diags = append(diags, &proto.Diagnostic{
-			Severity:  proto.DiagnosticSeverityError,
+		diags = append(diags, &tfprotov5.Diagnostic{
+			Severity:  tfprotov5.DiagnosticSeverityError,
 			Summary:   d.Error(),
 			Attribute: ap,
 		})
 	case diag.Diagnostics:
 		diags = append(diags, DiagsToProto(d)...)
 	case error:
-		diags = append(diags, &proto.Diagnostic{
-			Severity: proto.DiagnosticSeverityError,
+		diags = append(diags, &tfprotov5.Diagnostic{
+			Severity: tfprotov5.DiagnosticSeverityError,
 			Summary:  d.Error(),
 		})
 	case string:
-		diags = append(diags, &proto.Diagnostic{
-			Severity: proto.DiagnosticSeverityWarning,
+		diags = append(diags, &tfprotov5.Diagnostic{
+			Severity: tfprotov5.DiagnosticSeverityWarning,
 			Summary:  d,
 		})
-	case *proto.Diagnostic:
+	case *tfprotov5.Diagnostic:
 		diags = append(diags, d)
-	case []*proto.Diagnostic:
+	case []*tfprotov5.Diagnostic:
 		diags = append(diags, d...)
 	}
 	return diags
 }
 
-// ProtoToDiags converts a list of proto.Diagnostics to a diag.Diagnostics.
-func ProtoToDiags(ds []*proto.Diagnostic) diag.Diagnostics {
+// ProtoToDiags converts a list of tfprotov5.Diagnostics to a diag.Diagnostics.
+func ProtoToDiags(ds []*tfprotov5.Diagnostic) diag.Diagnostics {
 	var diags diag.Diagnostics
 	for _, d := range ds {
 		var severity diag.Severity
 
 		switch d.Severity {
-		case proto.DiagnosticSeverityError:
+		case tfprotov5.DiagnosticSeverityError:
 			severity = diag.Error
-		case proto.DiagnosticSeverityWarning:
+		case tfprotov5.DiagnosticSeverityWarning:
 			severity = diag.Warning
 		}
 
@@ -65,21 +65,21 @@ func ProtoToDiags(ds []*proto.Diagnostic) diag.Diagnostics {
 	return diags
 }
 
-func DiagsToProto(diags diag.Diagnostics) []*proto.Diagnostic {
-	var ds []*proto.Diagnostic
+func DiagsToProto(diags diag.Diagnostics) []*tfprotov5.Diagnostic {
+	var ds []*tfprotov5.Diagnostic
 	for _, d := range diags {
 		if err := d.Validate(); err != nil {
 			panic(fmt.Errorf("Invalid diagnostic: %s. This is always a bug in the provider implementation", err))
 		}
-		protoDiag := &proto.Diagnostic{
+		protoDiag := &tfprotov5.Diagnostic{
 			Summary:   d.Summary,
 			Detail:    d.Detail,
 			Attribute: PathToAttributePath(d.AttributePath),
 		}
 		if d.Severity == diag.Error {
-			protoDiag.Severity = proto.DiagnosticSeverityError
+			protoDiag.Severity = tfprotov5.DiagnosticSeverityError
 		} else if d.Severity == diag.Warning {
-			protoDiag.Severity = proto.DiagnosticSeverityWarning
+			protoDiag.Severity = tfprotov5.DiagnosticSeverityWarning
 		}
 		ds = append(ds, protoDiag)
 	}

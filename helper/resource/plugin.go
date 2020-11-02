@@ -11,7 +11,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
@@ -19,7 +19,7 @@ import (
 	testing "github.com/mitchellh/go-testing-interface"
 )
 
-func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), v5factories map[string]func() (proto.ProviderServer, error)) error {
+func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), v5factories map[string]func() (tfprotov5.ProviderServer, error)) error {
 	// don't point to this as a test failure location
 	// point to whatever called it
 	t.Helper()
@@ -75,7 +75,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 		// into a gRPC interface, and the logger just discards logs
 		// from go-plugin.
 		opts := &plugin.ServeOpts{
-			GRPCProviderFunc: func() proto.ProviderServer {
+			GRPCProviderFunc: func() tfprotov5.ProviderServer {
 				return schema.NewGRPCProviderServer(provider)
 			},
 			Logger: hclog.New(&hclog.LoggerOptions{
@@ -154,7 +154,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 		// into a gRPC interface, and the logger just discards logs
 		// from go-plugin.
 		opts := &plugin.ServeOpts{
-			GRPCProviderFunc: func() proto.ProviderServer {
+			GRPCProviderFunc: func() tfprotov5.ProviderServer {
 				return provider
 			},
 			Logger: hclog.New(&hclog.LoggerOptions{

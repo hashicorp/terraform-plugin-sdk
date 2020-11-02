@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/go-cty/cty"
 
-	proto "github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
@@ -21,12 +21,12 @@ var (
 // Test that we can convert configschema to protobuf types and back again.
 func TestConvertSchemaBlocks(t *testing.T) {
 	tests := map[string]struct {
-		Block *proto.SchemaBlock
+		Block *tfprotov5.SchemaBlock
 		Want  *configschema.Block
 	}{
 		"attributes": {
-			&proto.SchemaBlock{
-				Attributes: []*proto.SchemaAttribute{
+			&tfprotov5.SchemaBlock{
+				Attributes: []*tfprotov5.SchemaAttribute{
 					{
 						Name: "computed",
 						Type: tftypes.List{
@@ -77,28 +77,28 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 		},
 		"blocks": {
-			&proto.SchemaBlock{
-				BlockTypes: []*proto.SchemaNestedBlock{
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
 					{
 						TypeName: "list",
-						Nesting:  proto.SchemaNestedBlockNestingModeList,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeList,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "map",
-						Nesting:  proto.SchemaNestedBlockNestingModeMap,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeMap,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "set",
-						Nesting:  proto.SchemaNestedBlockNestingModeSet,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSet,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "single",
-						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
-						Block: &proto.SchemaBlock{
-							Attributes: []*proto.SchemaAttribute{
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							Attributes: []*tfprotov5.SchemaAttribute{
 								{
 									Name:     "foo",
 									Type:     tftypes.DynamicPseudoType,
@@ -135,22 +135,22 @@ func TestConvertSchemaBlocks(t *testing.T) {
 			},
 		},
 		"deep block nesting": {
-			&proto.SchemaBlock{
-				BlockTypes: []*proto.SchemaNestedBlock{
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
 					{
 						TypeName: "single",
-						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
-						Block: &proto.SchemaBlock{
-							BlockTypes: []*proto.SchemaNestedBlock{
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							BlockTypes: []*tfprotov5.SchemaNestedBlock{
 								{
 									TypeName: "list",
-									Nesting:  proto.SchemaNestedBlockNestingModeList,
-									Block: &proto.SchemaBlock{
-										BlockTypes: []*proto.SchemaNestedBlock{
+									Nesting:  tfprotov5.SchemaNestedBlockNestingModeList,
+									Block: &tfprotov5.SchemaBlock{
+										BlockTypes: []*tfprotov5.SchemaNestedBlock{
 											{
 												TypeName: "set",
-												Nesting:  proto.SchemaNestedBlockNestingModeSet,
-												Block:    &proto.SchemaBlock{},
+												Nesting:  tfprotov5.SchemaNestedBlockNestingModeSet,
+												Block:    &tfprotov5.SchemaBlock{},
 											},
 										},
 									},
@@ -197,12 +197,12 @@ func TestConvertSchemaBlocks(t *testing.T) {
 // Test that we can convert configschema to protobuf types and back again.
 func TestConvertProtoSchemaBlocks(t *testing.T) {
 	tests := map[string]struct {
-		Want  *proto.SchemaBlock
+		Want  *tfprotov5.SchemaBlock
 		Block *configschema.Block
 	}{
 		"attributes": {
-			&proto.SchemaBlock{
-				Attributes: []*proto.SchemaAttribute{
+			&tfprotov5.SchemaBlock{
+				Attributes: []*tfprotov5.SchemaAttribute{
 					{
 						Name: "computed",
 						Type: tftypes.List{
@@ -253,28 +253,28 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 		},
 		"blocks": {
-			&proto.SchemaBlock{
-				BlockTypes: []*proto.SchemaNestedBlock{
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
 					{
 						TypeName: "list",
-						Nesting:  proto.SchemaNestedBlockNestingModeList,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeList,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "map",
-						Nesting:  proto.SchemaNestedBlockNestingModeMap,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeMap,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "set",
-						Nesting:  proto.SchemaNestedBlockNestingModeSet,
-						Block:    &proto.SchemaBlock{},
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSet,
+						Block:    &tfprotov5.SchemaBlock{},
 					},
 					{
 						TypeName: "single",
-						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
-						Block: &proto.SchemaBlock{
-							Attributes: []*proto.SchemaAttribute{
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							Attributes: []*tfprotov5.SchemaAttribute{
 								{
 									Name:     "foo",
 									Type:     tftypes.DynamicPseudoType,
@@ -311,22 +311,22 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 			},
 		},
 		"deep block nesting": {
-			&proto.SchemaBlock{
-				BlockTypes: []*proto.SchemaNestedBlock{
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
 					{
 						TypeName: "single",
-						Nesting:  proto.SchemaNestedBlockNestingModeSingle,
-						Block: &proto.SchemaBlock{
-							BlockTypes: []*proto.SchemaNestedBlock{
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							BlockTypes: []*tfprotov5.SchemaNestedBlock{
 								{
 									TypeName: "list",
-									Nesting:  proto.SchemaNestedBlockNestingModeList,
-									Block: &proto.SchemaBlock{
-										BlockTypes: []*proto.SchemaNestedBlock{
+									Nesting:  tfprotov5.SchemaNestedBlockNestingModeList,
+									Block: &tfprotov5.SchemaBlock{
+										BlockTypes: []*tfprotov5.SchemaNestedBlock{
 											{
 												TypeName: "set",
-												Nesting:  proto.SchemaNestedBlockNestingModeSet,
-												Block:    &proto.SchemaBlock{},
+												Nesting:  tfprotov5.SchemaNestedBlockNestingModeSet,
+												Block:    &tfprotov5.SchemaBlock{},
 											},
 										},
 									},
