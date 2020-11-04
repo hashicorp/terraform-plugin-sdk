@@ -99,9 +99,10 @@ func TestProviderGetSchema(t *testing.T) {
 
 func TestProviderConfigure(t *testing.T) {
 	cases := []struct {
-		P      *Provider
-		Config map[string]interface{}
-		Err    bool
+		P           *Provider
+		Config      map[string]interface{}
+		Reconfigure bool
+		Err         bool
 	}{
 		{
 			P:      &Provider{},
@@ -164,6 +165,30 @@ func TestProviderConfigure(t *testing.T) {
 					},
 				},
 
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					if d.Get("foo").(int) == 42 {
+						return nil, nil
+					}
+
+					return nil, diag.Errorf("nope")
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": 42,
+			},
+			Reconfigure: true,
+			Err:         true,
+		},
+
+		{
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+
 				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
 					if d.Get("foo").(int) == 42 {
 						return nil, nil
@@ -182,6 +207,11 @@ func TestProviderConfigure(t *testing.T) {
 	for i, tc := range cases {
 		c := terraform.NewResourceConfigRaw(tc.Config)
 		diags := tc.P.Configure(context.Background(), c)
+
+		if tc.Reconfigure {
+			diags = tc.P.Configure(context.Background(), c)
+		}
+
 		if diags.HasError() != tc.Err {
 			t.Fatalf("%d: %s", i, diagutils.ErrorDiags(diags))
 		}

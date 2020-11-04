@@ -90,6 +90,9 @@ type Provider struct {
 	// cancellation signal. This function can yield Diagnostics.
 	ConfigureContextFunc ConfigureContextFunc
 
+	// configured is enabled after a Configure() call
+	configured bool
+
 	meta interface{}
 
 	TerraformVersion string
@@ -261,24 +264,28 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		return nil
 	}
 
+	if p.configured {
+		return p.configurationErrorDiagnostic(ProviderReconfiguredError)
+	}
+
 	sm := schemaMap(p.Schema)
 
 	// Get a ResourceData for this configuration. To do this, we actually
 	// generate an intermediary "diff" although that is never exposed.
 	diff, err := sm.Diff(ctx, nil, c, nil, p.meta, true)
 	if err != nil {
-		return diag.FromErr(err)
+		return p.configurationErrorDiagnostic(err)
 	}
 
 	data, err := sm.Data(nil, diff)
 	if err != nil {
-		return diag.FromErr(err)
+		return p.configurationErrorDiagnostic(err)
 	}
 
 	if p.ConfigureFunc != nil {
 		meta, err := p.ConfigureFunc(data)
 		if err != nil {
-			return diag.FromErr(err)
+			return p.configurationErrorDiagnostic(err)
 		}
 		p.meta = meta
 	}
@@ -289,6 +296,8 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		}
 		p.meta = meta
 	}
+
+	p.configured = true
 
 	return nil
 }
@@ -471,4 +480,11 @@ func (p *Provider) UserAgent(name, version string) string {
 // GRPCProvider returns a gRPC server, for use with terraform-plugin-mux.
 func (p *Provider) GRPCProvider() tfprotov5.ProviderServer {
 	return NewGRPCProviderServer(p)
+}
+
+func (p *Provider) configurationErrorDiagnostic(err error) diag.Diagnostics {
+	return diag.FromErr(&ProviderConfigurationError{
+		Provider: p,
+		Err:      err,
+	})
 }
