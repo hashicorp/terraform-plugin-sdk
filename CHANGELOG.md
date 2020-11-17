@@ -1,3 +1,10 @@
+# 2.3.0 (Unreleased)
+
+ENHANCEMENTS
+
+* `helper/schema.ResourceData` now has `HasChangeExcept` and `HasChangesExcept` methods to check if the resource has changes _besides_ a given key or list of keys. [GH-558]
+* `helper/resource.TestCase` now has an `ErrorCheck` property that can be set to a function, allowing the programmatic determination of whether to ignore an error or not. [GH-592]
+
 # 2.2.0 (November 02, 2020)
 
 FEATURES
