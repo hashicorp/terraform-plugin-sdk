@@ -2075,6 +2075,84 @@ func TestResourceDataHasChange(t *testing.T) {
 
 			Change: false,
 		},
+		{
+			Schema: map[string]*Schema{
+				"vpc_config": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"subnet_ids": {
+								Type:     TypeSet,
+								Required: true,
+								Elem:     &Schema{Type: TypeString},
+								Set:      HashString,
+							},
+						},
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"vpc_config.#":              "1",
+					"vpc_config.0.subnet_ids.#": "1",
+					fmt.Sprintf("vpc_config.0.subnet_ids.%d", HashString("abc-123")): "abc-123",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"vpc_config.0.subnet_ids.#": {
+						Old: "1",
+						New: "0",
+					},
+				},
+			},
+
+			Key: "vpc_config",
+
+			Change: true,
+		},
+		{
+			Schema: map[string]*Schema{
+				"vpc_config": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"subnet_ids": {
+								Type:     TypeSet,
+								Required: true,
+								Elem:     &Schema{Type: TypeString},
+								Set:      HashString,
+							},
+						},
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"vpc_config.#":              "1",
+					"vpc_config.0.subnet_ids.#": "1",
+					fmt.Sprintf("vpc_config.0.subnet_ids.%d", HashString("abc-123")): "abc-123",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"tags.foo": {
+						Old: "",
+						New: "bar",
+					},
+				},
+			},
+
+			Key: "vpc_config",
+
+			Change: false,
+		},
 	}
 
 	for i, tc := range cases {

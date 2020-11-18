@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"log"
 	"reflect"
 	"strings"
@@ -162,7 +163,7 @@ func (d *ResourceData) HasChange(key string) bool {
 		return !eq.Equal(n)
 	}
 
-	return !reflect.DeepEqual(o, n)
+	return !cmp.Equal(o, n)
 }
 
 // HasChangeExcept returns whether any keys outside the given key have been changed.
