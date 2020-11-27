@@ -2078,6 +2078,105 @@ func TestTestCheckTypeSetElemNestedAttrs(t *testing.T) {
 			},
 		},
 		{
+			Description:       "single root TypeSet attribute single nested value match with varying depths",
+			ResourceAddress:   "example_thing.test",
+			ResourceAttribute: "groups.*.groups.*.groups.*",
+			Values: map[string]string{
+				"gid": "group ID 3",
+			},
+			TerraformState: &terraform.State{
+				Version: 3,
+				Modules: []*terraform.ModuleState{
+					{
+						Path:    []string{"root"},
+						Outputs: map[string]*terraform.OutputState{},
+						Resources: map[string]*terraform.ResourceState{
+							"example_thing.test": {
+								Type:     "example_thing",
+								Provider: "example",
+								Primary: &terraform.InstanceState{
+									ID: "11111",
+									Meta: map[string]interface{}{
+										"schema_version": 0,
+									},
+									Attributes: map[string]string{
+										"%":                                   "2",
+										"id":                                  "resource ID",
+										"groups.%":                            "2",
+										"groups.#":                            "2",
+										"groups.0.%":                          "2",
+										"groups.0.gid":                        "group ID 0",
+										"groups.0.groups.#":                   "0",
+										"groups.1.%":                          "2",
+										"groups.1.gid":                        "group ID 1",
+										"groups.1.groups.#":                   "1",
+										"groups.1.groups.0.%":                 "2",
+										"groups.1.groups.0.gid":               "group ID 2",
+										"groups.1.groups.0.groups.#":          "1",
+										"groups.1.groups.0.groups.0.%":        "2",
+										"groups.1.groups.0.groups.0.gid":      "group ID 3",
+										"groups.1.groups.0.groups.0.groups.#": "0",
+									},
+								},
+							},
+						},
+						Dependencies: []string{},
+					},
+				},
+			},
+		},
+		{
+			Description:       "single root TypeSet attribute single nested value mismatch with varying depths",
+			ResourceAddress:   "example_thing.test",
+			ResourceAttribute: "groups.*.groups.*.groups.*",
+			Values: map[string]string{
+				"gid": "group ID 7",
+			},
+			TerraformState: &terraform.State{
+				Version: 3,
+				Modules: []*terraform.ModuleState{
+					{
+						Path:    []string{"root"},
+						Outputs: map[string]*terraform.OutputState{},
+						Resources: map[string]*terraform.ResourceState{
+							"example_thing.test": {
+								Type:     "example_thing",
+								Provider: "example",
+								Primary: &terraform.InstanceState{
+									ID: "11111",
+									Meta: map[string]interface{}{
+										"schema_version": 0,
+									},
+									Attributes: map[string]string{
+										"%":                                   "2",
+										"id":                                  "resource ID",
+										"groups.%":                            "2",
+										"groups.#":                            "2",
+										"groups.0.%":                          "2",
+										"groups.0.gid":                        "group ID 0",
+										"groups.0.groups.#":                   "0",
+										"groups.1.%":                          "2",
+										"groups.1.gid":                        "group ID 1",
+										"groups.1.groups.#":                   "1",
+										"groups.1.groups.0.%":                 "2",
+										"groups.1.groups.0.gid":               "group ID 2",
+										"groups.1.groups.0.groups.#":          "1",
+										"groups.1.groups.0.groups.0.%":        "2",
+										"groups.1.groups.0.groups.0.gid":      "group ID 3",
+										"groups.1.groups.0.groups.0.groups.#": "0",
+									},
+								},
+							},
+						},
+						Dependencies: []string{},
+					},
+				},
+			},
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "\"example_thing.test\" no TypeSet element \"groups.*.groups.*.groups.*\"")
+			},
+		},
+		{
 			Description:       "single root TypeSet attribute single nested value mismatch",
 			ResourceAddress:   "example_thing.test",
 			ResourceAttribute: "test.*",
