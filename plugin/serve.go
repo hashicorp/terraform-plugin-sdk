@@ -14,6 +14,13 @@ const (
 	// The constants below are the names of the plugins that can be dispensed
 	// from the plugin server.
 	ProviderPluginName = "provider"
+
+	// Some providers may generate quite large schemas, and the internal default
+	// grpc response size limit is 4MB. 64MB should cover most any use case, and
+	// if we get providers nearing that we may want to consider a finer-grained
+	// API to fetch individual resource schemas.
+	// Note: this option is marked as EXPERIMENTAL in the grpc API.
+	maxGrpcMessageSize = 64 << 20
 )
 
 // Handshake is the HandshakeConfig used to configure clients and servers.
@@ -69,7 +76,9 @@ func Serve(opts *ServeOpts) {
 			},
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(opts...)
+			return grpc.NewServer(append(opts,
+				grpc.MaxSendMsgSize(maxGrpcMessageSize),
+				grpc.MaxRecvMsgSize(maxGrpcMessageSize))...)
 		},
 		Logger: opts.Logger,
 		Test:   opts.TestConfig,
