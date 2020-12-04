@@ -6,7 +6,9 @@ import "fmt"
 // as the most common use case in Go will be handling a single error
 // returned from a function.
 //
-//   return diag.FromErr(err)
+//   if err != nil {
+//     return diag.FromErr(err)
+//   }
 func FromErr(err error) Diagnostics {
 	if err == nil {
 		return nil
