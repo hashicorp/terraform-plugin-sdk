@@ -1,3 +1,18 @@
+# 2.4.0 (Unreleased)
+
+ENHANCEMENTS
+
+* Support `Unwrap` on SDK errors [GH-647]
+* Allow for `nil` errors in `diag.FromErr` [GH-623]
+
+BUG FIXES
+
+* Check for `nil` errors prior to invoking `ErrorCheck` [GH-646]
+
+NOTES
+
+We have removed the deprecation of the non-diagnostic version of validation until the build-in validations are ported to the new format.
+
 # 2.3.0 (November 20, 2020)
 
 ENHANCEMENTS
