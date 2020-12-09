@@ -282,7 +282,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 		}
 	// if there's a JSON state, we need to decode it.
 	case len(req.RawState.JSON) > 0:
-		err = json.Unmarshal(req.RawState.JSON, &jsonMap)
+		err = unmarshalJSON(req.RawState.JSON, &jsonMap)
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 			return resp, nil
