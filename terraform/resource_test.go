@@ -181,8 +181,8 @@ func TestResourceConfigGet(t *testing.T) {
 		{
 			Config: cty.ObjectVal(map[string]cty.Value{
 				"mapname": cty.MapVal(map[string]cty.Value{
-					        "key:name":     cty.NumberIntVal(1),
-					        "key:name.suffix": cty.NumberIntVal(2),
+					"key:name":        cty.NumberIntVal(1),
+					"key:name.suffix": cty.NumberIntVal(2),
 				}),
 			}),
 			Schema: &configschema.Block{
