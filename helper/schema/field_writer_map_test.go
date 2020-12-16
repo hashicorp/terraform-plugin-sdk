@@ -88,6 +88,15 @@ func TestMapFieldWriter(t *testing.T) {
 			},
 		},
 
+		"bigint": {
+			[]string{"int"},
+			7227701560655103598,
+			false,
+			map[string]string{
+				"int": "7227701560655103598",
+			},
+		},
+
 		"string": {
 			[]string{"string"},
 			"42",
