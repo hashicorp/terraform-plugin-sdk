@@ -1086,6 +1086,7 @@ func TestShimState(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.Name), func(t *testing.T) {
 			var rawState tfjson.State
+			rawState.UseJSONNumber(true)
 
 			err := unmarshalJSON([]byte(tc.RawState), &rawState)
 			if err != nil {
