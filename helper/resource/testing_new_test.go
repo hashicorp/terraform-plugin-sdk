@@ -171,18 +171,18 @@ func TestShimState(t *testing.T) {
 							"list_of_int": {
 								Type: "list",
 								Value: []interface{}{
-									// TODO: Not sure if this is expectable
-									// but we have no way of distinguishing between int and float
-									// due outputs being schema-less and numbers
-									// always being unmarshaled into float64
-									1.0, 4.0, 9.0,
+									json.Number("1"),
+									json.Number("4"),
+									json.Number("9"),
 								},
 								Sensitive: false,
 							},
 							"list_of_float": {
 								Type: "list",
 								Value: []interface{}{
-									1.2, 4.2, 9.8,
+									json.Number("1.2"),
+									json.Number("4.2"),
+									json.Number("9.8"),
 								},
 								Sensitive: false,
 							},
@@ -280,12 +280,12 @@ func TestShimState(t *testing.T) {
 								Value: []interface{}{
 									map[string]interface{}{
 										"allow_bool": true,
-										"port":       float64(443),
+										"port":       json.Number("443"),
 										"rule":       "allow",
 									},
 									map[string]interface{}{
 										"allow_bool": false,
-										"port":       float64(80),
+										"port":       json.Number("80"),
 										"rule":       "deny",
 									},
 								},
@@ -1087,7 +1087,7 @@ func TestShimState(t *testing.T) {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.Name), func(t *testing.T) {
 			var rawState tfjson.State
 
-			err := json.Unmarshal([]byte(tc.RawState), &rawState)
+			err := unmarshalJSON([]byte(tc.RawState), &rawState)
 			if err != nil {
 				t.Fatal(err)
 			}

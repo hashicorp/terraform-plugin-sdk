@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"testing"
@@ -101,6 +102,59 @@ func TestUpgradeState_jsonState(t *testing.T) {
 	expected := cty.ObjectVal(map[string]cty.Value{
 		"id":  cty.StringVal("bar"),
 		"two": cty.NumberIntVal(2),
+	})
+
+	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
+		t.Fatal(cmp.Diff(expected, val, valueComparer, equateEmpty))
+	}
+}
+
+func TestUpgradeState_jsonStateBigInt(t *testing.T) {
+	r := &Resource{
+		UseJSONNumber: true,
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"int": {
+				Type:     TypeInt,
+				Required: true,
+			},
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	req := &tfprotov5.UpgradeResourceStateRequest{
+		TypeName: "test",
+		Version:  0,
+		RawState: &tfprotov5.RawState{
+			JSON: []byte(`{"id":"bar","int":7227701560655103598}`),
+		},
+	}
+
+	resp, err := server.UpgradeResourceState(nil, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		for _, d := range resp.Diagnostics {
+			t.Errorf("%#v", d)
+		}
+		t.Fatal("error")
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"id":  cty.StringVal("bar"),
+		"int": cty.NumberIntVal(7227701560655103598),
 	})
 
 	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
@@ -577,6 +631,71 @@ func TestPlanResourceChange(t *testing.T) {
 	}
 }
 
+func TestPlanResourceChange_bigint(t *testing.T) {
+	r := &Resource{
+		UseJSONNumber: true,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Required: true,
+			},
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	schema := r.CoreConfigSchema()
+	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proposedVal := cty.ObjectVal(map[string]cty.Value{
+		"id":  cty.UnknownVal(cty.String),
+		"foo": cty.MustParseNumberVal("7227701560655103598"),
+	})
+	proposedState, err := msgpack.Marshal(proposedVal, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testReq := &tfprotov5.PlanResourceChangeRequest{
+		TypeName: "test",
+		PriorState: &tfprotov5.DynamicValue{
+			MsgPack: priorState,
+		},
+		ProposedNewState: &tfprotov5.DynamicValue{
+			MsgPack: proposedState,
+		},
+	}
+
+	resp, err := server.PlanResourceChange(context.Background(), testReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plannedStateVal, err := msgpack.Unmarshal(resp.PlannedState.MsgPack, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !cmp.Equal(proposedVal, plannedStateVal, valueComparer) {
+		t.Fatal(cmp.Diff(proposedVal, plannedStateVal, valueComparer))
+	}
+
+	plannedStateFoo, acc := plannedStateVal.GetAttr("foo").AsBigFloat().Int64()
+	if acc != big.Exact {
+		t.Fatalf("Expected exact accuracy, got %s", acc)
+	}
+	if plannedStateFoo != 7227701560655103598 {
+		t.Fatalf("Expected %d, got %d, this represents a loss of precision in planning large numbers", 7227701560655103598, plannedStateFoo)
+	}
+}
+
 func TestApplyResourceChange(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 4,
@@ -640,6 +759,76 @@ func TestApplyResourceChange(t *testing.T) {
 	id := newStateVal.GetAttr("id").AsString()
 	if id != "bar" {
 		t.Fatalf("incorrect final state: %#v\n", newStateVal)
+	}
+}
+
+func TestApplyResourceChange_bigint(t *testing.T) {
+	r := &Resource{
+		UseJSONNumber: true,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Required: true,
+			},
+		},
+		CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+			rd.SetId("bar")
+			return nil
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	schema := r.CoreConfigSchema()
+	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	plannedVal := cty.ObjectVal(map[string]cty.Value{
+		"id":  cty.UnknownVal(cty.String),
+		"foo": cty.MustParseNumberVal("7227701560655103598"),
+	})
+	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testReq := &tfprotov5.ApplyResourceChangeRequest{
+		TypeName: "test",
+		PriorState: &tfprotov5.DynamicValue{
+			MsgPack: priorState,
+		},
+		PlannedState: &tfprotov5.DynamicValue{
+			MsgPack: plannedState,
+		},
+	}
+
+	resp, err := server.ApplyResourceChange(context.Background(), testReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id := newStateVal.GetAttr("id").AsString()
+	if id != "bar" {
+		t.Fatalf("incorrect final state: %#v\n", newStateVal)
+	}
+
+	foo, acc := newStateVal.GetAttr("foo").AsBigFloat().Int64()
+	if acc != big.Exact {
+		t.Fatalf("Expected exact accuracy, got %s", acc)
+	}
+	if foo != 7227701560655103598 {
+		t.Fatalf("Expected %d, got %d, this represents a loss of precision in applying large numbers", 7227701560655103598, foo)
 	}
 }
 
