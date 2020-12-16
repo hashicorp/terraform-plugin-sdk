@@ -25,8 +25,8 @@ require (
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/logutils v1.0.0
-	github.com/hashicorp/terraform-exec v0.11.1-0.20201216194308-834cb4cce1d3
-	github.com/hashicorp/terraform-json v0.7.1-0.20201216193920-93fe74c2941e
+	github.com/hashicorp/terraform-exec v0.11.1-0.20201216215126-3644a78ac896
+	github.com/hashicorp/terraform-json v0.8.0
 	github.com/hashicorp/terraform-plugin-go v0.1.0
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
@@ -42,3 +42,7 @@ require (
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
 	google.golang.org/grpc v1.32.0
 )
+
+replace github.com/hashicorp/terraform-json => ../terraform-json
+
+replace github.com/hashicorp/terraform-exec => ../terraform-exec
