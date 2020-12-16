@@ -42,7 +42,3 @@ require (
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
 	google.golang.org/grpc v1.32.0
 )
-
-replace github.com/hashicorp/terraform-json => ../terraform-json
-
-replace github.com/hashicorp/terraform-exec => ../terraform-exec
