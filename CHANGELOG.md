@@ -8,6 +8,7 @@ ENHANCEMENTS
 BUG FIXES
 
 * Check for `nil` errors prior to invoking `ErrorCheck` [GH-646]
+* More reliable handling of logging [GH-639]
 
 NOTES
 
