@@ -36,6 +36,9 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 	// plugins.
 	os.Setenv("PLUGIN_PROTOCOL_VERSIONS", "5")
 
+	// Terraform doesn't need to reach out to Checkpoint during testing.
+	wd.Setenv("CHECKPOINT_DISABLE", "1")
+
 	// Terraform 0.12.X and 0.13.X+ treat namespaceless providers
 	// differently in terms of what namespace they default to. So we're
 	// going to set both variations, as we don't know which version of
@@ -99,10 +102,6 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 				String:  config.Addr.String,
 			},
 		}
-
-		// plugin.DebugServe hijacks our log output location, so let's
-		// reset it
-		logging.SetOutput(t)
 
 		// when the provider exits, remove one from the waitgroup
 		// so we can track when everything is done
