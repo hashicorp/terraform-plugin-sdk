@@ -13,6 +13,7 @@ BUG FIXES
 * More reliable handling of logging [GH-639]
 * Modified error text to make golint and go vet happy when a non-empty plan is found in testing and an empty plan was expected [GH-596]
 * Add `UseJSONNumber` to `helper/schema.Resource` to make it possible to represent large numbers precisely. Setting to `true` will make numbers appear as `json.Number` in `StateUpgrader`s instead of as `float64`. [GH-662]
+* Fix logs sometimes appearing in test output when running acceptance tests. [GH-665]
 
 NOTES
 
