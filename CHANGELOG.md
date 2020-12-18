@@ -4,6 +4,7 @@ ENHANCEMENTS
 
 * Support `Unwrap` on SDK errors [GH-647]
 * Allow for `nil` errors in `diag.FromErr` [GH-623]
+* Added `validation.ToDiagFunc` helper to translate legacy validation functions into Diagnostics-aware validation functions. [GH-611]
 
 BUG FIXES
 
