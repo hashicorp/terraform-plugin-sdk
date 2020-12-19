@@ -1,19 +1,19 @@
-# 2.4.0 (Unreleased)
+# 2.4.0 (December 19, 2020)
 
 ENHANCEMENTS
 
-* Support `Unwrap` on SDK errors [GH-647]
-* Allow for `nil` errors in `diag.FromErr` [GH-623]
-* Added `validation.ToDiagFunc` helper to translate legacy validation functions into Diagnostics-aware validation functions. [GH-611]
-* Disable Checkpoint network connections during acceptance testing unless a Terraform binary needs to be installed. [GH-663]
+* Support `Unwrap` on SDK errors ([#647](https://github.com/hashicorp/terraform-plugin-sdk/issues/647))
+* Allow for `nil` errors in `diag.FromErr` ([#623](https://github.com/hashicorp/terraform-plugin-sdk/issues/623))
+* Added `validation.ToDiagFunc` helper to translate legacy validation functions into Diagnostics-aware validation functions. ([#611](https://github.com/hashicorp/terraform-plugin-sdk/issues/611))
+* Disable Checkpoint network connections during acceptance testing unless a Terraform binary needs to be installed. ([#663](https://github.com/hashicorp/terraform-plugin-sdk/issues/663))
 
 BUG FIXES
 
-* Check for `nil` errors prior to invoking `ErrorCheck` [GH-646]
-* More reliable handling of logging [GH-639]
-* Modified error text to make golint and go vet happy when a non-empty plan is found in testing and an empty plan was expected [GH-596]
-* Add `UseJSONNumber` to `helper/schema.Resource` to make it possible to represent large numbers precisely. Setting to `true` will make numbers appear as `json.Number` in `StateUpgrader`s instead of as `float64`. [GH-662]
-* Fix logs sometimes appearing in test output when running acceptance tests. [GH-665]
+* Check for `nil` errors prior to invoking `ErrorCheck` ([#646](https://github.com/hashicorp/terraform-plugin-sdk/issues/646))
+* More reliable handling of logging ([#639](https://github.com/hashicorp/terraform-plugin-sdk/issues/639))
+* Modified error text to make golint and go vet happy when a non-empty plan is found in testing and an empty plan was expected ([#596](https://github.com/hashicorp/terraform-plugin-sdk/issues/596))
+* Add `UseJSONNumber` to `helper/schema.Resource` to make it possible to represent large numbers precisely. Setting to `true` will make numbers appear as `json.Number` in `StateUpgrader`s instead of as `float64`. ([#662](https://github.com/hashicorp/terraform-plugin-sdk/issues/662))
+* Fix logs sometimes appearing in test output when running acceptance tests. ([#665](https://github.com/hashicorp/terraform-plugin-sdk/issues/665))
 
 NOTES
 
