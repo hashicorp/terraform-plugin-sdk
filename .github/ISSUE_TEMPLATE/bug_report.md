@@ -8,7 +8,7 @@ labels: bug
 <!---
 Inspect your go.mod as below to find the version, and paste the result between the ``` marks below.
 
-go list -m github.com/hashicorp/terraform-plugin-sdk/v2
+go list -m github.com/hashicorp/terraform-plugin-sdk/...
 
 If you are not running the latest version of the SDK, please try upgrading
 because your bug may have already been fixed.
