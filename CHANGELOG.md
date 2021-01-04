@@ -1,3 +1,9 @@
+# 2.4.1 (Unreleased)
+
+BUG FIXES
+
+* Don't panic during assertions when testing sets with varying levels of nesting [GH-648]
+
 # 2.4.0 (December 19, 2020)
 
 ENHANCEMENTS
