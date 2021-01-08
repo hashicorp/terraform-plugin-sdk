@@ -20,7 +20,7 @@ and improve the functionality for those that have.
 
 Following the release of the
 [terraform-plugin-go](https://github.com/hashicorp/terraform-plugin-go) and
-[terraform-plugin-mux](https://github.com/terraform-plugin-mux) modules, we
+[terraform-plugin-mux](https://github.com/hashicorp/terraform-plugin-mux) modules, we
 will work to improve and refine these modules to make them more robust, easier
 to use, and more approachable for developers. This includes creating [new
 abstractions](https://github.com/hashicorp/terraform-plugin-go-contrib) for
