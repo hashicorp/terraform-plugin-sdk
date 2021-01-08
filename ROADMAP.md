@@ -1,21 +1,51 @@
-# Q3 2020 Roadmap
+# Q1 2021 Roadmap
 
-Each quarter, the team will highlight areas of focus for our work and upcoming research.
-Each release will include necessary tasks that lead to the completion of the stated goals as well as community pull requests, enhancements, and features that are not highlighted in the roadmap. This upcoming calendar quarter (Jul-Sep 2020) we will be prioritizing the following areas of work:
+Each quarter, the team will highlight areas of focus for our work and upcoming
+research.
+
+Each release will include necessary tasks that lead to the completion of the
+stated goals as well as community pull requests, enhancements, and features
+that are not highlighted in the roadmap. This upcoming calendar quarter
+(Jan-Mar 2021) we will be prioritizing the following areas of work:
 
 ## Currently In Progress
+
 ### v2.x Release
-With the release of v2.0.0 we will continue to make improvements to the SDK to ease the upgrade path for provider developers who have not yet migrated and improve the functionality for those that have.
- 
-## Planned
-### Protocol-native provider development packages
-As part of a project to enhance the Terraform Provider developer experience, we will be releasing packages to interact with the Terraform protocol directly, with little to no abstraction. Future packages will build on these to offer abstractions and frameworks similar to the current SDK’s experience. Providers may wish to make use of these packages for more complex resources that need advanced behavior not supported natively in our current SDK.
- 
-### Terraform Provider Resource Mux (terraform-plugin-mux)
-To pave the way for new opt-in behaviors and SDK improvements, we will be releasing a terraform-plugin-mux package that lets provider developers utilize multiple SDKs in the same provider on a per resource basis.
- 
-### terraform-exec Module
 
-**Repository:** https://github.com/hashicorp/terraform-exec
+Following the release of v2.0.0 we will continue to make improvements to the
+SDK to ease the upgrade path for provider developers who have not yet migrated
+and improve the functionality for those that have.
 
-Our goal is to introduce a new Go module that enables programmatic interaction with Terraform. This approach offers provider developers a more reliable and sustainable way to interact with Terraform and this library will support running Terraform CLI commands from Go binaries, obtaining state and schema output as terraform-json types. 
+### terraform-plugin-go / terraform-plugin-mux improvements
+
+Following the release of the
+[terraform-plugin-go](https://github.com/hashicorp/terraform-plugin-go) and
+[terraform-plugin-mux](https://github.com/terraform-plugin-mux) modules, we
+will work to improve and refine these modules to make them more robust, easier
+to use, and more approachable for developers. This includes creating [new
+abstractions](https://github.com/hashicorp/terraform-plugin-go-contrib) for
+terraform-plugin-go that developers may find useful and will help inform our
+future design efforts.
+
+## Under Research
+
+### An HCL2-native framework
+
+With the release of terraform-plugin-go, we're researching, prototyping, and
+designing a framework based on the same ideas and foundations, meant to mirror
+terraform-plugin-sdk in approachability and ease of use while retaining
+terraform-plugin-go's level of suitability for modern Terraform development.
+
+### A modernized testing framework
+
+Following the creation of our reattach-based binary test driver in v2.0.0 of
+the SDK, we're investigating what a redesigned approach to testing Terraform
+providers may look like and if we can aid developers in making and testing
+clearer assertions about their providers.
+
+### More observable provider development
+
+We're currently researching and investigating ways in which we can surface more
+information to provider developers about what is happening in their providers,
+and how we can make the information we surface more accessible and easier to
+digest.
