@@ -53,7 +53,7 @@ See [Extending Terraform](https://www.terraform.io/docs/extend/index.html) secti
 
 ## Migrating to SDK v1 from built-in SDK
 
-Migrating to the standalone SDK v1 is covered on the [Plugin SDK section](https://www.terraform.io/docs/extend/plugin-sdk.html) of the website.
+Migrating to the standalone SDK v1 is covered on the [Plugin SDK section](https://www.terraform.io/docs/extend/guides/v1-upgrade-guide.html) of the website.
 
 ## Migrating to SDK v2 from SDK v1
 
