@@ -1,10 +1,10 @@
-# 2.4.1 (Unreleased)
+# 2.4.1 (January 20, 2021)
 
 BUG FIXES
 
-* Don't panic during assertions when testing sets with varying levels of nesting [GH-648]
-* Prevent panics when sending Ctrl-C to Terraform [GH-674]
-* Make the error message when a "required" block is missing clearer, identifying the block in question [GH-672]
+* Don't panic during assertions when testing sets with varying levels of nesting ([#648](https://github.com/hashicorp/terraform-plugin-sdk/issues/648))
+* Prevent panics when sending Ctrl-C to Terraform ([#674](https://github.com/hashicorp/terraform-plugin-sdk/issues/674))
+* Make the error message when a "required" block is missing clearer, identifying the block in question ([#672](https://github.com/hashicorp/terraform-plugin-sdk/issues/672))
 
 # 2.4.0 (December 19, 2020)
 
