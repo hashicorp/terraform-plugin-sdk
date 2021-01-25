@@ -360,6 +360,7 @@ func (s *Schema) ZeroValue() interface{} {
 
 func (s *Schema) finalizeDiff(d *terraform.ResourceAttrDiff, customized bool) *terraform.ResourceAttrDiff {
 	if d == nil {
+		log.Println("[TRACE] tpg-7934: returning nil from finalizeDiff because nil was passed in")
 		return d
 	}
 
@@ -408,6 +409,7 @@ func (s *Schema) finalizeDiff(d *terraform.ResourceAttrDiff, customized bool) *t
 			if d.Old != "" && d.New == "" {
 				// This is a computed value with an old value set already,
 				// just let it go.
+				log.Println("[TRACE] tpg-7934: returning nil from finalizeDiff because customized")
 				return nil
 			}
 		}
@@ -1383,6 +1385,7 @@ func (m schemaMap) diffString(
 		return nil
 	}
 
+	log.Printf("[TRACE] tpg-7934: setting attribute %q", k)
 	diff.Attributes[k] = schema.finalizeDiff(
 		&terraform.ResourceAttrDiff{
 			Old:         os,
