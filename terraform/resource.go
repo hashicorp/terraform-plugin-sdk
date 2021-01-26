@@ -478,7 +478,7 @@ func (c *ResourceConfig) get(
 				}
 				current = cv.Index(int(i)).Interface()
 			}
-		case reflect.String:
+		default:
 			// This happens when map keys contain "." and have a common
 			// prefix so were split as path components above.
 			actualKey := strings.Join(parts[i-1:], ".")
@@ -488,8 +488,6 @@ func (c *ResourceConfig) get(
 			}
 
 			return nil, false
-		default:
-			panic(fmt.Sprintf("Unknown kind: %s", cv.Kind()))
 		}
 	}
 
