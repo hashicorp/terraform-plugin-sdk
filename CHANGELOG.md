@@ -1,3 +1,9 @@
+# 2.4.2 (Unreleased)
+
+BUG FIXES
+
+* Don't panic in very specific circumstances involving CustomizeDiff and empty strings in the config [GH-686]
+
 # 2.4.1 (January 20, 2021)
 
 BUG FIXES
