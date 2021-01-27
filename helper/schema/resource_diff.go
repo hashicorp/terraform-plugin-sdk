@@ -3,7 +3,6 @@ package schema
 import (
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -462,11 +461,9 @@ func (d *ResourceDiff) getChange(key string) (getResult, getResult, bool) {
 	var new getResult
 	for p := range d.updatedKeys {
 		if childAddrOf(key, p) {
-			log.Printf("[TRACE] tpg-7934: key %q is child of parent %q, counts as computed", key, p)
 			new = d.getExact(strings.Split(key, "."), "newDiff")
 			return old, new, true
 		}
-		log.Printf("[TRACE] tpg-7934: key %q is not child of parent %q, does not count as computed", key, p)
 	}
 	new = d.get(strings.Split(key, "."), "newDiff")
 	return old, new, false

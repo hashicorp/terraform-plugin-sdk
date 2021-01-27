@@ -796,7 +796,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	newExtra := map[string]interface{}{}
 
 	for k, v := range diff.Attributes {
-		log.Printf("[TRACE] tpg-7934: copying over attribute %q", k)
 		if v.NewExtra != nil {
 			newExtra[k] = v.NewExtra
 		}
