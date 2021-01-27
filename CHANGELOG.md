@@ -1,8 +1,8 @@
-# 2.4.2 (Unreleased)
+# 2.4.2 (January 27, 2021)
 
 BUG FIXES
 
-* Don't panic in very specific circumstances involving CustomizeDiff and empty strings in the config [GH-686]
+* Don't panic in very specific circumstances involving CustomizeDiff and empty strings in the config ([#686](https://github.com/hashicorp/terraform-plugin-sdk/issues/686))
 
 # 2.4.1 (January 20, 2021)
 
