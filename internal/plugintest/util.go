@@ -1,6 +1,8 @@
 package plugintest
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -92,4 +94,62 @@ func symlinkDirectoriesOnly(srcDir string, destDir string) (err error) {
 
 	}
 	return
+}
+
+func copyFiles(path string, dstPath string) error {
+	infos, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	for _, info := range infos {
+		srcPath := filepath.Join(path, info.Name())
+		if info.IsDir() {
+			newDir := filepath.Join(dstPath, info.Name())
+			err = os.MkdirAll(newDir, info.Mode())
+			if err != nil {
+				return err
+			}
+			err = copyFiles(srcPath, newDir)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = copyFile(srcPath, dstPath)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+	return nil
+}
+
+func copyFile(path string, dstPath string) error {
+	srcF, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer srcF.Close()
+
+	di, err := os.Stat(dstPath)
+	if err != nil {
+		return err
+	}
+	if di.IsDir() {
+		_, file := filepath.Split(path)
+		dstPath = filepath.Join(dstPath, file)
+	}
+
+	dstF, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dstF.Close()
+
+	if _, err := io.Copy(dstF, srcF); err != nil {
+		return err
+	}
+
+	return nil
 }

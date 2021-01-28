@@ -345,6 +345,16 @@ type TestCase struct {
 	// IDRefreshIgnore is a list of configuration keys that will be ignored.
 	IDRefreshName   string
 	IDRefreshIgnore []string
+
+	// ConfigDir is a relative directory path for the base Terraform configuration of the test.
+	//
+	// When running Terraform operations for the test, Terraform will
+	// be executed with copies of the files of this directory as its
+	// working directory. This setting can be combined with
+	// TestStep.Config to override portions of the Terraform
+	// configuration or omitted in preference of only specifying the
+	// Terraform configuration via each TestStep.Config.
+	ConfigDir string
 }
 
 // ExternalProvider holds information about third-party providers that should
@@ -395,9 +405,18 @@ type TestStep struct {
 	// Plan, Apply testing
 	//---------------------------------------------------------------
 
-	// Config a string of the configuration to give to Terraform. If this
-	// is set, then the TestCase will execute this step with the same logic
-	// as a `terraform apply`.
+	// Config is a string of the Terraform configuration for execution.
+	//
+	// If this is set when the TestCase ConfigDir is not set, then
+	// no base configuration for the test exists and this value will
+	// be the final configuration.
+	//
+	// If this is set in addition to TestCase ConfigDir, then the
+	// configuration from the directory is the base configuration and
+	// this value will be written as an override.tf file and follow
+	// the documented override behaviors. See also:
+	// https://www.terraform.io/docs/configuration/override.html
+
 	Config string
 
 	// Check is called after the Config is applied. Use this step to
@@ -482,6 +501,15 @@ type TestStep struct {
 	// fields that can't be refreshed and don't matter.
 	ImportStateVerify       bool
 	ImportStateVerifyIgnore []string
+
+	// Variables is a map of Terraform configuration variables, written to terraform.tfvars.json.
+	//
+	// These variables must be declared in the test Terraform configuration,
+	// provided either by Config or TestCase.ConfigDir, to take effect.
+	//
+	// The values are automatically converted from standard Go types to
+	// the JSON equivalent.
+	Variables map[string]interface{}
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency

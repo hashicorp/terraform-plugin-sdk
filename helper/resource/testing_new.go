@@ -72,7 +72,7 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 		t.Fatal(err)
 	}
 
-	err = wd.SetConfig(providerCfg)
+	err = wd.SetConfig(providerCfg, c.ConfigDir, nil)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
 	}
@@ -124,7 +124,7 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 			continue
 		}
 
-		if step.Config != "" {
+		if step.Config != "" || c.ConfigDir != "" {
 			err := testStepNewConfig(t, c, wd, step)
 			if step.ExpectError != nil {
 				if err == nil {
@@ -196,12 +196,12 @@ func testIDRefresh(c TestCase, t testing.T, wd *plugintest.WorkingDir, step Test
 	if err != nil {
 		return err
 	}
-	err = wd.SetConfig(cfg)
+	err = wd.SetConfig(cfg, c.ConfigDir, step.Variables)
 	if err != nil {
 		t.Fatalf("Error setting import test config: %s", err)
 	}
 	defer func() {
-		err = wd.SetConfig(step.Config)
+		err = wd.SetConfig(step.Config, c.ConfigDir, step.Variables)
 		if err != nil {
 			t.Fatalf("Error resetting test config: %s", err)
 		}
