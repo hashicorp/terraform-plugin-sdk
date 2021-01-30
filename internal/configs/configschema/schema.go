@@ -1,6 +1,7 @@
 package configschema
 
 import (
+	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -41,6 +42,9 @@ type Block struct {
 	// Deprecated indicates whether the block has been marked as deprecated in the
 	// provider and usage should be discouraged.
 	Deprecated bool
+
+	// Cache result of DecoderSpec
+	Spec *hcldec.ObjectSpec
 }
 
 // Attribute represents a configuration attribute, within a block.

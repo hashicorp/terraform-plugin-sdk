@@ -18,6 +18,10 @@ func (b *Block) DecoderSpec() hcldec.Spec {
 		return ret
 	}
 
+	if b.Spec != nil {
+		return *b.Spec
+	}
+
 	for name, attrS := range b.Attributes {
 		ret[name] = attrS.decoderSpec(name)
 	}
@@ -110,6 +114,8 @@ func (b *Block) DecoderSpec() hcldec.Spec {
 			continue
 		}
 	}
+
+	b.Spec = &ret
 
 	return ret
 }
