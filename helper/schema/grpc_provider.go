@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/go-cty/cty"
 	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
 	"github.com/hashicorp/go-cty/cty/msgpack"
@@ -1105,6 +1106,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	newInstanceState, diags := res.ReadDataApply(ctx, diff, s.provider.Meta())
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 	if diags.HasError() {
+		log.Printf("[DEBUG] paddy561 got response: %s", spew.Sdump(resp))
 		return resp, nil
 	}
 
