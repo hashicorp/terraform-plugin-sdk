@@ -107,12 +107,6 @@ func (h *Helper) NewWorkingDir() (*WorkingDir, error) {
 		return nil, err
 	}
 
-	// symlink the provider source files into the base directory
-	err = symlinkDirectoriesOnly(h.sourceDir, dir)
-	if err != nil {
-		return nil, err
-	}
-
 	return &WorkingDir{
 		h:             h,
 		baseDir:       dir,
