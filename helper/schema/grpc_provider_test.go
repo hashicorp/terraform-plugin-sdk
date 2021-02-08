@@ -1753,3 +1753,10 @@ func TestStopContext_stopReset(t *testing.T) {
 		t.Fatal("Stop message did not cancel request context")
 	}
 }
+
+func Test_pathToAttributePath_noSteps(t *testing.T) {
+	res := pathToAttributePath(cty.Path{})
+	if res != nil {
+		t.Errorf("Expected nil attribute path, got %+v", res)
+	}
+}
