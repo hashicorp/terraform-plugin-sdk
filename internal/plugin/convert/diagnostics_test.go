@@ -281,3 +281,23 @@ func TestDiagnostics(t *testing.T) {
 		})
 	}
 }
+
+func TestPathToAttributePath(t *testing.T) {
+	tests := map[string]struct {
+		path cty.Path
+		want *tftypes.AttributePath
+	}{
+		"no steps": {
+			path: cty.Path{},
+			want: nil,
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := PathToAttributePath(tc.path)
+			if diff := cmp.Diff(got, tc.want); diff != "" {
+				t.Errorf("Unexpected diff: %s", diff)
+			}
+		})
+	}
+}
