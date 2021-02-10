@@ -1,8 +1,8 @@
-# 2.4.3 (Unreleased)
+# 2.4.3 (February 10, 2021)
 
 BUG FIXES
 
-* Make acceptance testing framework compatible with Terraform 0.15 [GH-694]
+* Make acceptance testing framework compatible with Terraform 0.15 ([#694](https://github.com/hashicorp/terraform-plugin-sdk/issues/694))
 
 # 2.4.2 (January 27, 2021)
 
