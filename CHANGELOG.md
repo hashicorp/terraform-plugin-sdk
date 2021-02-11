@@ -1,3 +1,9 @@
+# 2.4.4 (Unreleased)
+
+BUG FIXES
+
+* Resolved bug where Diagnostics wouldn't get associated with their configuration context in user output. [GH-696]
+
 # 2.4.3 (February 10, 2021)
 
 BUG FIXES
