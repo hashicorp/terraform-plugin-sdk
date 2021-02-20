@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-plugin-sdk/v2
 
-go 1.14
+go 1.15
 
 require (
 	cloud.google.com/go v0.61.0 // indirect
