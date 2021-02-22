@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test/v2"
-	coreAddrs "github.com/hashicorp/terraform/addrs"
 )
 
 func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
@@ -138,7 +137,7 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 			var rsrcSchema *schema.Resource
 
 			// r.Provider at this point is `registry.terraform.io/hashicorp/blah` but we need `blah`
-			val, tfdiags := coreAddrs.ParseProviderSourceString(r.Provider)
+			val, tfdiags := addrs.ParseProviderSourceString(r.Provider)
 			if tfdiags.HasErrors() {
 				t.Fatal(tfdiags.Err())
 			}
