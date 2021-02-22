@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	tftest "github.com/hashicorp/terraform-plugin-test/v2"
+	coreAddrs "github.com/hashicorp/terraform/addrs"
 )
 
 func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, step TestStep, cfg string) error {
@@ -137,11 +138,11 @@ func testStepNewImportState(t *testing.T, c TestCase, wd *tftest.WorkingDir, ste
 			var rsrcSchema *schema.Resource
 
 			// r.Provider at this point is `registry.terraform.io/hashicorp/blah` but we need `blah`
-			segments := strings.Split(r.Provider, "/")
-			if len(segments) != 3 {
-				t.Fatalf("expected `r.Provider` to be in the format `registry.terraform.io/hashicorp/blah` but got %q", r.Provider)
+			val, tfdiags := coreAddrs.ParseProviderSourceString(r.Provider)
+			if tfdiags.HasErrors() {
+				t.Fatal(tfdiags.Err())
 			}
-			providerName := segments[2]
+			providerName := val.Type
 			providerAddr, diags := addrs.ParseAbsProviderConfigStr("provider." + providerName + "." + r.Type)
 			if diags.HasErrors() {
 				t.Fatalf("Failed to find schema for resource with ID %s", r.Primary)
