@@ -1,4 +1,4 @@
-# 2.4.4 (Unreleased)
+# 2.4.4 (February 24, 2021)
 
 NOTES
 
@@ -6,7 +6,7 @@ As per our Go version support policy, we now require Go 1.15 or higher to use th
 
 BUG FIXES
 
-* Resolved bug where Diagnostics wouldn't get associated with their configuration context in user output. [GH-696]
+* Resolved bug where Diagnostics wouldn't get associated with their configuration context in user output. ([#696](https://github.com/hashicorp/terraform-plugin-sdk/issues/696))
 
 # 2.4.3 (February 10, 2021)
 
