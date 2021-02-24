@@ -14,13 +14,13 @@ commands:
             - "/go/pkg/mod"
 
 jobs:
-  "docker-go114 build":
+  "docker-go115 build":
     docker:
       - image: docker.mirror.hashicorp.services/circleci/golang:1.15
     steps:
       - get_dependencies
       - run: go build ./...
-  "docker-go114 test":
+  "docker-go115 test":
     docker:
       - image: docker.mirror.hashicorp.services/circleci/golang:1.15
         environment:
@@ -42,19 +42,19 @@ jobs:
           destination: raw-test-output
       - store_test_results:
           path: << parameters.test_results >>
-  "docker-go114 vet":
+  "docker-go115 vet":
     docker:
       - image: docker.mirror.hashicorp.services/circleci/golang:1.15
     steps:
       - get_dependencies
       - run: go vet ./...
-  "docker-go114 gofmt":
+  "docker-go115 gofmt":
     docker:
       - image: docker.mirror.hashicorp.services/circleci/golang:1.15
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
-  "docker-go114 release":
+  "docker-go115 release":
     docker:
       - image: docker.mirror.hashicorp.services/circleci/golang:1.15
     steps:
@@ -63,46 +63,109 @@ jobs:
             - "3b:ec:3f:f1:0d:1a:a9:2c:a6:6f:03:cb:46:37:11:50"
       - get_dependencies
       - run: ./scripts/release/release.sh
+  "docker-go116 build":
+    docker:
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+    steps:
+      - get_dependencies
+      - run: go build ./...
+  "docker-go116 test":
+    docker:
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+        environment:
+          TF_ACC_TERRAFORM_VERSION: "0.12.26"
+    parameters:
+      test_results:
+        type: string
+        default: /tmp/test-results
+    steps:
+      - get_dependencies
+      - run: mkdir -p << parameters.test_results >>/report
+      - run:
+          command: |
+            gotestsum --junitfile << parameters.test_results >>/report/gotestsum-report.xml -- -coverprofile=cover.out ./...
+            go tool cover -html=cover.out -o coverage.html
+            mv coverage.html << parameters.test_results >>
+      - store_artifacts:
+          path: << parameters.test_results >>
+          destination: raw-test-output
+      - store_test_results:
+          path: << parameters.test_results >>
+  "docker-go116 vet":
+    docker:
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+    steps:
+      - get_dependencies
+      - run: go vet ./...
+  "docker-go116 gofmt":
+    docker:
+      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+    steps:
+      - get_dependencies
+      - run: ./scripts/gofmtcheck.sh
 
 workflows:
   version: 2
   pr:
     jobs:
-      - "docker-go114 build"
-      - "docker-go114 test":
+      - "docker-go115 build"
+      - "docker-go115 test":
           requires:
-            - "docker-go114 build"
-      - "docker-go114 vet":
+            - "docker-go115 build"
+      - "docker-go115 vet":
           requires:
-            - "docker-go114 build"
-      - "docker-go114 gofmt":
+            - "docker-go115 build"
+      - "docker-go115 gofmt":
           requires:
-            - "docker-go114 build"
+            - "docker-go115 build"
+      - "docker-go116 build"
+      - "docker-go116 test":
+          requires:
+            - "docker-go116 build"
+      - "docker-go116 vet":
+          requires:
+            - "docker-go116 build"
+      - "docker-go116 gofmt":
+          requires:
+            - "docker-go116 build"
   release:
     jobs:
-      - "docker-go114 build"
-      - "docker-go114 test":
+      - "docker-go115 build"
+      - "docker-go115 test":
           requires:
-            - "docker-go114 build"
-      - "docker-go114 vet":
+            - "docker-go115 build"
+      - "docker-go115 vet":
           requires:
-            - "docker-go114 build"
-      - "docker-go114 gofmt":
+            - "docker-go115 build"
+      - "docker-go115 gofmt":
           requires:
-            - "docker-go114 build"
+            - "docker-go115 build"
+      - "docker-go116 build"
+      - "docker-go116 test":
+          requires:
+            - "docker-go116 build"
+      - "docker-go116 vet":
+          requires:
+            - "docker-go116 build"
+      - "docker-go116 gofmt":
+          requires:
+            - "docker-go116 build"
       - trigger-release:
           filters:
             branches:
               only:
                 - master
           type: approval
-      - "docker-go114 release":
+      - "docker-go115 release":
           filters:
             branches:
               only:
                 - master
           requires:
             - trigger-release
-            - "docker-go114 test"
-            - "docker-go114 vet"
-            - "docker-go114 gofmt"
+            - "docker-go115 test"
+            - "docker-go115 vet"
+            - "docker-go115 gofmt"
+            - "docker-go116 test"
+            - "docker-go116 vet"
+            - "docker-go116 gofmt"
