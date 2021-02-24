@@ -1668,7 +1668,9 @@ func TestStopContext_stop(t *testing.T) {
 	select {
 	case <-doneCh:
 	case err := <-errCh:
-		t.Fatal(err)
+		if err != nil {
+			t.Fatal(err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
@@ -1740,7 +1742,9 @@ func TestStopContext_stopReset(t *testing.T) {
 	select {
 	case <-doneCh:
 	case err := <-errCh:
-		t.Fatal(err)
+		if err != nil {
+			t.Fatal(err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
@@ -1762,7 +1766,9 @@ func TestStopContext_stopReset(t *testing.T) {
 	select {
 	case <-doneCh:
 	case err := <-errCh:
-		t.Fatal(err)
+		if err != nil {
+			t.Fatal(err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
