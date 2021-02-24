@@ -1,5 +1,9 @@
 # 2.4.4 (Unreleased)
 
+NOTES
+
+As per our Go version support policy, we now require Go 1.15 or higher to use the SDK.
+
 BUG FIXES
 
 * Resolved bug where Diagnostics wouldn't get associated with their configuration context in user output. [GH-696]
