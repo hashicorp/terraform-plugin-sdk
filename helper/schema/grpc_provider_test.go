@@ -1586,9 +1586,10 @@ func TestStopContext_grpc(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = server.StopContext(ctx)
 	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	go func() {
 		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			t.Fatal(err)
+			errCh <- err
 		}
 		close(doneCh)
 	}()
@@ -1596,6 +1597,10 @@ func TestStopContext_grpc(t *testing.T) {
 	cancel()
 	select {
 	case <-doneCh:
+	case err := <-errCh:
+		if err != nil {
+			t.Fatal(err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("context cancel did not propagate")
 	}
@@ -1652,15 +1657,18 @@ func TestStopContext_stop(t *testing.T) {
 
 	ctx := server.StopContext(context.Background())
 	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	go func() {
 		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			t.Fatal(err)
+			errCh <- err
 		}
 		close(doneCh)
 	}()
 	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
 	select {
 	case <-doneCh:
+	case err := <-errCh:
+		t.Fatal(err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
@@ -1721,15 +1729,18 @@ func TestStopContext_stopReset(t *testing.T) {
 		t.Fatal("StopContext does not produce a non-closed context")
 	}
 	doneCh := make(chan struct{})
+	errCh := make(chan error)
 	go func(d chan struct{}) {
 		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			t.Fatal(err)
+			errCh <- err
 		}
 		close(d)
 	}(doneCh)
 	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
 	select {
 	case <-doneCh:
+	case err := <-errCh:
+		t.Fatal(err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
@@ -1740,15 +1751,18 @@ func TestStopContext_stopReset(t *testing.T) {
 		t.Fatal("StopContext does not produce a non-closed context")
 	}
 	doneCh = make(chan struct{})
+	errCh = make(chan error)
 	go func(d chan struct{}) {
 		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			t.Fatal(err)
+			errCh <- err
 		}
 		close(d)
 	}(doneCh)
 	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
 	select {
 	case <-doneCh:
+	case err := <-errCh:
+		t.Fatal(err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("Stop message did not cancel request context")
 	}
