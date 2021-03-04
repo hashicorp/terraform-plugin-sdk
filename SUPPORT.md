@@ -3,7 +3,7 @@
 Version 1 of the Terraform Plugin SDK is considered **deprecated**, which means
 the following support policy is in place:
 
-Critical bug fixes will be accepted and merged until July 31, 2021, at which
+- Critical bug fixes will be accepted and merged until July 31, 2021, at which
 point this version is considered End Of Life and no longer supported. New
 features and non-critical bug fixes will not be accepted.
 
