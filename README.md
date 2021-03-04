@@ -51,7 +51,7 @@ Migrating to the standalone SDK v1 is covered on the [Plugin SDK section](https:
 
 ## Versioning
 
-The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modules) versioned using [semantic versioning](https://semver.org/).
+The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modules) versioned using [semantic versioning](https://semver.org/). See [SUPPORT.md](https://github.com/hashicorp/terraform-plugin-sdk/blob/v1-maint/SUPPORT.md) for information on our support policies.
 
 ## Contributing
 
