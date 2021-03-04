@@ -7,7 +7,7 @@ the following support policy is in place:
 point this version is considered End Of Life and no longer supported. New
 features and non-critical bug fixes will not be accepted.
 
-We will not break the public interface exposed by the SDK in a minor or patch
+- We will not break the public interface exposed by the SDK in a minor or patch
 release unless a critical security issue demands it, and only then as a last
 resort.
 
