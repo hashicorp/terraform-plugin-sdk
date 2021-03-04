@@ -15,5 +15,5 @@ resort.
 - Terraform to ensure compatibility, but will address critical compatibility
 issues that are reported until July 31, 2021.
 
-We do not backport bug fixes to prior minor releases. Only the latest minor
+- We do not backport bug fixes to prior minor releases. Only the latest minor
 release receives new patch versions.
