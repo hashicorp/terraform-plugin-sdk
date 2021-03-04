@@ -12,7 +12,7 @@ release unless a critical security issue demands it, and only then as a last
 resort.
 
 - We do not proactively test version 1 of the SDK against new releases of
-Terraform to ensure compatibility, but will address critical compatibility
+- Terraform to ensure compatibility, but will address critical compatibility
 issues that are reported until July 31, 2021.
 
 We do not backport bug fixes to prior minor releases. Only the latest minor
