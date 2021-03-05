@@ -11,7 +11,7 @@ maintaining stability.
 release unless a critical security issue or bug demands it, and only then as a
 last resort.
 
-We will continue testing version 2 of the SDK against new releases of Terraform
+- We will continue testing version 2 of the SDK against new releases of Terraform
 to ensure compatibility.
 
 We will not be backporting bug fixes to prior minor releases. Only the latest
