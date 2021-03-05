@@ -7,7 +7,7 @@ available)** and has the following support policy:
 bug fixes may be accepted at maintainers’ discretion, but our priority is
 maintaining stability.
 
-We will not break the public interface exposed by the SDK in a minor or patch
+- We will not break the public interface exposed by the SDK in a minor or patch
 release unless a critical security issue or bug demands it, and only then as a
 last resort.
 
