@@ -3,7 +3,7 @@
 Version 2 of the Terraform Plugin SDK is considered **GA (generally
 available)** and has the following support policy:
 
-Critical bug fixes will be accepted and merged. New features and non-critical
+- Critical bug fixes will be accepted and merged. New features and non-critical
 bug fixes may be accepted at maintainers’ discretion, but our priority is
 maintaining stability.
 
