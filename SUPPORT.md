@@ -14,5 +14,5 @@ last resort.
 - We will continue testing version 2 of the SDK against new releases of Terraform
 to ensure compatibility.
 
-We will not be backporting bug fixes to prior minor releases. Only the latest
+- We will not be backporting bug fixes to prior minor releases. Only the latest
 minor release receives new patch versions.
