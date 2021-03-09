@@ -72,6 +72,7 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 		t.Fatal(err)
 	}
 
+	wd.SetConfigIsJSON(false)
 	err = wd.SetConfig(providerCfg)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
@@ -196,11 +197,13 @@ func testIDRefresh(c TestCase, t testing.T, wd *plugintest.WorkingDir, step Test
 	if err != nil {
 		return err
 	}
+	wd.SetConfigIsJSON(false)
 	err = wd.SetConfig(cfg)
 	if err != nil {
 		t.Fatalf("Error setting import test config: %s", err)
 	}
 	defer func() {
+		wd.SetConfigIsJSON(step.ConfigIsJSON)
 		err = wd.SetConfig(step.Config)
 		if err != nil {
 			t.Fatalf("Error resetting test config: %s", err)

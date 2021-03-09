@@ -398,7 +398,11 @@ type TestStep struct {
 	// Config a string of the configuration to give to Terraform. If this
 	// is set, then the TestCase will execute this step with the same logic
 	// as a `terraform apply`.
-	Config string
+	//
+	// ConfigIsJSON, if true, will assume that the configuration in Config,
+	// if any, uses the JSON syntax rather than the native syntax.
+	Config       string
+	ConfigIsJSON bool
 
 	// Check is called after the Config is applied. Use this step to
 	// make your own API calls to check the status of things, and to

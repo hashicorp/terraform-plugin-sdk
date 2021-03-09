@@ -1,3 +1,7 @@
+ENHANCEMENTS
+
+* `helper/resource.TestStep` now has a `ConfigIsJSON` bool flag that allows tests to use configuration in the JSON syntax. ([#721](https://github.com/hashicorp/terraform-plugin-sdk/issues/721))
+
 # 2.4.4 (February 24, 2021)
 
 NOTES
