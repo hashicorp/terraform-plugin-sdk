@@ -697,138 +697,228 @@ func TestPlanResourceChange_bigint(t *testing.T) {
 }
 
 func TestApplyResourceChange(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 4,
-		Schema: map[string]*Schema{
-			"foo": {
-				Type:     TypeInt,
-				Optional: true,
+	testCases := []struct {
+		Description  string
+		TestResource *Resource
+	}{
+		{
+			Description: "Create",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				Create: func(rd *ResourceData, _ interface{}) error {
+					rd.SetId("bar")
+					return nil
+				},
 			},
 		},
-		CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
-			rd.SetId("bar")
-			return nil
+		{
+			Description: "CreateContext",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("bar")
+					return nil
+				},
+			},
+		},
+		{
+			Description: "CreateWithoutTimeout",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateWithoutTimeout: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("bar")
+					return nil
+				},
+			},
 		},
 	}
 
-	server := NewGRPCProviderServer(&Provider{
-		ResourcesMap: map[string]*Resource{
-			"test": r,
-		},
-	})
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.Description, func(t *testing.T) {
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
 
-	schema := r.CoreConfigSchema()
-	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	// A proposed state with only the ID unknown will produce a nil diff, and
-	// should return the proposed state value.
-	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-		"id": cty.UnknownVal(cty.String),
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			// A proposed state with only the ID unknown will produce a nil diff, and
+			// should return the proposed state value.
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	testReq := &tfprotov5.ApplyResourceChangeRequest{
-		TypeName: "test",
-		PriorState: &tfprotov5.DynamicValue{
-			MsgPack: priorState,
-		},
-		PlannedState: &tfprotov5.DynamicValue{
-			MsgPack: plannedState,
-		},
-	}
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+			}
 
-	resp, err := server.ApplyResourceChange(context.Background(), testReq)
-	if err != nil {
-		t.Fatal(err)
-	}
+			resp, err := server.ApplyResourceChange(context.Background(), testReq)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	id := newStateVal.GetAttr("id").AsString()
-	if id != "bar" {
-		t.Fatalf("incorrect final state: %#v\n", newStateVal)
+			id := newStateVal.GetAttr("id").AsString()
+			if id != "bar" {
+				t.Fatalf("incorrect final state: %#v\n", newStateVal)
+			}
+		})
 	}
 }
 
 func TestApplyResourceChange_bigint(t *testing.T) {
-	r := &Resource{
-		UseJSONNumber: true,
-		Schema: map[string]*Schema{
-			"foo": {
-				Type:     TypeInt,
-				Required: true,
+	testCases := []struct {
+		Description  string
+		TestResource *Resource
+	}{
+		{
+			Description: "Create",
+			TestResource: &Resource{
+				UseJSONNumber: true,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Required: true,
+					},
+				},
+				Create: func(rd *ResourceData, _ interface{}) error {
+					rd.SetId("bar")
+					return nil
+				},
 			},
 		},
-		CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
-			rd.SetId("bar")
-			return nil
+		{
+			Description: "CreateContext",
+			TestResource: &Resource{
+				UseJSONNumber: true,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Required: true,
+					},
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("bar")
+					return nil
+				},
+			},
+		},
+		{
+			Description: "CreateWithoutTimeout",
+			TestResource: &Resource{
+				UseJSONNumber: true,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Required: true,
+					},
+				},
+				CreateWithoutTimeout: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("bar")
+					return nil
+				},
+			},
 		},
 	}
 
-	server := NewGRPCProviderServer(&Provider{
-		ResourcesMap: map[string]*Resource{
-			"test": r,
-		},
-	})
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.Description, func(t *testing.T) {
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
 
-	schema := r.CoreConfigSchema()
-	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	plannedVal := cty.ObjectVal(map[string]cty.Value{
-		"id":  cty.UnknownVal(cty.String),
-		"foo": cty.MustParseNumberVal("7227701560655103598"),
-	})
-	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			plannedVal := cty.ObjectVal(map[string]cty.Value{
+				"id":  cty.UnknownVal(cty.String),
+				"foo": cty.MustParseNumberVal("7227701560655103598"),
+			})
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	testReq := &tfprotov5.ApplyResourceChangeRequest{
-		TypeName: "test",
-		PriorState: &tfprotov5.DynamicValue{
-			MsgPack: priorState,
-		},
-		PlannedState: &tfprotov5.DynamicValue{
-			MsgPack: plannedState,
-		},
-	}
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+			}
 
-	resp, err := server.ApplyResourceChange(context.Background(), testReq)
-	if err != nil {
-		t.Fatal(err)
-	}
+			resp, err := server.ApplyResourceChange(context.Background(), testReq)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	id := newStateVal.GetAttr("id").AsString()
-	if id != "bar" {
-		t.Fatalf("incorrect final state: %#v\n", newStateVal)
-	}
+			id := newStateVal.GetAttr("id").AsString()
+			if id != "bar" {
+				t.Fatalf("incorrect final state: %#v\n", newStateVal)
+			}
 
-	foo, acc := newStateVal.GetAttr("foo").AsBigFloat().Int64()
-	if acc != big.Exact {
-		t.Fatalf("Expected exact accuracy, got %s", acc)
-	}
-	if foo != 7227701560655103598 {
-		t.Fatalf("Expected %d, got %d, this represents a loss of precision in applying large numbers", 7227701560655103598, foo)
+			foo, acc := newStateVal.GetAttr("foo").AsBigFloat().Int64()
+			if acc != big.Exact {
+				t.Fatalf("Expected exact accuracy, got %s", acc)
+			}
+			if foo != 7227701560655103598 {
+				t.Fatalf("Expected %d, got %d, this represents a loss of precision in applying large numbers", 7227701560655103598, foo)
+			}
+		})
 	}
 }
 
@@ -1536,241 +1626,331 @@ func TestValidateNulls(t *testing.T) {
 }
 
 func TestStopContext_grpc(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 4,
-		Schema: map[string]*Schema{
-			"foo": {
-				Type:     TypeInt,
-				Optional: true,
+	testCases := []struct {
+		Description  string
+		TestResource *Resource
+	}{
+		{
+			Description: "CreateContext",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
-			<-ctx.Done()
-			rd.SetId("bar")
-			return nil
+		{
+			Description: "CreateWithoutTimeout",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateWithoutTimeout: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
+			},
 		},
 	}
 
-	server := NewGRPCProviderServer(&Provider{
-		ResourcesMap: map[string]*Resource{
-			"test": r,
-		},
-	})
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.Description, func(t *testing.T) {
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
 
-	schema := r.CoreConfigSchema()
-	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-		"id": cty.UnknownVal(cty.String),
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	testReq := &tfprotov5.ApplyResourceChangeRequest{
-		TypeName: "test",
-		PriorState: &tfprotov5.DynamicValue{
-			MsgPack: priorState,
-		},
-		PlannedState: &tfprotov5.DynamicValue{
-			MsgPack: plannedState,
-		},
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = server.StopContext(ctx)
-	doneCh := make(chan struct{})
-	errCh := make(chan error)
-	go func() {
-		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			errCh <- err
-		}
-		close(doneCh)
-	}()
-	// GRPC request cancel
-	cancel()
-	select {
-	case <-doneCh:
-	case err := <-errCh:
-		if err != nil {
-			t.Fatal(err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("context cancel did not propagate")
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			ctx = server.StopContext(ctx)
+			doneCh := make(chan struct{})
+			errCh := make(chan error)
+			go func() {
+				if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
+					errCh <- err
+				}
+				close(doneCh)
+			}()
+			// GRPC request cancel
+			cancel()
+			select {
+			case <-doneCh:
+			case err := <-errCh:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("context cancel did not propagate")
+			}
+		})
 	}
 }
 
 func TestStopContext_stop(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 4,
-		Schema: map[string]*Schema{
-			"foo": {
-				Type:     TypeInt,
-				Optional: true,
+	testCases := []struct {
+		Description  string
+		TestResource *Resource
+	}{
+		{
+			Description: "CreateContext",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
-			<-ctx.Done()
-			rd.SetId("bar")
-			return nil
+		{
+			Description: "CreateWithoutTimeout",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateWithoutTimeout: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
+			},
 		},
 	}
 
-	server := NewGRPCProviderServer(&Provider{
-		ResourcesMap: map[string]*Resource{
-			"test": r,
-		},
-	})
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.Description, func(t *testing.T) {
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
 
-	schema := r.CoreConfigSchema()
-	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-		"id": cty.UnknownVal(cty.String),
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	testReq := &tfprotov5.ApplyResourceChangeRequest{
-		TypeName: "test",
-		PriorState: &tfprotov5.DynamicValue{
-			MsgPack: priorState,
-		},
-		PlannedState: &tfprotov5.DynamicValue{
-			MsgPack: plannedState,
-		},
-	}
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+			}
 
-	ctx := server.StopContext(context.Background())
-	doneCh := make(chan struct{})
-	errCh := make(chan error)
-	go func() {
-		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			errCh <- err
-		}
-		close(doneCh)
-	}()
-	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
-	select {
-	case <-doneCh:
-	case err := <-errCh:
-		if err != nil {
-			t.Fatal(err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Stop message did not cancel request context")
+			ctx := server.StopContext(context.Background())
+			doneCh := make(chan struct{})
+			errCh := make(chan error)
+			go func() {
+				if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
+					errCh <- err
+				}
+				close(doneCh)
+			}()
+			server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
+			select {
+			case <-doneCh:
+			case err := <-errCh:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Stop message did not cancel request context")
+			}
+		})
 	}
 }
 
 func TestStopContext_stopReset(t *testing.T) {
-	r := &Resource{
-		SchemaVersion: 4,
-		Schema: map[string]*Schema{
-			"foo": {
-				Type:     TypeInt,
-				Optional: true,
+	testCases := []struct {
+		Description  string
+		TestResource *Resource
+	}{
+		{
+			Description: "CreateContext",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
 			},
 		},
-		CreateContext: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
-			<-ctx.Done()
-			rd.SetId("bar")
-			return nil
+		{
+			Description: "CreateWithoutTimeout",
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				CreateWithoutTimeout: func(ctx context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					<-ctx.Done()
+					rd.SetId("bar")
+					return nil
+				},
+			},
 		},
 	}
 
-	server := NewGRPCProviderServer(&Provider{
-		ResourcesMap: map[string]*Resource{
-			"test": r,
-		},
-	})
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.Description, func(t *testing.T) {
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
 
-	schema := r.CoreConfigSchema()
-	priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-		"id": cty.UnknownVal(cty.String),
-	}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
-	if err != nil {
-		t.Fatal(err)
-	}
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	testReq := &tfprotov5.ApplyResourceChangeRequest{
-		TypeName: "test",
-		PriorState: &tfprotov5.DynamicValue{
-			MsgPack: priorState,
-		},
-		PlannedState: &tfprotov5.DynamicValue{
-			MsgPack: plannedState,
-		},
-	}
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+			}
 
-	// test first stop
-	ctx := server.StopContext(context.Background())
-	if ctx.Err() != nil {
-		t.Fatal("StopContext does not produce a non-closed context")
-	}
-	doneCh := make(chan struct{})
-	errCh := make(chan error)
-	go func(d chan struct{}) {
-		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			errCh <- err
-		}
-		close(d)
-	}(doneCh)
-	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
-	select {
-	case <-doneCh:
-	case err := <-errCh:
-		if err != nil {
-			t.Fatal(err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Stop message did not cancel request context")
-	}
+			// test first stop
+			ctx := server.StopContext(context.Background())
+			if ctx.Err() != nil {
+				t.Fatal("StopContext does not produce a non-closed context")
+			}
+			doneCh := make(chan struct{})
+			errCh := make(chan error)
+			go func(d chan struct{}) {
+				if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
+					errCh <- err
+				}
+				close(d)
+			}(doneCh)
+			server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
+			select {
+			case <-doneCh:
+			case err := <-errCh:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Stop message did not cancel request context")
+			}
 
-	// test internal stop synchronization was reset
-	ctx = server.StopContext(context.Background())
-	if ctx.Err() != nil {
-		t.Fatal("StopContext does not produce a non-closed context")
-	}
-	doneCh = make(chan struct{})
-	errCh = make(chan error)
-	go func(d chan struct{}) {
-		if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
-			errCh <- err
-		}
-		close(d)
-	}(doneCh)
-	server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
-	select {
-	case <-doneCh:
-	case err := <-errCh:
-		if err != nil {
-			t.Fatal(err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Stop message did not cancel request context")
+			// test internal stop synchronization was reset
+			ctx = server.StopContext(context.Background())
+			if ctx.Err() != nil {
+				t.Fatal("StopContext does not produce a non-closed context")
+			}
+			doneCh = make(chan struct{})
+			errCh = make(chan error)
+			go func(d chan struct{}) {
+				if _, err := server.ApplyResourceChange(ctx, testReq); err != nil {
+					errCh <- err
+				}
+				close(d)
+			}(doneCh)
+			server.StopProvider(context.Background(), &tfprotov5.StopProviderRequest{})
+			select {
+			case <-doneCh:
+			case err := <-errCh:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Stop message did not cancel request context")
+			}
+		})
 	}
 }
 
