@@ -35,6 +35,7 @@ func testStepNewConfig(t testing.T, c TestCase, wd *plugintest.WorkingDir, step 
 		}
 	}
 
+	wd.SetConfigIsJSON(step.ConfigIsJSON)
 	err := wd.SetConfig(step.Config)
 	if err != nil {
 		return fmt.Errorf("Error setting config: %w", err)

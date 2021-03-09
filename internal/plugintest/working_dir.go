@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	ConfigFileName = "terraform_plugin_test.tf"
-	PlanFileName   = "tfplan"
+	ConfigFileNameNative = "terraform_plugin_test.tf"
+	ConfigFileNameJSON   = ConfigFileNameNative + ".json"
+	PlanFileName         = "tfplan"
 )
 
 // WorkingDir represents a distinct working directory that can be used for
@@ -42,6 +43,11 @@ type WorkingDir struct {
 	reattachInfo tfexec.ReattachInfo
 
 	env map[string]string
+
+	// configIsJSON is a flag that affects the assumed syntax of the
+	// configuration passed to SetConfig. If true, SetConfig assumes the
+	// configuration is in the JSON syntax rather than the native syntax.
+	configIsJSON bool
 }
 
 // Close deletes the directories and files created to represent the receiving
@@ -77,14 +83,26 @@ func (wd *WorkingDir) GetHelper() *Helper {
 	return wd.h
 }
 
+// SetConfigIsJSON sets the configIsJSON flag, which affects all subsequent
+// calls to SetConfig.
+func (wd *WorkingDir) SetConfigIsJSON(configIsJSON bool) {
+	wd.configIsJSON = configIsJSON
+}
+
 // SetConfig sets a new configuration for the working directory.
 //
 // This must be called at least once before any call to Init, Plan, Apply, or
 // Destroy to establish the configuration. Any previously-set configuration is
 // discarded and any saved plan is cleared.
+//
+// The assumed syntax of the configuration can be changed by calling
+// SetConfigIsJSON prior to calling SetConfig.
 func (wd *WorkingDir) SetConfig(cfg string) error {
-	configFilename := filepath.Join(wd.baseDir, ConfigFileName)
-	err := ioutil.WriteFile(configFilename, []byte(cfg), 0700)
+	err := os.Remove(wd.configFilename(!wd.configIsJSON))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	err = ioutil.WriteFile(wd.configFilename(wd.configIsJSON), []byte(cfg), 0700)
 	if err != nil {
 		return err
 	}
@@ -135,15 +153,19 @@ func (wd *WorkingDir) ClearPlan() error {
 // Init runs "terraform init" for the given working directory, forcing Terraform
 // to use the current version of the plugin under test.
 func (wd *WorkingDir) Init() error {
-	if _, err := os.Stat(wd.configFilename()); err != nil {
+	if _, err := os.Stat(wd.configFilename(wd.configIsJSON)); err != nil {
 		return fmt.Errorf("must call SetConfig before Init")
 	}
 
 	return wd.tf.Init(context.Background(), tfexec.Reattach(wd.reattachInfo))
 }
 
-func (wd *WorkingDir) configFilename() string {
-	return filepath.Join(wd.baseDir, ConfigFileName)
+func (wd *WorkingDir) configFilename(configIsJson bool) string {
+	if configIsJson {
+		return filepath.Join(wd.baseDir, ConfigFileNameJSON)
+	} else {
+		return filepath.Join(wd.baseDir, ConfigFileNameNative)
+	}
 }
 
 func (wd *WorkingDir) planFilename() string {

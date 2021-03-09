@@ -64,6 +64,7 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 	}
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
+	importWd.SetConfigIsJSON(step.ConfigIsJSON)
 	err = importWd.SetConfig(step.Config)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
