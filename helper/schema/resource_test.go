@@ -931,6 +931,142 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
+		19: { // Create and CreateWithoutTimeout should not both be set
+			&Resource{
+				Create:               Noop,
+				CreateWithoutTimeout: NoopContext,
+				Read:                 Noop,
+				Update:               Noop,
+				Delete:               Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		20: { // Read and ReadWithoutTimeout should not both be set
+			&Resource{
+				Create:             Noop,
+				Read:               Noop,
+				ReadWithoutTimeout: NoopContext,
+				Update:             Noop,
+				Delete:             Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		21: { // Update and UpdateWithoutTimeout should not both be set
+			&Resource{
+				Create:               Noop,
+				Read:                 Noop,
+				Update:               Noop,
+				UpdateWithoutTimeout: NoopContext,
+				Delete:               Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		22: { // Delete and DeleteWithoutTimeout should not both be set
+			&Resource{
+				Create:               Noop,
+				Read:                 Noop,
+				Update:               Noop,
+				Delete:               Noop,
+				DeleteWithoutTimeout: NoopContext,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		23: { // CreateContext and CreateWithoutTimeout should not both be set
+			&Resource{
+				CreateContext:        NoopContext,
+				CreateWithoutTimeout: NoopContext,
+				Read:                 Noop,
+				Update:               Noop,
+				Delete:               Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		24: { // ReadContext and ReadWithoutTimeout should not both be set
+			&Resource{
+				Create:             Noop,
+				ReadContext:        NoopContext,
+				ReadWithoutTimeout: NoopContext,
+				Update:             Noop,
+				Delete:             Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		25: { // UpdateContext and UpdateWithoutTimeout should not both be set
+			&Resource{
+				Create:               Noop,
+				Read:                 Noop,
+				UpdateContext:        NoopContext,
+				UpdateWithoutTimeout: NoopContext,
+				Delete:               Noop,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
+		26: { // DeleteContext and DeleteWithoutTimeout should not both be set
+			&Resource{
+				Create:               Noop,
+				Read:                 Noop,
+				Update:               Noop,
+				DeleteContext:        NoopContext,
+				DeleteWithoutTimeout: NoopContext,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+			},
+			true,
+			true,
+		},
 	}
 
 	for i, tc := range cases {
