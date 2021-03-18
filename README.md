@@ -65,8 +65,8 @@ The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modu
 
 ## Contributing
 
-See [`.github/CONTRIBUTING.md`](https://github.com/hashicorp/terraform-plugin-sdk/blob/master/.github/CONTRIBUTING.md)
+See [`.github/CONTRIBUTING.md`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/.github/CONTRIBUTING.md)
 
 ## License
 
-[Mozilla Public License v2.0](https://github.com/hashicorp/terraform-plugin-sdk/blob/master/LICENSE)
+[Mozilla Public License v2.0](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/LICENSE)
