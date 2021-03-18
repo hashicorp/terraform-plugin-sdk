@@ -1,3 +1,9 @@
+# 2.5.0 (Unreleased)
+
+ENHANCEMENTS
+
+* Added the ability to opt out of context timeouts in CRUD functions [GH-723]
+
 # 2.4.4 (February 24, 2021)
 
 NOTES
