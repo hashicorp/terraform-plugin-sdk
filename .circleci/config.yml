@@ -154,13 +154,13 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
           type: approval
       - "docker-go115 release":
           filters:
             branches:
               only:
-                - master
+                - main
           requires:
             - trigger-release
             - "docker-go115 test"
