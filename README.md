@@ -61,7 +61,7 @@ Migrating to the v2 release of the SDK is covered in the [v2 Upgrade Guide](http
 
 ## Versioning
 
-The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modules) versioned using [semantic versioning](https://semver.org/). See [SUPPORT.md](https://github.com/hashicorp/terraform-plugin-sdk/blob/master/SUPPORT.md) for information on our support policies.
+The Terraform Plugin SDK is a [Go module](https://github.com/golang/go/wiki/Modules) versioned using [semantic versioning](https://semver.org/). See [SUPPORT.md](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/SUPPORT.md) for information on our support policies.
 
 ## Contributing
 
