@@ -1,8 +1,8 @@
-# 2.5.0 (Unreleased)
+# 2.5.0 (March 24, 2021)
 
 ENHANCEMENTS
 
-* Added the ability to opt out of context timeouts in CRUD functions [GH-723]
+* Added the ability to opt out of context timeouts in CRUD functions ([#723](https://github.com/hashicorp/terraform-plugin-sdk/issues/723))
 
 # 2.4.4 (February 24, 2021)
 
