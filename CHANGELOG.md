@@ -1,9 +1,9 @@
-# 1.16.1 (Unreleased)
+# 1.16.1 (March 24, 2021)
 
 BUG FIXES:
 
-* Backported #591, making sure the pre-destroy state was passed to CheckDestroy, instead of the post-destroy state [GH-728]
-* Updated import testing when using binary testing to work with Terraform 0.13 and above, with registry addresses in state. [GH-702]
+* Backported #591, making sure the pre-destroy state was passed to CheckDestroy, instead of the post-destroy state ([#728](https://github.com/hashicorp/terraform-plugin-sdk/issues/728))
+* Updated import testing when using binary testing to work with Terraform 0.13 and above, with registry addresses in state. ([#702](https://github.com/hashicorp/terraform-plugin-sdk/issues/702))
 
 # 1.16.0 (September 24, 2020)
 
