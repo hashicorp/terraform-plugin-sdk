@@ -89,6 +89,13 @@ func Serve(opts *ServeOpts) {
 					},
 				},
 			},
+			6: {
+				ProviderPluginName: &tf5server.GRPCProviderPlugin{
+					GRPCProvider: func() tfprotov5.ProviderServer {
+						return provider
+					},
+				},
+			},
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
 			return grpc.NewServer(opts...)
