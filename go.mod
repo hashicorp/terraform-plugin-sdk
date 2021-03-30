@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.0 // indirect
 	github.com/hashicorp/go-hclog v0.15.0
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/hashicorp/go-plugin v1.4.0
+	github.com/hashicorp/go-plugin v1.4.1-0.20210330132001-0e89b09e8a8f
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.3.0
