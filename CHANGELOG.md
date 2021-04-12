@@ -1,3 +1,9 @@
+# 2.6.0 (Unreleased)
+
+ENHANCEMENTS:
+
+* Made TF_ACC_TERRAFORM_VERSION more permissive, accepting values in either vX.Y.Z or X.Y.Z formats. [GH-731]
+
 # 2.5.0 (March 24, 2021)
 
 ENHANCEMENTS
