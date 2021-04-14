@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -139,12 +139,9 @@ func TestDiagnostics(t *testing.T) {
 					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "error",
 					Detail:   "error detail",
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-
-							tftypes.AttributeName("attribute_name"),
-						},
-					},
+					Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+						tftypes.AttributeName("attribute_name"),
+					}),
 				})
 				return diags
 			},
@@ -164,46 +161,38 @@ func TestDiagnostics(t *testing.T) {
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 1",
 						Detail:   "error 1 detail",
-						Attribute: &tftypes.AttributePath{
-							Steps: []tftypes.AttributePathStep{
-								tftypes.AttributeName("attr"),
-							},
-						},
+						Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+							tftypes.AttributeName("attr"),
+						}),
 					},
 					&tfprotov5.Diagnostic{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 2",
 						Detail:   "error 2 detail",
-						Attribute: &tftypes.AttributePath{
-							Steps: []tftypes.AttributePathStep{
-								tftypes.AttributeName("attr"),
-								tftypes.AttributeName("sub"),
-							},
-						},
+						Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+							tftypes.AttributeName("attr"),
+							tftypes.AttributeName("sub"),
+						}),
 					},
 					&tfprotov5.Diagnostic{
 						Severity: tfprotov5.DiagnosticSeverityWarning,
 						Summary:  "warning",
 						Detail:   "warning detail",
-						Attribute: &tftypes.AttributePath{
-							Steps: []tftypes.AttributePathStep{
-								tftypes.AttributeName("attr"),
-								tftypes.ElementKeyInt(1),
-								tftypes.AttributeName("sub"),
-							},
-						},
+						Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+							tftypes.AttributeName("attr"),
+							tftypes.ElementKeyInt(1),
+							tftypes.AttributeName("sub"),
+						}),
 					},
 					&tfprotov5.Diagnostic{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "error 3",
 						Detail:   "error 3 detail",
-						Attribute: &tftypes.AttributePath{
-							Steps: []tftypes.AttributePathStep{
-								tftypes.AttributeName("attr"),
-								tftypes.ElementKeyString("idx"),
-								tftypes.AttributeName("sub"),
-							},
-						},
+						Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+							tftypes.AttributeName("attr"),
+							tftypes.ElementKeyString("idx"),
+							tftypes.AttributeName("sub"),
+						}),
 					},
 				)
 
