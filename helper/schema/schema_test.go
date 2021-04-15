@@ -5991,7 +5991,33 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with whitelist`),
+				fmt.Errorf(`Error: ConflictsWith:  "blacklist": conflicts with whitelist`),
+			},
+		},
+
+		"Conflicting attributes generate warning": {
+			Schema: map[string]*Schema{
+				"whitelist": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"blacklist": {
+					Type:              TypeString,
+					Optional:          true,
+					ConflictsWith:     []string{"whitelist"},
+					ConditionsMode:    "warning",
+					ConditionsMessage: "This functionality will be removed in a later release.",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"whitelist": "white-val",
+				"blacklist": "black-val",
+			},
+
+			Err: false,
+			Warnings: []string{
+				`Warning: ConflictsWith: This functionality will be removed in a later release. "blacklist": conflicts with whitelist`,
 			},
 		},
 
@@ -6087,8 +6113,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with greenlist`),
-				fmt.Errorf(`Error: ConflictsWith: "greenlist": conflicts with blacklist`),
+				fmt.Errorf(`Error: ConflictsWith:  "blacklist": conflicts with greenlist`),
+				fmt.Errorf(`Error: ConflictsWith:  "greenlist": conflicts with blacklist`),
 			},
 		},
 
@@ -6132,7 +6158,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "optional_att": conflicts with required_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "optional_att": conflicts with required_att`),
 			},
 		},
 
@@ -6159,8 +6185,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "bar_att": conflicts with foo_att`),
-				fmt.Errorf(`Error: ConflictsWith: "foo_att": conflicts with bar_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "bar_att": conflicts with foo_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "foo_att": conflicts with bar_att`),
 			},
 		},
 

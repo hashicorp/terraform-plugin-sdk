@@ -198,6 +198,14 @@ type Schema struct {
 	AtLeastOneOf  []string
 	RequiredWith  []string
 
+	// ConditionsMode specifies the behavior of the SDK when one of the
+	// above conditions are met. (ConflictsWith, ExactlyOneOf, etc).
+	// When set to WARNING, a warning message is displayed to the user.
+	// When set to ERROR (default), a fatal error is returned.
+	// Optionally, a message can be returned with the warning or error.
+	ConditionsMode    string
+	ConditionsMessage string
+
 	// When Deprecated is set, this attribute is deprecated.
 	//
 	// A deprecated field still works, but will probably stop working in near
@@ -1449,12 +1457,19 @@ func (m schemaMap) validate(
 		ok = raw != nil
 	}
 
+	var conditionsMode diag.Severity
+	if schema.ConditionsMode == strings.ToLower("warning") {
+		conditionsMode = diag.Warning
+	} else {
+		conditionsMode = diag.Error
+	}
+
 	err := validateExactlyOneAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      conditionsMode,
 			Summary:       "ExactlyOne",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1462,9 +1477,9 @@ func (m schemaMap) validate(
 	err = validateAtLeastOneAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      conditionsMode,
 			Summary:       "AtLeastOne",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1494,9 +1509,9 @@ func (m schemaMap) validate(
 	err = validateRequiredWithAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      conditionsMode,
 			Summary:       "RequiredWith",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1521,9 +1536,9 @@ func (m schemaMap) validate(
 	err = validateConflictingAttributes(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      conditionsMode,
 			Summary:       "ConflictsWith",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
