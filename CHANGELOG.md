@@ -1,3 +1,10 @@
+# 1.17.0 (Unreleased)
+
+ENHANCEMENTS:
+
+* Backported #732, allowing providers to opt into using json.Number for numbers coming from state [GH-732]
+* Backported #733, allowing provider acceptance tests to be run against Terraform 0.15 [GH-733]
+
 # 1.16.1 (March 24, 2021)
 
 BUG FIXES:
