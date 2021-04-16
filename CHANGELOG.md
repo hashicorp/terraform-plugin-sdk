@@ -1,9 +1,9 @@
-# 1.17.0 (Unreleased)
+# 1.17.0 (April 16, 2021)
 
 ENHANCEMENTS:
 
-* Backported #732, allowing providers to opt into using json.Number for numbers coming from state [GH-732]
-* Backported #733, allowing provider acceptance tests to be run against Terraform 0.15 [GH-733]
+* Backported #732, allowing providers to opt into using json.Number for numbers coming from state ([#732](https://github.com/hashicorp/terraform-plugin-sdk/issues/732))
+* Backported #733, allowing provider acceptance tests to be run against Terraform 0.15 ([#733](https://github.com/hashicorp/terraform-plugin-sdk/issues/733))
 
 # 1.16.1 (March 24, 2021)
 
