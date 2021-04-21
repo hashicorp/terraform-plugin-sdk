@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
 * Made TF_ACC_TERRAFORM_VERSION more permissive, accepting values in either vX.Y.Z or X.Y.Z formats. [GH-731]
+* Upgraded to use terraform-plugin-go v0.3.0 [GH-739]
 
 # 2.5.0 (March 24, 2021)
 
