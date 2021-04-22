@@ -13,3 +13,9 @@ last resort.
 to ensure compatibility.
 - We will not be backporting bug fixes to prior minor releases. Only the latest
 minor release receives new patch versions.
+
+# Version 1
+
+Please see the
+[v1-maint](https://github.com/hashicorp/terraform-plugin-sdk/blob/v1-maint/SUPPORT.md)
+branch for the support policy of version 1 of the SDK.
