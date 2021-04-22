@@ -157,6 +157,9 @@ workflows:
                 - main
           type: approval
       - "docker-go115 release":
+          context:
+            - releases-gpg-private-signing-key
+            - releases-gpg-public-signing-key
           filters:
             branches:
               only:
