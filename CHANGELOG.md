@@ -1,3 +1,9 @@
+# 1.17.1 (Unreleased)
+
+BUG FIXES:
+
+* Backported #667, fixing a bug where timeouts would silently not be applied and would use defaults instead after upgrading to 1.17.0. [GH-748]
+
 # 1.17.0 (April 16, 2021)
 
 ENHANCEMENTS:
