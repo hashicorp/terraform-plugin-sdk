@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -31,7 +32,7 @@ func timeoutKeys() []string {
 	}
 }
 
-// could be time.Duration, int64 or float64
+// could be time.Duration, int64, float64 or json.Number
 func DefaultTimeout(tx interface{}) *time.Duration {
 	var td time.Duration
 	switch raw := tx.(type) {
@@ -41,8 +42,14 @@ func DefaultTimeout(tx interface{}) *time.Duration {
 		td = time.Duration(raw)
 	case float64:
 		td = time.Duration(int64(raw))
+	case json.Number:
+		i, err := raw.Int64()
+		if err != nil {
+			panic(fmt.Errorf("json.Number value %#v was not convertable to an integer: %+v", tx, err))
+		}
+		td = time.Duration(i)
 	default:
-		log.Printf("[WARN] Unknown type in DefaultTimeout: %#v", tx)
+		log.Printf("[WARN] Unknown type %T in DefaultTimeout: %#v", tx, tx)
 	}
 	return &td
 }
