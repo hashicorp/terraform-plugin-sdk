@@ -1,8 +1,8 @@
-# 1.17.1 (Unreleased)
+# 1.17.1 (April 22, 2021)
 
 BUG FIXES:
 
-* Backported #667, fixing a bug where timeouts would silently not be applied and would use defaults instead after upgrading to 1.17.0. [GH-748]
+* Backported #667, fixing a bug where timeouts would silently not be applied and would use defaults instead after upgrading to 1.17.0. ([#748](https://github.com/hashicorp/terraform-plugin-sdk/issues/748))
 
 # 1.17.0 (April 16, 2021)
 
