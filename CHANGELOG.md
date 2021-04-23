@@ -1,5 +1,7 @@
 # 2.6.1 (Unreleased)
 
+BUG FIXES:
+
 * Updated the GPG key used to verify Terraform installs in response to the [Terraform GPG key rotation](https://discuss.hashicorp.com/t/hcsec-2021-12-codecov-security-event-and-hashicorp-gpg-key-exposure/23512). [GH-750]
 
 # 2.6.0 (April 21, 2021)
