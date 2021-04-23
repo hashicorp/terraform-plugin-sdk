@@ -5,7 +5,6 @@ go 1.15
 require (
 	cloud.google.com/go v0.61.0 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
-	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/apparentlymart/go-cidr v1.0.1
 	github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0
 	github.com/aws/aws-sdk-go v1.25.3 // indirect
@@ -15,7 +14,6 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/google/go-cmp v0.5.5
 	github.com/hashicorp/errwrap v1.0.0
-	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/go-hclog v0.15.0
 	github.com/hashicorp/go-multierror v1.0.0
@@ -28,7 +26,6 @@ require (
 	github.com/hashicorp/terraform-json v0.10.0
 	github.com/hashicorp/terraform-plugin-go v0.3.0
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
-	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/copystructure v1.0.0
 	github.com/mitchellh/go-testing-interface v1.0.4
