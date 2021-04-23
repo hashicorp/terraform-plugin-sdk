@@ -6005,7 +6005,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 					Type:              TypeString,
 					Optional:          true,
 					ConflictsWith:     []string{"allowlist"},
-					ConditionsMode:    "warning",
+					ConditionsMode:    SchemaConditionsModeWarning,
 					ConditionsMessage: "This functionality will be removed in a later release.",
 				},
 			},
