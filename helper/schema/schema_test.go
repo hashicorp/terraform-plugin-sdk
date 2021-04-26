@@ -3271,14 +3271,14 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"Conflicting attributes cannot be required": {
 			map[string]*Schema{
-				"blacklist": {
+				"denylist": {
 					Type:     TypeBool,
 					Required: true,
 				},
-				"whitelist": {
+				"allowlist": {
 					Type:          TypeBool,
 					Optional:      true,
-					ConflictsWith: []string{"blacklist"},
+					ConflictsWith: []string{"denylist"},
 				},
 			},
 			true,
@@ -3286,10 +3286,10 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"Attribute with conflicts cannot be required": {
 			map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:          TypeBool,
 					Required:      true,
-					ConflictsWith: []string{"blacklist"},
+					ConflictsWith: []string{"denylist"},
 				},
 			},
 			true,
@@ -3297,14 +3297,14 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 
 		"ConflictsWith cannot be used w/ ComputedWhen": {
 			map[string]*Schema{
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					ComputedWhen: []string{"foor"},
 				},
-				"whitelist": {
+				"allowlist": {
 					Type:          TypeBool,
 					Required:      true,
-					ConflictsWith: []string{"blacklist"},
+					ConflictsWith: []string{"denylist"},
 				},
 			},
 			true,
@@ -5973,44 +5973,70 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 		"Conflicting attributes generate error": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:     TypeString,
 					Optional: true,
 				},
-				"blacklist": {
+				"denylist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"whitelist"},
+					ConflictsWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": "white-val",
-				"blacklist": "black-val",
+				"allowlist": "allow-val",
+				"denylist":  "deny-val",
 			},
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with whitelist`),
+				fmt.Errorf(`Error: ConflictsWith:  "denylist": conflicts with allowlist`),
+			},
+		},
+
+		"Conflicting attributes generate warning": {
+			Schema: map[string]*Schema{
+				"allowlist": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"denylist": {
+					Type:              TypeString,
+					Optional:          true,
+					ConflictsWith:     []string{"allowlist"},
+					ConditionsMode:    SchemaConditionsModeWarning,
+					ConditionsMessage: "This functionality will be removed in a later release.",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"allowlist": "allow-val",
+				"denylist":  "deny-val",
+			},
+
+			Err: false,
+			Warnings: []string{
+				`Warning: ConflictsWith: This functionality will be removed in a later release. "denylist": conflicts with allowlist`,
 			},
 		},
 
 		"Conflicting attributes okay when unknown 1": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:     TypeString,
 					Optional: true,
 				},
-				"blacklist": {
+				"denylist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"whitelist"},
+					ConflictsWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": "white-val",
-				"blacklist": hcl2shim.UnknownVariableValue,
+				"allowlist": "allow-val",
+				"denylist":  hcl2shim.UnknownVariableValue,
 			},
 
 			Err: false,
@@ -6018,22 +6044,22 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 		"Conflicting list attributes okay when unknown 1": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:     TypeList,
 					Optional: true,
 					Elem:     &Schema{Type: TypeString},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:          TypeList,
 					Optional:      true,
 					Elem:          &Schema{Type: TypeString},
-					ConflictsWith: []string{"whitelist"},
+					ConflictsWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": []interface{}{"white-val"},
-				"blacklist": []interface{}{hcl2shim.UnknownVariableValue},
+				"allowlist": []interface{}{"allow-val"},
+				"denylist":  []interface{}{hcl2shim.UnknownVariableValue},
 			},
 
 			Err: false,
@@ -6041,20 +6067,20 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 		"Conflicting attributes okay when unknown 2": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:     TypeString,
 					Optional: true,
 				},
-				"blacklist": {
+				"denylist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"whitelist"},
+					ConflictsWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
-				"blacklist": "black-val",
+				"allowlist": hcl2shim.UnknownVariableValue,
+				"denylist":  "deny-val",
 			},
 
 			Err: false,
@@ -6062,33 +6088,33 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 		"Conflicting attributes generate error even if one is unknown": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"blacklist", "greenlist"},
+					ConflictsWith: []string{"denylist", "greenlist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"whitelist", "greenlist"},
+					ConflictsWith: []string{"allowlist", "greenlist"},
 				},
 				"greenlist": {
 					Type:          TypeString,
 					Optional:      true,
-					ConflictsWith: []string{"whitelist", "blacklist"},
+					ConflictsWith: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
-				"blacklist": "black-val",
+				"allowlist": hcl2shim.UnknownVariableValue,
+				"denylist":  "deny-val",
 				"greenlist": "green-val",
 			},
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with greenlist`),
-				fmt.Errorf(`Error: ConflictsWith: "greenlist": conflicts with blacklist`),
+				fmt.Errorf(`Error: ConflictsWith:  "denylist": conflicts with greenlist`),
+				fmt.Errorf(`Error: ConflictsWith:  "greenlist": conflicts with denylist`),
 			},
 		},
 
@@ -6132,7 +6158,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "optional_att": conflicts with required_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "optional_att": conflicts with required_att`),
 			},
 		},
 
@@ -6159,8 +6185,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "bar_att": conflicts with foo_att`),
-				fmt.Errorf(`Error: ConflictsWith: "foo_att": conflicts with bar_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "bar_att": conflicts with foo_att`),
+				fmt.Errorf(`Error: ConflictsWith:  "foo_att": conflicts with bar_att`),
 			},
 		},
 
@@ -7162,92 +7188,92 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 	}{
 
 		"two attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist"},
+					ExactlyOneOf: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist"},
+					ExactlyOneOf: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
-				"blacklist": true,
+				"allowlist": true,
+				"denylist":  true,
 			},
 			Err: true,
 		},
 
 		"one attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist"},
+					ExactlyOneOf: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist"},
+					ExactlyOneOf: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
+				"allowlist": true,
 			},
 			Err: false,
 		},
 
 		"two attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist":  true,
+				"allowlist":  true,
 				"purplelist": true,
 			},
 			Err: true,
 		},
 
 		"one attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
@@ -7258,22 +7284,22 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 		},
 
 		"no attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
@@ -7282,22 +7308,22 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 		},
 
 		"Only Unknown Variable Value": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
@@ -7308,56 +7334,56 @@ func TestValidateExactlyOneOfAttributes(t *testing.T) {
 		},
 
 		"Unknown Variable Value and Known Value": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
 				"purplelist": hcl2shim.UnknownVariableValue,
-				"whitelist":  true,
+				"allowlist":  true,
 			},
 			Err: false,
 		},
 
 		"Unknown Variable Value and 2 Known Value": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"blacklist", "purplelist"},
+					ExactlyOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "purplelist"},
+					ExactlyOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					ExactlyOneOf: []string{"whitelist", "blacklist"},
+					ExactlyOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
 				"purplelist": hcl2shim.UnknownVariableValue,
-				"whitelist":  true,
-				"blacklist":  true,
+				"allowlist":  true,
+				"denylist":   true,
 			},
 			Err: true,
 		},
@@ -7966,120 +7992,120 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 	}{
 
 		"two attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist"},
+					AtLeastOneOf: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist"},
+					AtLeastOneOf: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
-				"blacklist": true,
+				"allowlist": true,
+				"denylist":  true,
 			},
 			Err: false,
 		},
 
 		"one attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist"},
+					AtLeastOneOf: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist"},
+					AtLeastOneOf: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
+				"allowlist": true,
 			},
 			Err: false,
 		},
 
 		"two attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist", "purplelist"},
+					AtLeastOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist":  true,
+				"allowlist":  true,
 				"purplelist": true,
 			},
 			Err: false,
 		},
 
 		"three attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist", "purplelist"},
+					AtLeastOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist":  true,
+				"allowlist":  true,
 				"purplelist": true,
-				"blacklist":  true,
+				"denylist":   true,
 			},
 			Err: false,
 		},
 
 		"one attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"blacklist", "purplelist"},
+					AtLeastOneOf: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
@@ -8090,22 +8116,22 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 		},
 
 		"no attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
@@ -8115,25 +8141,25 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 
 		"Only Unknown Variable Value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
+				"allowlist": hcl2shim.UnknownVariableValue,
 			},
 
 			Err: false,
@@ -8141,22 +8167,22 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 
 		"only unknown list value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeList,
 					Optional:     true,
 					Elem:         &Schema{Type: TypeString},
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"allowlist", "denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeList,
 					Optional:     true,
 					Elem:         &Schema{Type: TypeString},
-					AtLeastOneOf: []string{"whitelist", "blacklist"},
+					AtLeastOneOf: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": []interface{}{hcl2shim.UnknownVariableValue},
+				"allowlist": []interface{}{hcl2shim.UnknownVariableValue},
 			},
 
 			Err: false,
@@ -8164,26 +8190,26 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 
 		"Unknown Variable Value and Known Value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					AtLeastOneOf: []string{"whitelist", "blacklist", "purplelist"},
+					AtLeastOneOf: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
-				"blacklist": true,
+				"allowlist": hcl2shim.UnknownVariableValue,
+				"denylist":  true,
 			},
 
 			Err: false,
@@ -8240,60 +8266,60 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 	}{
 
 		"two attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"blacklist"},
+					RequiredWith: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist"},
+					RequiredWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
-				"blacklist": true,
+				"allowlist": true,
+				"denylist":  true,
 			},
 			Err: false,
 		},
 
 		"one attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"blacklist"},
+					RequiredWith: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist"},
+					RequiredWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": true,
+				"allowlist": true,
 			},
 			Err: true,
 		},
 
 		"no attributes specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"blacklist"},
+					RequiredWith: []string{"denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist"},
+					RequiredWith: []string{"allowlist"},
 				},
 			},
 
@@ -8302,77 +8328,77 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 		},
 
 		"two attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
 					RequiredWith: []string{"purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "purplelist"},
+					RequiredWith: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist"},
+					RequiredWith: []string{"allowlist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist":  true,
+				"allowlist":  true,
 				"purplelist": true,
 			},
 			Err: false,
 		},
 
 		"three attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"blacklist", "purplelist"},
+					RequiredWith: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "purplelist"},
+					RequiredWith: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist"},
+					RequiredWith: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist":  true,
+				"allowlist":  true,
 				"purplelist": true,
-				"blacklist":  true,
+				"denylist":   true,
 			},
 			Err: false,
 		},
 
 		"one attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"blacklist", "purplelist"},
+					RequiredWith: []string{"denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "purplelist"},
+					RequiredWith: []string{"allowlist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist"},
+					RequiredWith: []string{"allowlist", "denylist"},
 				},
 			},
 
@@ -8383,22 +8409,22 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 		},
 
 		"no attributes of three specified": {
-			Key: "whitelist",
+			Key: "allowlist",
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
@@ -8408,25 +8434,25 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 
 		"Only Unknown Variable Value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
+				"allowlist": hcl2shim.UnknownVariableValue,
 			},
 
 			Err: true,
@@ -8434,22 +8460,22 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 
 		"only unknown list value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeList,
 					Optional:     true,
 					Elem:         &Schema{Type: TypeString},
-					RequiredWith: []string{"whitelist", "blacklist"},
+					RequiredWith: []string{"allowlist", "denylist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeList,
 					Optional:     true,
 					Elem:         &Schema{Type: TypeString},
-					RequiredWith: []string{"whitelist", "blacklist"},
+					RequiredWith: []string{"allowlist", "denylist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": []interface{}{hcl2shim.UnknownVariableValue},
+				"allowlist": []interface{}{hcl2shim.UnknownVariableValue},
 			},
 
 			Err: true,
@@ -8457,26 +8483,26 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 
 		"Unknown Variable Value and Known Value": {
 			Schema: map[string]*Schema{
-				"whitelist": {
+				"allowlist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
-				"blacklist": {
+				"denylist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 				"purplelist": {
 					Type:         TypeBool,
 					Optional:     true,
-					RequiredWith: []string{"whitelist", "blacklist", "purplelist"},
+					RequiredWith: []string{"allowlist", "denylist", "purplelist"},
 				},
 			},
 
 			Config: map[string]interface{}{
-				"whitelist": hcl2shim.UnknownVariableValue,
-				"blacklist": true,
+				"allowlist": hcl2shim.UnknownVariableValue,
+				"denylist":  true,
 			},
 
 			Err: true,

@@ -198,6 +198,16 @@ type Schema struct {
 	AtLeastOneOf  []string
 	RequiredWith  []string
 
+	// ConditionsMode specifies the behavior of the SDK when one of the
+	// above conditions are met (ConflictsWith, ExactlyOneOf, etc).
+	// The default value is SchemaConditionsModeError, which returns an error.
+	// Set ConditionsMode to SchemaConditionsModeWarning to return a warning instead.
+	//
+	// ConditionsModeMessage can optionally be used to display a message
+	// to the user when one of the above conditions are met.
+	ConditionsMode    SchemaConditionsMode
+	ConditionsMessage string
+
 	// When Deprecated is set, this attribute is deprecated.
 	//
 	// A deprecated field still works, but will probably stop working in near
@@ -253,6 +263,13 @@ const (
 	SchemaConfigModeAuto SchemaConfigMode = iota
 	SchemaConfigModeAttr
 	SchemaConfigModeBlock
+)
+
+type SchemaConditionsMode uint8
+
+const (
+	SchemaConditionsModeError   SchemaConditionsMode = 0
+	SchemaConditionsModeWarning SchemaConditionsMode = 1
 )
 
 // SchemaDiffSuppressFunc is a function which can be used to determine
@@ -1452,9 +1469,9 @@ func (m schemaMap) validate(
 	err := validateExactlyOneAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      diag.Severity(schema.ConditionsMode),
 			Summary:       "ExactlyOne",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1462,9 +1479,9 @@ func (m schemaMap) validate(
 	err = validateAtLeastOneAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      diag.Severity(schema.ConditionsMode),
 			Summary:       "AtLeastOne",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1494,9 +1511,9 @@ func (m schemaMap) validate(
 	err = validateRequiredWithAttribute(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      diag.Severity(schema.ConditionsMode),
 			Summary:       "RequiredWith",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
@@ -1521,9 +1538,9 @@ func (m schemaMap) validate(
 	err = validateConflictingAttributes(k, schema, c)
 	if err != nil {
 		return append(diags, diag.Diagnostic{
-			Severity:      diag.Error,
+			Severity:      diag.Severity(schema.ConditionsMode),
 			Summary:       "ConflictsWith",
-			Detail:        err.Error(),
+			Detail:        fmt.Sprintf("%s %s", schema.ConditionsMessage, err.Error()),
 			AttributePath: path,
 		})
 	}
