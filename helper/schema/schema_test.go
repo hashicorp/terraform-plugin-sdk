@@ -5506,7 +5506,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf("Error: Attribute should be a list"),
+				fmt.Errorf("Error: Attribute must be a list"),
 			},
 		},
 
@@ -5527,7 +5527,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf("Error: Attribute should be a list"),
+				fmt.Errorf("Error: Attribute must be a list"),
 			},
 		},
 
@@ -5563,7 +5563,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 
 			Warnings: []string{
-				"Warning: Attribute is deprecated: please use 'new_news' instead",
+				"Warning: Argument is deprecated: please use 'new_news' instead",
 			},
 		},
 
@@ -5953,7 +5953,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Err: false,
 
 			Warnings: []string{
-				"Warning: Deprecated Attribute: please use 'new_news' instead",
+				"Warning: Argument is deprecated: please use 'new_news' instead",
 			},
 		},
 
@@ -5991,7 +5991,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with whitelist`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "blacklist": conflicts with whitelist`),
 			},
 		},
 
@@ -6087,8 +6087,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "blacklist": conflicts with greenlist`),
-				fmt.Errorf(`Error: ConflictsWith: "greenlist": conflicts with blacklist`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "blacklist": conflicts with greenlist`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "greenlist": conflicts with blacklist`),
 			},
 		},
 
@@ -6132,7 +6132,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "optional_att": conflicts with required_att`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "optional_att": conflicts with required_att`),
 			},
 		},
 
@@ -6159,8 +6159,8 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Err: true,
 			Errors: []error{
-				fmt.Errorf(`Error: ConflictsWith: "bar_att": conflicts with foo_att`),
-				fmt.Errorf(`Error: ConflictsWith: "foo_att": conflicts with bar_att`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "bar_att": conflicts with foo_att`),
+				fmt.Errorf(`Error: Conflicting configuration arguments: "foo_att": conflicts with bar_att`),
 			},
 		},
 
@@ -6528,7 +6528,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			ws := diagutils.WarningDiags(diags).Warnings()
 			if !reflect.DeepEqual(ws, tc.Warnings) {
-				t.Fatalf("%q: warnings:\n\nexpected: %#v\ngot:%#v", tn, tc.Warnings, ws)
+				t.Fatalf("%q: warnings:\n\ngot:  %#v\nwant: %#v", tn, ws, tc.Warnings)
 			}
 
 			es := diagutils.ErrorDiags(diags).Errors()
@@ -6537,7 +6537,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 				sort.Sort(errorSort(tc.Errors))
 
 				if !errorEquals(es, tc.Errors) {
-					t.Fatalf("%q: errors:\n\nexpected: %q\ngot: %q", tn, tc.Errors, es)
+					t.Fatalf("%q: errors:\n\ngot:  %q\nwant: %q", tn, es, tc.Errors)
 				}
 			}
 		})
@@ -6583,7 +6583,7 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("Error: List longer than MaxItems: Attribute supports 1 item maximum, config has 2 declared"),
+				fmt.Errorf("Error: Too many list items: Attribute supports 1 item maximum, but config has 2 declared."),
 			},
 		},
 		"#1": {
@@ -6705,7 +6705,7 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("Error: List shorter than MinItems: Attribute supports 2 item minimum, config has 1 declared"),
+				fmt.Errorf("Error: Not enough list items: Attribute requires 2 item minimum, but config has only 1 declared."),
 			},
 		},
 	}
@@ -6729,7 +6729,7 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 		es := diagutils.ErrorDiags(diags).Errors()
 		if tc.Errors != nil {
 			if !errorEquals(es, tc.Errors) {
-				t.Fatalf("%q: expected: %q\ngot: %q", tn, tc.Errors, es)
+				t.Fatalf("%q: wrong errors\ngot:  %q\nwant: %q", tn, es, tc.Errors)
 			}
 		}
 	}
