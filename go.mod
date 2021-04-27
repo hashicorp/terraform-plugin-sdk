@@ -18,18 +18,18 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
-	github.com/hashicorp/go-getter v1.5.2
+	github.com/hashicorp/go-getter v1.5.3
 	github.com/hashicorp/go-hclog v0.9.2
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-plugin v1.3.0
 	github.com/hashicorp/go-uuid v1.0.1
-	github.com/hashicorp/go-version v1.2.1
+	github.com/hashicorp/go-version v1.3.0
 	github.com/hashicorp/hcl/v2 v2.8.2
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20191212124732-c6ae6269b9d7
-	github.com/hashicorp/terraform-exec v0.13.1
-	github.com/hashicorp/terraform-json v0.9.0
-	github.com/hashicorp/terraform-plugin-test/v2 v2.2.0
+	github.com/hashicorp/terraform-exec v0.13.3
+	github.com/hashicorp/terraform-json v0.10.0
+	github.com/hashicorp/terraform-plugin-test/v2 v2.2.1
 	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
@@ -45,10 +45,10 @@ require (
 	github.com/pierrec/lz4 v2.0.5+incompatible
 	github.com/posener/complete v1.2.1 // indirect
 	github.com/spf13/afero v1.2.2
-	github.com/zclconf/go-cty v1.8.1
+	github.com/zclconf/go-cty v1.8.2
 	github.com/zclconf/go-cty-yaml v1.0.2
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/net v0.0.0-20210326060303-6b1517762897
 	golang.org/x/tools v0.0.0-20201028111035-eafbe7b904eb
 	google.golang.org/api v0.34.0 // indirect
 	google.golang.org/grpc v1.32.0
