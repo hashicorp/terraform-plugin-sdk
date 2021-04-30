@@ -1,3 +1,9 @@
+# 2.7.0 (Unreleased)
+
+ENHANCEMENTS:
+
+* Made SDK-generated diagnostics clearer and more consistent [GH-755]
+
 # 2.6.1 (April 23, 2021)
 
 BUG FIXES:
