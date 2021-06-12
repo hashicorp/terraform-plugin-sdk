@@ -2345,6 +2345,49 @@ func TestSchemaMap_Diff(t *testing.T) {
 		},
 
 		{
+			Name: ": StateFunc to hide values (#1759)",
+			Schema: map[string]*Schema{
+				"map_with_sensitive_keys": {
+					Type:     TypeMap,
+					Optional: true,
+					ForceNew: true,
+					Elem: &Schema{
+						Type: TypeString,
+						StateFunc: func(v interface{}) string {
+							return ""
+						},
+					},
+				},
+			},
+
+			State: nil,
+
+			Config: map[string]interface{}{
+				"map_with_sensitive_keys": map[string]interface{}{
+					"password": "123",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"map_with_sensitive_keys.#": {
+						Old:         "0",
+						New:         "1",
+						RequiresNew: true,
+					},
+					"map_with_sensitive_keys.password.123": {
+						Old:         "",
+						New:         "",
+						NewExtra:    "123",
+						RequiresNew: true,
+					},
+				},
+			},
+
+			Err: false,
+		},
+
+		{
 			Name: "Removing set elements",
 			Schema: map[string]*Schema{
 				"instances": {
