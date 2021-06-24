@@ -66,7 +66,7 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 
 		wd.Close()
 	}()
-
+	backupProviderFactory := useExternalProvider(c)
 	providerCfg, err := testProviderConfig(c)
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +105,9 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 		}
 
 		if step.ImportState {
+			useDevelopProvider(c, backupProviderFactory)
 			err := testStepNewImportState(t, c, helper, wd, step, appliedCfg)
+			useExternalProvider(c)
 			if step.ExpectError != nil {
 				if err == nil {
 					t.Fatalf("Step %d/%d error running import: expected an error but got none", i+1, len(c.Steps))
