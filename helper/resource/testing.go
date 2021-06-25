@@ -309,6 +309,8 @@ type TestCase struct {
 	// ProtoV6ProviderFactories serves the same purpose as ProviderFactories,
 	// but for protocol v6 providers defined using the terraform-plugin-go
 	// ProviderServer interface.
+	// The version of Terraform used in acceptance testing must be greater
+	// than or equal to v0.15.4 to use ProtoV6ProviderFactories.
 	ProtoV6ProviderFactories map[string]func() (tfprotov6.ProviderServer, error)
 
 	// Providers is the ResourceProvider that will be under test.
