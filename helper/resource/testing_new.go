@@ -22,7 +22,10 @@ func runPostTestDestroy(t testing.T, c TestCase, wd *plugintest.WorkingDir, fact
 
 	err := runProviderCommand(t, func() error {
 		return wd.Destroy()
-	}, wd, factories, v5factories, v6factories)
+	}, wd, providerFactories{
+		legacy:  factories,
+		protov5: v5factories,
+		protov6: v6factories})
 	if err != nil {
 		return err
 	}
@@ -52,7 +55,10 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 				return err
 			}
 			return nil
-		}, wd, c.ProviderFactories, c.ProtoV5ProviderFactories, c.ProtoV6ProviderFactories)
+		}, wd, providerFactories{
+			legacy:  c.ProviderFactories,
+			protov5: c.ProtoV5ProviderFactories,
+			protov6: c.ProtoV6ProviderFactories})
 		if err != nil {
 			t.Fatalf("Error retrieving state, there may be dangling resources: %s", err.Error())
 			return
@@ -79,7 +85,10 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 	}
 	err = runProviderCommand(t, func() error {
 		return wd.Init()
-	}, wd, c.ProviderFactories, c.ProtoV5ProviderFactories, c.ProtoV6ProviderFactories)
+	}, wd, providerFactories{
+		legacy:  c.ProviderFactories,
+		protov5: c.ProtoV5ProviderFactories,
+		protov6: c.ProtoV6ProviderFactories})
 	if err != nil {
 		t.Fatalf("Error running init: %s", err.Error())
 		return
@@ -219,7 +228,10 @@ func testIDRefresh(c TestCase, t testing.T, wd *plugintest.WorkingDir, step Test
 			return err
 		}
 		return nil
-	}, wd, c.ProviderFactories, c.ProtoV5ProviderFactories, c.ProtoV6ProviderFactories)
+	}, wd, providerFactories{
+		legacy:  c.ProviderFactories,
+		protov5: c.ProtoV5ProviderFactories,
+		protov6: c.ProtoV6ProviderFactories})
 	if err != nil {
 		return err
 	}

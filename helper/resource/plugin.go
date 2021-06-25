@@ -19,7 +19,13 @@ import (
 	testing "github.com/mitchellh/go-testing-interface"
 )
 
-func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, factories map[string]func() (*schema.Provider, error), v5factories map[string]func() (tfprotov5.ProviderServer, error), v6factories map[string]func() (tfprotov6.ProviderServer, error)) error {
+type providerFactories struct {
+	legacy  map[string]func() (*schema.Provider, error)
+	protov5 map[string]func() (tfprotov5.ProviderServer, error)
+	protov6 map[string]func() (tfprotov6.ProviderServer, error)
+}
+
+func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, factories providerFactories) error {
 	// don't point to this as a test failure location
 	// point to whatever called it
 	t.Helper()
@@ -59,7 +65,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 	// WaitGroup to listen for all of the close channels.
 	var wg sync.WaitGroup
 	reattachInfo := map[string]tfexec.ReattachConfig{}
-	for providerName, factory := range factories {
+	for providerName, factory := range factories.legacy {
 		// providerName may be returned as terraform-provider-foo, and
 		// we need just foo. So let's fix that.
 		providerName = strings.TrimPrefix(providerName, "terraform-provider-")
@@ -124,7 +130,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 
 	// Now spin up gRPC servers for every protov5 provider factory
 	// in the same way.
-	for providerName, factory := range v5factories {
+	for providerName, factory := range factories.protov5 {
 		// providerName may be returned as terraform-provider-foo, and
 		// we need just foo. So let's fix that.
 		providerName = strings.TrimPrefix(providerName, "terraform-provider-")
@@ -202,7 +208,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 
 	// Now spin up gRPC servers for every protov6 provider factory
 	// in the same way.
-	for providerName, factory := range v6factories {
+	for providerName, factory := range factories.protov6 {
 		// providerName may be returned as terraform-provider-foo, and
 		// we need just foo. So let's fix that.
 		providerName = strings.TrimPrefix(providerName, "terraform-provider-")
