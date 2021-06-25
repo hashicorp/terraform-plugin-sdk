@@ -1,10 +1,10 @@
-# 2.7.0 (Unreleased)
+# 2.7.0 (June 25, 2021)
 
 ENHANCEMENTS:
 
-* Added `ProtoV6ProviderFactories` to `TestCase`, so protocol version 6 providers can be used in acceptance tests [GH-761]
-* Made SDK-generated diagnostics clearer and more consistent [GH-755]
-* Upgraded to use terraform-exec v0.14.0, which is required for acceptance test compatibility with Terraform v1.0.1 [GH-775]
+* Added `ProtoV6ProviderFactories` to `TestCase`, so protocol version 6 providers can be used in acceptance tests ([#761](https://github.com/hashicorp/terraform-plugin-sdk/issues/761))
+* Made SDK-generated diagnostics clearer and more consistent ([#755](https://github.com/hashicorp/terraform-plugin-sdk/issues/755))
+* Upgraded to use terraform-exec v0.14.0, which is required for acceptance test compatibility with Terraform v1.0.1 ([#775](https://github.com/hashicorp/terraform-plugin-sdk/issues/775))
 
 # 2.6.1 (April 23, 2021)
 
