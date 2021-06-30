@@ -178,6 +178,21 @@ func TestResourceConfigGet(t *testing.T) {
 			Key:   "mapname.0.listkey.0.key",
 			Value: 3,
 		},
+		{
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"mapname": cty.MapVal(map[string]cty.Value{
+					"key:name":        cty.BoolVal(true),
+					"key:name.suffix": cty.BoolVal(false),
+				}),
+			}),
+			Schema: &configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"mapname": {Type: cty.Map(cty.Bool), Optional: true},
+				},
+			},
+			Key:   "mapname.key:name.suffix",
+			Value: false,
+		},
 	}
 
 	for i, tc := range cases {
