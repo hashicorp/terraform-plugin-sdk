@@ -140,6 +140,27 @@ func TestRetryContext_cancel(t *testing.T) {
 	}
 }
 
+func TestRetryError_GetError(t *testing.T) {
+	t.Parallel()
+
+	var retryErr *RetryError
+	err := retryErr.Error()
+	if err != nil {
+		t.Fatalf("nil RetryError cast to non-nil error")
+	}
+
+	err = fmt.Errorf("test error")
+	retryErr = RetryableError(err)
+	if retryErr.Error() != err {
+		t.Fatalf("RetryableError did not return encapsulated error")
+	}
+
+	retryErr = NonRetryableError(err)
+	if retryErr.Error() != err {
+		t.Fatalf("RetryableError did not return encapsulated error")
+	}
+}
+
 func TestRetryContext_deadline(t *testing.T) {
 	t.Parallel()
 
