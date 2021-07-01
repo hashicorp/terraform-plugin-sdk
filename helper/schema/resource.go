@@ -97,11 +97,13 @@ type Resource struct {
 
 	// The functions below are the CRUD operations for this resource.
 	//
-	// Deprecated: Please use the context aware equivalents instead. Only one of
-	// the operations or context aware equivalent can be set, not both.
+	// Deprecated: Please use the CreateContext.
 	Create CreateFunc
-	Read   ReadFunc
+	// Deprecated: Please use the ReadContext.
+	Read ReadFunc
+	// Deprecated: Please use the UpdateContext.
 	Update UpdateFunc
+	// Deprecated: Please use the DeleteContext.
 	Delete DeleteFunc
 
 	// Exists is a function that is called to check if a resource still
@@ -266,11 +268,19 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 
 // The following function types are of the legacy CRUD operations.
 //
-// Deprecated: Please use the context aware equivalents instead.
+// Deprecated: Please use the CreateContextFunc.
 type CreateFunc func(*ResourceData, interface{}) error
+
+// Deprecated: Please use the ReadContextFunc.
 type ReadFunc func(*ResourceData, interface{}) error
+
+// Deprecated: Please use the UpdateContextFunc.
 type UpdateFunc func(*ResourceData, interface{}) error
+
+// Deprecated: Please use the DeleteContextFunc.
 type DeleteFunc func(*ResourceData, interface{}) error
+
+// Deprecated: ReadContextFunc should be able to encapsulate the logic of ExistsFunc.
 type ExistsFunc func(*ResourceData, interface{}) (bool, error)
 
 // See Resource documentation.
