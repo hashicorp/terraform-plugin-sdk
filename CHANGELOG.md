@@ -96,6 +96,9 @@ FEATURES
 * Ported TypeSet test check funcs essential for migrating to V2 of the SDK ([#614](https://github.com/hashicorp/terraform-plugin-sdk/issues/614))
 * Improved debug output for how to manually invoke the Terraform CLI ([#615](https://github.com/hashicorp/terraform-plugin-sdk/issues/615))
 
+ENHANCEMENTS
+* Generate 2048 bit long private keys with `helper/acctest.RandTLSCert` [GH-621]
+
 # 2.0.4 (October 06, 2020)
 
 BUG FIXES
