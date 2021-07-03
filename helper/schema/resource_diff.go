@@ -421,6 +421,16 @@ func (d *ResourceDiff) NewValueKnown(key string) bool {
 	return !r.Computed
 }
 
+// HasChanges returns whether or not any of the given keys has been changed.
+func (d *ResourceDiff) HasChanges(keys ...string) bool {
+	for _, key := range keys {
+		if d.HasChange(key) {
+			return true
+		}
+	}
+	return false
+}
+
 // HasChange checks to see if there is a change between state and the diff, or
 // in the overridden diff.
 func (d *ResourceDiff) HasChange(key string) bool {
