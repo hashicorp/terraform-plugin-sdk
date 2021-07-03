@@ -225,12 +225,9 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 			return nil, ctx.Err()
 		case <-timeout:
 			log.Printf("[WARN] WaitForState timeout after %s", conf.Timeout)
-			log.Printf("[WARN] WaitForState starting %s refresh grace period", refreshGracePeriod)
 
-			// cancel the goroutine and start our grace period timer
+			// cancel the goroutine
 			close(cancelCh)
-			timeout := time.After(refreshGracePeriod)
-
 			// we need a for loop and a label to break on, because we may have
 			// an extra response value to read, but still want to wait for the
 			// channel to close.
@@ -253,9 +250,6 @@ func (conf *StateChangeConf) WaitForStateContext(ctx context.Context) (interface
 					lastResult = r
 				case <-ctx.Done():
 					log.Println("[ERROR] Context cancelation detected, abandoning grace period")
-					break forSelect
-				case <-timeout:
-					log.Println("[ERROR] WaitForState exceeded refresh grace period")
 					break forSelect
 				}
 			}
