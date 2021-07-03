@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/gocty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -155,14 +156,7 @@ func (d *ResourceData) HasChangesExcept(keys ...string) bool {
 func (d *ResourceData) HasChange(key string) bool {
 	o, n := d.GetChange(key)
 
-	// If the type implements the Equal interface, then call that
-	// instead of just doing a reflect.DeepEqual. An example where this is
-	// needed is *Set
-	if eq, ok := o.(Equal); ok {
-		return !eq.Equal(n)
-	}
-
-	return !reflect.DeepEqual(o, n)
+	return !cmp.Equal(n, o)
 }
 
 // HasChangeExcept returns whether any keys outside the given key have been changed.
