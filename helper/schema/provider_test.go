@@ -14,7 +14,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -98,18 +97,19 @@ func TestProviderGetSchema(t *testing.T) {
 }
 
 func TestProviderConfigure(t *testing.T) {
-	cases := []struct {
-		P      *Provider
-		Config map[string]interface{}
-		Err    bool
+	t.Parallel()
+
+	cases := map[string]struct {
+		P             *Provider
+		Config        map[string]interface{}
+		ExpectedDiags diag.Diagnostics
 	}{
-		{
+		"nil": {
 			P:      &Provider{},
 			Config: nil,
-			Err:    false,
 		},
 
-		{
+		"ConfigureFunc-no-diags": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -129,10 +129,9 @@ func TestProviderConfigure(t *testing.T) {
 			Config: map[string]interface{}{
 				"foo": 42,
 			},
-			Err: false,
 		},
 
-		{
+		"ConfigureContextFunc-no-diags": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -152,10 +151,9 @@ func TestProviderConfigure(t *testing.T) {
 			Config: map[string]interface{}{
 				"foo": 42,
 			},
-			Err: false,
 		},
 
-		{
+		"ConfigureFunc-error": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -175,16 +173,98 @@ func TestProviderConfigure(t *testing.T) {
 			Config: map[string]interface{}{
 				"foo": 52,
 			},
-			Err: true,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "nope",
+					Detail:   "",
+				},
+			},
+		},
+
+		"ConfigureContextFunc-error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					if d.Get("foo").(int) == 42 {
+						return nil, nil
+					}
+
+					return nil, diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  "Test Error Diagnostic",
+							Detail:   "This is an error.",
+						},
+					}
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": 52,
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Test Error Diagnostic",
+					Detail:   "This is an error.",
+				},
+			},
+		},
+
+		"ConfigureContextFunc-warning": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					if d.Get("foo").(int) == 42 {
+						return nil, nil
+					}
+
+					return nil, diag.Diagnostics{
+						{
+							Severity: diag.Warning,
+							Summary:  "Test Warning Diagnostic",
+							Detail:   "This is a warning.",
+						},
+					}
+				},
+			},
+			Config: map[string]interface{}{
+				"foo": 52,
+			},
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Warning,
+					Summary:  "Test Warning Diagnostic",
+					Detail:   "This is a warning.",
+				},
+			},
 		},
 	}
 
-	for i, tc := range cases {
-		c := terraform.NewResourceConfigRaw(tc.Config)
-		diags := tc.P.Configure(context.Background(), c)
-		if diags.HasError() != tc.Err {
-			t.Fatalf("%d: %s", i, diagutils.ErrorDiags(diags))
-		}
+	for name, tc := range cases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			c := terraform.NewResourceConfigRaw(tc.Config)
+			diags := tc.P.Configure(context.Background(), c)
+
+			if diff := cmp.Diff(tc.ExpectedDiags, diags); diff != "" {
+				t.Errorf("Unexpected diagnostics (-wanted +got): %s", diff)
+			}
+		})
 	}
 }
 
