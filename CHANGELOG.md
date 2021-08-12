@@ -1,3 +1,9 @@
+# 2.7.1 (Unreleased)
+
+BUG FIXES:
+
+* helper/schema: Ensure `Provider.ConfigureContextFunc` warning-only diagnostics are returned ([#791](https://github.com/hashicorp/terraform-plugin-sdk/issues/791))
+
 # 2.7.0 (June 25, 2021)
 
 ENHANCEMENTS:
