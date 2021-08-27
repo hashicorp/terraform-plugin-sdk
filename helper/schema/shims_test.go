@@ -290,6 +290,10 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 			"create": "2h",
 		},
 	})
+
+	configVal := cty.ObjectVal(map[string]cty.Value{
+		"foo": cty.NumberIntVal(42),
+	})
 	var s *terraform.InstanceState
 
 	actual, err := r.Diff(context.Background(), s, conf, nil)
@@ -347,7 +351,7 @@ func TestShimResourceDiff_Timeout_diff(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, err := DiffFromValues(context.Background(), initialVal, appliedVal, r)
+	d, err := DiffFromValues(context.Background(), initialVal, appliedVal, configVal, r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3408,7 +3412,7 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			res := &Resource{Schema: tc.Schema}
 
-			d, err := diffFromValues(context.Background(), stateVal, configVal, res, tc.CustomizeDiff)
+			d, err := diffFromValues(context.Background(), stateVal, configVal, configVal, res, tc.CustomizeDiff)
 			if err != nil {
 				if !tc.Err {
 					t.Fatal(err)
