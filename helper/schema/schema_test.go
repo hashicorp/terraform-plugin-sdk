@@ -3161,6 +3161,156 @@ func TestSchemaMap_Diff(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "Set element with unset Optional attributes should not be affected when another element get updated",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeSet,
+					Required: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"a": {
+								Type:     TypeInt,
+								Required: true,
+							},
+							"b": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+					Set: func(v interface{}) int {
+						m := v.(map[string]interface{})
+						return m["a"].(int) + m["b"].(int)
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo.#":   "2",
+					"foo.1.a": "1",
+					"foo.1.b": "0",
+					"foo.2.a": "2",
+					"foo.2.b": "0",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"a": 1,
+					},
+					map[string]interface{}{
+						"a": 3,
+					},
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo.1.a": {
+						Old: "1",
+						New: "1",
+					},
+					"foo.1.b": {
+						Old: "0",
+						New: "0",
+					},
+					"foo.2.a": {
+						Old:        "2",
+						New:        "0",
+						NewRemoved: true,
+					},
+					"foo.2.b": {
+						Old:        "0",
+						New:        "0",
+						NewRemoved: true,
+					},
+					"foo.3.a": {
+						Old: "",
+						New: "3",
+					},
+					"foo.3.b": {
+						Old: "",
+						New: "",
+					},
+				},
+			},
+
+			Err: false,
+		},
+		{
+			Name: "Set element with unset Optional attributes should not be affected when new element get added",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeSet,
+					Required: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"a": {
+								Type:     TypeInt,
+								Required: true,
+							},
+							"b": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+					Set: func(v interface{}) int {
+						m := v.(map[string]interface{})
+						return m["a"].(int) + m["b"].(int)
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo.#":   "1",
+					"foo.1.a": "1",
+					"foo.1.b": "0",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"foo": []interface{}{
+					map[string]interface{}{
+						"a": 1,
+					},
+					map[string]interface{}{
+						"a": 2,
+					},
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo.#": {
+						Old: "1",
+						New: "2",
+					},
+					"foo.1.a": {
+						Old: "1",
+						New: "1",
+					},
+					"foo.1.b": {
+						Old: "0",
+						New: "0",
+					},
+					"foo.2.a": {
+						Old: "",
+						New: "2",
+					},
+					"foo.2.b": {
+						Old: "",
+						New: "",
+					},
+				},
+			},
+
+			Err: false,
+		},
 	}
 
 	for i, tc := range cases {

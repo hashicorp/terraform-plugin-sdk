@@ -1305,13 +1305,54 @@ func (m schemaMap) diffSet(
 			switch t := schema.Elem.(type) {
 			case *Resource:
 				// This is a complex resource
+
+				// As long as one of the attribute is not marked to be removed, we should unmark the other attributes
+				// that are marked to be removed just because their new value is not specified in config and their
+				// old value is the zero value.
+				isAllSubKNewRemoved := true
+
 				for k2, schema := range t.Schema {
 					subK := fmt.Sprintf("%s.%s.%s", k, code, k2)
 					err := m.diff(subK, schema, diff, d, true)
 					if err != nil {
 						return err
 					}
+
+					if subV, ok := diff.Attributes[subK]; ok && !subV.NewRemoved {
+						isAllSubKNewRemoved = false
+					}
 				}
+				if !isAllSubKNewRemoved {
+					for k2 := range t.Schema {
+						subK := fmt.Sprintf("%s.%s.%s", k, code, k2)
+						if subV, ok := diff.Attributes[subK]; ok && subV.NewRemoved {
+							schemaList := addrToSchema(strings.Split(subK, "."), map[string]*Schema{k: schema})
+							if len(schemaList) == 0 {
+								continue
+							}
+							subSchema := schemaList[len(schemaList)-1]
+
+							var verb string
+							switch subSchema.Type {
+							case TypeBool:
+								verb = "%t"
+							case TypeInt:
+								verb = "%d"
+							case TypeFloat:
+								verb = "%f"
+							case TypeString:
+								verb = "%s"
+							default:
+								return fmt.Errorf("%s: unknown type %#v", k, schema.Type)
+							}
+							if fmt.Sprintf(verb, subSchema.ZeroValue()) == subV.Old {
+								subV.NewRemoved = false
+								subV.New = subV.Old
+							}
+						}
+					}
+				}
+
 			case *Schema:
 				// Copy the schema so that we can set Computed/ForceNew from
 				// the parent schema (the TypeSet).
