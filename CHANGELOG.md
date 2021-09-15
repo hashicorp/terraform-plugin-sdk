@@ -1,3 +1,9 @@
+# 2.8.0 (Unreleased)
+
+ENHANCEMENTS:
+
+* Added experimental support for retrieving underlying raw protocol values from `helper/schema.ResourceData` and `helper/schema.ResourceDiff`, bypassing the shims. [GH-802]
+
 # 2.7.1 (August 31, 2021)
 
 BUG FIXES:
