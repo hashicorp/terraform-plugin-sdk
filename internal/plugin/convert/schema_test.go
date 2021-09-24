@@ -42,7 +42,7 @@ func TestConvertSchemaBlocks(t *testing.T) {
 					{
 						Name: "optional_computed",
 						Type: tftypes.Map{
-							AttributeType: tftypes.Bool,
+							ElementType: tftypes.Bool,
 						},
 						Optional: true,
 						Computed: true,
@@ -218,7 +218,7 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 					{
 						Name: "optional_computed",
 						Type: tftypes.Map{
-							AttributeType: tftypes.Bool,
+							ElementType: tftypes.Bool,
 						},
 						Optional: true,
 						Computed: true,
