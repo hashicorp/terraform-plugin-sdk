@@ -1,5 +1,9 @@
 # 2.8.0 (Unreleased)
 
+NOTES:
+
+* Updated to [terraform-plugin-go v0.4.0](https://github.com/hashicorp/terraform-plugin-go/blob/main/CHANGELOG.md#040-september-24-2021). Users of terraform-plugin-mux will need to upgrade terraform-plugin-mux as well.
+
 ENHANCEMENTS:
 
 * Added experimental support for retrieving underlying raw protocol values from `helper/schema.ResourceData` and `helper/schema.ResourceDiff`, bypassing the shims. [GH-802]
