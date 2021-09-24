@@ -1,4 +1,4 @@
-# 2.8.0 (Unreleased)
+# 2.8.0 (September 24, 2021)
 
 NOTES:
 
@@ -6,7 +6,7 @@ NOTES:
 
 ENHANCEMENTS:
 
-* Added experimental support for retrieving underlying raw protocol values from `helper/schema.ResourceData` and `helper/schema.ResourceDiff`, bypassing the shims. [GH-802]
+* Added experimental support for retrieving underlying raw protocol values from `helper/schema.ResourceData` and `helper/schema.ResourceDiff`, bypassing the shims. ([#802](https://github.com/hashicorp/terraform-plugin-sdk/issues/802))
 
 # 2.7.1 (August 31, 2021)
 
