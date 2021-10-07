@@ -132,6 +132,9 @@ func (d *ResourceData) HasChanges(keys ...string) bool {
 //
 // This function only works with root attribute keys.
 func (d *ResourceData) HasChangesExcept(keys ...string) bool {
+	if d.diff == nil {
+		return false
+	}
 	for attr := range d.diff.Attributes {
 		rootAttr := strings.Split(attr, ".")[0]
 		var skipAttr bool
@@ -169,6 +172,9 @@ func (d *ResourceData) HasChange(key string) bool {
 //
 // This function only works with root attribute keys.
 func (d *ResourceData) HasChangeExcept(key string) bool {
+	if d.diff == nil {
+		return false
+	}
 	for attr := range d.diff.Attributes {
 		rootAttr := strings.Split(attr, ".")[0]
 
