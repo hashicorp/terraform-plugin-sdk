@@ -172,7 +172,7 @@ func (d *ResourceData) HasChange(key string) bool {
 //
 // This function only works with root attribute keys.
 func (d *ResourceData) HasChangeExcept(key string) bool {
-	if d.diff == nil {
+	if d == nil || d.diff == nil {
 		return false
 	}
 	for attr := range d.diff.Attributes {
