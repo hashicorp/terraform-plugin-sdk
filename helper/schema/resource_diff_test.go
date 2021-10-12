@@ -1026,16 +1026,23 @@ func TestClear(t *testing.T) {
 					Optional: true,
 					Computed: true,
 				},
+				"onewithsuffix": {
+					Type:     TypeString,
+					Optional: true,
+					Computed: true,
+				},
 			},
 			State: &terraform.InstanceState{
 				Attributes: map[string]string{
-					"foo": "bar",
-					"one": "two",
+					"foo":           "bar",
+					"one":           "two",
+					"onewithsuffix": "two",
 				},
 			},
 			Config: testConfig(t, map[string]interface{}{
-				"foo": "baz",
-				"one": "three",
+				"foo":           "baz",
+				"one":           "three",
+				"onewithsuffix": "three",
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
@@ -1047,6 +1054,10 @@ func TestClear(t *testing.T) {
 						Old: "two",
 						New: "three",
 					},
+					"onewithsuffix": {
+						Old: "two",
+						New: "three",
+					},
 				},
 			},
 			Key: "one",
@@ -1055,6 +1066,10 @@ func TestClear(t *testing.T) {
 					"foo": {
 						Old: "bar",
 						New: "baz",
+					},
+					"onewithsuffix": {
+						Old: "two",
+						New: "three",
 					},
 				},
 			},
@@ -1246,18 +1261,44 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 						},
 					},
 				},
+				"foowithsuffix": {
+					Type:     TypeList,
+					Required: true,
+					MaxItems: 1,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"bar": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"baz": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
 			},
 			State: &terraform.InstanceState{
 				Attributes: map[string]string{
-					"testfield": "blablah",
-					"foo.#":     "1",
-					"foo.0.bar": "abc",
-					"foo.0.baz": "xyz",
+					"testfield":           "blablah",
+					"foo.#":               "1",
+					"foo.0.bar":           "abc",
+					"foo.0.baz":           "xyz",
+					"foowithsuffix.#":     "1",
+					"foowithsuffix.0.bar": "abc",
+					"foowithsuffix.0.baz": "xyz",
 				},
 			},
 			Config: testConfig(t, map[string]interface{}{
 				"testfield": "modified",
 				"foo": []interface{}{
+					map[string]interface{}{
+						"bar": "abcdefg",
+						"baz": "changed",
+					},
+				},
+				"foowithsuffix": []interface{}{
 					map[string]interface{}{
 						"bar": "abcdefg",
 						"baz": "changed",
@@ -1275,6 +1316,14 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 						New: "abcdefg",
 					},
 					"foo.0.baz": {
+						Old: "xyz",
+						New: "changed",
+					},
+					"foowithsuffix.0.bar": {
+						Old: "abc",
+						New: "abcdefg",
+					},
+					"foowithsuffix.0.baz": {
 						Old: "xyz",
 						New: "changed",
 					},
