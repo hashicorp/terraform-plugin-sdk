@@ -1,3 +1,9 @@
+# 2.8.1 (Unreleased)
+
+BUG FIXES:
+
+* helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
+
 # 2.8.0 (September 24, 2021)
 
 NOTES:
