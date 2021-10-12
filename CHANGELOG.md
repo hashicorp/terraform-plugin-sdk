@@ -6,6 +6,7 @@ BUG FIXES:
 * helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
 * helper/schema: Remove `TypeSet` truncation warning logs if none are truncated [GH-767]
 * helper/schema: Ensure `(*ResourceDiff).SetNew()` and `(*ResourceDiff).SetNewComputed()` only remove planned differences from exact or nested attribute and block names instead of any name with the same prefix [GH-716]
+* helper/schema: Fix deep equality checks with `(*ResourceData).HasChange()`, `(*ResourceData).HasChanges()`, `(*ResourceData).HasChangeExcept()`, and `(*ResourceData).HasChangesExcept()` [GH-711]
 
 # 2.8.0 (September 24, 2021)
 
