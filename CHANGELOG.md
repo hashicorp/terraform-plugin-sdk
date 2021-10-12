@@ -3,6 +3,7 @@
 BUG FIXES:
 
 * helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
+* helper/schema: Remove `TypeSet` truncation warning logs if none are truncated [GH-767]
 
 # 2.8.0 (September 24, 2021)
 
