@@ -5,6 +5,7 @@ BUG FIXES:
 * helper/acctest: Prevent duplicate values from `RandInt()`, `RandIntRange()`, and `RandomWithPrefix()` invocations on platforms with less granular clocks [GH-764]
 * helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
 * helper/schema: Remove `TypeSet` truncation warning logs if none are truncated [GH-767]
+* helper/schema: Ensure `(*ResourceDiff).SetNew()` and `(*ResourceDiff).SetNewComputed()` only remove planned differences from exact or nested attribute and block names instead of any name with the same prefix [GH-716]
 
 # 2.8.0 (September 24, 2021)
 
