@@ -2,6 +2,7 @@
 
 BUG FIXES:
 
+* helper/acctest: Prevent duplicate values from `RandInt()`, `RandIntRange()`, and `RandomWithPrefix()` invocations on platforms with less granular clocks [GH-764]
 * helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
 * helper/schema: Remove `TypeSet` truncation warning logs if none are truncated [GH-767]
 
