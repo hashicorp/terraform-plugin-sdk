@@ -1,5 +1,9 @@
 # 2.8.1 (Unreleased)
 
+NOTES:
+
+* helper/schema: Added warning log for provider reconfiguration, which can occur with concurrent testing and cause unexpected testing results when there are differing provider configurations. To prevent this warning, testing should create separate provider instances for separate configurations. Providers can further implement [`sync.Once`](https://pkg.go.dev/sync#Once) to prevent reconfiguration effects or add an execution tracking variable in `Provider.ConfigureFunc` or `Provider.ConfigureContextFunc` implementations to raise errors, if desired. [GH-636]
+
 BUG FIXES:
 
 * helper/acctest: Prevent duplicate values from `RandInt()`, `RandIntRange()`, and `RandomWithPrefix()` invocations on platforms with less granular clocks [GH-764]
