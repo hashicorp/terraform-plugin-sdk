@@ -241,6 +241,14 @@ type Schema struct {
 	// logs or regular output. It should be used for passwords or other
 	// secret fields. Future versions of Terraform may encrypt these
 	// values.
+	//
+	// For nested blocks (any Schema with a schema.Resource for the Elem
+	// property), all fields in the block will be treated as Sensitive.
+	//
+	// For nested blocks (any Schema with a schema.Resource for the Elem
+	// propery) that only contain fields that are Computed and not
+	// Optional, any field within the nested block being Sensitive makes
+	// all fields within the nested block Sensitive.
 	Sensitive bool
 }
 
@@ -678,6 +686,34 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		computedOnly := v.Computed && !v.Optional
+
+		if v.Elem != nil {
+			if res, ok := v.Elem.(*Resource); ok {
+				if v.Sensitive {
+					if (!computedOnly || v.ConfigMode == SchemaConfigModeBlock) &&
+						v.ConfigMode != SchemaConfigModeAttr {
+						// blocks cannot be
+						// sensitive, so if the
+						// developer asks for a
+						// sensitive block, we
+						// should tell them
+						// that isn't a thing
+						return fmt.Errorf("%s is sensitive, but blocks cannot be sensitive. Mark all fields in the block as sensitive, instead.", k)
+					}
+				} else {
+					if (computedOnly && v.ConfigMode == SchemaConfigModeAuto) ||
+						v.ConfigMode == SchemaConfigModeAttr {
+						for attrK, attr := range res.Schema {
+							if attr.Sensitive {
+								// a schema.Resource that is computed-only automatically gets turned into an object attribute. Also, if we're in SchemaConfigModeAttr, it becomes an object attribute. Object attributes cannot be sensitive, only the object can. We should tell providers that this isn't a thing, either.
+								// return error
+								return fmt.Errorf("%s is a sensitive attribute inside a block, %s, that is in attribute mode. Attributes inside attributes cannot be sensitive; make the %s sensitive, instead.", attrK, k, k)
+							}
+						}
+					}
+				}
+			}
+		}
 
 		switch v.ConfigMode {
 		case SchemaConfigModeBlock:

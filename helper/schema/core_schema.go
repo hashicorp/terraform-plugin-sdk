@@ -55,6 +55,10 @@ var (
 // This method presumes a schema that passes InternalValidate, and so may
 // panic or produce an invalid result if given an invalid schemaMap.
 func (m schemaMap) CoreConfigSchema() *configschema.Block {
+	return m.coreConfigSchema(nil)
+}
+
+func (m schemaMap) coreConfigSchema(parent *Schema) *configschema.Block {
 	if len(m) == 0 {
 		// We return an actual (empty) object here, rather than a nil,
 		// because a nil result would mean that we don't have a schema at
@@ -69,7 +73,7 @@ func (m schemaMap) CoreConfigSchema() *configschema.Block {
 
 	for name, schema := range m {
 		if schema.Elem == nil {
-			ret.Attributes[name] = schema.coreConfigSchemaAttribute()
+			ret.Attributes[name] = schema.coreConfigSchemaAttribute(parent)
 			continue
 		}
 		if schema.Type == TypeMap {
@@ -83,27 +87,27 @@ func (m schemaMap) CoreConfigSchema() *configschema.Block {
 				sch.Elem = &Schema{
 					Type: TypeString,
 				}
-				ret.Attributes[name] = sch.coreConfigSchemaAttribute()
+				ret.Attributes[name] = sch.coreConfigSchemaAttribute(schema)
 				continue
 			}
 		}
 		switch schema.ConfigMode {
 		case SchemaConfigModeAttr:
-			ret.Attributes[name] = schema.coreConfigSchemaAttribute()
+			ret.Attributes[name] = schema.coreConfigSchemaAttribute(parent)
 		case SchemaConfigModeBlock:
-			ret.BlockTypes[name] = schema.coreConfigSchemaBlock()
+			ret.BlockTypes[name] = schema.coreConfigSchemaBlock(parent)
 		default: // SchemaConfigModeAuto, or any other invalid value
 			if schema.Computed && !schema.Optional {
 				// Computed-only schemas are always handled as attributes,
 				// because they never appear in configuration.
-				ret.Attributes[name] = schema.coreConfigSchemaAttribute()
+				ret.Attributes[name] = schema.coreConfigSchemaAttribute(parent)
 				continue
 			}
 			switch schema.Elem.(type) {
 			case *Schema, ValueType:
-				ret.Attributes[name] = schema.coreConfigSchemaAttribute()
+				ret.Attributes[name] = schema.coreConfigSchemaAttribute(parent)
 			case *Resource:
-				ret.BlockTypes[name] = schema.coreConfigSchemaBlock()
+				ret.BlockTypes[name] = schema.coreConfigSchemaBlock(parent)
 			default:
 				// Should never happen for a valid schema
 				panic(fmt.Errorf("invalid Schema.Elem %#v; need *Schema or *Resource", schema.Elem))
@@ -118,7 +122,7 @@ func (m schemaMap) CoreConfigSchema() *configschema.Block {
 // of a schema. This is appropriate only for primitives or collections whose
 // Elem is an instance of Schema. Use coreConfigSchemaBlock for collections
 // whose elem is a whole resource.
-func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
+func (s *Schema) coreConfigSchemaAttribute(parent *Schema) *configschema.Attribute {
 	// The Schema.DefaultFunc capability adds some extra weirdness here since
 	// it can be combined with "Required: true" to create a sitution where
 	// required-ness is conditional. Terraform Core doesn't share this concept,
@@ -155,6 +159,18 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 		descKind = configschema.StringPlain
 	}
 
+	if parent != nil && parent.Sensitive {
+		s.Sensitive = parent.Sensitive
+	}
+
+	// this shouldn't usually happen, unless this is a block is computed
+	// and not optional, in which case, it's treated as an attribute
+	//
+	// it can also happen if a block has SchemaConfigModeAttr
+	if inheritSubAttributeSensitivity(s) {
+		s.Sensitive = true
+	}
+
 	return &configschema.Attribute{
 		Type:            s.coreConfigSchemaType(),
 		Optional:        opt,
@@ -167,12 +183,51 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 	}
 }
 
+// inheritSubAttributeSensitivity returns true if any of the passed Schema's
+// sub-attributes are Sensitive but can't represent sensitivity at that level.
+//
+// This is necessary because some blocks get handled as attributes, either at
+// the provider developer's request or because of heuristics, but their Elems
+// can still have Sensitive set on them. If that happens, the Sensitive gets
+// discarded, because only Attributes can have Sensitive set on them; you can't
+// have _part_ of an attribute be sensitive. This recursive function finds out
+// if there's any sensitivity that can't be reflected at that level that we
+// need to honor, anyways.
+func inheritSubAttributeSensitivity(s *Schema) bool {
+	if s.Elem == nil {
+		return false
+	}
+	switch elem := s.Elem.(type) {
+	case ValueType:
+		// do nothing for TypeString, etc.
+		// they can't be sensitive
+		return false
+	case *Schema:
+		if elem.Sensitive {
+			return true
+		}
+	case *Resource:
+		for _, subSchema := range elem.Schema {
+			if inheritSubAttributeSensitivity(subSchema) {
+				return true
+			}
+		}
+	default:
+		// Should never happen for a valid schema
+		panic(fmt.Errorf("invalid Schema.Elem %#v; need *Schema or *Resource", s.Elem))
+	}
+	return false
+}
+
 // coreConfigSchemaBlock prepares a configschema.NestedBlock representation of
 // a schema. This is appropriate only for collections whose Elem is an instance
 // of Resource, and will panic otherwise.
-func (s *Schema) coreConfigSchemaBlock() *configschema.NestedBlock {
+func (s *Schema) coreConfigSchemaBlock(parent *Schema) *configschema.NestedBlock {
+	if parent != nil && parent.Sensitive {
+		s.Sensitive = parent.Sensitive
+	}
 	ret := &configschema.NestedBlock{}
-	if nested := s.Elem.(*Resource).coreConfigSchema(); nested != nil {
+	if nested := s.Elem.(*Resource).coreConfigSchema(s); nested != nil {
 		ret.Block = *nested
 
 		desc := SchemaDescriptionBuilder(s)
@@ -251,7 +306,7 @@ func (s *Schema) coreConfigSchemaType() cty.Type {
 			// behavior is selected either for computed-only schemas or
 			// when ConfigMode is explicitly SchemaConfigModeBlock.
 			// See schemaMap.CoreConfigSchema for the exact rules.
-			elemType = set.coreConfigSchema().ImpliedType()
+			elemType = set.coreConfigSchema(nil).ImpliedType()
 		default:
 			if set != nil {
 				// Should never happen for a valid schema
@@ -282,7 +337,7 @@ func (s *Schema) coreConfigSchemaType() cty.Type {
 // the resource's schema. CoreConfigSchema adds the implicitly required "id"
 // attribute for top level resources if it doesn't exist.
 func (r *Resource) CoreConfigSchema() *configschema.Block {
-	block := r.coreConfigSchema()
+	block := r.coreConfigSchema(nil)
 
 	desc := ResourceDescriptionBuilder(r)
 	descKind := configschema.StringKind(DescriptionKind)
@@ -363,6 +418,6 @@ func (r *Resource) CoreConfigSchema() *configschema.Block {
 	return block
 }
 
-func (r *Resource) coreConfigSchema() *configschema.Block {
-	return schemaMap(r.Schema).CoreConfigSchema()
+func (r *Resource) coreConfigSchema(parent *Schema) *configschema.Block {
+	return schemaMap(r.Schema).coreConfigSchema(parent)
 }
