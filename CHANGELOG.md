@@ -7,6 +7,7 @@ NOTES:
 ENHANCEMENTS:
 
 * helper/resource: Added timing logging to sweepers [GH-782]
+* helper/resource: Updated terraform-exec to work with Terraform 1.1 [GH-822]
 
 BUG FIXES:
 
