@@ -1,22 +1,22 @@
-# 2.9.0 (Unreleased)
+# 2.9.0 (November 19, 2021)
 
 NOTES:
 
-* helper/schema: Added warning log for provider reconfiguration, which can occur with concurrent testing and cause unexpected testing results when there are differing provider configurations. To prevent this warning, testing should create separate provider instances for separate configurations. Providers can further implement [`sync.Once`](https://pkg.go.dev/sync#Once) to prevent reconfiguration effects or add an execution tracking variable in `Provider.ConfigureFunc` or `Provider.ConfigureContextFunc` implementations to raise errors, if desired. [GH-636]
+* helper/schema: Added warning log for provider reconfiguration, which can occur with concurrent testing and cause unexpected testing results when there are differing provider configurations. To prevent this warning, testing should create separate provider instances for separate configurations. Providers can further implement [`sync.Once`](https://pkg.go.dev/sync#Once) to prevent reconfiguration effects or add an execution tracking variable in `Provider.ConfigureFunc` or `Provider.ConfigureContextFunc` implementations to raise errors, if desired. ([#636](https://github.com/hashicorp/terraform-plugin-sdk/issues/636))
 
 ENHANCEMENTS:
 
-* helper/resource: Added timing logging to sweepers [GH-782]
-* helper/resource: Updated terraform-exec to work with Terraform 1.1 [GH-822]
+* helper/resource: Added timing logging to sweepers ([#782](https://github.com/hashicorp/terraform-plugin-sdk/issues/782))
+* helper/resource: Updated terraform-exec to work with Terraform 1.1 ([#822](https://github.com/hashicorp/terraform-plugin-sdk/issues/822))
 
 BUG FIXES:
 
-* helper/acctest: Prevent duplicate values from `RandInt()`, `RandIntRange()`, and `RandomWithPrefix()` invocations on platforms with less granular clocks [GH-764]
-* helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` [GH-811]
-* helper/schema: Remove `TypeSet` truncation warning logs if none are truncated [GH-767]
-* helper/schema: Ensure `(*ResourceDiff).SetNew()` and `(*ResourceDiff).SetNewComputed()` only remove planned differences from exact or nested attribute and block names instead of any name with the same prefix [GH-716]
-* helper/schema: Fix deep equality checks with `(*ResourceData).HasChange()`, `(*ResourceData).HasChanges()`, `(*ResourceData).HasChangeExcept()`, and `(*ResourceData).HasChangesExcept()` [GH-711]
-* helper/schema: Prevent potential panics since v2.8.0 with data sources that have optional attributes and no practitioner configuration [GH-815]
+* helper/acctest: Prevent duplicate values from `RandInt()`, `RandIntRange()`, and `RandomWithPrefix()` invocations on platforms with less granular clocks ([#764](https://github.com/hashicorp/terraform-plugin-sdk/issues/764))
+* helper/schema: Prevent potential panics with `(*ResourceData).HasChangeExcept()` and `(*ResourceData).HasChangesExcept()` ([#811](https://github.com/hashicorp/terraform-plugin-sdk/issues/811))
+* helper/schema: Remove `TypeSet` truncation warning logs if none are truncated ([#767](https://github.com/hashicorp/terraform-plugin-sdk/issues/767))
+* helper/schema: Ensure `(*ResourceDiff).SetNew()` and `(*ResourceDiff).SetNewComputed()` only remove planned differences from exact or nested attribute and block names instead of any name with the same prefix ([#716](https://github.com/hashicorp/terraform-plugin-sdk/issues/716))
+* helper/schema: Fix deep equality checks with `(*ResourceData).HasChange()`, `(*ResourceData).HasChanges()`, `(*ResourceData).HasChangeExcept()`, and `(*ResourceData).HasChangesExcept()` ([#711](https://github.com/hashicorp/terraform-plugin-sdk/issues/711))
+* helper/schema: Prevent potential panics since v2.8.0 with data sources that have optional attributes and no practitioner configuration ([#815](https://github.com/hashicorp/terraform-plugin-sdk/issues/815))
 
 # 2.8.0 (September 24, 2021)
 
