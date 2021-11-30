@@ -6841,7 +6841,7 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("Error: Too many list items: Attribute supports 1 item maximum, but config has 2 declared."),
+				fmt.Errorf("Error: Too many list items: Attribute aliases supports 1 item maximum, but config has 2 declared."),
 			},
 		},
 		"#1": {
@@ -6876,6 +6876,40 @@ func TestSchemaSet_ValidateMaxItems(t *testing.T) {
 			Diff:   nil,
 			Err:    false,
 			Errors: nil,
+		},
+		"#3": {
+			Schema: map[string]*Schema{
+				"service_account": {
+					Type:     TypeList,
+					Optional: true,
+					ForceNew: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"aliases": {
+								Type:     TypeSet,
+								Optional: true,
+								MinItems: 2,
+								Elem:     &Schema{Type: TypeString},
+							},
+						},
+					},
+				},
+			},
+
+			State: nil,
+
+			Config: map[string]interface{}{
+				"service_account": []interface{}{
+					map[string]interface{}{
+						"aliases": []interface{}{"foo"},
+					},
+				},
+			},
+			Diff: nil,
+			Err:  true,
+			Errors: []error{
+				fmt.Errorf("Error: Not enough list items: Attribute service_account.0.aliases requires 2 item minimum, but config has only 1 declared."),
+			},
 		},
 	}
 
@@ -6963,7 +6997,41 @@ func TestSchemaSet_ValidateMinItems(t *testing.T) {
 			Diff: nil,
 			Err:  true,
 			Errors: []error{
-				fmt.Errorf("Error: Not enough list items: Attribute requires 2 item minimum, but config has only 1 declared."),
+				fmt.Errorf("Error: Not enough list items: Attribute aliases requires 2 item minimum, but config has only 1 declared."),
+			},
+		},
+		"#3": {
+			Schema: map[string]*Schema{
+				"service_account": {
+					Type:     TypeList,
+					Optional: true,
+					ForceNew: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"aliases": {
+								Type:     TypeSet,
+								Optional: true,
+								MinItems: 2,
+								Elem:     &Schema{Type: TypeString},
+							},
+						},
+					},
+				},
+			},
+
+			State: nil,
+
+			Config: map[string]interface{}{
+				"service_account": []interface{}{
+					map[string]interface{}{
+						"aliases": []interface{}{"foo"},
+					},
+				},
+			},
+			Diff: nil,
+			Err:  true,
+			Errors: []error{
+				fmt.Errorf("Error: Not enough list items: Attribute service_account.0.aliases requires 2 item minimum, but config has only 1 declared."),
 			},
 		},
 	}

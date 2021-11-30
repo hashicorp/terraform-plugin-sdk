@@ -1946,7 +1946,7 @@ func (m schemaMap) validateList(
 		return append(diags, diag.Diagnostic{
 			Severity:      diag.Error,
 			Summary:       "Too many list items",
-			Detail:        fmt.Sprintf("Attribute supports %d item maximum, but config has %d declared.", schema.MaxItems, rawV.Len()),
+			Detail:        fmt.Sprintf("Attribute %s supports %d item maximum, but config has %d declared.", k, schema.MaxItems, rawV.Len()),
 			AttributePath: path,
 		})
 	}
@@ -1955,7 +1955,7 @@ func (m schemaMap) validateList(
 		return append(diags, diag.Diagnostic{
 			Severity:      diag.Error,
 			Summary:       "Not enough list items",
-			Detail:        fmt.Sprintf("Attribute requires %d item minimum, but config has only %d declared.", schema.MinItems, rawV.Len()),
+			Detail:        fmt.Sprintf("Attribute %s requires %d item minimum, but config has only %d declared.", k, schema.MinItems, rawV.Len()),
 			AttributePath: path,
 		})
 	}
