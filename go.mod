@@ -14,10 +14,11 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/go-hclog v0.15.0
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.4.1
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.3.0
+	github.com/hashicorp/hc-install v0.3.1-0.20211130192457-6196e6301818
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.15.0
@@ -31,7 +32,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mitchellh/reflectwalk v1.0.2
 	github.com/zclconf/go-cty v1.9.1
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
+	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
 	google.golang.org/grpc v1.32.0
 )
