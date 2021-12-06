@@ -167,7 +167,7 @@ func TestWaitForState_timeout(t *testing.T) {
 		t.Fatal("Expected timeout error. No error returned.")
 	}
 
-	expectedErr := "timeout while waiting for state to become 'running' (timeout: 1ms)"
+	expectedErr := "timeout while waiting for state to become 'running' (timeout: 1ms): failed"
 	if err.Error() != expectedErr {
 		t.Fatalf("Errors don't match.\nExpected: %q\nGiven: %q\n", expectedErr, err.Error())
 	}
