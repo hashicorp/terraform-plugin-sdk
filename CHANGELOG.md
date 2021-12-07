@@ -1,3 +1,14 @@
+# 2.10.0 (Unreleased)
+
+NOTES:
+
+* helper/resource: previously, TF_ACC_LOG_PATH would not enable logging for the provider under test. This has been fixed, so logging from the Terraform binary, any external providers, and the provider under test will all be combined in a file at the specified path.
+
+ENHANCEMENTS:
+
+* upgraded to terraform-plugin-go v0.5.0 [GH-805]
+* added support for terraform-plugin-log [GH-805]
+
 # 2.9.0 (November 19, 2021)
 
 NOTES:
