@@ -1,4 +1,4 @@
-# 2.10.0 (Unreleased)
+# 2.10.0 (December 07, 2021)
 
 NOTES:
 
@@ -6,8 +6,8 @@ NOTES:
 
 ENHANCEMENTS:
 
-* Upgraded to terraform-plugin-go v0.5.0 [GH-805]
-* Added support for terraform-plugin-log [GH-805]
+* Upgraded to terraform-plugin-go v0.5.0 ([#805](https://github.com/hashicorp/terraform-plugin-sdk/issues/805))
+* Added support for terraform-plugin-log ([#805](https://github.com/hashicorp/terraform-plugin-sdk/issues/805))
 
 # 2.9.0 (November 19, 2021)
 
