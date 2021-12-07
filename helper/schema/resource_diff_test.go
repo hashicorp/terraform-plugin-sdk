@@ -1238,6 +1238,36 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 			},
 		},
 		{
+			Name: "basic primitive diff with empty prefix",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					Computed: true,
+				},
+			},
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo": "bar",
+				},
+			},
+			Config: testConfig(t, map[string]interface{}{
+				"foo": "baz",
+			}),
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo": {
+						Old: "bar",
+						New: "baz",
+					},
+				},
+			},
+			Key: "",
+			ExpectedKeys: []string{
+				"foo",
+			},
+		},
+		{
 			Name: "nested field filtering",
 			Schema: map[string]*Schema{
 				"testfield": {
