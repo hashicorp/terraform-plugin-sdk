@@ -1245,14 +1245,21 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 					Optional: true,
 					Computed: true,
 				},
+				"qux": {
+					Type:     TypeString,
+					Optional: true,
+					Computed: true,
+				},
 			},
 			State: &terraform.InstanceState{
 				Attributes: map[string]string{
 					"foo": "bar",
+					"qux": "abc",
 				},
 			},
 			Config: testConfig(t, map[string]interface{}{
 				"foo": "baz",
+				"qux": "abc",
 			}),
 			Diff: &terraform.InstanceDiff{
 				Attributes: map[string]*terraform.ResourceAttrDiff{
