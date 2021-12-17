@@ -1312,7 +1312,7 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 				"foo": "abc",
 				"bar": []interface{}{
 					map[string]interface{}{
-						"baz": "abc",
+						"baz": "def",
 						"qux": "uvw",
 					},
 				},
