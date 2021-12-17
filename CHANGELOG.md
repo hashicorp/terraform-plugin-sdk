@@ -1,3 +1,9 @@
+# 2.10.1 (Unreleased)
+
+BUG FIXES:
+
+* helper/schema: Fixed regression from version 2.9.0 in `(ResourceDiff).GetChangedKeysPrefix()` where passing an empty string (`""`) would no longer return all changed keys [GH-829]
+
 # 2.10.0 (December 07, 2021)
 
 NOTES:
