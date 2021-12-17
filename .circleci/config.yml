@@ -4,25 +4,18 @@ commands:
   get_dependencies:
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - go-mod-v1-{{ checksum "go.sum" }}
-      - run: go get -v -d ./...
-      - save_cache:
-          key: go-mod-v1-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
+      - run: go mod download
 
 jobs:
   "docker-go116 build":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+      - image: docker.mirror.hashicorp.services/cimg/go:1.16
     steps:
       - get_dependencies
       - run: go build ./...
   "docker-go116 test":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+      - image: docker.mirror.hashicorp.services/cimg/go:1.16
         environment:
           TF_ACC_TERRAFORM_VERSION: "0.12.26"
     parameters:
@@ -44,19 +37,19 @@ jobs:
           path: << parameters.test_results >>
   "docker-go116 vet":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+      - image: docker.mirror.hashicorp.services/cimg/go:1.16
     steps:
       - get_dependencies
       - run: go vet ./...
   "docker-go116 gofmt":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+      - image: docker.mirror.hashicorp.services/cimg/go:1.16
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
   "docker-go116 release":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.16
+      - image: docker.mirror.hashicorp.services/cimg/go:1.16
     steps:
       - add_ssh_keys:
           fingerprints:
@@ -65,13 +58,13 @@ jobs:
       - run: ./scripts/release/release.sh
   "docker-go117 build":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.17
+      - image: docker.mirror.hashicorp.services/cimg/go:1.17
     steps:
       - get_dependencies
       - run: go build ./...
   "docker-go117 test":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.17
+      - image: docker.mirror.hashicorp.services/cimg/go:1.17
         environment:
           TF_ACC_TERRAFORM_VERSION: "0.12.26"
     parameters:
@@ -93,13 +86,13 @@ jobs:
           path: << parameters.test_results >>
   "docker-go117 vet":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.17
+      - image: docker.mirror.hashicorp.services/cimg/go:1.17
     steps:
       - get_dependencies
       - run: go vet ./...
   "docker-go117 gofmt":
     docker:
-      - image: docker.mirror.hashicorp.services/circleci/golang:1.17
+      - image: docker.mirror.hashicorp.services/cimg/go:1.17
     steps:
       - get_dependencies
       - run: ./scripts/gofmtcheck.sh
