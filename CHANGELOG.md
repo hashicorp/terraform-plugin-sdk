@@ -1,8 +1,8 @@
-# 2.10.1 (Unreleased)
+# 2.10.1 (December 17, 2021)
 
 BUG FIXES:
 
-* helper/schema: Fixed regression from version 2.9.0 in `(ResourceDiff).GetChangedKeysPrefix()` where passing an empty string (`""`) would no longer return all changed keys [GH-829]
+* helper/schema: Fixed regression from version 2.9.0 in `(ResourceDiff).GetChangedKeysPrefix()` where passing an empty string (`""`) would no longer return all changed keys ([#829](https://github.com/hashicorp/terraform-plugin-sdk/issues/829))
 
 # 2.10.0 (December 07, 2021)
 
