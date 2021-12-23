@@ -83,7 +83,7 @@ func TestUpgradeState_jsonState(t *testing.T) {
 		},
 	}
 
-	resp, err := server.UpgradeResourceState(nil, req)
+	resp, err := server.UpgradeResourceState(context.Background(), req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestUpgradeState_jsonStateBigInt(t *testing.T) {
 		},
 	}
 
-	resp, err := server.UpgradeResourceState(nil, req)
+	resp, err := server.UpgradeResourceState(context.Background(), req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestUpgradeState_removedAttr(t *testing.T) {
 					JSON: []byte(tc.raw),
 				},
 			}
-			resp, err := server.UpgradeResourceState(nil, req)
+			resp, err := server.UpgradeResourceState(context.Background(), req)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -463,7 +463,7 @@ func TestUpgradeState_flatmapState(t *testing.T) {
 
 	for i, req := range testReqs {
 		t.Run(fmt.Sprintf("%d-%d", i, req.Version), func(t *testing.T) {
-			resp, err := server.UpgradeResourceState(nil, req)
+			resp, err := server.UpgradeResourceState(context.Background(), req)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -542,7 +542,7 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 
 	for i, req := range testReqs {
 		t.Run(fmt.Sprintf("%d-%d", i, req.Version), func(t *testing.T) {
-			resp, err := server.UpgradeResourceState(nil, req)
+			resp, err := server.UpgradeResourceState(context.Background(), req)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1542,7 +1542,7 @@ func TestPrepareProviderConfig(t *testing.T) {
 				},
 			}
 
-			resp, err := server.PrepareProviderConfig(nil, testReq)
+			resp, err := server.PrepareProviderConfig(context.Background(), testReq)
 			if err != nil {
 				t.Fatal(err)
 			}
