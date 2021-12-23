@@ -24,12 +24,12 @@ import (
 
 const (
 	newExtraKey        = "_new_extra_shim"
-	tflogSubsystemName = "sdkv2"
+	tflogSubsystemName = "helper_schema"
 )
 
 func withLogger(ctx context.Context) context.Context {
 	return tfsdklog.NewSubsystem(ctx, tflogSubsystemName,
-		tfsdklog.WithLevelFromEnv("TF_LOG_SDK_V2"))
+		tfsdklog.WithLevelFromEnv("TF_LOG_SDK_HELPER_SCHEMA"))
 }
 
 func NewGRPCProviderServer(p *Provider) *GRPCProviderServer {
