@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"sync"
 
 	"github.com/hashicorp/go-cty/cty"
 	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
 	"github.com/hashicorp/go-cty/cty/msgpack"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-log/tfsdklog"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -21,7 +22,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-const newExtraKey = "_new_extra_shim"
+const (
+	newExtraKey        = "_new_extra_shim"
+	tflogSubsystemName = "sdkv2"
+)
+
+func withLogger(ctx context.Context) context.Context {
+	return tfsdklog.NewSubsystem(ctx, tflogSubsystemName,
+		tfsdklog.WithLevelFromEnv("TF_LOG_SDK_V2"))
+}
 
 func NewGRPCProviderServer(p *Provider) *GRPCProviderServer {
 	return &GRPCProviderServer{
@@ -53,6 +62,7 @@ func mergeStop(ctx context.Context, cancel context.CancelFunc, stopCh chan struc
 // It creates a goroutine to wait for the server stop and propagates
 // cancellation to the derived grpc context.
 func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
+	ctx = withLogger(ctx)
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -61,7 +71,8 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 	return stoppable
 }
 
-func (s *GRPCProviderServer) GetProviderSchema(_ context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
+func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
+	ctx = withLogger(ctx)
 
 	resp := &tfprotov5.GetProviderSchemaResponse{
 		ResourceSchemas:   make(map[string]*tfprotov5.Schema),
@@ -111,7 +122,8 @@ func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema
 	return dat.CoreConfigSchema()
 }
 
-func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *tfprotov5.PrepareProviderConfigRequest) (*tfprotov5.PrepareProviderConfigResponse, error) {
+func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfprotov5.PrepareProviderConfigRequest) (*tfprotov5.PrepareProviderConfigResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.PrepareProviderConfigResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
@@ -214,7 +226,8 @@ func (s *GRPCProviderServer) PrepareProviderConfig(_ context.Context, req *tfpro
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *tfprotov5.ValidateResourceTypeConfigRequest) (*tfprotov5.ValidateResourceTypeConfigResponse, error) {
+func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req *tfprotov5.ValidateResourceTypeConfigRequest) (*tfprotov5.ValidateResourceTypeConfigResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ValidateResourceTypeConfigResponse{}
 
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
@@ -232,7 +245,8 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(_ context.Context, req *
 	return resp, nil
 }
 
-func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *tfprotov5.ValidateDataSourceConfigRequest) (*tfprotov5.ValidateDataSourceConfigResponse, error) {
+func (s *GRPCProviderServer) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.ValidateDataSourceConfigRequest) (*tfprotov5.ValidateDataSourceConfigResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ValidateDataSourceConfigResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
@@ -257,6 +271,7 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(_ context.Context, req *tf
 }
 
 func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfprotov5.UpgradeResourceStateRequest) (*tfprotov5.UpgradeResourceStateResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.UpgradeResourceStateResponse{}
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
@@ -292,7 +307,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 			return resp, nil
 		}
 	default:
-		log.Println("[DEBUG] no state provided to upgrade")
+		tfsdklog.SubsystemDebug(ctx, tflogSubsystemName, "no state provided to upgrade")
 		return resp, nil
 	}
 
@@ -304,7 +319,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 	}
 
 	// The provider isn't required to clean out removed fields
-	s.removeAttributes(jsonMap, schemaBlock.ImpliedType())
+	s.removeAttributes(ctx, jsonMap, schemaBlock.ImpliedType())
 
 	// now we need to turn the state into the default json representation, so
 	// that it can be re-decoded using the actual schema.
@@ -433,7 +448,7 @@ func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, 
 
 // Remove any attributes no longer present in the schema, so that the json can
 // be correctly decoded.
-func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
+func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}, ty cty.Type) {
 	// we're only concerned with finding maps that corespond to object
 	// attributes
 	switch v := v.(type) {
@@ -442,7 +457,7 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 		if ty.IsListType() || ty.IsSetType() {
 			eTy := ty.ElementType()
 			for _, eV := range v {
-				s.removeAttributes(eV, eTy)
+				s.removeAttributes(ctx, eV, eTy)
 			}
 		}
 		return
@@ -451,20 +466,20 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 		if ty.IsMapType() {
 			eTy := ty.ElementType()
 			for _, eV := range v {
-				s.removeAttributes(eV, eTy)
+				s.removeAttributes(ctx, eV, eTy)
 			}
 			return
 		}
 
 		if ty == cty.DynamicPseudoType {
-			log.Printf("[DEBUG] ignoring dynamic block: %#v\n", v)
+			tflog.SubsystemDebug(ctx, tflogSubsystemName, "ignoring dynamic block", "block", v)
 			return
 		}
 
 		if !ty.IsObjectType() {
 			// This shouldn't happen, and will fail to decode further on, so
 			// there's no need to handle it here.
-			log.Printf("[WARN] unexpected type %#v for map in json state", ty)
+			tflog.SubsystemWarn(ctx, tflogSubsystemName, "unexpected type for map in JSON state", "type", ty)
 			return
 		}
 
@@ -472,17 +487,18 @@ func (s *GRPCProviderServer) removeAttributes(v interface{}, ty cty.Type) {
 		for attr, attrV := range v {
 			attrTy, ok := attrTypes[attr]
 			if !ok {
-				log.Printf("[DEBUG] attribute %q no longer present in schema", attr)
+				tflog.SubsystemDebug(ctx, tflogSubsystemName, "attribute no longer present in schema", "attribute", attr)
 				delete(v, attr)
 				continue
 			}
 
-			s.removeAttributes(attrV, attrTy)
+			s.removeAttributes(ctx, attrV, attrTy)
 		}
 	}
 }
 
-func (s *GRPCProviderServer) StopProvider(_ context.Context, _ *tfprotov5.StopProviderRequest) (*tfprotov5.StopProviderResponse, error) {
+func (s *GRPCProviderServer) StopProvider(ctx context.Context, _ *tfprotov5.StopProviderRequest) (*tfprotov5.StopProviderResponse, error) {
+	ctx = withLogger(ctx)
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -495,6 +511,7 @@ func (s *GRPCProviderServer) StopProvider(_ context.Context, _ *tfprotov5.StopPr
 }
 
 func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfprotov5.ConfigureProviderRequest) (*tfprotov5.ConfigureProviderResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ConfigureProviderResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
@@ -527,6 +544,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 }
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
@@ -619,6 +637,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 }
 
 func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanResourceChangeRequest) (*tfprotov5.PlanResourceChangeResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.PlanResourceChangeResponse{}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
@@ -855,6 +874,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 }
 
 func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfprotov5.ApplyResourceChangeRequest) (*tfprotov5.ApplyResourceChangeResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ApplyResourceChangeResponse{
 		// Start with the existing state as a fallback
 		NewState: req.PriorState,
@@ -1034,6 +1054,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 }
 
 func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfprotov5.ImportResourceStateRequest) (*tfprotov5.ImportResourceStateResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ImportResourceStateResponse{}
 
 	info := &terraform.InstanceInfo{
@@ -1092,6 +1113,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 }
 
 func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.ReadDataSourceRequest) (*tfprotov5.ReadDataSourceResponse, error) {
+	ctx = withLogger(ctx)
 	resp := &tfprotov5.ReadDataSourceResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
