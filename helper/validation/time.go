@@ -20,7 +20,7 @@ func IsDayOfTheWeek(ignoreCase bool) schema.SchemaValidateFunc {
 	}, ignoreCase)
 }
 
-// IsMonth id a SchemaValidateFunc which tests if the provided value is of type string and a valid english month
+// IsMonth is a SchemaValidateFunc which tests if the provided value is of type string and a valid english month
 func IsMonth(ignoreCase bool) schema.SchemaValidateFunc {
 	return StringInSlice([]string{
 		"January",
