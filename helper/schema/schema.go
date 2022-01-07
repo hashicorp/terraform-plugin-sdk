@@ -2048,8 +2048,19 @@ func (m schemaMap) validatePrimitive(
 		// decode a float as an integer.
 
 		// the config shims only use int for integral number values
+		// also accept a string, just as the TypeBool and TypeFloat cases do
 		if v, ok := raw.(int); ok {
 			decoded = v
+		} else if _, ok := raw.(string); ok {
+			var n int
+			if err := mapstructure.WeakDecode(raw, &n); err != nil {
+				return append(diags, diag.Diagnostic{
+					Severity:      diag.Error,
+					Summary:       err.Error(),
+					AttributePath: path,
+				})
+			}
+			decoded = n
 		} else {
 			return append(diags, diag.Diagnostic{
 				Severity:      diag.Error,
@@ -2058,7 +2069,7 @@ func (m schemaMap) validatePrimitive(
 			})
 		}
 	case TypeFloat:
-		// Verify that we can parse this as an int
+		// Verify that we can parse this as a float
 		var n float64
 		if err := mapstructure.WeakDecode(raw, &n); err != nil {
 			return append(diags, diag.Diagnostic{

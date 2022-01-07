@@ -6507,6 +6507,33 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 			Err: true,
 		},
+		"bool with DefaultFunc that returns str": {
+			Schema: map[string]*Schema{
+				"bool_field": {
+					Type:        TypeBool,
+					Optional:    true,
+					DefaultFunc: func() (interface{}, error) { return "true", nil },
+				},
+			},
+		},
+		"float with DefaultFunc that returns str": {
+			Schema: map[string]*Schema{
+				"float_field": {
+					Type:        TypeFloat,
+					Optional:    true,
+					DefaultFunc: func() (interface{}, error) { return "1.23", nil },
+				},
+			},
+		},
+		"int with DefaultFunc that returns str": {
+			Schema: map[string]*Schema{
+				"int_field": {
+					Type:        TypeInt,
+					Optional:    true,
+					DefaultFunc: func() (interface{}, error) { return "1", nil },
+				},
+			},
+		},
 	}
 
 	for tn, tc := range cases {
