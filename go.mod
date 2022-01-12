@@ -13,7 +13,7 @@ require (
 	github.com/golang/mock v1.4.3
 	github.com/google/go-cmp v0.5.6
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
-	github.com/hashicorp/go-hclog v1.0.0
+	github.com/hashicorp/go-hclog v1.1.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-plugin v1.4.1
 	github.com/hashicorp/go-uuid v1.0.2
