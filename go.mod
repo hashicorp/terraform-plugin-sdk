@@ -35,5 +35,5 @@ require (
 	github.com/zclconf/go-cty v1.10.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.43.0
 )
