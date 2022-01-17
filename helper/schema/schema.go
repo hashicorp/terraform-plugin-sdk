@@ -930,22 +930,17 @@ func isValidFieldName(name string) bool {
 	return re.MatchString(name)
 }
 
-// ResourceDiffer is an interface that exposes value and value change information.
+// resourceDiffer is an interface that is used by the private diff functions.
 // This helps facilitate diff logic for both ResourceData and ResoureDiff with
 // minimal divergence in code.
-type ResourceDiffer interface {
+type resourceDiffer interface {
+	diffChange(string) (interface{}, interface{}, bool, bool, bool)
 	Get(string) interface{}
 	GetChange(string) (interface{}, interface{})
 	GetOk(string) (interface{}, bool)
 	HasChange(string) bool
 	HasChanges(...string) bool
 	Id() string
-}
-
-// resourceDiffer extends ResourceDiffer with unexported functions.
-type resourceDiffer interface {
-	ResourceDiffer
-	diffChange(string) (interface{}, interface{}, bool, bool, bool)
 }
 
 func (m schemaMap) diff(
