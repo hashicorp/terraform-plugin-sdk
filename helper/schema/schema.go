@@ -941,6 +941,7 @@ type resourceDiffer interface {
 	GetChange(string) (interface{}, interface{})
 	GetOk(string) (interface{}, bool)
 	HasChange(string) bool
+	HasChanges(...string) bool
 	Id() string
 }
 

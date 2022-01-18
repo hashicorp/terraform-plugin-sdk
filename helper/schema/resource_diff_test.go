@@ -2186,3 +2186,107 @@ func TestResourceDiffNewValueKnownSetNewComputed(t *testing.T) {
 		t.Fatalf("expected ok: %t, got: %t", tc.Expected, actual)
 	}
 }
+
+func TestResourceDiffHasChanges(t *testing.T) {
+	cases := []struct {
+		Schema map[string]*Schema
+		State  *terraform.InstanceState
+		Diff   *terraform.InstanceDiff
+		Keys   []string
+		Change bool
+	}{
+		// empty call d.HasChanges()
+		{
+			Schema: map[string]*Schema{},
+
+			State: nil,
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{},
+			},
+
+			Keys: []string{},
+
+			Change: false,
+		},
+		// neither has change
+		{
+			Schema: map[string]*Schema{
+				"a": {
+					Type: TypeString,
+				},
+				"b": {
+					Type: TypeString,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"a": "foo",
+					"b": "foo",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"a": {
+						Old: "",
+						New: "foo",
+					},
+					"b": {
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"a", "b"},
+
+			Change: false,
+		},
+		// one key has change
+		{
+			Schema: map[string]*Schema{
+				"a": {
+					Type: TypeString,
+				},
+				"b": {
+					Type: TypeString,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"a": "foo",
+					"b": "foo",
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"a": {
+						Old: "",
+						New: "bar",
+					},
+					"b": {
+						Old: "",
+						New: "foo",
+					},
+				},
+			},
+
+			Keys: []string{"a", "b"},
+
+			Change: true,
+		},
+	}
+
+	for i, tc := range cases {
+		d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
+
+		actual := d.HasChanges(tc.Keys...)
+		if actual != tc.Change {
+			t.Fatalf("Bad: %d %#v", i, actual)
+		}
+	}
+}
