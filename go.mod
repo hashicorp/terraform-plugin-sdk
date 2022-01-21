@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.25.3 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-test/deep v1.0.3
-	github.com/golang/mock v1.4.3
+	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.7
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/go-hclog v1.1.0
@@ -35,6 +35,6 @@ require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/zclconf/go-cty v1.10.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
-	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
+	golang.org/x/tools v0.1.1
 	google.golang.org/grpc v1.43.0
 )
