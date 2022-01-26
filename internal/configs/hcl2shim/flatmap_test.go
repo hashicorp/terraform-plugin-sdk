@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 )
 
 func TestFlatmapValueFromHCL2(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Value cty.Value
 		Want  map[string]string
@@ -238,17 +240,23 @@ func TestFlatmapValueFromHCL2(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.Value.GoString(), func(t *testing.T) {
+			t.Parallel()
+
 			got := FlatmapValueFromHCL2(test.Value)
 
-			for _, problem := range deep.Equal(got, test.Want) {
-				t.Error(problem)
+			if diff := cmp.Diff(got, test.Want); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
 	}
 }
 
 func TestFlatmapValueFromHCL2FromFlatmap(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Name string
 		Map  map[string]string
@@ -301,7 +309,11 @@ func TestFlatmapValueFromHCL2FromFlatmap(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.Name, func(t *testing.T) {
+			t.Parallel()
+
 			val, err := HCL2ValueFromFlatmap(test.Map, test.Type)
 			if err != nil {
 				t.Fatal(err)
@@ -309,8 +321,8 @@ func TestFlatmapValueFromHCL2FromFlatmap(t *testing.T) {
 
 			got := FlatmapValueFromHCL2(val)
 
-			for _, problem := range deep.Equal(got, test.Map) {
-				t.Error(problem)
+			if diff := cmp.Diff(got, test.Map); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
 	}
