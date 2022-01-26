@@ -99,3 +99,44 @@ In the case of `terraform-plugin-sdk`, the repo's close relationship to the `ter
 #### Exceptions
 
 We belive that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
+
+## Testing
+
+Code contributions should be supported by unit tests wherever possible.
+
+### Unit tests
+
+This codebase follows Go conventions for unit testing. Some guidelines include:
+
+- **File Naming**: Test files should be named `*_test.go` and usually reside in the same package as the code being tested.
+- **Test Naming**: Test functions must include the `Test` prefix and should be named after the function or method under test. An `Example()` function test should be named `TestExample`. A `Data` type `Example()` method test should be named `TestDataExample`.
+- **Concurrency**: Where possible, unit tests should be able to run concurrently and include a call to [`t.Parallel()`](https://pkg.go.dev/testing#T.Parallel). Usage of mutable shared data, such as environment variables or global variables that are used with reads and writes, is strongly discouraged.
+- **Table Driven**: Where possible, unit tests should be written using the [table driven testing](https://github.com/golang/go/wiki/TableDrivenTests) style.
+- **go-cmp**: Where possible, comparison testing should be done via [`go-cmp`](https://pkg.go.dev/github.com/google/go-cmp). In particular, the [`cmp.Diff()`](https://pkg.go.dev/github.com/google/go-cmp/cmp#Diff) and [`cmp.Equal()`](https://pkg.go.dev/github.com/google/go-cmp/cmp#Equal) functions are helpful.
+
+A common template for implementing unit tests is:
+
+```go
+func TestExample(t *testing.T) {
+    t.Parallel()
+
+    testCases := map[string]struct{
+        // fields to store inputs and expectations
+    }{
+        "test-description": {
+            // fields from above
+        },
+    }
+
+    for name, testCase := range testCases {
+        // Do not omit this next line
+        name, testCase := name, testCase
+
+        t.Run(name, func(t *testing.T) {
+            t.Parallel()
+
+            // Implement test referencing testCase fields
+        })
+    }
+}
+```
