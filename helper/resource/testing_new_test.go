@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
+	"github.com/google/go-cmp/cmp"
 	tfjson "github.com/hashicorp/terraform-json"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -1112,8 +1111,8 @@ func TestShimState(t *testing.T) {
 			// Lineage is randomly generated, so we wipe it to make comparing easier
 			shimmedState.Lineage = ""
 
-			if diff := deep.Equal(tc.ExpectedState, shimmedState); diff != nil {
-				t.Fatalf("state mismatch:\n%s", strings.Join(diff, "\n"))
+			if diff := cmp.Diff(tc.ExpectedState, shimmedState); diff != "" {
+				t.Fatalf("state mismatch:\n%s", diff)
 			}
 		})
 	}
