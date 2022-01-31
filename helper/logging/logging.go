@@ -125,7 +125,7 @@ func LogLevel() string {
 
 // IsDebugOrHigher returns whether or not the current log level is debug or trace
 func IsDebugOrHigher() bool {
-	level := string(LogLevel())
+	level := LogLevel()
 	return level == "DEBUG" || level == "TRACE"
 }
 
