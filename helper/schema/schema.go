@@ -87,6 +87,10 @@ type Schema struct {
 	// This allows comparison based on something other than primitive, list
 	// or map equality - for example SSH public keys may be considered
 	// equivalent regardless of trailing whitespace.
+	//
+	// If CustomizeDiffFunc makes this field ForceNew=true, the
+	// following DiffSuppressFunc will come in with the value of old being
+	// empty, as if creating a new resource.
 	DiffSuppressFunc SchemaDiffSuppressFunc
 
 	// If this is non-nil, then this will be a default value that is used
