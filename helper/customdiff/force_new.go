@@ -36,8 +36,8 @@ func ForceNewIf(key string, f ResourceConditionFunc) schema.CustomizeDiffFunc {
 // only the specific field value.
 func ForceNewIfChange(key string, f ValueChangeConditionFunc) schema.CustomizeDiffFunc {
 	return func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
-		old, new := d.GetChange(key)
-		if f(ctx, old, new, meta) {
+		oldValue, newValue := d.GetChange(key)
+		if f(ctx, oldValue, newValue, meta) {
 			if err := d.ForceNew(key); err != nil {
 				return fmt.Errorf("unable to set %q to require replacement: %w", key, err)
 			}

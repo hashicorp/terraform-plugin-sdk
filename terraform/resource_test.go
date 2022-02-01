@@ -197,16 +197,16 @@ func TestResourceConfigGet(t *testing.T) {
 
 		// Test copying and equality
 		t.Run(fmt.Sprintf("copy-and-equal-%d", i), func(t *testing.T) {
-			copy := rc.DeepCopy()
-			if !reflect.DeepEqual(copy, rc) {
-				t.Fatalf("bad:\n\n%#v\n\n%#v", copy, rc)
+			copiedConfig := rc.DeepCopy()
+			if !reflect.DeepEqual(copiedConfig, rc) {
+				t.Fatalf("bad:\n\n%#v\n\n%#v", copiedConfig, rc)
 			}
 
-			if !copy.Equal(rc) {
-				t.Fatalf("copy != rc:\n\n%#v\n\n%#v", copy, rc)
+			if !copiedConfig.Equal(rc) {
+				t.Fatalf("copiedConfig != rc:\n\n%#v\n\n%#v", copiedConfig, rc)
 			}
-			if !rc.Equal(copy) {
-				t.Fatalf("rc != copy:\n\n%#v\n\n%#v", copy, rc)
+			if !rc.Equal(copiedConfig) {
+				t.Fatalf("rc != copiedConfig:\n\n%#v\n\n%#v", copiedConfig, rc)
 			}
 		})
 	}

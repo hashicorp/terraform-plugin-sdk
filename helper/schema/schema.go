@@ -264,7 +264,7 @@ const (
 // suppress it from the plan if necessary.
 //
 // Return true if the diff should be suppressed, false to retain it.
-type SchemaDiffSuppressFunc func(k, old, new string, d *ResourceData) bool
+type SchemaDiffSuppressFunc func(k, oldValue, newValue string, d *ResourceData) bool
 
 // SchemaDefaultFunc is a function called to return a default value for
 // a field.
@@ -491,11 +491,11 @@ func (m schemaMap) Data(
 // DeepCopy returns a copy of this schemaMap. The copy can be safely modified
 // without affecting the original.
 func (m *schemaMap) DeepCopy() schemaMap {
-	copy, err := copystructure.Config{Lock: true}.Copy(m)
+	copiedMap, err := copystructure.Config{Lock: true}.Copy(m)
 	if err != nil {
 		panic(err)
 	}
-	return *copy.(*schemaMap)
+	return *copiedMap.(*schemaMap)
 }
 
 // Diff returns the diff for a resource given the schema map,

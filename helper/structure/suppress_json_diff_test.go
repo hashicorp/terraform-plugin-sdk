@@ -4,48 +4,49 @@ import (
 	"testing"
 )
 
-func TestSuppressJsonDiff_same(t *testing.T) {
-	original := `{ "enabled": true }`
-	new := `{ "enabled": true }`
-	expected := true
+func TestSuppressJsonDiff(t *testing.T) {
+	t.Parallel()
 
-	actual := SuppressJsonDiff("test", original, new, nil)
-	if actual != expected {
-		t.Fatal("[ERROR] Identical JSON values shouldn't cause a diff")
+	testCases := map[string]struct {
+		oldValue string
+		newValue string
+		expected bool
+	}{
+		"different-structure": {
+			oldValue: `{ "enabled": true }`,
+			newValue: `{ "enabled": true, "world": "round" }`,
+			expected: false,
+		},
+		"different-value": {
+			oldValue: `{ "enabled": true }`,
+			newValue: `{ "enabled": false }`,
+			expected: false,
+		},
+		"same": {
+			oldValue: `{ "enabled": true }`,
+			newValue: `{ "enabled": true }`,
+			expected: true,
+		},
+		"same-whitespace": {
+			oldValue: `{
+				"enabled": true
+			}`,
+			newValue: `{ "enabled": true }`,
+			expected: true,
+		},
 	}
-}
 
-func TestSuppressJsonDiff_sameWithWhitespace(t *testing.T) {
-	original := `{
-	  "enabled": true
-	}`
-	new := `{ "enabled": true }`
-	expected := true
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
 
-	actual := SuppressJsonDiff("test", original, new, nil)
-	if actual != expected {
-		t.Fatal("[ERROR] Identical JSON values shouldn't cause a diff")
-	}
-}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-func TestSuppressJsonDiff_differentValue(t *testing.T) {
-	original := `{ "enabled": true }`
-	new := `{ "enabled": false }`
-	expected := false
+			actual := SuppressJsonDiff("test", testCase.oldValue, testCase.newValue, nil)
 
-	actual := SuppressJsonDiff("test", original, new, nil)
-	if actual != expected {
-		t.Fatal("[ERROR] Different JSON values should cause a diff")
-	}
-}
-
-func TestSuppressJsonDiff_newValue(t *testing.T) {
-	original := `{ "enabled": true }`
-	new := `{ "enabled": false, "world": "round" }`
-	expected := false
-
-	actual := SuppressJsonDiff("test", original, new, nil)
-	if actual != expected {
-		t.Fatal("[ERROR] Different JSON values should cause a diff")
+			if actual != testCase.expected {
+				t.Fatalf("expected %t, got %t", testCase.expected, actual)
+			}
+		})
 	}
 }
