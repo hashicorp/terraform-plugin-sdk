@@ -82,7 +82,9 @@ before raising a pull request.
 
 - [ ] **Provider testing**: The SDK's Test Framework is still undergoing active development and may not catch all corner cases when patches are tested outside of real provider code. It is therefore extremely valuable if you can run acceptance tests of at least one provider which takes advantage of your bug fix or uses new feature and demonstrate that your patch doesn't break other provider(s) relying on the existing SDK.
 
-- [ ] **Go Modules**: We use [Go Modules](https://github.com/golang/go/wiki/Modules) to manage and version all our dependencies. Please make sure that you reflect dependency changes in your pull requests appropriately (e.g. `go get`, `go mod tidy` or other commands). Where possible it is better to raise a separate pull request with just dependency changes as it's easier to review such PR(s).
+- [ ] **Go Modules**: We use [Go Modules](https://github.com/golang/go/wiki/Modules) to manage and version all our dependencies. Please make sure that you reflect dependency changes in your pull requests appropriately (e.g. `go get`, `go mod tidy` or other commands). Refer to the [dependency updates](#dependency-updates) section for more information about how this project maintains existing dependencies.
+
+- [ ] **Changelog**: Refer to the [changelog](#changelog) section for more information about how to create changelog entries.
 
 ### Cosmetic changes, code formatting, and typos
 
@@ -100,11 +102,159 @@ In the case of `terraform-plugin-sdk`, the repo's close relationship to the `ter
 
 We belive that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
 
+### Dependency Updates
+
+Dependency management is performed by [dependabot](https://docs.github.com/en/code-security/supply-chain-security/keeping-your-dependencies-updated-automatically/about-dependabot-version-updates). Where possible, dependency updates should occur through that system to ensure all Go module files are appropriately updated and to prevent duplicated effort of concurrent update submissions. Once available, updates are expected to be verified and merged to prevent latent technical debt.
+
+### Changelog
+
+HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade. We use [go-changelog](https://github.com/hashicorp/go-changelog) to generate and update the changelog from files created in the `.changelog/` directory.
+
+#### Changelog Format
+
+The changelog format requires an entry in the following format, where HEADER corresponds to the changelog category, and the entry is the changelog entry itself. The entry should be included in a file in the `.changelog` directory with the naming convention `{PR-NUMBER}.txt`. For example, to create a changelog entry for pull request 1234, there should be a file named `.changelog/1234.txt`.
+
+``````markdown
+```release-note:{HEADER}
+{ENTRY}
+```
+``````
+
+If a pull request should contain multiple changelog entries, then multiple blocks can be added to the same changelog file. For example:
+
+``````markdown
+```release-note:note
+tfsdk: The `Old()` function has been deprecated. Any code using `Old()` should be updated to use the new `New()` function instead.
+```
+
+```release-note:enhancement
+tfsdk: Added `New()` function, which does new and exciting things
+```
+``````
+
+#### Pull Request Types to CHANGELOG
+
+The CHANGELOG is intended to show developer-impacting changes to the codebase for a particular version. If every change or commit to the code resulted in an entry, the CHANGELOG would become less useful for developers. The lists below are general guidelines and examples for when a decision needs to be made to decide whether a change should have an entry.
+
+##### Changes that should not have a CHANGELOG entry
+
+- Documentation updates
+- Testing updates
+- Code refactoring
+
+##### Changes that may have a CHANGELOG entry
+
+- Dependency updates: If the update contains relevant bug fixes or enhancements that affect developers, those should be called out.
+
+##### Changes that should have a CHANGELOG entry
+
+###### Major Features
+
+A major feature entry should use the `release-note:feature` header.
+
+``````markdown
+```release-note:feature
+Added `great` package, which solves all the problems
+```
+``````
+
+###### Bug Fixes
+
+A new bug entry should use the `release-note:bug` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix should the fix apply to all sub-packages.
+
+``````markdown
+```release-note:bug
+tfsdk: Prevented potential panic in `Example()` function
+```
+``````
+
+###### Enhancements
+
+A new enhancement entry should use the `release-note:enhancement` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for enchancements that apply to all sub-packages.
+
+``````markdown
+```release-note:enhancement
+attr: Added `Great` interface for doing great things
+```
+``````
+
+###### Deprecations
+
+A deprecation entry should use the `release-note:note` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
+
+``````markdown
+```release-note:note
+diag: The `Old()` function is being deprecated in favor of the `New()` function
+```
+``````
+
+###### Breaking Changes and Removals
+
+A breaking-change entry should use the `release-note:breaking-change` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
+
+``````markdown
+```release-note:breaking-change
+tfsdk: The `Example` type `Old` field has been removed since it is not necessary
+```
+``````
+
+## Linting
+
+GitHub Actions workflow bug and style checking is performed via [`actionlint`](https://github.com/rhysd/actionlint).
+
+To run the GitHub Actions linters locally, install the `actionlint` tool, and run:
+
+```shell
+actionlint
+```
+
+Go code bug and style checking is performed via [`golangci-lint`](https://golangci-lint.run/).
+
+To run the Go linters locally, install the `golangci-lint` tool, and run:
+
+```shell
+golangci-lint run ./...
+```
+
 ## Testing
 
-Code contributions should be supported by unit tests wherever possible.
+Code contributions should be supported by both unit and integration tests wherever possible. 
 
-### Unit tests
+### GitHub Actions Tests
+
+GitHub Actions workflow testing is performed via [`act`](https://github.com/nektos/act).
+
+To run the GitHub Actions testing locally (setting appropriate event):
+
+```shell
+act --artifact-server-path /tmp --env ACTIONS_RUNTIME_TOKEN=test -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest pull_request
+```
+
+The command options can be added to a `~/.actrc` file:
+
+```text
+--artifact-server-path /tmp
+--env ACTIONS_RUNTIME_TOKEN=test
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+```
+
+So they do not need to be specified every invocation:
+
+```shell
+act pull_request
+```
+
+To test the `ci-go/terraform-provider-corner` job, a valid GitHub Personal Access Token (PAT) with public read permissions is required. It can be passed in via the `-s GITHUB_TOKEN=...` command option.
+
+### Go Unit Tests
+
+Go code unit testing is perfomed via Go's built-in testing functionality.
+
+To run the Go unit testing locally:
+
+```shell
+go test ./...
+```
 
 This codebase follows Go conventions for unit testing. Some guidelines include:
 
@@ -140,3 +290,68 @@ func TestExample(t *testing.T) {
     }
 }
 ```
+
+### Integration tests
+
+We use a special "corner case" Terraform provider for integration testing of terraform-plugin-sdk, called [terraform-provider-corner](https://github.com/hashicorp/terraform-provider-corner).
+
+Integration testing for terraform-plugin-sdk involves compiling this provider against the version of the framework to be tested, and running the provider's acceptance tests. The `ci-go/terraform-provider-corner` CI job does this automatically for each PR commit and each commit to `main`. This ensures that changes to terraform-plugin-sdk do not cause regressions.
+
+#### Creating a test case in terraform-provider-corner
+
+The terraform-provider-corner repo contains several provider servers (which are combined in order to test [terraform-plugin-mux](https://github.com/hashicorp/terraform-plugin-mux)) to test different versions of the Terraform Plugin SDK and Framework.
+
+To add a test case for terraform-plugin-sdk, add or modify resource code as appropriate in the [`sdkv2provider`](https://github.com/hashicorp/terraform-provider-corner/tree/main/internal/sdkv2provider). Then, create an acceptance test for the desired behaviour.
+
+Creating a test case in terraform-provider-corner is a very helpful way to illustrate your bug report or feature request with easily reproducible provider code. We welcome PRs to terraform-provider-corner that demonstrate bugs and edge cases.
+
+#### Adding integration tests to your terraform-plugin-sdk PR
+
+When fixing a bug or adding a new feature to the framework, it is helpful to create a test case in real provider code. Since the test will fail until your change is included in a terraform-plugin-sdk release used by terraform-provider-corner, we recommend doing the following:
+
+0. Fork and clone the terraform-plugin-sdk and terraform-provider-corner repositories to your local machine. Identify the bug you want to fix or the feature you want to add to terraform-plugin-sdk.
+1. On your local fork of terraform-provider-corner, create a failing acceptance test demonstrating this behaviour. The test should be named `testAcc*`.
+2. Add a `replace` directive to the `go.mod` file in your local terraform-provider-corner, pointing to your local fork of terraform-plugin-sdk.
+3. Make the desired code change on your local fork of terraform-plugin-sdk. Don't forget unit tests as well!
+4. Verify that the acceptance test now passes.
+5. Make a PR to terraform-plugin-sdk proposing the code change.
+6. Make a PR to terraform-provider-corner adding the new acceptance test and noting that it depends on the PR to terraform-plugin-sdk.
+
+Maintainers will ensure that the acceptance test is merged into terraform-provider-corner once the terraform-plugin-sdk change is merged and released.
+
+## Maintainers Guide
+
+This section is dedicated to the maintainers of this project.
+
+### Releases
+
+Before running a release:
+
+- **`meta/meta.go`**: The versions must be appropriately updated.
+- **Changelog**: The changelog must be constructed from unreleased entries in the `.changelog` directory.
+
+Install the latest version of the [`changelog-build`](https://pkg.go.dev/github.com/hashicorp/go-changelog/cmd/changelog-build) command, if it not already available:
+
+```shell
+go install github.com/hashicorp/go-changelog/cmd/changelog-build
+```
+
+Run the [`changelog-build`](https://pkg.go.dev/github.com/hashicorp/go-changelog/cmd/changelog-build) command from the root directory of the repository:
+
+```shell
+changelog-build -changelog-template .changelog.tmpl -entries-dir .changelog -last-release $(git describe --tags --abbrev=0) -note-template .changelog-note.tmpl -this-release HEAD
+```
+
+This will generate a section of Markdown text for the next release. Open the `CHANGELOG.md` file, add a `# X.Y.Z` header as the first line, then add the output from the `changelog-build` command.
+
+Commit, push, create a release Git tag, and push the tag:
+
+```shell
+git add CHANGELOG.md meta/meta.go
+git commit -m "Update CHANGELOG and versions for v1.2.3"
+git push
+git tag v1.2.3
+git push --tags
+```
+
+GitHub Actions will pick up the new release tag and kick off the release workflow.

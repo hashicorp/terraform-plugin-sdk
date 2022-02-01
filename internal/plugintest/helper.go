@@ -8,9 +8,6 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-const subprocessCurrentSigil = "4acd63807899403ca4859f5bb948d2c6"
-const subprocessPreviousSigil = "2279afb8cf71423996be1fd65d32f13b"
-
 // AutoInitProviderHelper is the main entrypoint for testing provider plugins
 // using this package. It is intended to be called during TestMain to prepare
 // for provider testing.

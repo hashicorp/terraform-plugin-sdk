@@ -1,0 +1,71 @@
+# Continuous integration handling for Go
+name: ci-go
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test.yml
+      - .golangci.yml
+      - .go-version
+      - go.mod
+      - '**.go'
+
+permissions:
+  contents: read
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: go-version
+        # Reference: https://github.com/actions/setup-go/issues/23
+        run: echo "::set-output name=version::$(cat ./.go-version)"
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ steps.go-version.outputs.version }}
+      - run: go mod download
+      - uses: golangci/golangci-lint-action@v2
+        with:
+          skip-go-installation: true
+  terraform-provider-corner:
+    defaults:
+      run:
+        working-directory: terraform-provider-corner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        with:
+          path: terraform-provider-corner
+          repository: hashicorp/terraform-provider-corner
+      - id: go-version
+        # Reference: https://github.com/actions/setup-go/issues/23
+        run: echo "::set-output name=version::$(cat ./.go-version)"
+        working-directory: .
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ steps.go-version.outputs.version }}
+      - run: go mod edit -replace=github.com/hashicorp/terraform-plugin-sdk/v2=../
+      - run: go mod tidy
+      - run: go test -v ./internal/sdkv2provider
+        env:
+          TF_ACC: '1'
+  test:
+    name: test (Go v${{ matrix.go-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.17', '1.16' ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - run: go mod download
+      - run: go test -coverprofile=coverage.out ./...
+      - run: go tool cover -html=coverage.out -o coverage.html
+      - uses: actions/upload-artifact@v2
+        with:
+          name: go-${{ matrix.go-version }}-coverage
+          path: coverage.html

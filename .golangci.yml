@@ -1,0 +1,28 @@
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: 'SA1019: schema.SchemaValidateFunc is deprecated'
+  max-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - durationcheck
+    # - errcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - exportloopref
+    - gofmt
+    # - gosimple # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - ineffassign # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - makezero # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - nilerr # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
+    # - predeclared # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - staticcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    # - tenv # TODO: Enable when upgrading Go 1.16 to 1.17
+    - unconvert
+    # - unparam # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - varcheck
+    - vet

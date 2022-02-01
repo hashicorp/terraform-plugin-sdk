@@ -646,7 +646,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// forward to any new SDK implementations, since setting it prevents us
 	// from catching certain classes of provider bug that can lead to
 	// confusing downstream errors.
-	resp.UnsafeToUseLegacyTypeSystem = true
+	resp.UnsafeToUseLegacyTypeSystem = true //nolint:staticcheck
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
 	if !ok {
@@ -1048,7 +1048,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	// forward to any new SDK implementations, since setting it prevents us
 	// from catching certain classes of provider bug that can lead to
 	// confusing downstream errors.
-	resp.UnsafeToUseLegacyTypeSystem = true
+	resp.UnsafeToUseLegacyTypeSystem = true //nolint:staticcheck
 
 	return resp, nil
 }
