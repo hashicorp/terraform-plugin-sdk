@@ -203,7 +203,7 @@ func (r *ConfigFieldReader) readMap(k string, schema *Schema) (FieldReadResult, 
 
 	err := mapValuesToPrimitive(k, result, schema)
 	if err != nil {
-		return FieldReadResult{}, nil
+		return FieldReadResult{}, nil //nolint:nilerr // Leave legacy flatmap handling
 	}
 
 	var value interface{}

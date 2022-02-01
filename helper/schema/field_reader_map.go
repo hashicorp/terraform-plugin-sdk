@@ -63,7 +63,7 @@ func (r *MapFieldReader) readMap(k string, schema *Schema) (FieldReadResult, err
 
 	err := mapValuesToPrimitive(k, result, schema)
 	if err != nil {
-		return FieldReadResult{}, nil
+		return FieldReadResult{}, nil //nolint:nilerr // Leave legacy flatmap handling
 	}
 
 	var resultVal interface{}
