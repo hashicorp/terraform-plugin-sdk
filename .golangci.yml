@@ -11,7 +11,7 @@ linters:
   enable:
     - deadcode
     - durationcheck
-    # - errcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - errcheck
     - exportloopref
     - gofmt
     # - gosimple # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
