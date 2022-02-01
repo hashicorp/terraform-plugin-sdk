@@ -554,7 +554,7 @@ func TestResourceApply_isNewResource(t *testing.T) {
 		},
 	}
 
-	updateFunc := func(d *ResourceData, m interface{}) error {
+	updateFunc := func(d *ResourceData, _ interface{}) error {
 		if err := d.Set("foo", "updated"); err != nil {
 			return fmt.Errorf("unexpected Set error: %s", err)
 		}

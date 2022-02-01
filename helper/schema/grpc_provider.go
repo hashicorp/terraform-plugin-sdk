@@ -356,7 +356,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 // map[string]interface{}.
 // upgradeFlatmapState returns the json map along with the corresponding schema
 // version.
-func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version int, m map[string]string, res *Resource) (map[string]interface{}, int, error) {
+func (s *GRPCProviderServer) upgradeFlatmapState(_ context.Context, version int, m map[string]string, res *Resource) (map[string]interface{}, int, error) {
 	// this will be the version we've upgraded so, defaulting to the given
 	// version in case no migration was called.
 	upgradedVersion := version

@@ -737,8 +737,8 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 			}
 		}
 
-		for k, f := range tsm {
-			if isReservedResourceFieldName(k, f) {
+		for k := range tsm {
+			if isReservedResourceFieldName(k) {
 				return fmt.Errorf("%s is a reserved field name", k)
 			}
 		}
@@ -850,7 +850,7 @@ func validateResourceID(s *Schema) error {
 	return nil
 }
 
-func isReservedResourceFieldName(name string, s *Schema) bool {
+func isReservedResourceFieldName(name string) bool {
 	for _, reservedName := range ReservedResourceFields {
 		if name == reservedName {
 			return true

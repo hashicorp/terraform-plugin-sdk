@@ -23,6 +23,6 @@ linters:
     # - staticcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
     # - tenv # TODO: Enable when upgrading Go 1.16 to 1.17
     - unconvert
-    # - unparam # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - unparam
     - varcheck
     - vet

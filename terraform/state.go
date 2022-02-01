@@ -366,11 +366,11 @@ func (s *State) Remove(addr ...string) error {
 
 		switch v := r.Value.(type) {
 		case *ModuleState:
-			s.removeModule(path, v)
+			s.removeModule(v)
 		case *ResourceState:
 			s.removeResource(path, v)
 		case *InstanceState:
-			s.removeInstance(path, r.Parent.Value.(*ResourceState), v)
+			s.removeInstance(r.Parent.Value.(*ResourceState), v)
 		default:
 			return fmt.Errorf("unknown type to delete: %T", r.Value)
 		}
@@ -384,7 +384,7 @@ func (s *State) Remove(addr ...string) error {
 	return nil
 }
 
-func (s *State) removeModule(path []string, v *ModuleState) {
+func (s *State) removeModule(v *ModuleState) {
 	for i, m := range s.Modules {
 		if m == v {
 			s.Modules, s.Modules[len(s.Modules)-1] = append(s.Modules[:i], s.Modules[i+1:]...), nil
@@ -412,7 +412,7 @@ func (s *State) removeResource(path []string, v *ResourceState) {
 	}
 }
 
-func (s *State) removeInstance(path []string, r *ResourceState, v *InstanceState) {
+func (s *State) removeInstance(r *ResourceState, v *InstanceState) {
 	// Go through the resource and find the instance that matches this
 	// (if any) and remove it.
 
