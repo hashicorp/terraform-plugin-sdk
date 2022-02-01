@@ -1853,7 +1853,10 @@ func TestResourceDiffGetOkExistsSetNew(t *testing.T) {
 	}
 
 	d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
-	d.SetNew(tc.Key, tc.Value)
+
+	if err := d.SetNew(tc.Key, tc.Value); err != nil {
+		t.Fatalf("unexpected SetNew error: %s", err)
+	}
 
 	v, ok := d.GetOkExists(tc.Key)
 	if s, ok := v.(*Set); ok {
@@ -1901,7 +1904,10 @@ func TestResourceDiffGetOkExistsSetNewComputed(t *testing.T) {
 	}
 
 	d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
-	d.SetNewComputed(tc.Key)
+
+	if err := d.SetNewComputed(tc.Key); err != nil {
+		t.Fatalf("unexpected SetNewComputed error: %s", err)
+	}
 
 	_, ok := d.GetOkExists(tc.Key)
 
@@ -2142,7 +2148,10 @@ func TestResourceDiffNewValueKnownSetNew(t *testing.T) {
 	}
 
 	d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
-	d.SetNew(tc.Key, tc.Value)
+
+	if err := d.SetNew(tc.Key, tc.Value); err != nil {
+		t.Fatalf("unexpected SetNew error: %s", err)
+	}
 
 	actual := d.NewValueKnown(tc.Key)
 	if tc.Expected != actual {
@@ -2179,7 +2188,10 @@ func TestResourceDiffNewValueKnownSetNewComputed(t *testing.T) {
 	}
 
 	d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
-	d.SetNewComputed(tc.Key)
+
+	if err := d.SetNewComputed(tc.Key); err != nil {
+		t.Fatalf("unexpected SetNewComputed error: %s", err)
+	}
 
 	actual := d.NewValueKnown(tc.Key)
 	if tc.Expected != actual {

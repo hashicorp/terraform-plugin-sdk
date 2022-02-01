@@ -100,7 +100,9 @@ func (wd *WorkingDir) SetConfig(cfg string) error {
 	}
 
 	if p := os.Getenv("TF_ACC_LOG_PATH"); p != "" {
-		wd.tf.SetLogPath(p)
+		if err := wd.tf.SetLogPath(p); err != nil {
+			return fmt.Errorf("unable to set log path: %w", err)
+		}
 	}
 
 	// Changing configuration invalidates any saved plan.

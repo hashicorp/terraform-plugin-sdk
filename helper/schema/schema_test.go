@@ -2945,7 +2945,9 @@ func TestSchemaMap_Diff(t *testing.T) {
 
 			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
-					d.SetNewComputed("version_id")
+					if err := d.SetNewComputed("version_id"); err != nil {
+						return fmt.Errorf("unexpected SetNewComputed error: %w", err)
+					}
 				}
 				return nil
 			},
@@ -2986,7 +2988,10 @@ func TestSchemaMap_Diff(t *testing.T) {
 			Config: map[string]interface{}{},
 
 			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
-				d.SetNewComputed("foo")
+				if err := d.SetNewComputed("foo"); err != nil {
+					return fmt.Errorf("unexpected SetNewComputed error: %w", err)
+				}
+
 				return nil
 			},
 

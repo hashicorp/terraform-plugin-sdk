@@ -412,7 +412,9 @@ func TestResourceApply_destroyPartial(t *testing.T) {
 	}
 
 	r.Delete = func(d *ResourceData, m interface{}) error {
-		d.Set("foo", 42)
+		if err := d.Set("foo", 42); err != nil {
+			return fmt.Errorf("unexpected Set error: %s", err)
+		}
 		return fmt.Errorf("some error")
 	}
 
@@ -459,7 +461,9 @@ func TestResourceApply_update(t *testing.T) {
 	}
 
 	r.Update = func(d *ResourceData, m interface{}) error {
-		d.Set("foo", 42)
+		if err := d.Set("foo", 42); err != nil {
+			return fmt.Errorf("unexpected Set error: %s", err)
+		}
 		return nil
 	}
 
@@ -551,15 +555,21 @@ func TestResourceApply_isNewResource(t *testing.T) {
 	}
 
 	updateFunc := func(d *ResourceData, m interface{}) error {
-		d.Set("foo", "updated")
+		if err := d.Set("foo", "updated"); err != nil {
+			return fmt.Errorf("unexpected Set error: %s", err)
+		}
 		if d.IsNewResource() {
-			d.Set("foo", "new-resource")
+			if err := d.Set("foo", "new-resource"); err != nil {
+				return fmt.Errorf("unexpected Set error: %s", err)
+			}
 		}
 		return nil
 	}
 	r.Create = func(d *ResourceData, m interface{}) error {
 		d.SetId("foo")
-		d.Set("foo", "created")
+		if err := d.Set("foo", "created"); err != nil {
+			return fmt.Errorf("unexpected Set error: %s", err)
+		}
 		return updateFunc(d, m)
 	}
 	r.Update = updateFunc
