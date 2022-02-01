@@ -108,7 +108,7 @@ Dependency management is performed by [dependabot](https://docs.github.com/en/co
 
 ### Changelog
 
-HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade. We use the [go-changelog](https://github.com/hashicorp/go-changelog) to generate and update the changelog from files created in the `.changelog/` directory.
+HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade. We use [go-changelog](https://github.com/hashicorp/go-changelog) to generate and update the changelog from files created in the `.changelog/` directory.
 
 #### Changelog Format
 
@@ -160,7 +160,7 @@ Added `great` package, which solves all the problems
 
 ###### Bug Fixes
 
-A new bug entry should use the `release-note:bug` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix should the fix apply to all sub-packages.
+A new bug entry should use the `release-note:bug` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix should the fix apply to all sub-packages.
 
 ``````markdown
 ```release-note:bug
@@ -170,7 +170,7 @@ tfsdk: Prevented potential panic in `Example()` function
 
 ###### Enhancements
 
-A new enhancement entry should use the `release-note:enhancement` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for enchancements that apply to all sub-packages.
+A new enhancement entry should use the `release-note:enhancement` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for enchancements that apply to all sub-packages.
 
 ``````markdown
 ```release-note:enhancement
@@ -180,7 +180,7 @@ attr: Added `Great` interface for doing great things
 
 ###### Deprecations
 
-A deprecation entry should use the `release-note:note` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for changes that apply to all sub-packages.
+A deprecation entry should use the `release-note:note` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
 
 ``````markdown
 ```release-note:note
@@ -190,7 +190,7 @@ diag: The `Old()` function is being deprecated in favor of the `New()` function
 
 ###### Breaking Changes and Removals
 
-A breaking-change entry should use the `release-note:breaking-change` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for changes that apply to all sub-packages.
+A breaking-change entry should use the `release-note:breaking-change` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
 
 ``````markdown
 ```release-note:breaking-change
