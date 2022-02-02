@@ -31,9 +31,9 @@ func TestComputedIf(t *testing.T) {
 				// updated.
 
 				condCalls++
-				old, new := d.GetChange("foo")
-				gotOld = old.(string)
-				gotNew = new.(string)
+				oldValue, newValue := d.GetChange("foo")
+				gotOld = oldValue.(string)
+				gotNew = newValue.(string)
 
 				return true
 			}),
@@ -86,9 +86,9 @@ func TestComputedIf(t *testing.T) {
 			},
 			ComputedIf("comp", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
 				condCalls++
-				old, new := d.GetChange("foo")
-				gotOld = old.(string)
-				gotNew = new.(string)
+				oldValue, newValue := d.GetChange("foo")
+				gotOld = oldValue.(string)
+				gotNew = newValue.(string)
 
 				return false
 			}),

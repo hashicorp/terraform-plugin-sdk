@@ -562,12 +562,12 @@ func (s *State) DeepCopy() *State {
 		return nil
 	}
 
-	copy, err := copystructure.Config{Lock: true}.Copy(s)
+	copiedState, err := copystructure.Config{Lock: true}.Copy(s)
 	if err != nil {
 		panic(err)
 	}
 
-	return copy.(*State)
+	return copiedState.(*State)
 }
 
 func (s *State) Init() {
@@ -1430,12 +1430,12 @@ func (s *InstanceState) Set(from *InstanceState) {
 }
 
 func (s *InstanceState) DeepCopy() *InstanceState {
-	copy, err := copystructure.Config{Lock: true}.Copy(s)
+	copiedState, err := copystructure.Config{Lock: true}.Copy(s)
 	if err != nil {
 		panic(err)
 	}
 
-	return copy.(*InstanceState)
+	return copiedState.(*InstanceState)
 }
 
 func (s *InstanceState) Empty() bool {

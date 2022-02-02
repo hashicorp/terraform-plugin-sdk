@@ -4793,7 +4793,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				"string": {
 					Type:             TypeString,
 					Computed:         true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool { return false },
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool { return false },
 				},
 			},
 			true,
@@ -5059,7 +5059,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 				"availability_zone": {
 					Type:     TypeString,
 					Optional: true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						// Always suppress any diff
 						return true
 					},
@@ -5082,7 +5082,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 				"availability_zone": {
 					Type:     TypeString,
 					Optional: true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						// Always suppress any diff
 						return false
 					},
@@ -5113,7 +5113,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 					Type:     TypeString,
 					Optional: true,
 					Default:  "foo",
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						return true
 					},
 				},
@@ -5134,7 +5134,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 					Type:     TypeString,
 					Optional: true,
 					Default:  "foo",
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						return false
 					},
 				},
