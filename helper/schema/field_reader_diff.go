@@ -128,7 +128,7 @@ func (r *DiffFieldReader) readMap(
 	key := address[len(address)-1]
 	err = mapValuesToPrimitive(key, result, schema)
 	if err != nil {
-		return FieldReadResult{}, nil
+		return FieldReadResult{}, nil //nolint:nilerr // Leave legacy flatmap handling
 	}
 
 	var resultVal interface{}

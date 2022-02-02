@@ -17,7 +17,7 @@ linters:
     # - gosimple # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
     # - ineffassign # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
     # - makezero # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
-    # - nilerr # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - nilerr
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
     # - predeclared # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
     # - staticcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865

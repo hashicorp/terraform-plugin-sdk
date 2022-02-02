@@ -168,8 +168,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 		// find a default value if it exists
 		def, err := attrSchema.DefaultValue()
 		if err != nil {
-			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("error getting default for %q: %s", getAttr.Name, err))
-			return val, err
+			return val, fmt.Errorf("error getting default for %q: %w", getAttr.Name, err)
 		}
 
 		// no default
@@ -189,13 +188,13 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 
 		val, err = ctyconvert.Convert(tmpVal, val.Type())
 		if err != nil {
-			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("error setting default for %q: %s", getAttr.Name, err))
+			return val, fmt.Errorf("error setting default for %q: %w", getAttr.Name, err)
 		}
 
-		return val, err
+		return val, nil
 	})
 	if err != nil {
-		// any error here was already added to the diagnostics
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
 	}
 
