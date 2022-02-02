@@ -38,7 +38,7 @@ type resourceDiffTestCase struct {
 }
 
 // testDiffCases produces a list of test cases for use with SetNew and SetDiff.
-func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool) []resourceDiffTestCase {
+func testDiffCases(t *testing.T, computed bool) []resourceDiffTestCase {
 	return []resourceDiffTestCase{
 		{
 			Name: "basic primitive diff",
@@ -634,7 +634,7 @@ func testDiffCases(t *testing.T, oldPrefix string, oldOffset int, computed bool)
 }
 
 func TestSetNew(t *testing.T) {
-	testCases := testDiffCases(t, "", 0, false)
+	testCases := testDiffCases(t, false)
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			m := schemaMap(tc.Schema)
@@ -661,7 +661,7 @@ func TestSetNew(t *testing.T) {
 }
 
 func TestSetNewComputed(t *testing.T) {
-	testCases := testDiffCases(t, "", 0, true)
+	testCases := testDiffCases(t, true)
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			m := schemaMap(tc.Schema)

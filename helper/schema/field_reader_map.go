@@ -24,7 +24,7 @@ func (r *MapFieldReader) ReadField(address []string) (FieldReadResult, error) {
 	case TypeBool, TypeInt, TypeFloat, TypeString:
 		return r.readPrimitive(address, schema)
 	case TypeList:
-		return readListField(r, address, schema)
+		return readListField(r, address)
 	case TypeMap:
 		return r.readMap(k, schema)
 	case TypeSet:

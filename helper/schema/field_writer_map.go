@@ -100,13 +100,13 @@ func (w *MapFieldWriter) set(addr []string, value interface{}) error {
 	case TypeBool, TypeInt, TypeFloat, TypeString:
 		return w.setPrimitive(addr, value, schema)
 	case TypeList:
-		return w.setList(addr, value, schema)
+		return w.setList(addr, value)
 	case TypeMap:
-		return w.setMap(addr, value, schema)
+		return w.setMap(addr, value)
 	case TypeSet:
 		return w.setSet(addr, value, schema)
 	case typeObject:
-		return w.setObject(addr, value, schema)
+		return w.setObject(addr, value)
 	default:
 		panic(fmt.Sprintf("Unknown type: %#v", schema.Type))
 	}
@@ -114,8 +114,7 @@ func (w *MapFieldWriter) set(addr []string, value interface{}) error {
 
 func (w *MapFieldWriter) setList(
 	addr []string,
-	v interface{},
-	schema *Schema) error {
+	v interface{}) error {
 	k := strings.Join(addr, ".")
 	setElement := func(idx string, value interface{}) error {
 		addrCopy := make([]string, len(addr), len(addr)+1)
@@ -160,8 +159,7 @@ func (w *MapFieldWriter) setList(
 
 func (w *MapFieldWriter) setMap(
 	addr []string,
-	value interface{},
-	schema *Schema) error {
+	value interface{}) error {
 	k := strings.Join(addr, ".")
 	v := reflect.ValueOf(value)
 	vs := make(map[string]interface{})
@@ -207,8 +205,7 @@ func (w *MapFieldWriter) setMap(
 
 func (w *MapFieldWriter) setObject(
 	addr []string,
-	value interface{},
-	schema *Schema) error {
+	value interface{}) error {
 	// Set the entire object. First decode into a proper structure
 	var v map[string]interface{}
 	if err := mapstructure.Decode(value, &v); err != nil {

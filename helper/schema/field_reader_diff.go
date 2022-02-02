@@ -67,7 +67,7 @@ func (r *DiffFieldReader) ReadField(address []string) (FieldReadResult, error) {
 	case TypeBool, TypeInt, TypeFloat, TypeString:
 		res, err = r.readPrimitive(address, schema)
 	case TypeList:
-		res, err = readListField(r, address, schema)
+		res, err = readListField(r, address)
 	case TypeMap:
 		res, err = r.readMap(address, schema)
 	case TypeSet:

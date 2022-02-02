@@ -100,7 +100,7 @@ func (r *ConfigFieldReader) readField(
 	case TypeBool, TypeFloat, TypeInt, TypeString:
 		return r.readPrimitive(k, schema)
 	case TypeList:
-		return readListField(&nestedConfigFieldReader{r}, address, schema)
+		return readListField(&nestedConfigFieldReader{r}, address)
 	case TypeMap:
 		return r.readMap(k, schema)
 	case TypeSet:
@@ -258,7 +258,7 @@ func (r *ConfigFieldReader) readSet(
 	// Create the set that will be our result
 	set := schema.ZeroValue().(*Set)
 
-	raw, err := readListField(&nestedConfigFieldReader{r}, address, schema)
+	raw, err := readListField(&nestedConfigFieldReader{r}, address)
 	if err != nil {
 		return FieldReadResult{}, err
 	}
