@@ -144,7 +144,7 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 					break
 				}
 			}
-			if oldR == nil {
+			if oldR == nil || oldR.Primary == nil {
 				t.Fatalf(
 					"Failed state verification, resource with ID %s not found",
 					r.Primary.ID)

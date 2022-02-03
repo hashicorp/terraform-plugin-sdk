@@ -20,7 +20,7 @@ linters:
     - nilerr
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
     - predeclared
-    # - staticcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - staticcheck
     # - tenv # TODO: Enable when upgrading Go 1.16 to 1.17
     - unconvert
     - unparam

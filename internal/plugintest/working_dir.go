@@ -243,7 +243,7 @@ func (wd *WorkingDir) Import(resource, id string) error {
 
 // Refresh runs terraform refresh
 func (wd *WorkingDir) Refresh() error {
-	return wd.tf.Refresh(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.State(filepath.Join(wd.baseDir, "terraform.tfstate")))
+	return wd.tf.Refresh(context.Background(), tfexec.Reattach(wd.reattachInfo))
 }
 
 // Schemas returns an object describing the provider schemas.
