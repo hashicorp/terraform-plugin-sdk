@@ -688,86 +688,192 @@ func TestProviderValidateResource(t *testing.T) {
 	}
 }
 
-func TestProviderImportState_default(t *testing.T) {
-	p := &Provider{
-		ResourcesMap: map[string]*Resource{
-			"foo": {
-				Importer: &ResourceImporter{},
+func TestProviderImportState(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		provider       *Provider
+		info           *terraform.InstanceInfo
+		id             string
+		expectedStates []*terraform.InstanceState
+		expectedErr    error
+	}{
+		"error-unknown-resource-type": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id:          "test-id",
+			expectedErr: fmt.Errorf("unknown resource type: test_resource"),
+		},
+		"error-no-Importer": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": { /* no Importer */ },
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id:          "test-id",
+			expectedErr: fmt.Errorf("resource test_resource doesn't support import"),
+		},
+		"error-missing-ResourceData": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							StateContext: func(_ context.Context, _ *ResourceData, _ interface{}) ([]*ResourceData, error) {
+								return []*ResourceData{nil}, nil
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id:          "test-id",
+			expectedErr: fmt.Errorf("The provider returned a missing resource during ImportResourceState."),
+		},
+		"error-missing-ResourceData-Id": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							StateContext: func(_ context.Context, d *ResourceData, _ interface{}) ([]*ResourceData, error) {
+								// Example from calling Read functionality,
+								// but not checking for missing resource before return
+								d.SetId("")
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id:          "test-id",
+			expectedErr: fmt.Errorf("The provider returned a resource missing an identifier during ImportResourceState."),
+		},
+		"Importer": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id: "test-id",
+			expectedStates: []*terraform.InstanceState{
+				{
+					Attributes: map[string]string{"id": "test-id"},
+					Ephemeral:  terraform.EphemeralState{Type: "test_resource"},
+					ID:         "test-id",
+					Meta:       map[string]interface{}{"schema_version": "0"},
+				},
 			},
 		},
-	}
+		"Importer-State": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							State: func(d *ResourceData, _ interface{}) ([]*ResourceData, error) {
+								if d.Id() != "test-id" {
+									return nil, fmt.Errorf("expected d.Id() %q, got: %s", "test-id", d.Id())
+								}
 
-	states, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
-		Type: "foo",
-	}, "bar")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
+								if d.State().Ephemeral.Type != "test_resource" {
+									return nil, fmt.Errorf("expected d.State().Ephemeral.Type %q, got: %s", "test_resource", d.State().Ephemeral.Type)
+								}
 
-	if len(states) != 1 {
-		t.Fatalf("bad: %#v", states)
-	}
-	if states[0].ID != "bar" {
-		t.Fatalf("bad: %#v", states)
-	}
-}
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id: "test-id",
+			expectedStates: []*terraform.InstanceState{
+				{
+					Attributes: map[string]string{"id": "test-id"},
+					Ephemeral:  terraform.EphemeralState{Type: "test_resource"},
+					ID:         "test-id",
+					Meta:       map[string]interface{}{"schema_version": "0"},
+				},
+			},
+		},
+		"Importer-StateContext": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							StateContext: func(_ context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								if d.Id() != "test-id" {
+									return nil, fmt.Errorf("expected d.Id() %q, got: %s", "test-id", d.Id())
+								}
 
-func TestProviderImportState_setsId(t *testing.T) {
-	var val string
-	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-		val = d.Id()
-		return []*ResourceData{d}, nil
-	}
+								if d.State().Ephemeral.Type != "test_resource" {
+									return nil, fmt.Errorf("expected d.State().Ephemeral.Type %q, got: %s", "test_resource", d.State().Ephemeral.Type)
+								}
 
-	p := &Provider{
-		ResourcesMap: map[string]*Resource{
-			"foo": {
-				Importer: &ResourceImporter{
-					State: stateFunc,
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			id: "test-id",
+			expectedStates: []*terraform.InstanceState{
+				{
+					Attributes: map[string]string{"id": "test-id"},
+					Ephemeral:  terraform.EphemeralState{Type: "test_resource"},
+					ID:         "test-id",
+					Meta:       map[string]interface{}{"schema_version": "0"},
 				},
 			},
 		},
 	}
 
-	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
-		Type: "foo",
-	}, "bar")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
 
-	if val != "bar" {
-		t.Fatal("should set id")
-	}
-}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-func TestProviderImportState_setsType(t *testing.T) {
-	var tVal string
-	stateFunc := func(d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-		d.SetId("foo")
-		tVal = d.State().Ephemeral.Type
-		return []*ResourceData{d}, nil
-	}
+			states, err := testCase.provider.ImportState(context.Background(), testCase.info, testCase.id)
 
-	p := &Provider{
-		ResourcesMap: map[string]*Resource{
-			"foo": {
-				Importer: &ResourceImporter{
-					State: stateFunc,
-				},
-			},
-		},
-	}
+			if err != nil {
+				if testCase.expectedErr == nil {
+					t.Fatalf("unexpected error: %s", err)
+				}
 
-	_, err := p.ImportState(context.Background(), &terraform.InstanceInfo{
-		Type: "foo",
-	}, "bar")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
+				if !strings.Contains(err.Error(), testCase.expectedErr.Error()) {
+					t.Fatalf("expected error %q, got: %s", testCase.expectedErr, err)
+				}
+			}
 
-	if tVal != "foo" {
-		t.Fatal("should set type")
+			if err == nil && testCase.expectedErr != nil {
+				t.Fatalf("expected error %q, got none", testCase.expectedErr)
+			}
+
+			if diff := cmp.Diff(states, testCase.expectedStates); diff != "" {
+				t.Fatalf("unexpected states difference: %s", diff)
+			}
+		})
 	}
 }
 
