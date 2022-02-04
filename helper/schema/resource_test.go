@@ -1143,6 +1143,53 @@ func TestResourceRefresh(t *testing.T) {
 	}
 }
 
+func TestResourceRefresh_DiffSuppressOnRefresh(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(key, oldV, newV string, d *ResourceData) bool {
+					return true
+				},
+				DiffSuppressOnRefresh: true,
+			},
+		},
+	}
+
+	r.Read = func(d *ResourceData, m interface{}) error {
+		return d.Set("foo", "howdy")
+	}
+
+	s := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"foo": "hello",
+		},
+	}
+
+	expected := &terraform.InstanceState{
+		ID: "bar",
+		Attributes: map[string]string{
+			"id":  "bar",
+			"foo": "hello", // new value was suppressed
+		},
+		Meta: map[string]interface{}{
+			"schema_version": "2",
+		},
+	}
+
+	actual, diags := r.RefreshWithoutUpgrade(context.Background(), s, 42)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
 func TestResourceRefresh_blankId(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
