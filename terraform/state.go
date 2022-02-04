@@ -1023,7 +1023,7 @@ func (m *ModuleState) String() string {
 		}
 
 		if len(rs.Dependencies) > 0 {
-			buf.WriteString(fmt.Sprintf("\n  Dependencies:\n"))
+			buf.WriteString("\n  Dependencies:\n")
 			for _, dep := range rs.Dependencies {
 				buf.WriteString(fmt.Sprintf("    %s\n", dep))
 			}
@@ -1237,11 +1237,7 @@ func (s *ResourceState) Equal(other *ResourceState) bool {
 	}
 
 	// States must be equal
-	if !s.Primary.Equal(other.Primary) {
-		return false
-	}
-
-	return true
+	return s.Primary.Equal(other.Primary)
 }
 
 // Taint marks a resource as tainted.

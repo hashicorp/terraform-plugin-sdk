@@ -844,7 +844,7 @@ func validateResourceID(s *Schema) error {
 
 	// ID should at least be computed. If unspecified it will be set to Computed and Optional,
 	// but Optional is unnecessary if undesired.
-	if s.Computed != true {
+	if !s.Computed {
 		return fmt.Errorf(`the "id" attribute must be marked Computed`)
 	}
 	return nil

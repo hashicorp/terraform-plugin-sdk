@@ -52,7 +52,7 @@ func TestValidationAll(t *testing.T) {
 				StringLenBetween(5, 42),
 				StringMatch(regexp.MustCompile(`[a-zA-Z0-9]+`), "value must be alphanumeric"),
 			),
-			expectedErr: regexp.MustCompile("expected length of [\\w]+ to be in the range \\(5 - 42\\), got foo"),
+			expectedErr: regexp.MustCompile(`expected length of [\w]+ to be in the range \(5 - 42\), got foo`),
 		},
 		{
 			val: "!!!!!",
@@ -87,7 +87,7 @@ func TestValidationAny(t *testing.T) {
 				IntAtLeast(42),
 				IntAtMost(5),
 			),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be at least \\(42\\), got 7"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be at least \(42\), got 7`),
 		},
 		{
 			val: 7,
@@ -95,7 +95,7 @@ func TestValidationAny(t *testing.T) {
 				IntAtLeast(42),
 				IntAtMost(5),
 			),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be at most \\(5\\), got 7"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be at most \(5\), got 7`),
 		},
 	})
 }
@@ -122,7 +122,7 @@ func TestToDiagFunc(t *testing.T) {
 				IntAtLeast(42),
 				IntAtMost(5),
 			)),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be at least \\(42\\), got 7"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be at least \(42\), got 7`),
 		},
 		{
 			val: 7,
@@ -130,7 +130,7 @@ func TestToDiagFunc(t *testing.T) {
 				IntAtLeast(42),
 				IntAtMost(5),
 			)),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be at most \\(5\\), got 7"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be at most \(5\), got 7`),
 		},
 	})
 }

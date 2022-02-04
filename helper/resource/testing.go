@@ -126,7 +126,7 @@ func runSweepers(regions []string, sweepers map[string]*Sweeper, allowFailures b
 				return sweeperRunList, fmt.Errorf("sweeper (%s) for region (%s) failed: %s", sweeper.Name, region, err)
 			}
 		}
-		elapsed := time.Now().Sub(start)
+		elapsed := time.Since(start)
 		log.Printf("Completed Sweepers for region (%s) in %s", region, elapsed)
 
 		log.Printf("Sweeper Tests for region (%s) ran successfully:\n", region)
@@ -239,7 +239,7 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 
 	start := time.Now()
 	runE := s.F(region)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	log.Printf("[DEBUG] Completed Sweeper (%s) in region (%s) in %s", s.Name, region, elapsed)
 
