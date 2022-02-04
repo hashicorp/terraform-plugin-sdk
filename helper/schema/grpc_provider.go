@@ -169,8 +169,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 		// find a default value if it exists
 		def, err := attrSchema.DefaultValue()
 		if err != nil {
-			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("error getting default for %q: %s", getAttr.Name, err))
-			return val, err
+			return val, fmt.Errorf("error getting default for %q: %w", getAttr.Name, err)
 		}
 
 		// no default
@@ -190,13 +189,13 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 
 		val, err = ctyconvert.Convert(tmpVal, val.Type())
 		if err != nil {
-			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, fmt.Errorf("error setting default for %q: %s", getAttr.Name, err))
+			return val, fmt.Errorf("error setting default for %q: %w", getAttr.Name, err)
 		}
 
-		return val, err
+		return val, nil
 	})
 	if err != nil {
-		// any error here was already added to the diagnostics
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
 		return resp, nil
 	}
 
@@ -367,7 +366,7 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 // map[string]interface{}.
 // upgradeFlatmapState returns the json map along with the corresponding schema
 // version.
-func (s *GRPCProviderServer) upgradeFlatmapState(ctx context.Context, version int, m map[string]string, res *Resource) (map[string]interface{}, int, error) {
+func (s *GRPCProviderServer) upgradeFlatmapState(_ context.Context, version int, m map[string]string, res *Resource) (map[string]interface{}, int, error) {
 	// this will be the version we've upgraded so, defaulting to the given
 	// version in case no migration was called.
 	upgradedVersion := version

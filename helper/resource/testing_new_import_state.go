@@ -124,13 +124,13 @@ func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, 
 
 	// Verify that all the states match
 	if step.ImportStateVerify {
-		new := importState.RootModule().Resources
-		old := state.RootModule().Resources
+		newResources := importState.RootModule().Resources
+		oldResources := state.RootModule().Resources
 
-		for _, r := range new {
+		for _, r := range newResources {
 			// Find the existing resource
 			var oldR *terraform.ResourceState
-			for r2Key, r2 := range old {
+			for r2Key, r2 := range oldResources {
 				// Ensure that we do not match against data sources as they
 				// cannot be imported and are not what we want to verify.
 				// Mode is not present in ResourceState so we use the

@@ -11,18 +11,18 @@ linters:
   enable:
     - deadcode
     - durationcheck
-    # - errcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - errcheck
     - exportloopref
     - gofmt
-    # - gosimple # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - gosimple
     - ineffassign
-    # - makezero # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
-    # - nilerr # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - makezero
+    - nilerr
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
-    # - predeclared # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - predeclared
     # - staticcheck # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
     # - tenv # TODO: Enable when upgrading Go 1.16 to 1.17
     - unconvert
-    # - unparam # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - unparam
     - varcheck
     - vet

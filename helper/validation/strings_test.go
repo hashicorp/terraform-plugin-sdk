@@ -290,17 +290,17 @@ func TestValidationStringInSlice(t *testing.T) {
 		{
 			val:         "VALIDVALUE",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be one of \\[ValidValue AnotherValidValue\\], got VALIDVALUE"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got VALIDVALUE`),
 		},
 		{
 			val:         "InvalidValue",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to be one of \\[ValidValue AnotherValidValue\\], got InvalidValue"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got InvalidValue`),
 		},
 		{
 			val:         1,
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be string"),
+			expectedErr: regexp.MustCompile(`expected type of [\w]+ to be string`),
 		},
 	})
 }
@@ -319,18 +319,18 @@ func TestValidationStringNotInSlice(t *testing.T) {
 		{
 			val:         "AnotherInvalidValue",
 			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, false),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to not be any of \\[InvalidValue AnotherInvalidValue\\], got AnotherInvalidValue"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to not be any of \[InvalidValue AnotherInvalidValue\], got AnotherInvalidValue`),
 		},
 		// ignore case
 		{
 			val:         "INVALIDVALUE",
 			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, true),
-			expectedErr: regexp.MustCompile("expected [\\w]+ to not be any of \\[InvalidValue AnotherInvalidValue\\], got INVALIDVALUE"),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to not be any of \[InvalidValue AnotherInvalidValue\], got INVALIDVALUE`),
 		},
 		{
 			val:         1,
 			f:           StringNotInSlice([]string{"InvalidValue", "AnotherInvalidValue"}, false),
-			expectedErr: regexp.MustCompile("expected type of [\\w]+ to be string"),
+			expectedErr: regexp.MustCompile(`expected type of [\w]+ to be string`),
 		},
 	})
 }
@@ -344,12 +344,12 @@ func TestValidationStringMatch(t *testing.T) {
 		{
 			val:         "bar",
 			f:           StringMatch(regexp.MustCompile(".*foo.*"), ""),
-			expectedErr: regexp.MustCompile("expected value of [\\w]+ to match regular expression " + regexp.QuoteMeta(`".*foo.*"`)),
+			expectedErr: regexp.MustCompile(`expected value of [\w]+ to match regular expression ` + regexp.QuoteMeta(`".*foo.*"`)),
 		},
 		{
 			val:         "bar",
 			f:           StringMatch(regexp.MustCompile(".*foo.*"), "value must contain foo"),
-			expectedErr: regexp.MustCompile("invalid value for [\\w]+ \\(value must contain foo\\)"),
+			expectedErr: regexp.MustCompile(`invalid value for [\w]+ \(value must contain foo\)`),
 		},
 	})
 }
@@ -363,12 +363,12 @@ func TestValidationStringDoesNotMatch(t *testing.T) {
 		{
 			val:         "bar",
 			f:           StringDoesNotMatch(regexp.MustCompile(".*bar.*"), ""),
-			expectedErr: regexp.MustCompile("expected value of [\\w]+ to not match regular expression " + regexp.QuoteMeta(`".*bar.*"`)),
+			expectedErr: regexp.MustCompile(`expected value of [\w]+ to not match regular expression ` + regexp.QuoteMeta(`".*bar.*"`)),
 		},
 		{
 			val:         "bar",
 			f:           StringDoesNotMatch(regexp.MustCompile(".*bar.*"), "value must not contain foo"),
-			expectedErr: regexp.MustCompile("invalid value for [\\w]+ \\(value must not contain foo\\)"),
+			expectedErr: regexp.MustCompile(`invalid value for [\w]+ \(value must not contain foo\)`),
 		},
 	})
 }

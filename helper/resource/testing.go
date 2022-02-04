@@ -126,7 +126,7 @@ func runSweepers(regions []string, sweepers map[string]*Sweeper, allowFailures b
 				return sweeperRunList, fmt.Errorf("sweeper (%s) for region (%s) failed: %s", sweeper.Name, region, err)
 			}
 		}
-		elapsed := time.Now().Sub(start)
+		elapsed := time.Since(start)
 		log.Printf("Completed Sweepers for region (%s) in %s", region, elapsed)
 
 		log.Printf("Sweeper Tests for region (%s) ran successfully:\n", region)
@@ -239,7 +239,7 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 
 	start := time.Now()
 	runE := s.F(region)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	log.Printf("[DEBUG] Completed Sweeper (%s) in region (%s) in %s", s.Name, region, elapsed)
 
@@ -546,7 +546,7 @@ func Test(t testing.T, c TestCase) {
 				t.Fatalf("ProviderFactory for %q already exists, cannot overwrite with Provider", name)
 			}
 			prov := p
-			c.ProviderFactories[name] = func() (*schema.Provider, error) {
+			c.ProviderFactories[name] = func() (*schema.Provider, error) { //nolint:unparam // required signature
 				return prov, nil
 			}
 		}
@@ -1004,7 +1004,7 @@ func TestMatchOutput(name string, r *regexp.Regexp) TestCheckFunc {
 
 // modulePrimaryInstanceState returns the instance state for the given resource
 // name in a ModuleState
-func modulePrimaryInstanceState(s *terraform.State, ms *terraform.ModuleState, name string) (*terraform.InstanceState, error) {
+func modulePrimaryInstanceState(ms *terraform.ModuleState, name string) (*terraform.InstanceState, error) {
 	rs, ok := ms.Resources[name]
 	if !ok {
 		return nil, fmt.Errorf("Not found: %s in %s", name, ms.Path)
@@ -1026,14 +1026,14 @@ func modulePathPrimaryInstanceState(s *terraform.State, mp addrs.ModuleInstance,
 		return nil, fmt.Errorf("No module found at: %s", mp)
 	}
 
-	return modulePrimaryInstanceState(s, ms, name)
+	return modulePrimaryInstanceState(ms, name)
 }
 
 // primaryInstanceState returns the primary instance state for the given
 // resource name in the root module.
 func primaryInstanceState(s *terraform.State, name string) (*terraform.InstanceState, error) {
 	ms := s.RootModule()
-	return modulePrimaryInstanceState(s, ms, name)
+	return modulePrimaryInstanceState(ms, name)
 }
 
 // indexesIntoTypeSet is a heuristic to try and identify if a flatmap style

@@ -396,6 +396,21 @@ func (p *Provider) ImportState(
 	// Convert the results to InstanceState values and return it
 	states := make([]*terraform.InstanceState, len(results))
 	for i, r := range results {
+		if r == nil {
+			return nil, fmt.Errorf("The provider returned a missing resource during ImportResourceState. " +
+				"This is generally a bug in the resource implementation for import. " +
+				"Resource import code should return an error for missing resources and skip returning a missing or empty ResourceData. " +
+				"Please report this to the provider developers.")
+		}
+
+		if r.Id() == "" {
+			return nil, fmt.Errorf("The provider returned a resource missing an identifier during ImportResourceState. " +
+				"This is generally a bug in the resource implementation for import. " +
+				"Resource import code should not call d.SetId(\"\") or create an empty ResourceData. " +
+				"If the resource is missing, instead return an error. " +
+				"Please report this to the provider developers.")
+		}
+
 		states[i] = r.State()
 	}
 
@@ -403,10 +418,10 @@ func (p *Provider) ImportState(
 	// isn't obvious so we circumvent that with a friendlier error.
 	for _, s := range states {
 		if s == nil {
-			return nil, fmt.Errorf(
-				"nil entry in ImportState results. This is always a bug with\n" +
-					"the resource that is being imported. Please report this as\n" +
-					"a bug to Terraform.")
+			return nil, fmt.Errorf("The provider returned a missing resource during ImportResourceState. " +
+				"This is generally a bug in the resource implementation for import. " +
+				"Resource import code should return an error for missing resources. " +
+				"Please report this to the provider developers.")
 		}
 	}
 

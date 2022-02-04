@@ -2945,7 +2945,9 @@ func TestSchemaMap_Diff(t *testing.T) {
 
 			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
-					d.SetNewComputed("version_id")
+					if err := d.SetNewComputed("version_id"); err != nil {
+						return fmt.Errorf("unexpected SetNewComputed error: %w", err)
+					}
 				}
 				return nil
 			},
@@ -2986,7 +2988,10 @@ func TestSchemaMap_Diff(t *testing.T) {
 			Config: map[string]interface{}{},
 
 			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
-				d.SetNewComputed("foo")
+				if err := d.SetNewComputed("foo"); err != nil {
+					return fmt.Errorf("unexpected SetNewComputed error: %w", err)
+				}
+
 				return nil
 			},
 
@@ -4788,7 +4793,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 				"string": {
 					Type:             TypeString,
 					Computed:         true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool { return false },
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool { return false },
 				},
 			},
 			true,
@@ -5054,7 +5059,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 				"availability_zone": {
 					Type:     TypeString,
 					Optional: true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						// Always suppress any diff
 						return true
 					},
@@ -5077,7 +5082,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 				"availability_zone": {
 					Type:     TypeString,
 					Optional: true,
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						// Always suppress any diff
 						return false
 					},
@@ -5108,7 +5113,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 					Type:     TypeString,
 					Optional: true,
 					Default:  "foo",
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						return true
 					},
 				},
@@ -5129,7 +5134,7 @@ func TestSchemaMap_DiffSuppress(t *testing.T) {
 					Type:     TypeString,
 					Optional: true,
 					Default:  "foo",
-					DiffSuppressFunc: func(k, old, new string, d *ResourceData) bool {
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
 						return false
 					},
 				},

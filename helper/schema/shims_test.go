@@ -3236,7 +3236,9 @@ func TestShimSchemaMap_Diff(t *testing.T) {
 
 			CustomizeDiff: func(_ context.Context, d *ResourceDiff, meta interface{}) error {
 				if d.HasChange("etag") {
-					d.SetNewComputed("version_id")
+					if err := d.SetNewComputed("version_id"); err != nil {
+						return fmt.Errorf("unexpected SetNewComputed error: %w", err)
+					}
 				}
 				return nil
 			},
