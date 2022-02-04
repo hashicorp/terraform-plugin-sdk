@@ -16,7 +16,7 @@ linters:
     - gofmt
     - gosimple
     # - ineffassign # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
-    # - makezero # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - makezero
     - nilerr
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
     - predeclared
