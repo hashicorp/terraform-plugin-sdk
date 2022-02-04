@@ -159,11 +159,8 @@ func (r *MapFieldReader) readSet(
 		// "ports.1", but the "state" map might have those plus "ports.2".
 		// We don't want "ports.2"
 		countActual[idx] = struct{}{}
-		if len(countActual) >= countExpected {
-			return false
-		}
 
-		return true
+		return len(countActual) < countExpected
 	})
 	if !completed && err != nil {
 		return FieldReadResult{}, err
