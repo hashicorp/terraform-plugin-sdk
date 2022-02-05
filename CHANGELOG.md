@@ -1,9 +1,3 @@
-# 2.10.2 (Unreleased)
-
-NOTES:
-
-* helper/schema: Started using terraform-plugin-log to write some SDK-level logs. Very few logs use this functionality now, but in the future, the environment variable `TF_LOG_SDK_HELPER_SCHEMA` will be able to set the log level for the SDK separately from the provider.
-
 # 2.10.1 (December 17, 2021)
 
 BUG FIXES:
