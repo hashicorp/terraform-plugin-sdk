@@ -1,0 +1,11 @@
+```release-note:note
+plugin: The `Debug` function has been deprecated in preference of setting the `Debug` field in the `ServeOpts` passed into the `Serve` function.
+```
+
+```release-note:enhancement
+plugin: Increased maximum gRPC send and receive message size limit to 256MB
+```
+
+```release-note:enhancement
+plugin: Added support for writing protocol data to disk by setting `TF_LOG_SDK_PROTO_DATA_DIR` environment variable
+```
