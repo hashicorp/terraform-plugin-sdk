@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -436,7 +437,10 @@ func (r *Resource) Apply(
 	if d.Destroy || d.RequiresNew() {
 		if s.ID != "" {
 			// Destroy the resource since it is created
+			logging.HelperSchemaTrace(ctx, "Calling downstream")
 			diags = append(diags, r.delete(ctx, data, meta)...)
+			logging.HelperSchemaTrace(ctx, "Called downstream")
+
 			if diags.HasError() {
 				return r.recordCurrentSchemaVersion(data.State()), diags
 			}
@@ -464,7 +468,9 @@ func (r *Resource) Apply(
 	if data.Id() == "" {
 		// We're creating, it is a new resource.
 		data.MarkNewResource()
+		logging.HelperSchemaTrace(ctx, "Calling downstream")
 		diags = append(diags, r.create(ctx, data, meta)...)
+		logging.HelperSchemaTrace(ctx, "Called downstream")
 	} else {
 		if !r.updateFuncSet() {
 			return s, append(diags, diag.Diagnostic{
@@ -472,7 +478,9 @@ func (r *Resource) Apply(
 				Summary:  "doesn't support update",
 			})
 		}
+		logging.HelperSchemaTrace(ctx, "Calling downstream")
 		diags = append(diags, r.update(ctx, data, meta)...)
+		logging.HelperSchemaTrace(ctx, "Called downstream")
 	}
 
 	return r.recordCurrentSchemaVersion(data.State()), diags
@@ -566,7 +574,10 @@ func (r *Resource) ReadDataApply(
 		return nil, diag.FromErr(err)
 	}
 
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := r.read(ctx, data, meta)
+	logging.HelperSchemaTrace(ctx, "Called downstream")
+
 	state := data.State()
 	if state != nil && state.ID == "" {
 		// Data sources can set an ID if they want, but they aren't
@@ -612,7 +623,10 @@ func (r *Resource) RefreshWithoutUpgrade(
 			data.providerMeta = s.ProviderMeta
 		}
 
+		logging.HelperSchemaTrace(ctx, "Calling downstream")
 		exists, err := r.Exists(data, meta)
+		logging.HelperSchemaTrace(ctx, "Called downstream")
+
 		if err != nil {
 			return s, diag.FromErr(err)
 		}
@@ -632,7 +646,10 @@ func (r *Resource) RefreshWithoutUpgrade(
 		data.providerMeta = s.ProviderMeta
 	}
 
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := r.read(ctx, data, meta)
+	logging.HelperSchemaTrace(ctx, "Called downstream")
+
 	state := data.State()
 	if state != nil && state.ID == "" {
 		state = nil

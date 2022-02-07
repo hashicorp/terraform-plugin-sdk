@@ -28,6 +28,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -544,7 +545,12 @@ func (m schemaMap) Diff(
 	if !result.DestroyTainted && customizeDiff != nil {
 		mc := m.DeepCopy()
 		rd := newResourceDiff(mc, c, s, result)
-		if err := customizeDiff(ctx, rd, meta); err != nil {
+
+		logging.HelperSchemaTrace(ctx, "Calling downstream")
+		err := customizeDiff(ctx, rd, meta)
+		logging.HelperSchemaTrace(ctx, "Called downstream")
+
+		if err != nil {
 			return nil, err
 		}
 		for _, k := range rd.UpdatedKeys() {

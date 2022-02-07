@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/meta"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -378,11 +379,15 @@ func (p *Provider) ImportState(
 	results := []*ResourceData{data}
 	if r.Importer.State != nil || r.Importer.StateContext != nil {
 		var err error
+		logging.HelperSchemaTrace(ctx, "Calling downstream")
+
 		if r.Importer.StateContext != nil {
 			results, err = r.Importer.StateContext(ctx, data, p.meta)
 		} else {
 			results, err = r.Importer.State(data, p.meta)
 		}
+		logging.HelperSchemaTrace(ctx, "Called downstream")
+
 		if err != nil {
 			return nil, err
 		}

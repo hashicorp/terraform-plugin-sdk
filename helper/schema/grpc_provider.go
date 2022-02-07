@@ -10,27 +10,20 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	ctyconvert "github.com/hashicorp/go-cty/cty/convert"
 	"github.com/hashicorp/go-cty/cty/msgpack"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/hashicorp/terraform-plugin-log/tfsdklog"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plans/objchange"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 const (
-	newExtraKey        = "_new_extra_shim"
-	tflogSubsystemName = "helper_schema"
+	newExtraKey = "_new_extra_shim"
 )
-
-func withLogger(ctx context.Context) context.Context {
-	return tfsdklog.NewSubsystem(ctx, tflogSubsystemName,
-		tfsdklog.WithLevelFromEnv("TF_LOG_SDK_HELPER_SCHEMA"))
-}
 
 func NewGRPCProviderServer(p *Provider) *GRPCProviderServer {
 	return &GRPCProviderServer{
@@ -62,7 +55,7 @@ func mergeStop(ctx context.Context, cancel context.CancelFunc, stopCh chan struc
 // It creates a goroutine to wait for the server stop and propagates
 // cancellation to the derived grpc context.
 func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -72,7 +65,9 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 }
 
 func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Getting provider schema")
 
 	resp := &tfprotov5.GetProviderSchemaResponse{
 		ResourceSchemas:   make(map[string]*tfprotov5.Schema),
@@ -88,6 +83,8 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 	}
 
 	for typ, res := range s.provider.ResourcesMap {
+		logging.HelperSchemaTrace(ctx, "Found resource type", logging.KeyResourceType, typ)
+
 		resp.ResourceSchemas[typ] = &tfprotov5.Schema{
 			Version: int64(res.SchemaVersion),
 			Block:   convert.ConfigSchemaToProto(res.CoreConfigSchema()),
@@ -95,6 +92,8 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 	}
 
 	for typ, dat := range s.provider.DataSourcesMap {
+		logging.HelperSchemaTrace(ctx, "Found data source type", logging.KeyDataSourceType, typ)
+
 		resp.DataSourceSchemas[typ] = &tfprotov5.Schema{
 			Version: int64(dat.SchemaVersion),
 			Block:   convert.ConfigSchemaToProto(dat.CoreConfigSchema()),
@@ -123,8 +122,10 @@ func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema
 }
 
 func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfprotov5.PrepareProviderConfigRequest) (*tfprotov5.PrepareProviderConfigResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.PrepareProviderConfigResponse{}
+
+	logging.HelperSchemaTrace(ctx, "Preparing provider configuration")
 
 	schemaBlock := s.getProviderSchemaBlock()
 
@@ -212,7 +213,9 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.Validate(config))
+	logging.HelperSchemaTrace(ctx, "Called downstream")
 
 	preparedConfigMP, err := msgpack.Marshal(configVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -226,7 +229,7 @@ func (s *GRPCProviderServer) PrepareProviderConfig(ctx context.Context, req *tfp
 }
 
 func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req *tfprotov5.ValidateResourceTypeConfigRequest) (*tfprotov5.ValidateResourceTypeConfigResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ValidateResourceTypeConfigResponse{}
 
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
@@ -239,13 +242,15 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.ValidateResource(req.TypeName, config))
+	logging.HelperSchemaTrace(ctx, "Called downstream")
 
 	return resp, nil
 }
 
 func (s *GRPCProviderServer) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.ValidateDataSourceConfigRequest) (*tfprotov5.ValidateDataSourceConfigResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ValidateDataSourceConfigResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
@@ -264,13 +269,15 @@ func (s *GRPCProviderServer) ValidateDataSourceConfig(ctx context.Context, req *
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, s.provider.ValidateDataSource(req.TypeName, config))
+	logging.HelperSchemaTrace(ctx, "Called downstream")
 
 	return resp, nil
 }
 
 func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfprotov5.UpgradeResourceStateRequest) (*tfprotov5.UpgradeResourceStateResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.UpgradeResourceStateResponse{}
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
@@ -289,6 +296,8 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 	// We first need to upgrade a flatmap state if it exists.
 	// There should never be both a JSON and Flatmap state in the request.
 	case len(req.RawState.Flatmap) > 0:
+		logging.HelperSchemaTrace(ctx, "Upgrading flatmap state")
+
 		jsonMap, version, err = s.upgradeFlatmapState(ctx, version, req.RawState.Flatmap, res)
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
@@ -306,11 +315,13 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 			return resp, nil
 		}
 	default:
-		tfsdklog.SubsystemDebug(ctx, tflogSubsystemName, "no state provided to upgrade")
+		logging.HelperSchemaDebug(ctx, "no state provided to upgrade")
 		return resp, nil
 	}
 
 	// complete the upgrade of the JSON states
+	logging.HelperSchemaTrace(ctx, "Upgrading JSON state")
+
 	jsonMap, err = s.upgradeJSONState(ctx, version, jsonMap, res)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
@@ -471,14 +482,14 @@ func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}
 		}
 
 		if ty == cty.DynamicPseudoType {
-			tflog.SubsystemDebug(ctx, tflogSubsystemName, "ignoring dynamic block", "block", v)
+			logging.HelperSchemaDebug(ctx, "ignoring dynamic block", "block", v)
 			return
 		}
 
 		if !ty.IsObjectType() {
 			// This shouldn't happen, and will fail to decode further on, so
 			// there's no need to handle it here.
-			tflog.SubsystemWarn(ctx, tflogSubsystemName, "unexpected type for map in JSON state", "type", ty)
+			logging.HelperSchemaWarn(ctx, "unexpected type for map in JSON state", "type", ty)
 			return
 		}
 
@@ -486,7 +497,7 @@ func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}
 		for attr, attrV := range v {
 			attrTy, ok := attrTypes[attr]
 			if !ok {
-				tflog.SubsystemDebug(ctx, tflogSubsystemName, "attribute no longer present in schema", "attribute", attr)
+				logging.HelperSchemaDebug(ctx, "attribute no longer present in schema", "attribute", attr)
 				delete(v, attr)
 				continue
 			}
@@ -497,7 +508,10 @@ func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}
 }
 
 func (s *GRPCProviderServer) StopProvider(ctx context.Context, _ *tfprotov5.StopProviderRequest) (*tfprotov5.StopProviderResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Stopping provider")
+
 	s.stopMu.Lock()
 	defer s.stopMu.Unlock()
 
@@ -506,11 +520,13 @@ func (s *GRPCProviderServer) StopProvider(ctx context.Context, _ *tfprotov5.Stop
 	// reset the stop signal
 	s.stopCh = make(chan struct{})
 
+	logging.HelperSchemaTrace(ctx, "Stopped provider")
+
 	return &tfprotov5.StopProviderResponse{}, nil
 }
 
 func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfprotov5.ConfigureProviderRequest) (*tfprotov5.ConfigureProviderResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ConfigureProviderResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
@@ -536,14 +552,18 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	// function. Ideally a provider should migrate to the context aware API that receives
 	// request scoped contexts, however this is a large undertaking for very large providers.
 	ctxHack := context.WithValue(ctx, StopContextKey, s.StopContext(context.Background()))
+
+	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := s.provider.Configure(ctxHack, config)
+	logging.HelperSchemaTrace(ctx, "Called downstream")
+
 	resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, diags)
 
 	return resp, nil
 }
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
@@ -636,7 +656,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 }
 
 func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanResourceChangeRequest) (*tfprotov5.PlanResourceChangeResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.PlanResourceChangeResponse{}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
@@ -751,6 +771,11 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 	// now we need to apply the diff to the prior state, so get the planned state
 	plannedAttrs, err := diff.Apply(priorState.Attributes, schemaBlock)
+
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(resp.Diagnostics, err)
+		return resp, nil
+	}
 
 	plannedStateVal, err := hcl2shim.HCL2ValueFromFlatmap(plannedAttrs, schemaBlock.ImpliedType())
 	if err != nil {
@@ -873,7 +898,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 }
 
 func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfprotov5.ApplyResourceChangeRequest) (*tfprotov5.ApplyResourceChangeResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ApplyResourceChangeResponse{
 		// Start with the existing state as a fallback
 		NewState: req.PriorState,
@@ -1053,7 +1078,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 }
 
 func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfprotov5.ImportResourceStateRequest) (*tfprotov5.ImportResourceStateResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ImportResourceStateResponse{}
 
 	info := &terraform.InstanceInfo{
@@ -1112,7 +1137,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 }
 
 func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.ReadDataSourceRequest) (*tfprotov5.ReadDataSourceResponse, error) {
-	ctx = withLogger(ctx)
+	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ReadDataSourceResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)

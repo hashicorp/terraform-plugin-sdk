@@ -15,7 +15,7 @@ linters:
     - exportloopref
     - gofmt
     - gosimple
-    # - ineffassign # TODO: https://github.com/hashicorp/terraform-plugin-sdk/issues/865
+    - ineffassign
     - makezero
     - nilerr
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
