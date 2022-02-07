@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.16.0
 	github.com/hashicorp/terraform-json v0.13.0
-	github.com/hashicorp/terraform-plugin-go v0.7.0
+	github.com/hashicorp/terraform-plugin-go v0.7.1
 	github.com/hashicorp/terraform-plugin-log v0.2.1
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -34,5 +34,5 @@ require (
 	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20200711021454-869866162049 // indirect
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 )
