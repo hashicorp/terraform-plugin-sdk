@@ -677,10 +677,10 @@ func ComposeAggregateTestCheckFunc(fs ...TestCheckFunc) TestCheckFunc {
 	}
 }
 
-// TestCheckResourceAttrSet is a TestCheckFunc which ensures a value
+// TestCheckResourceAttrSet is a TestCheckFunc which ensures a string value
 // exists in state for the given name/key combination. It is useful when
 // testing that computed values were set, when it is not possible to
-// know ahead of time what the values will be.
+// know ahead of time what the values will be. List or map values will fail.
 func TestCheckResourceAttrSet(name, key string) TestCheckFunc {
 	return checkIfIndexesIntoTypeSet(key, func(s *terraform.State) error {
 		is, err := primaryInstanceState(s, name)
