@@ -174,7 +174,7 @@ func (w *MapFieldWriter) setMap(
 		return fmt.Errorf("%s: must be a map", k)
 	}
 	if v.Type().Key().Kind() != reflect.String {
-		return fmt.Errorf("%s: keys must strings", k)
+		return fmt.Errorf("%s: keys must be strings", k)
 	}
 	for _, mk := range v.MapKeys() {
 		mv := v.MapIndex(mk)
