@@ -421,20 +421,6 @@ func (s *State) removeInstance(r *ResourceState, v *InstanceState) {
 		r.Primary = nil
 		return
 	}
-
-	// Check lists
-	lists := [][]*InstanceState{r.Deposed}
-	for _, is := range lists {
-		for i, instance := range is {
-			if instance == v {
-				// Found it, remove it
-				is, is[len(is)-1] = append(is[:i], is[i+1:]...), nil
-
-				// Done
-				return
-			}
-		}
-	}
 }
 
 // RootModule returns the ModuleState for the root module
