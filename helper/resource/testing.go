@@ -452,8 +452,15 @@ type TestStep struct {
 	// are tested alongside real resources
 	PreventPostDestroyRefresh bool
 
-	// SkipFunc is called before applying config, but after PreConfig
-	// This is useful for defining test steps with platform-dependent checks
+	// SkipFunc enables skipping the TestStep, based on environment criteria.
+	// For example, this can prevent running certain steps that may be runtime
+	// platform or API configuration dependent.
+	//
+	// Return true with no error to skip the test step. The error return
+	// should be used to signify issues that prevented the function from
+	// completing as expected.
+	//
+	// SkipFunc is called after PreConfig but before applying the Config.
 	SkipFunc func() (bool, error)
 
 	//---------------------------------------------------------------
