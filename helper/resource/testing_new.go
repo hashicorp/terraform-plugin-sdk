@@ -109,7 +109,8 @@ func runNewTest(t testing.T, c TestCase, helper *plugintest.Helper) {
 				t.Fatal(err)
 			}
 			if skip {
-				log.Printf("[WARN] Skipping step %d/%d", i+1, len(c.Steps))
+				t.Logf("Skipping step %d/%d due to SkipFunc", i+1, len(c.Steps))
+				log.Printf("[WARN] Skipping step %d/%d due to SkipFunc", i+1, len(c.Steps))
 				continue
 			}
 		}
