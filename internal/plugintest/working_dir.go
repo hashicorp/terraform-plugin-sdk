@@ -99,7 +99,7 @@ func (wd *WorkingDir) SetConfig(cfg string) error {
 		return err
 	}
 
-	if p := os.Getenv("TF_ACC_LOG_PATH"); p != "" {
+	if p := os.Getenv(EnvTfAccLogPath); p != "" {
 		if err := wd.tf.SetLogPath(p); err != nil {
 			return fmt.Errorf("unable to set log path: %w", err)
 		}

@@ -84,6 +84,27 @@ func AddTestSweepers(name string, s *Sweeper) {
 	sweeperFuncs[name] = s
 }
 
+// TestMain adds sweeper functionality to the "go test" command, otherwise
+// tests are executed as normal. Most provider acceptance tests are written
+// using the Test() function of this package, which imposes its own
+// requirements and Terraform CLI behavior. Refer to that function's
+// documentation for additional details.
+//
+// Sweepers enable infrastructure cleanup functions to be included with
+// resource definitions, typically so developers can remove all resources of
+// that resource type from testing infrastructure in case of failures that
+// prevented the normal resource destruction behavior of acceptance tests.
+// Use the AddTestSweepers() function to configure available sweepers.
+//
+// Sweeper flags added to the "go test" command:
+//
+// -sweep: Comma-separated list of locations/regions to run available sweepers.
+// -sweep-allow-failues: Enable to allow other sweepers to run after failures.
+// -sweep-run: Comma-separated list of resource type sweepers to run. Defaults
+//             to all sweepers.
+//
+// Refer to the Env prefixed constants for environment variables that further
+// control testing functionality.
 func TestMain(m interface {
 	Run() int
 }) {
@@ -252,7 +273,8 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 	return runE
 }
 
-const TestEnvVar = "TF_ACC"
+// Deprecated: Use EnvTfAcc instead.
+const TestEnvVar = EnvTfAcc
 
 // TestCheckFunc is the callback type used with acceptance tests to check
 // the state of a resource. The state passed in is the latest state known,
@@ -275,6 +297,9 @@ type ErrorCheckFunc func(error) error
 //
 // When the destroy plan is executed, the config from the last TestStep
 // is used to plan it.
+//
+// Refer to the Env prefixed constants for environment variables that further
+// control testing functionality.
 type TestCase struct {
 	// IsUnitTest allows a test to run regardless of the TF_ACC
 	// environment variable. This should be used with care - only for
@@ -376,6 +401,9 @@ type ExternalProvider struct {
 // Multiple TestSteps can be sequenced in a Test to allow testing
 // potentially complex update logic. In general, simply create/destroy
 // tests will only need one step.
+//
+// Refer to the Env prefixed constants for environment variables that further
+// control testing functionality.
 type TestStep struct {
 	// ResourceName should be set to the name of the resource
 	// that is being tested. Example: "aws_instance.foo". Various test
@@ -508,11 +536,13 @@ type TestStep struct {
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency
-// with other ParallelTest.
+// with other ParallelTest. The number of concurrent tests is controlled by the
+// "go test" command -parallel flag.
 //
 // Tests will fail if they do not properly handle conditions to allow multiple
 // tests to occur against the same resource or service (e.g. random naming).
-// All other requirements of the Test function also apply to this function.
+//
+// Test() function requirements and documentation also apply to this function.
 func ParallelTest(t testing.T, c TestCase) {
 	t.Helper()
 	t.Parallel()
@@ -529,16 +559,37 @@ func ParallelTest(t testing.T, c TestCase) {
 // the "-test.v" flag) is set. Because some acceptance tests take quite
 // long, we require the verbose flag so users are able to see progress
 // output.
+//
+// Use the ParallelTest() function to automatically set (*testing.T).Parallel()
+// to enable testing concurrency. Use the UnitTest() function to automatically
+// set the TestCase type IsUnitTest field.
+//
+// This function will automatically find or install Terraform CLI into a
+// temporary directory, based on the following behavior:
+//
+// - If the TF_ACC_TERRAFORM_PATH environment variable is set, that Terraform
+//   CLI binary is used if found and executable. If not found or executable,
+//   an error will be returned unless the TF_ACC_TERRAFORM_VERSION environment
+//   variable is also set.
+// - If the TF_ACC_TERRAFORM_VERSION environment variable is set, install and
+//   use that Terraform CLI version.
+// - If both the TF_ACC_TERRAFORM_PATH and TF_ACC_TERRAFORM_VERSION environment
+//   variables are unset, perform a lookup for the Terraform CLI binary based
+//   on the operating system PATH. If not found, the latest available Terraform
+//   CLI binary is installed.
+//
+// Refer to the Env prefixed constants for additional details about these
+// environment variables, and others, that control testing functionality.
 func Test(t testing.T, c TestCase) {
 	t.Helper()
 
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
-	if os.Getenv(TestEnvVar) == "" && !c.IsUnitTest {
+	if os.Getenv(EnvTfAcc) == "" && !c.IsUnitTest {
 		t.Skip(fmt.Sprintf(
 			"Acceptance tests skipped unless env '%s' set",
-			TestEnvVar))
+			EnvTfAcc))
 		return
 	}
 
@@ -621,6 +672,8 @@ func testProviderConfig(c TestCase) (string, error) {
 // UnitTest is a helper to force the acceptance testing harness to run in the
 // normal unit test suite. This should only be used for resource that don't
 // have any external dependencies.
+//
+// Test() function requirements and documentation also apply to this function.
 func UnitTest(t testing.T, c TestCase) {
 	t.Helper()
 
