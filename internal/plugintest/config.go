@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/hc-install/src"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 )
 
 // Config is used to configure the test helper. In most normal test programs
@@ -29,7 +30,7 @@ type Config struct {
 
 // DiscoverConfig uses environment variables and other means to automatically
 // discover a reasonable test helper configuration.
-func DiscoverConfig(sourceDir string) (*Config, error) {
+func DiscoverConfig(ctx context.Context, sourceDir string) (*Config, error) {
 	tfVersion := strings.TrimPrefix(os.Getenv(EnvTfAccTerraformVersion), "v")
 	tfPath := os.Getenv(EnvTfAccTerraformPath)
 
@@ -42,6 +43,8 @@ func DiscoverConfig(sourceDir string) (*Config, error) {
 	var sources []src.Source
 	switch {
 	case tfPath != "":
+		logging.HelperResourceTrace(ctx, fmt.Sprintf("Adding potential Terraform CLI source of exact path: %s", tfPath))
+
 		sources = append(sources, &fs.AnyVersion{
 			ExactBinPath: tfPath,
 		})
@@ -52,12 +55,17 @@ func DiscoverConfig(sourceDir string) (*Config, error) {
 			return nil, fmt.Errorf("invalid Terraform version: %w", err)
 		}
 
+		logging.HelperResourceTrace(ctx, fmt.Sprintf("Adding potential Terraform CLI source of releases.hashicorp.com exact version %q for installation in: %s", tfVersion, tfDir))
+
 		sources = append(sources, &releases.ExactVersion{
 			InstallDir: tfDir,
 			Product:    product.Terraform,
 			Version:    tfVersion,
 		})
 	default:
+		logging.HelperResourceTrace(ctx, "Adding potential Terraform CLI source of local filesystem PATH lookup")
+		logging.HelperResourceTrace(ctx, fmt.Sprintf("Adding potential Terraform CLI source of checkpoint.hashicorp.com latest version for installation in: %s", tfDir))
+
 		sources = append(sources, &fs.AnyVersion{
 			Product: &product.Terraform,
 		})
@@ -72,6 +80,10 @@ func DiscoverConfig(sourceDir string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	ctx = logging.TestTerraformPathContext(ctx, tfExec)
+
+	logging.HelperResourceDebug(ctx, "Found Terraform CLI")
 
 	return &Config{
 		SourceDir:     sourceDir,
