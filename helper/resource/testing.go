@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,9 +17,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -583,6 +584,9 @@ func ParallelTest(t testing.T, c TestCase) {
 func Test(t testing.T, c TestCase) {
 	t.Helper()
 
+	ctx := context.Background()
+	ctx = logging.InitTestContext(ctx, t)
+
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
@@ -592,8 +596,6 @@ func Test(t testing.T, c TestCase) {
 			EnvTfAcc))
 		return
 	}
-
-	logging.SetOutput(t)
 
 	// Copy any explicitly passed providers to factories, this is for backwards compatibility.
 	if len(c.Providers) > 0 {
@@ -610,26 +612,34 @@ func Test(t testing.T, c TestCase) {
 		}
 	}
 
+	logging.HelperResourceDebug(ctx, "Starting TestCase")
+
 	// Run the PreCheck if we have it.
 	// This is done after the auto-configure to allow providers
 	// to override the default auto-configure parameters.
 	if c.PreCheck != nil {
+		logging.HelperResourceDebug(ctx, "Calling TestCase PreCheck")
+
 		c.PreCheck()
+
+		logging.HelperResourceDebug(ctx, "Called TestCase PreCheck")
 	}
 
 	sourceDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Error getting working dir: %s", err)
 	}
-	helper := plugintest.AutoInitProviderHelper(sourceDir)
+	helper := plugintest.AutoInitProviderHelper(ctx, sourceDir)
 	defer func(helper *plugintest.Helper) {
 		err := helper.Close()
 		if err != nil {
-			log.Printf("Error cleaning up temporary test files: %s", err)
+			logging.HelperResourceError(ctx, "Unable to clean up temporary test files", logging.KeyError, err)
 		}
 	}(helper)
 
-	runNewTest(t, c, helper)
+	runNewTest(ctx, t, c, helper)
+
+	logging.HelperResourceDebug(ctx, "Finished TestCase")
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a

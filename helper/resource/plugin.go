@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
@@ -26,7 +25,7 @@ type providerFactories struct {
 	protov6 map[string]func() (tfprotov6.ProviderServer, error)
 }
 
-func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, factories providerFactories) error {
+func runProviderCommand(ctx context.Context, t testing.T, f func() error, wd *plugintest.WorkingDir, factories providerFactories) error {
 	// don't point to this as a test failure location
 	// point to whatever called it
 	t.Helper()
@@ -35,7 +34,7 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 	// reattach behavior in Terraform. This ensures we get test coverage
 	// and enables the use of delve as a debugger.
 
-	ctx, cancel := context.WithCancel(logging.GetTestLogContext(t))
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// this is needed so Terraform doesn't default to expecting protocol 4;

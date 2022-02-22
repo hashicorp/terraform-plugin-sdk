@@ -1,0 +1,7 @@
+```release-note:note
+helper/resource: The new terraform-plugin-log `sdk.helper_resource` logger inherits the `TF_LOG`, `TF_LOG_PATH_MASK`, and `TF_ACC_LOG_PATH` environment variable settings, similar to the prior logging. The `TF_LOG_SDK_HELPER_RESOURCE` environment variable can be used to separately control the new logger level.
+```
+
+```release-note:enhancement
+helper/resource: Added terraform-plugin-log `sdk.helper_resource` logger and extensive `TRACE` log entries
+```
