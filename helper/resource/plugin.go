@@ -53,12 +53,12 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 	// the host or namespace using environment variables.
 	var namespaces []string
 	host := "registry.terraform.io"
-	if v := os.Getenv("TF_ACC_PROVIDER_NAMESPACE"); v != "" {
+	if v := os.Getenv(EnvTfAccProviderNamespace); v != "" {
 		namespaces = append(namespaces, v)
 	} else {
 		namespaces = append(namespaces, "-", "hashicorp")
 	}
-	if v := os.Getenv("TF_ACC_PROVIDER_HOST"); v != "" {
+	if v := os.Getenv(EnvTfAccProviderHost); v != "" {
 		host = v
 	}
 
@@ -327,10 +327,10 @@ func runProviderCommand(t testing.T, f func() error, wd *plugintest.WorkingDir, 
 func getProviderAddr(name string) string {
 	host := "registry.terraform.io"
 	namespace := "hashicorp"
-	if v := os.Getenv("TF_ACC_PROVIDER_NAMESPACE"); v != "" {
+	if v := os.Getenv(EnvTfAccProviderNamespace); v != "" {
 		namespace = v
 	}
-	if v := os.Getenv("TF_ACC_PROVIDER_HOST"); v != "" {
+	if v := os.Getenv(EnvTfAccProviderHost); v != "" {
 		host = v
 	}
 	return strings.TrimSuffix(host, "/") + "/" +

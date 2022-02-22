@@ -30,10 +30,10 @@ type Config struct {
 // DiscoverConfig uses environment variables and other means to automatically
 // discover a reasonable test helper configuration.
 func DiscoverConfig(sourceDir string) (*Config, error) {
-	tfVersion := strings.TrimPrefix(os.Getenv("TF_ACC_TERRAFORM_VERSION"), "v")
-	tfPath := os.Getenv("TF_ACC_TERRAFORM_PATH")
+	tfVersion := strings.TrimPrefix(os.Getenv(EnvTfAccTerraformVersion), "v")
+	tfPath := os.Getenv(EnvTfAccTerraformPath)
 
-	tempDir := os.Getenv("TF_ACC_TEMP_DIR")
+	tempDir := os.Getenv(EnvTfAccTempDir)
 	tfDir, err := ioutil.TempDir(tempDir, "plugintest-terraform")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)

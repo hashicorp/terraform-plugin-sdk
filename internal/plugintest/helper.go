@@ -65,7 +65,7 @@ func AutoInitHelper(sourceDir string) (*Helper, error) {
 // behind in the system's temporary directory. There is currently no way to
 // automatically clean those up.
 func InitHelper(config *Config) (*Helper, error) {
-	tempDir := os.Getenv("TF_ACC_TEMP_DIR")
+	tempDir := os.Getenv(EnvTfAccTempDir)
 	baseDir, err := ioutil.TempDir(tempDir, "plugintest")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory for test helper: %s", err)
