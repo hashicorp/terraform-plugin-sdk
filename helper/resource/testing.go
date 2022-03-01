@@ -1032,7 +1032,7 @@ func testCheckResourceAttrPair(isFirst *terraform.InstanceState, nameFirst strin
 }
 
 // TestRangeLengthResourceAttr is a TestCheckFunc which checks that the length of the value
-// in state for the given name/key is within an expected (closed) range
+// in state for the given name/key is within an expected (closed) range.
 func TestRangeLengthResourceAttr(name, key string, min, max int) TestCheckFunc {
 	return checkIfIndexesIntoTypeSet(key, func(s *terraform.State) error {
 		is, err := primaryInstanceState(s, name)
