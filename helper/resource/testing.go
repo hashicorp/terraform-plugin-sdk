@@ -1056,7 +1056,7 @@ func TestRangeLengthResourceAttr(name, key string, min, max int) TestCheckFunc {
 }
 
 // TestMatchLengthResourceAttr is a TestCheckFunc which checks that the length of the value
-// in state for the given name/key matches a specific length
+// in state for the given name/key matches a specific length.
 func TestMatchLengthResourceAttr(name, key string, length int) TestCheckFunc {
 	return TestRangeLengthResourceAttr(name, key, length, length)
 }
