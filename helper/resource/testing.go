@@ -1043,7 +1043,7 @@ func TestRangeLengthResourceAttr(name, key string, min, max int) TestCheckFunc {
 		valLen := len(is.Attributes[key])
 		if valLen < min || valLen > max {
 			return fmt.Errorf(
-				"%s: Attribute '%s' length is %d, not within the expected range [%d, %d]",
+				"%s: Attribute '%s' length is %d, which is not within the expected closed range [%d, %d]",
 				name,
 				key,
 				valLen,
