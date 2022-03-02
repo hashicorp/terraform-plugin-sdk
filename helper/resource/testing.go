@@ -1031,6 +1031,36 @@ func testCheckResourceAttrPair(isFirst *terraform.InstanceState, nameFirst strin
 	return nil
 }
 
+// TestRangeLengthResourceAttr is a TestCheckFunc which checks that the length of the value
+// in state for the given name/key is within an expected (closed) range.
+func TestRangeLengthResourceAttr(name, key string, min, max int) TestCheckFunc {
+	return checkIfIndexesIntoTypeSet(key, func(s *terraform.State) error {
+		is, err := primaryInstanceState(s, name)
+		if err != nil {
+			return err
+		}
+
+		valLen := len(is.Attributes[key])
+		if valLen < min || valLen > max {
+			return fmt.Errorf(
+				"%s: Attribute '%s' length is %d, which is not within the expected closed range [%d, %d]",
+				name,
+				key,
+				valLen,
+				min,
+				max)
+		}
+
+		return nil
+	})
+}
+
+// TestMatchLengthResourceAttr is a TestCheckFunc which checks that the length of the value
+// in state for the given name/key matches a specific length.
+func TestMatchLengthResourceAttr(name, key string, length int) TestCheckFunc {
+	return TestRangeLengthResourceAttr(name, key, length, length)
+}
+
 // TestCheckOutput checks an output in the Terraform configuration
 func TestCheckOutput(name, value string) TestCheckFunc {
 	return func(s *terraform.State) error {

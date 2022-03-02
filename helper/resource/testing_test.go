@@ -874,6 +874,87 @@ func TestCheckResourceAttr_empty(t *testing.T) {
 	}
 }
 
+func TestTestRangeLengthResourceAttr(t *testing.T) {
+	resName := "test_resource"
+	resKey := "test_key"
+	resVal := "test_value"
+
+	s := terraform.NewState()
+	s.AddModuleState(&terraform.ModuleState{
+		Path: []string{"root"},
+		Resources: map[string]*terraform.ResourceState{
+			resName: {
+				Primary: &terraform.InstanceState{
+					Attributes: map[string]string{
+						resKey: resVal,
+					},
+				},
+			},
+		},
+	})
+
+	t.Run("in_range", func(t *testing.T) {
+		check := TestRangeLengthResourceAttr(resName, resKey, 2, 20)
+		if err := check(s); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("out_of_range", func(t *testing.T) {
+		check := TestRangeLengthResourceAttr(resName, resKey, 20, 40)
+		if err := check(s); err == nil {
+			t.Fatal(fmt.Errorf("failed to detect attribute '%s.%s' value '%s' length is out of range",
+				resName,
+				resKey,
+				resVal))
+		}
+	})
+}
+
+func TestTestMatchLengthResourceAttr(t *testing.T) {
+	resName := "test_resource"
+	resKey := "test_key"
+	resVal := "test_value"
+
+	s := terraform.NewState()
+	s.AddModuleState(&terraform.ModuleState{
+		Path: []string{"root"},
+		Resources: map[string]*terraform.ResourceState{
+			resName: {
+				Primary: &terraform.InstanceState{
+					Attributes: map[string]string{
+						resKey: resVal,
+					},
+				},
+			},
+		},
+	})
+
+	t.Run("matches_length", func(t *testing.T) {
+		check := TestMatchLengthResourceAttr(resName, resKey, 10)
+		if err := check(s); err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("too_short", func(t *testing.T) {
+		check := TestMatchLengthResourceAttr(resName, resKey, 11)
+		if err := check(s); err == nil {
+			t.Fatal(fmt.Errorf("failed to detect attribute '%s.%s' value '%s' is too short",
+				resName,
+				resKey,
+				resVal))
+		}
+	})
+	t.Run("too_long", func(t *testing.T) {
+		check := TestMatchLengthResourceAttr(resName, resKey, 2)
+		if err := check(s); err == nil {
+			t.Fatal(fmt.Errorf("failed to detect attribute '%s.%s' value '%s' is too long",
+				resName,
+				resKey,
+				resVal))
+		}
+	})
+}
+
 func TestCheckNoResourceAttr_empty(t *testing.T) {
 	s := terraform.NewState()
 	s.AddModuleState(&terraform.ModuleState{
