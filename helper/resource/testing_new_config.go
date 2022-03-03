@@ -16,9 +16,6 @@ import (
 func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugintest.WorkingDir, step TestStep) error {
 	t.Helper()
 
-	var idRefreshCheck *terraform.ResourceState
-	idRefresh := c.IDRefreshName != ""
-
 	if !step.Destroy {
 		var state *terraform.State
 		var err error
@@ -249,22 +246,31 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 	// ID-ONLY REFRESH
 	// If we've never checked an id-only refresh and our state isn't
 	// empty, find the first resource and test it.
-	var state *terraform.State
-	err = runProviderCommand(ctx, t, func() error {
-		state, err = getState(ctx, t, wd)
+	if c.IDRefreshName != "" {
+		logging.HelperResourceTrace(ctx, "Using TestCase IDRefreshName")
+
+		var state *terraform.State
+
+		err = runProviderCommand(ctx, t, func() error {
+			state, err = getState(ctx, t, wd)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, wd, providerFactories{
+			legacy:  c.ProviderFactories,
+			protov5: c.ProtoV5ProviderFactories,
+			protov6: c.ProtoV6ProviderFactories})
+
 		if err != nil {
 			return err
 		}
-		return nil
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
-	if err != nil {
-		return err
-	}
-	if idRefresh && idRefreshCheck == nil && !state.Empty() {
-		logging.HelperResourceTrace(ctx, "Using TestCase IDRefreshName")
+
+		if state.Empty() {
+			return nil
+		}
+
+		var idRefreshCheck *terraform.ResourceState
 
 		// Find the first non-nil resource in the state
 		for _, m := range state.Modules {
