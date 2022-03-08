@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Add `TestCheckFunc` helpers to check attribute's value length
-```
