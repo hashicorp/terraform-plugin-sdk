@@ -635,7 +635,7 @@ func Test(t testing.T, c TestCase) {
 	defer func(helper *plugintest.Helper) {
 		err := helper.Close()
 		if err != nil {
-			logging.HelperResourceError(ctx, "Unable to clean up temporary test files", logging.KeyError, err)
+			logging.HelperResourceError(ctx, "Unable to clean up temporary test files", map[string]interface{}{logging.KeyError: err})
 		}
 	}(helper)
 
