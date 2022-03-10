@@ -5,9 +5,12 @@ name: "Add Issues/PRs to TF Provider DevEx team board"
 on:
   issues:
     types: [opened, reopened]
-  pull_request:
+  pull_request_target:
     # NOTE: The way content is added to project board is equivalent to an "upsert".
     # Calling it multiple times will be idempotent.
+    #
+    # See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+    # to see the reasoning behind using `pull_request_target` instead of `pull_request`
     types: [opened, reopened, ready_for_review]
 
 jobs:
