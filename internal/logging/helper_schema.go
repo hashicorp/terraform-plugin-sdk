@@ -12,16 +12,16 @@ const (
 )
 
 // HelperSchemaDebug emits a helper/schema subsystem log at DEBUG level.
-func HelperSchemaDebug(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemDebug(ctx, SubsystemHelperSchema, msg, args)
+func HelperSchemaDebug(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemDebug(ctx, SubsystemHelperSchema, msg, additionalFields...)
 }
 
 // HelperSchemaTrace emits a helper/schema subsystem log at TRACE level.
-func HelperSchemaTrace(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemTrace(ctx, SubsystemHelperSchema, msg, args)
+func HelperSchemaTrace(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemTrace(ctx, SubsystemHelperSchema, msg, additionalFields...)
 }
 
 // HelperSchemaWarn emits a helper/schema subsystem log at WARN level.
-func HelperSchemaWarn(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemWarn(ctx, SubsystemHelperSchema, msg, args)
+func HelperSchemaWarn(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemWarn(ctx, SubsystemHelperSchema, msg, additionalFields...)
 }

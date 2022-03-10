@@ -83,7 +83,7 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 	}
 
 	for typ, res := range s.provider.ResourcesMap {
-		logging.HelperSchemaTrace(ctx, "Found resource type", logging.KeyResourceType, typ)
+		logging.HelperSchemaTrace(ctx, "Found resource type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		resp.ResourceSchemas[typ] = &tfprotov5.Schema{
 			Version: int64(res.SchemaVersion),
@@ -92,7 +92,7 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 	}
 
 	for typ, dat := range s.provider.DataSourcesMap {
-		logging.HelperSchemaTrace(ctx, "Found data source type", logging.KeyDataSourceType, typ)
+		logging.HelperSchemaTrace(ctx, "Found data source type", map[string]interface{}{logging.KeyDataSourceType: typ})
 
 		resp.DataSourceSchemas[typ] = &tfprotov5.Schema{
 			Version: int64(dat.SchemaVersion),
@@ -482,14 +482,14 @@ func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}
 		}
 
 		if ty == cty.DynamicPseudoType {
-			logging.HelperSchemaDebug(ctx, "ignoring dynamic block", "block", v)
+			logging.HelperSchemaDebug(ctx, "ignoring dynamic block", map[string]interface{}{"block": v})
 			return
 		}
 
 		if !ty.IsObjectType() {
 			// This shouldn't happen, and will fail to decode further on, so
 			// there's no need to handle it here.
-			logging.HelperSchemaWarn(ctx, "unexpected type for map in JSON state", "type", ty)
+			logging.HelperSchemaWarn(ctx, "unexpected type for map in JSON state", map[string]interface{}{"type": ty})
 			return
 		}
 
@@ -497,7 +497,7 @@ func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}
 		for attr, attrV := range v {
 			attrTy, ok := attrTypes[attr]
 			if !ok {
-				logging.HelperSchemaDebug(ctx, "attribute no longer present in schema", "attribute", attr)
+				logging.HelperSchemaDebug(ctx, "attribute no longer present in schema", map[string]interface{}{"attribute": attr})
 				delete(v, attr)
 				continue
 			}

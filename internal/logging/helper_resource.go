@@ -12,21 +12,21 @@ const (
 )
 
 // HelperResourceTrace emits a helper/resource subsystem log at TRACE level.
-func HelperResourceTrace(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemTrace(ctx, SubsystemHelperResource, msg, args)
+func HelperResourceTrace(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemTrace(ctx, SubsystemHelperResource, msg, additionalFields...)
 }
 
 // HelperResourceDebug emits a helper/resource subsystem log at DEBUG level.
-func HelperResourceDebug(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemDebug(ctx, SubsystemHelperResource, msg, args)
+func HelperResourceDebug(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemDebug(ctx, SubsystemHelperResource, msg, additionalFields...)
 }
 
 // HelperResourceWarn emits a helper/resource subsystem log at WARN level.
-func HelperResourceWarn(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemWarn(ctx, SubsystemHelperResource, msg, args)
+func HelperResourceWarn(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemWarn(ctx, SubsystemHelperResource, msg, additionalFields...)
 }
 
 // HelperResourceError emits a helper/resource subsystem log at ERROR level.
-func HelperResourceError(ctx context.Context, msg string, args ...interface{}) {
-	tfsdklog.SubsystemError(ctx, SubsystemHelperResource, msg, args)
+func HelperResourceError(ctx context.Context, msg string, additionalFields ...map[string]interface{}) {
+	tfsdklog.SubsystemError(ctx, SubsystemHelperResource, msg, additionalFields...)
 }
