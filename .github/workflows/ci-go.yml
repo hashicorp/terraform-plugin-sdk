@@ -17,7 +17,7 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: go-version
         # Reference: https://github.com/actions/setup-go/issues/23
         run: echo "::set-output name=version::$(cat ./.go-version)"
@@ -34,8 +34,8 @@ jobs:
         working-directory: terraform-provider-corner
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           path: terraform-provider-corner
           repository: hashicorp/terraform-provider-corner
@@ -58,7 +58,7 @@ jobs:
       matrix:
         go-version: [ '1.17', '1.16' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
