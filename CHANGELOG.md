@@ -1,3 +1,26 @@
+# 2.11.0 (March 11, 2022)
+
+NOTES:
+
+* The underlying `terraform-plugin-log` dependency has been updated to v0.3.0, which includes a breaking change in the optional additional fields parameter of logging function calls to ensure correctness and catch coding errors during compilation. Any early adopter provider logging which calls those functions may require updates. ([#900](https://github.com/hashicorp/terraform-plugin-sdk/issues/900))
+* helper/resource: The new terraform-plugin-log `sdk.helper_resource` logger inherits the `TF_LOG`, `TF_LOG_PATH_MASK`, and `TF_ACC_LOG_PATH` environment variable settings, similar to the prior logging. The `TF_LOG_SDK_HELPER_RESOURCE` environment variable can be used to separately control the new logger level. ([#891](https://github.com/hashicorp/terraform-plugin-sdk/issues/891))
+* helper/schema: Started using terraform-plugin-log to write some SDK-level logs. Very few logs use this functionality now, but in the future, the environment variable `TF_LOG_SDK_HELPER_SCHEMA` will be able to set the log level for the SDK separately from the provider. ([#837](https://github.com/hashicorp/terraform-plugin-sdk/issues/837))
+* helper/schema: The `Schema` type `DiffSuppressOnRefresh` field opts in to using `DiffSuppressFunc` to detect normalization changes during refresh, using the same rules as for planning. This can prevent normalization cascading downstream and producing confusing changes in other resources, and will avoid reporting "Values changed outside of Terraform" for normalization-only situations. This is a desirable behavior for most attributes that have `DiffSuppressFunc` and so would ideally be on by default, but it is opt-in for backward compatibility reasons. ([#882](https://github.com/hashicorp/terraform-plugin-sdk/issues/882))
+* plugin: The `Debug` function has been deprecated in preference of setting the `Debug` field in the `ServeOpts` passed into the `Serve` function. ([#857](https://github.com/hashicorp/terraform-plugin-sdk/issues/857))
+
+ENHANCEMENTS:
+
+* helper/resource: Added more visible logging for test steps skipped via the `TestStep` type `SkipFunc` field. ([#889](https://github.com/hashicorp/terraform-plugin-sdk/issues/889))
+* helper/resource: Added terraform-plugin-log `sdk.helper_resource` logger and extensive `TRACE` log entries ([#891](https://github.com/hashicorp/terraform-plugin-sdk/issues/891))
+* helper/schema: Added the `DiffSuppressOnRefresh` field to the `Schema` type ([#882](https://github.com/hashicorp/terraform-plugin-sdk/issues/882))
+* plugin: Added support for writing protocol data to disk by setting `TF_LOG_SDK_PROTO_DATA_DIR` environment variable ([#857](https://github.com/hashicorp/terraform-plugin-sdk/issues/857))
+* plugin: Increased maximum gRPC send and receive message size limit to 256MB ([#857](https://github.com/hashicorp/terraform-plugin-sdk/issues/857))
+
+BUG FIXES:
+
+* helper/resource: Removed extraneous Terraform CLI `show` command each `TestStep` unless using `TestCase.IDRefreshName` ([#892](https://github.com/hashicorp/terraform-plugin-sdk/issues/892))
+* plugin: Prevent potential process leak on Windows platforms ([#856](https://github.com/hashicorp/terraform-plugin-sdk/issues/856))
+
 # 2.10.1 (December 17, 2021)
 
 BUG FIXES:
