@@ -14,7 +14,7 @@ import (
 // forth, the framework deletes the previous configuration file.
 func TestJSONConfig(t *testing.T) {
 	providerFactories := map[string]func() (*schema.Provider, error){
-		"tst": func() (*schema.Provider, error) { return tstProvider(), nil },
+		"tst": func() (*schema.Provider, error) { return tstProvider(), nil }, //nolint:unparam // required signature
 	}
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:        true,
@@ -35,7 +35,7 @@ func TestJSONConfig(t *testing.T) {
 func tstProvider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"tst_t": &schema.Resource{
+			"tst_t": {
 				CreateContext: resourceTstTCreate,
 				ReadContext:   resourceTstTRead,
 				UpdateContext: resourceTstTCreate, // Update is the same as Create
