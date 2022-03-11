@@ -4,7 +4,7 @@ name: ci-go
 on:
   pull_request:
     paths:
-      - .github/workflows/test.yml
+      - .github/workflows/ci-go.yml
       - .golangci.yml
       - .go-version
       - go.mod
@@ -48,7 +48,7 @@ jobs:
           go-version: ${{ steps.go-version.outputs.version }}
       - run: go mod edit -replace=github.com/hashicorp/terraform-plugin-sdk/v2=../
       - run: go mod tidy
-      - run: go test -v ./internal/sdkv2provider
+      - run: go test -v ./...
         env:
           TF_ACC: '1'
   test:

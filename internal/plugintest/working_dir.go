@@ -65,7 +65,8 @@ func (wd *WorkingDir) Unsetenv(envVar string) {
 	delete(wd.env, envVar)
 }
 
-func (wd *WorkingDir) SetReattachInfo(reattachInfo tfexec.ReattachInfo) {
+func (wd *WorkingDir) SetReattachInfo(ctx context.Context, reattachInfo tfexec.ReattachInfo) {
+	logging.HelperResourceTrace(ctx, "Setting Terraform CLI reattach configuration", map[string]interface{}{"tf_reattach_config": reattachInfo})
 	wd.reattachInfo = reattachInfo
 }
 

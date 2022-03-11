@@ -14,6 +14,10 @@ const (
 	// Underlying Go error string when logging an error.
 	KeyError = "error"
 
+	// The full address of the provider, such as
+	// registry.terraform.io/hashicorp/random
+	KeyProviderAddress = "tf_provider_addr"
+
 	// The type of resource being operated on, such as "random_pet"
 	KeyResourceType = "tf_resource_type"
 
