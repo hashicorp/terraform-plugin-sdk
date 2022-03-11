@@ -199,11 +199,10 @@ func tf6serverServe(opts *ServeOpts) error {
 		reattachConfigCh := make(chan *plugin.ReattachConfig)
 
 		go func() {
-			val, ok := <-closeCh
-
-			if ok {
-				opts.TestConfig.CloseCh <- val
-			}
+			// Always forward close channel receive, since its signaling that
+			// the channel is closed.
+			val := <-closeCh
+			opts.TestConfig.CloseCh <- val
 		}()
 
 		go func() {
