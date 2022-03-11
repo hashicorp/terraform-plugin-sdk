@@ -41,7 +41,7 @@ func tstProvider() *schema.Provider {
 				UpdateContext: resourceTstTCreate, // Update is the same as Create
 				DeleteContext: resourceTstTDelete,
 				Schema: map[string]*schema.Schema{
-					"s": &schema.Schema{
+					"s": {
 						Type:     schema.TypeString,
 						Required: true,
 					},
