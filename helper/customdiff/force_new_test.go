@@ -8,6 +8,8 @@ import (
 )
 
 func TestForceNewIf(t *testing.T) {
+	t.Parallel()
+
 	t.Run("true", func(t *testing.T) {
 		var condCalls int
 		var gotOld1, gotNew1, gotOld2, gotNew2 string
@@ -77,6 +79,24 @@ func TestForceNewIf(t *testing.T) {
 			t.Error("Attribute 'foo' is not marked as RequiresNew")
 		}
 	})
+	t.Run("true-non-existent-attribute", func(t *testing.T) {
+		provider := testProvider(
+			map[string]*schema.Schema{},
+			ForceNewIf("non-existent", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+				return true
+			}),
+		)
+
+		_, err := testDiff(
+			provider,
+			map[string]string{},
+			map[string]string{},
+		)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+	})
 	t.Run("false", func(t *testing.T) {
 		var condCalls int
 		var gotOld, gotNew string
@@ -127,9 +147,29 @@ func TestForceNewIf(t *testing.T) {
 			t.Error("Attribute 'foo' is marked as RequiresNew, but should not be")
 		}
 	})
+	t.Run("false-non-existent-attribute", func(t *testing.T) {
+		provider := testProvider(
+			map[string]*schema.Schema{},
+			ForceNewIf("non-existent", func(_ context.Context, d *schema.ResourceDiff, meta interface{}) bool {
+				return false
+			}),
+		)
+
+		_, err := testDiff(
+			provider,
+			map[string]string{},
+			map[string]string{},
+		)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+	})
 }
 
 func TestForceNewIfChange(t *testing.T) {
+	t.Parallel()
+
 	t.Run("true", func(t *testing.T) {
 		var condCalls int
 		var gotOld1, gotNew1, gotOld2, gotNew2 string
@@ -198,6 +238,24 @@ func TestForceNewIfChange(t *testing.T) {
 			t.Error("Attribute 'foo' is not marked as RequiresNew")
 		}
 	})
+	t.Run("true-non-existent-attribute", func(t *testing.T) {
+		provider := testProvider(
+			map[string]*schema.Schema{},
+			ForceNewIfChange("foo", func(_ context.Context, oldValue, newValue, meta interface{}) bool {
+				return true
+			}),
+		)
+
+		_, err := testDiff(
+			provider,
+			map[string]string{},
+			map[string]string{},
+		)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+	})
 	t.Run("false", func(t *testing.T) {
 		var condCalls int
 		var gotOld, gotNew string
@@ -245,6 +303,24 @@ func TestForceNewIfChange(t *testing.T) {
 
 		if diff.Attributes["foo"].RequiresNew {
 			t.Error("Attribute 'foo' is marked as RequiresNew, but should not be")
+		}
+	})
+	t.Run("false-non-existent-attribute", func(t *testing.T) {
+		provider := testProvider(
+			map[string]*schema.Schema{},
+			ForceNewIfChange("foo", func(_ context.Context, oldValue, newValue, meta interface{}) bool {
+				return true
+			}),
+		)
+
+		_, err := testDiff(
+			provider,
+			map[string]string{},
+			map[string]string{},
+		)
+
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
 		}
 	})
 }
