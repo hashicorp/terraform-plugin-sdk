@@ -1,3 +1,13 @@
+# 2.12.0 (March 17, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Support JSON in `TestStep` type `Config` field ([#722](https://github.com/hashicorp/terraform-plugin-sdk/issues/722))
+
+BUG FIXES:
+
+* customdiff: Prevented unexpected non-existent key errors in `ComputedIf`, `ForceNewIf`, and `ForceNewIfChange` since 2.11.0, using a warning log for backwards compatibility instead ([#909](https://github.com/hashicorp/terraform-plugin-sdk/issues/909))
+
 # 2.11.0 (March 11, 2022)
 
 NOTES:
