@@ -2086,7 +2086,7 @@ func TestValidateNulls(t *testing.T) {
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			d := validateConfigNulls(tc.Cfg, nil)
+			d := validateConfigNulls(context.Background(), tc.Cfg, nil)
 			diags := convert.ProtoToDiags(d)
 			switch {
 			case tc.Err:
