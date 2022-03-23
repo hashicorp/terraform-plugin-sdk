@@ -115,10 +115,11 @@ type Resource struct {
 	// The *ResourceData parameter contains the plan and state data for this
 	// managed resource instance. The available data in the Get* methods is the
 	// the proposed state, which is the merged data of the practitioner
-	// configuration and any CustomizeDiff field logic. The SetId method must
-	// be called with a non-empty value for the managed resource instance to be
-	// properly saved into the Terraform state and avoid a "inconsistent result
-	// after apply" error.
+	// configuration and any CustomizeDiff field logic.
+	//
+	// The SetId method must be called with a non-empty value for the managed
+	// resource instance to be properly saved into the Terraform state and
+	// avoid a "inconsistent result after apply" error.
 	//
 	// The interface{} parameter is the result of the Provider type
 	// ConfigureFunc field execution. If the Provider does not define
@@ -248,10 +249,11 @@ type Resource struct {
 	// The *ResourceData parameter contains the plan and state data for this
 	// managed resource instance. The available data in the Get* methods is the
 	// the proposed state, which is the merged data of the practitioner
-	// configuration and any CustomizeDiff field logic. The SetId method must
-	// be called with a non-empty value for the managed resource instance to be
-	// properly saved into the Terraform state and avoid a "inconsistent result
-	// after apply" error.
+	// configuration and any CustomizeDiff field logic.
+	//
+	// The SetId method must be called with a non-empty value for the managed
+	// resource instance to be properly saved into the Terraform state and
+	// avoid a "inconsistent result after apply" error.
 	//
 	// The interface{} parameter is the result of the Provider type
 	// ConfigureFunc field execution. If the Provider does not define
@@ -375,10 +377,11 @@ type Resource struct {
 	// The *ResourceData parameter contains the plan and state data for this
 	// managed resource instance. The available data in the Get* methods is the
 	// the proposed state, which is the merged data of the practitioner
-	// configuration and any CustomizeDiff field logic. The SetId method must
-	// be called with a non-empty value for the managed resource instance to be
-	// properly saved into the Terraform state and avoid a "inconsistent result
-	// after apply" error.
+	// configuration and any CustomizeDiff field logic.
+	//
+	// The SetId method must be called with a non-empty value for the managed
+	// resource instance to be properly saved into the Terraform state and
+	// avoid a "inconsistent result after apply" error.
 	//
 	// The interface{} parameter is the result of the Provider type
 	// ConfigureFunc field execution. If the Provider does not define
