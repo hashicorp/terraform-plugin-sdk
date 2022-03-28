@@ -21,7 +21,7 @@ const (
 // which can easily change with schema changes. State value checking is only
 // recommended for testing Computed attributes and attribute defaults.
 //
-// For managed resources, the name parameter is combination of the resource
+// For managed resources, the name parameter is a combination of the resource
 // type, a period (.), and the name label. The name for the below example
 // configuration would be "myprovider_thing.example".
 //
@@ -44,7 +44,7 @@ const (
 // expected to be nested under the list or set.
 //
 // You may check for unset nested attributes, however this will also match keys
-// set to empty string. Use a map with at least 1 non-empty value.
+// set to an empty string. Use a map with at least 1 non-empty value.
 //
 //     map[string]string{
 //       "key1": "value",
@@ -93,7 +93,7 @@ func TestCheckTypeSetElemNestedAttrs(name, attr string, values map[string]string
 // changes. State value checking is only recommended for testing Computed
 // attributes and attribute defaults.
 //
-// For managed resources, the name parameter is combination of the resource
+// For managed resources, the name parameter is a combination of the resource
 // type, a period (.), and the name label. The name for the below example
 // configuration would be "myprovider_thing.example".
 //
@@ -116,7 +116,7 @@ func TestCheckTypeSetElemNestedAttrs(name, attr string, values map[string]string
 // for matching attribute values expected to be nested under the list or set.
 //
 // You may check for unset nested attributes, however this will also match keys
-// set to empty string. Use a map with at least 1 non-empty value.
+// set to an empty string. Use a map with at least 1 non-empty value.
 //
 //     map[string]*regexp.Regexp{
 //       "key1": regexp.MustCompile(`^value`),
@@ -172,7 +172,7 @@ func TestMatchTypeSetElemNestedAttrs(name, attr string, values map[string]*regex
 // changes. State value checking is only recommended for testing Computed
 // attributes and attribute defaults.
 //
-// For managed resources, the name parameter is combination of the resource
+// For managed resources, the name parameter is a combination of the resource
 // type, a period (.), and the name label. The name for the below example
 // configuration would be "myprovider_thing.example".
 //
@@ -218,7 +218,7 @@ func TestCheckTypeSetElemAttr(name, attr, value string) TestCheckFunc {
 // combination. State value checking is only recommended for testing Computed
 // attributes and attribute defaults.
 //
-// For managed resources, the name parameter is combination of the resource
+// For managed resources, the name parameter is a combination of the resource
 // type, a period (.), and the name label. The name for the below example
 // configuration would be "myprovider_thing.example".
 //
