@@ -1,0 +1,3 @@
+```release-note:bug
+helper/validation: Prevented panics with `ToDiagFunc()` function when used inside `Schema` type `Elem` field, such as validating `TypeList` elements
+```
