@@ -166,11 +166,11 @@ func TestMatchTypeSetElemNestedAttrs(name, attr string, values map[string]*regex
 // TypeSet where its elements are a simple value
 
 // TestCheckTypeSetElemAttr ensures a specific value is stored in state for the
-// for the given name and key combination under a list or set. Use this
-// TestCheckFunc in preference over non-set variants to simplify testing code
-// and ensure compatibility with indicies, which can easily change with schema
-// changes. State value checking is only recommended for testing Computed
-// attributes and attribute defaults.
+// given name and key combination under a list or set. Use this TestCheckFunc
+// in preference over non-set variants to simplify testing code and ensure
+// compatibility with indicies, which can easily change with schema changes.
+// State value checking is only recommended for testing Computed attributes and
+// attribute defaults.
 //
 // For managed resources, the name parameter is a combination of the resource
 // type, a period (.), and the name label. The name for the below example
