@@ -823,11 +823,33 @@ func TestCheckModuleResourceAttrSet(mp []string, name string, key string) TestCh
 }
 
 func testCheckResourceAttrSet(is *terraform.InstanceState, name string, key string) error {
-	if val, ok := is.Attributes[key]; !ok || val == "" {
-		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
+	val, ok := is.Attributes[key]
+
+	if ok && val != "" {
+		return nil
 	}
 
-	return nil
+	if _, ok := is.Attributes[key+".#"]; ok {
+		return fmt.Errorf(
+			"%s: list or set attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s). Set element value checks should use TestCheckTypeSet functions instead.",
+			name,
+			key,
+			key+".#",
+			key+".0",
+		)
+	}
+
+	if _, ok := is.Attributes[key+".%"]; ok {
+		return fmt.Errorf(
+			"%s: map attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s).",
+			name,
+			key,
+			key+".%",
+			key+".examplekey",
+		)
+	}
+
+	return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 }
 
 // TestCheckResourceAttr ensures a specific value is stored in state for the
@@ -892,23 +914,40 @@ func TestCheckModuleResourceAttr(mp []string, name string, key string, value str
 }
 
 func testCheckResourceAttr(is *terraform.InstanceState, name string, key string, value string) error {
-	// Empty containers may be elided from the state.
-	// If the intent here is to check for an empty container, allow the key to
-	// also be non-existent.
-	emptyCheck := false
-	if value == "0" && (strings.HasSuffix(key, ".#") || strings.HasSuffix(key, ".%")) {
-		emptyCheck = true
-	}
+	v, ok := is.Attributes[key]
 
-	if v, ok := is.Attributes[key]; !ok || v != value {
-		if emptyCheck && !ok {
+	if !ok {
+		// Empty containers may be elided from the state.
+		// If the intent here is to check for an empty container, allow the key to
+		// also be non-existent.
+		if value == "0" && (strings.HasSuffix(key, ".#") || strings.HasSuffix(key, ".%")) {
 			return nil
 		}
 
-		if !ok {
-			return fmt.Errorf("%s: Attribute '%s' not found", name, key)
+		if _, ok := is.Attributes[key+".#"]; ok {
+			return fmt.Errorf(
+				"%s: list or set attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s). Set element value checks should use TestCheckTypeSet functions instead.",
+				name,
+				key,
+				key+".#",
+				key+".0",
+			)
 		}
 
+		if _, ok := is.Attributes[key+".%"]; ok {
+			return fmt.Errorf(
+				"%s: map attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s).",
+				name,
+				key,
+				key+".%",
+				key+".examplekey",
+			)
+		}
+
+		return fmt.Errorf("%s: Attribute '%s' not found", name, key)
+	}
+
+	if v != value {
 		return fmt.Errorf(
 			"%s: Attribute '%s' expected %#v, got %#v",
 			name,
@@ -916,6 +955,7 @@ func testCheckResourceAttr(is *terraform.InstanceState, name string, key string,
 			value,
 			v)
 	}
+
 	return nil
 }
 
@@ -976,21 +1016,37 @@ func TestCheckModuleNoResourceAttr(mp []string, name string, key string) TestChe
 }
 
 func testCheckNoResourceAttr(is *terraform.InstanceState, name string, key string) error {
+	v, ok := is.Attributes[key]
+
 	// Empty containers may sometimes be included in the state.
 	// If the intent here is to check for an empty container, allow the value to
 	// also be "0".
-	emptyCheck := false
-	if strings.HasSuffix(key, ".#") || strings.HasSuffix(key, ".%") {
-		emptyCheck = true
-	}
-
-	val, exists := is.Attributes[key]
-	if emptyCheck && val == "0" {
+	if v == "0" && (strings.HasSuffix(key, ".#") || strings.HasSuffix(key, ".%")) {
 		return nil
 	}
 
-	if exists {
+	if ok {
 		return fmt.Errorf("%s: Attribute '%s' found when not expected", name, key)
+	}
+
+	if _, ok := is.Attributes[key+".#"]; ok {
+		return fmt.Errorf(
+			"%s: list or set attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s). Set element value checks should use TestCheckTypeSet functions instead.",
+			name,
+			key,
+			key+".#",
+			key+".0",
+		)
+	}
+
+	if _, ok := is.Attributes[key+".%"]; ok {
+		return fmt.Errorf(
+			"%s: map attribute '%s' must be checked by element count key (%s) or element value keys (e.g. %s).",
+			name,
+			key,
+			key+".%",
+			key+".examplekey",
+		)
 	}
 
 	return nil
