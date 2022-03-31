@@ -637,6 +637,7 @@ type DeleteContextFunc func(context.Context, *ResourceData, interface{}) diag.Di
 type StateMigrateFunc func(
 	int, *terraform.InstanceState, interface{}) (*terraform.InstanceState, error)
 
+// Implementation of a single schema version state upgrade.
 type StateUpgrader struct {
 	// Version is the version schema that this Upgrader will handle, converting
 	// it to Version+1.
@@ -655,7 +656,36 @@ type StateUpgrader struct {
 	Upgrade StateUpgradeFunc
 }
 
-// See StateUpgrader
+// Function signature for a schema version state upgrade handler.
+//
+// The Context parameter stores SDK information, such as loggers. It also
+// is wired to receive any cancellation from Terraform such as a system or
+// practitioner sending SIGINT (Ctrl-c).
+//
+// The map[string]interface{} parameter contains the previous schema version
+// state data for a managed resource instance. The keys are top level attribute
+// or block names mapped to values that can be type asserted similar to
+// fetching values using the ResourceData Get* methods:
+//
+//     - TypeBool: bool
+//     - TypeFloat: float
+//     - TypeInt: int
+//     - TypeList: []interface{}
+//     - TypeMap: map[string]interface{}
+//     - TypeSet: *Set
+//     - TypeString: string
+//
+// In certain scenarios, the map may be nil, so checking for that condition
+// upfront is recommended to prevent potential panics.
+//
+// The interface{} parameter is the result of the Provider type
+// ConfigureFunc field execution. If the Provider does not define
+// a ConfigureFunc, this will be nil. This parameter is conventionally
+// used to store API clients and other provider instance specific data.
+//
+// The map[string]interface{} return parameter should contain the upgraded
+// schema version state data for a managed resource instance. Values must
+// align to the typing mentioned above.
 type StateUpgradeFunc func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
 
 // See Resource documentation.
