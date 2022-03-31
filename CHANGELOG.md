@@ -1,3 +1,21 @@
+# 2.13.0 (March 31, 2022)
+
+NOTES:
+
+* helper/resource: False positive checks of list, map, and set attributes with `TestCheckNoResourceAttr` and `TestCheckResourceAttrSet` will now return an error to explain how to accurately check those types of attributes. Some previously passing tests will now fail until the check is correctly updated. ([#920](https://github.com/hashicorp/terraform-plugin-sdk/issues/920))
+* helper/schema: Any returned non-`nil` `error` with an `Error()` method that returns an empty string (`""`), will now return an error diagnostic with an `"Empty Error String"` summary instead of a panic. Enabling Terraform logging at the `WARN` level (e.g. `TF_LOG=WARN terraform apply`) can help locate the problematic error by searching for the `detected empty error string` log message. ([#914](https://github.com/hashicorp/terraform-plugin-sdk/issues/914))
+
+ENHANCEMENTS:
+
+* helper/resource: Added error when errantly checking list, map, or set attributes in `TestCheckNoResourceAttr`, `TestCheckResourceAttr`, and `TestCheckResourceAttrSet` ([#920](https://github.com/hashicorp/terraform-plugin-sdk/issues/920))
+* helper/resource: Execute Terraform CLI commands during acceptance testing with `CHECKPOINT_DISABLE=1` set, removing extraneous calls to checkpoint.hashicorp.com to check for latest Terraform CLI version ([#913](https://github.com/hashicorp/terraform-plugin-sdk/issues/913))
+
+BUG FIXES:
+
+* helper/schema: Allowed `Schema` with `TypeInt` to accept `string` values from `DefaultFunc`, such as `EnvDefaultFunc` ([#841](https://github.com/hashicorp/terraform-plugin-sdk/pull/841)) ([#841](https://github.com/hashicorp/terraform-plugin-sdk/issues/841))
+* helper/schema: Prevented panics during `error` to diagnostic conversion for a non-`nil` error with an `Error()` method that returns an empty string (`""`) ([#914](https://github.com/hashicorp/terraform-plugin-sdk/issues/914))
+* helper/validation: Prevented panics with `ToDiagFunc()` function when used inside `Schema` type `Elem` field, such as validating `TypeList` elements ([#915](https://github.com/hashicorp/terraform-plugin-sdk/issues/915))
+
 # 2.12.0 (March 17, 2022)
 
 ENHANCEMENTS:
