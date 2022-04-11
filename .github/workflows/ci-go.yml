@@ -65,7 +65,7 @@ jobs:
       - run: go mod download
       - run: go test -coverprofile=coverage.out ./...
       - run: go tool cover -html=coverage.out -o coverage.html
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: go-${{ matrix.go-version }}-coverage
           path: coverage.html
