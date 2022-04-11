@@ -17,7 +17,7 @@ jobs:
       - id: go-version
         # Reference: https://github.com/actions/setup-go/issues/23
         run: echo "::set-output name=version::$(cat ./.go-version)"
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ steps.go-version.outputs.version }}
       - run: go install github.com/rhysd/actionlint/cmd/actionlint@latest
