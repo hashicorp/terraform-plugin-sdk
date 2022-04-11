@@ -14,9 +14,9 @@ When running provider tests, Terraform 0.12.26 or later is needed for version 2.
 
 ## Go Compatibility
 
-The Terraform Plugin SDK is built in Go, and uses the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the SDK.
+This project follows the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the project.
 
-Currently, that means Go **1.16** or later must be used when building a provider with the SDK.
+Currently, that means Go **1.17** or later must be used when including this project as a dependency.
 
 ## Getting Started
 

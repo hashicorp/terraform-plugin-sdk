@@ -1,0 +1,3 @@
+```release-note:note
+This Go module has been updated to Go 1.17 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors.
+```
