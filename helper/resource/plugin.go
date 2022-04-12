@@ -43,6 +43,14 @@ func runProviderCommand(ctx context.Context, t testing.T, f func() error, wd *pl
 	// plugins.
 	os.Setenv("PLUGIN_PROTOCOL_VERSIONS", "5")
 
+	// Acceptance testing does not need to call checkpoint as the output
+	// is not accessible, nor desirable if explicitly using
+	// TF_ACC_TERRAFORM_PATH or TF_ACC_TERRAFORM_VERSION environment variables.
+	//
+	// Avoid calling (tfexec.Terraform).SetEnv() as it will stop copying
+	// os.Environ() and prevents TF_VAR_ environment variable usage.
+	os.Setenv("CHECKPOINT_DISABLE", "1")
+
 	// Terraform 0.12.X and 0.13.X+ treat namespaceless providers
 	// differently in terms of what namespace they default to. So we're
 	// going to set both variations, as we don't know which version of

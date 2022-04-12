@@ -2,9 +2,6 @@ package plugintest
 
 // Environment variables
 const (
-	// Disables checkpoint.hashicorp.com calls in Terraform CLI.
-	EnvCheckpointDisable = "CHECKPOINT_DISABLE"
-
 	// Environment variable with acceptance testing temporary directory for
 	// testing files and Terraform CLI installation, if installation is
 	// required. By default, the operating system temporary directory is used.
