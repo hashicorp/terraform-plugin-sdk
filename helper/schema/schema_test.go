@@ -26,9 +26,7 @@ func TestEnvDefaultFunc(t *testing.T) {
 	defer os.Unsetenv(key)
 
 	f := EnvDefaultFunc(key, "42")
-	if err := os.Setenv(key, "foo"); err != nil {
-		t.Fatalf("err: %s", err)
-	}
+	t.Setenv(key, "foo")
 
 	actual, err := f()
 	if err != nil {
@@ -64,9 +62,7 @@ func TestMultiEnvDefaultFunc(t *testing.T) {
 
 	// Test that the first key is returned first
 	f := MultiEnvDefaultFunc(keys, "42")
-	if err := os.Setenv(keys[0], "foo"); err != nil {
-		t.Fatalf("err: %s", err)
-	}
+	t.Setenv(keys[0], "foo")
 
 	actual, err := f()
 	if err != nil {
@@ -82,9 +78,7 @@ func TestMultiEnvDefaultFunc(t *testing.T) {
 
 	// Test that the second key is returned if the first one is empty
 	f = MultiEnvDefaultFunc(keys, "42")
-	if err := os.Setenv(keys[1], "foo"); err != nil {
-		t.Fatalf("err: %s", err)
-	}
+	t.Setenv(keys[1], "foo")
 
 	actual, err = f()
 	if err != nil {
@@ -8474,25 +8468,19 @@ func TestValidateAtLeastOneOfAttributes(t *testing.T) {
 }
 
 func TestPanicOnErrorDefaultsFalse(t *testing.T) {
-	oldEnv := os.Getenv("TF_ACC")
+	t.Setenv("TF_ACC", "")
 
-	os.Setenv("TF_ACC", "")
 	if schemaMap(nil).panicOnError() {
 		t.Fatalf("panicOnError should be false when TF_ACC is empty")
 	}
-
-	os.Setenv("TF_ACC", oldEnv)
 }
 
 func TestPanicOnErrorTF_ACCSet(t *testing.T) {
-	oldEnv := os.Getenv("TF_ACC")
+	t.Setenv("TF_ACC", "1")
 
-	os.Setenv("TF_ACC", "1")
 	if !schemaMap(nil).panicOnError() {
 		t.Fatalf("panicOnError should be true when TF_ACC is not empty")
 	}
-
-	os.Setenv("TF_ACC", oldEnv)
 }
 
 func TestValidateRequiredWithAttributes(t *testing.T) {
