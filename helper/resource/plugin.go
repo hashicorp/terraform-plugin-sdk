@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -330,7 +329,7 @@ func runProviderCommand(ctx context.Context, t testing.T, f func() error, wd *pl
 	// started.
 	err := f()
 	if err != nil {
-		log.Printf("[WARN] Got error running Terraform: %s", err)
+		logging.HelperResourceWarn(ctx, "Error running Terraform CLI command", map[string]interface{}{logging.KeyError: err})
 	}
 
 	logging.HelperResourceTrace(ctx, "Called wrapped Terraform CLI command")
