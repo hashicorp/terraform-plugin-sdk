@@ -13,7 +13,11 @@ import (
 // already have the root SDK logger and root provider logger setup from
 // terraform-plugin-go tf5server RPC handlers.
 func InitContext(ctx context.Context) context.Context {
-	ctx = tfsdklog.NewSubsystem(ctx, SubsystemHelperSchema, tfsdklog.WithLevelFromEnv(EnvTfLogSdkHelperSchema))
+	ctx = tfsdklog.NewSubsystem(ctx, SubsystemHelperSchema,
+		// All calls are through the HelperSchema* helper functions
+		tfsdklog.WithAdditionalLocationOffset(1),
+		tfsdklog.WithLevelFromEnv(EnvTfLogSdkHelperSchema),
+	)
 
 	return ctx
 }
@@ -30,7 +34,11 @@ func InitTestContext(ctx context.Context, t testing.T) context.Context {
 
 	ctx = tfsdklog.RegisterTestSink(ctx, t)
 	ctx = tfsdklog.NewRootSDKLogger(ctx, tfsdklog.WithLevelFromEnv(EnvTfLogSdk))
-	ctx = tfsdklog.NewSubsystem(ctx, SubsystemHelperResource, tfsdklog.WithLevelFromEnv(EnvTfLogSdkHelperResource))
+	ctx = tfsdklog.NewSubsystem(ctx, SubsystemHelperResource,
+		// All calls are through the HelperResource* helper functions
+		tfsdklog.WithAdditionalLocationOffset(1),
+		tfsdklog.WithLevelFromEnv(EnvTfLogSdkHelperResource),
+	)
 	ctx = TestNameContext(ctx, t.Name())
 
 	return ctx
