@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -649,7 +650,7 @@ func TestSetNew(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -676,7 +677,7 @@ func TestSetNewComputed(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -945,7 +946,7 @@ func TestForceNew(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -1194,7 +1195,7 @@ func TestClear(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -1436,7 +1437,7 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 			keys := d.GetChangedKeysPrefix(tc.Key)
 
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
