@@ -139,29 +139,27 @@ func (h *Helper) NewWorkingDir(ctx context.Context, t TestControl) (*WorkingDir,
 		return nil, fmt.Errorf("unable to disable terraform-exec provider verification: %w", err)
 	}
 
-	if logPath := os.Getenv(EnvTfAccLogPath); logPath != "" {
-		logging.HelperResourceTrace(
-			ctx,
-			fmt.Sprintf("Setting terraform-exec log path via %s environment variable", EnvTfAccLogPath),
-			map[string]interface{}{logging.KeyTestTerraformLogPath: logPath},
-		)
+	var logPath, logPathEnvVar string
 
-		if err := tf.SetLogPath(logPath); err != nil {
-			return nil, fmt.Errorf("unable to set terraform-exec log path (%s): %w", logPath, err)
-		}
+	if tfAccLogPath := os.Getenv(EnvTfAccLogPath); tfAccLogPath != "" {
+		logPath = tfAccLogPath
+		logPathEnvVar = EnvTfAccLogPath
 	}
 
 	// Similar to helper/logging.LogOutput() and
 	// terraform-plugin-log/tfsdklog.RegisterTestSink(), the TF_LOG_PATH_MASK
 	// environment variable should take precedence over TF_ACC_LOG_PATH.
-	if logPathMask := os.Getenv(EnvTfLogPathMask); logPathMask != "" {
+	if tfLogPathMask := os.Getenv(EnvTfLogPathMask); tfLogPathMask != "" {
 		// Escape special characters which may appear if we have subtests
 		testName := strings.Replace(t.Name(), "/", "__", -1)
-		logPath := fmt.Sprintf(logPathMask, testName)
+		logPath = fmt.Sprintf(tfLogPathMask, testName)
+		logPathEnvVar = EnvTfLogPathMask
+	}
 
+	if logPath != "" {
 		logging.HelperResourceTrace(
 			ctx,
-			fmt.Sprintf("Setting terraform-exec log path via %s environment variable", EnvTfLogPathMask),
+			fmt.Sprintf("Setting terraform-exec log path via %s environment variable", logPathEnvVar),
 			map[string]interface{}{logging.KeyTestTerraformLogPath: logPath},
 		)
 
