@@ -1,3 +1,17 @@
+# 2.14.0 (April 14, 2022)
+
+NOTES:
+
+* This Go module has been updated to Go 1.17 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#934](https://github.com/hashicorp/terraform-plugin-sdk/issues/934))
+
+BUG FIXES:
+
+* helper/resource: Ensured Terraform CLI logs are written to `TF_LOG_PATH_MASK` environment variable value when both `TF_ACC_LOG_PATH` and `TF_LOG_PATH_MASK` are set ([#938](https://github.com/hashicorp/terraform-plugin-sdk/issues/938))
+* helper/resource: Ensured `@caller` in SDK logging entries accurately reflected calling code location ([#939](https://github.com/hashicorp/terraform-plugin-sdk/issues/939))
+* helper/resource: Prevented regression since 2.13.0 with the removal of environment variables, including `TF_VAR_*`, when calling Terraform CLI commands ([#937](https://github.com/hashicorp/terraform-plugin-sdk/issues/937))
+* helper/schema: Ensured `@caller` in SDK logging entries accurately reflected calling code location ([#939](https://github.com/hashicorp/terraform-plugin-sdk/issues/939))
+* helper/schema: Prevented missing SDK logging entries and confusing provider.stdio TRACE logging entries ([#936](https://github.com/hashicorp/terraform-plugin-sdk/issues/936))
+
 # 2.13.0 (March 31, 2022)
 
 NOTES:
