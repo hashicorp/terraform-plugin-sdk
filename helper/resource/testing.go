@@ -13,10 +13,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	testing "github.com/mitchellh/go-testing-interface"
+	"github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
@@ -49,7 +50,7 @@ var flagSweepAllowFailures = flag.Bool("sweep-allow-failures", false, "Enable to
 var flagSweepRun = flag.String("sweep-run", "", "Comma seperated list of Sweeper Tests to run")
 var sweeperFuncs map[string]*Sweeper
 
-// type SweeperFunc is a signature for a function that acts as a sweeper. It
+// SweeperFunc is a signature for a function that acts as a sweeper. It
 // accepts a string for the region that the sweeper is to be ran in. This
 // function must be able to construct a valid client for that region.
 type SweeperFunc func(r string) error
@@ -957,6 +958,34 @@ func testCheckResourceAttr(is *terraform.InstanceState, name string, key string,
 	}
 
 	return nil
+}
+
+// CheckResourceAttrWithFunc is the callback type used to apply a custom checking logic
+// when using TestCheckResourceAttrWith and a value is found for the given name and key.
+//
+// When this function returns an error, TestCheckResourceAttrWith will fail the check.
+type CheckResourceAttrWithFunc func(value string) error
+
+// TestCheckResourceAttrWith - as per TestCheckResourceAttr but the attribute value
+// checking logic can be customised.
+//
+// If a value is found for the given name and key, it is passed to the CheckResourceAttrWithFunc function.
+// The CheckResourceAttrWithFunc function can then apply any checking logic:
+// should return an error for the check to fail, or `nil` to succeed.
+func TestCheckResourceAttrWith(name, key string, f CheckResourceAttrWithFunc) TestCheckFunc {
+	return checkIfIndexesIntoTypeSet(key, func(s *terraform.State) error {
+		is, err := primaryInstanceState(s, name)
+		if err != nil {
+			return err
+		}
+
+		err = testCheckResourceAttrSet(is, name, key)
+		if err != nil {
+			return err
+		}
+
+		return f(is.Attributes[key])
+	})
 }
 
 // TestCheckNoResourceAttr ensures no value exists in the state for the
