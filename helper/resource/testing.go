@@ -984,7 +984,13 @@ func TestCheckResourceAttrWith(name, key string, f CheckResourceAttrWithFunc) Te
 			return err
 		}
 
-		return f(is.Attributes[key])
+		err = f(is.Attributes[key])
+
+		if err != nil {
+			return fmt.Errorf("%s: Attribute %q value: %w", name, key, err)
+		}
+
+		return nil
 	})
 }
 

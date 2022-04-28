@@ -233,7 +233,7 @@ func ExampleTestCheckResourceAttrWith_typeString() {
 	// Verify the attribute value string length is above 1000
 	resource.TestCheckResourceAttrWith("example_thing.test", "example_string_attribute", func(value string) error {
 		if len(value) <= 1000 {
-			return fmt.Errorf("example_string_attribute should be longer than 1000 characters")
+			return fmt.Errorf("should be longer than 1000 characters")
 		}
 		return nil
 	})
@@ -266,7 +266,7 @@ func ExampleTestCheckResourceAttrWith_typeInt() {
 		}
 
 		if valueInt < 5 && valueInt >= 20 {
-			return fmt.Errorf("example error message")
+			return fmt.Errorf("should be between 5 and 20")
 		}
 		return nil
 	})
