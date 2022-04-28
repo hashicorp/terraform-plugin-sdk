@@ -1,0 +1,3 @@
+```release-note:feature
+helper/resource: New `TestCheckResourceAttrWith` test helper, that simplifies checking of attribute values via custom functions
+```

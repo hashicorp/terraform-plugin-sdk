@@ -1,7 +1,9 @@
 package resource_test
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -207,6 +209,67 @@ func ExampleTestCheckResourceAttr_typeString() {
 	//       for configured attributes that mismatch the saved state, however
 	//       this configuration and test is shown for illustrative purposes.
 	resource.TestCheckResourceAttr("example_thing.test", "example_string_attribute", "test-value")
+}
+
+func ExampleTestCheckResourceAttrWith_typeString() {
+	// This function is typically implemented in a TestStep type Check field,
+	// wrapped with ComposeAggregateTestCheckFunc to combine results from
+	// multiple checks.
+	//
+	// Given the following example configuration:
+	//
+	//     resource "example_thing" "test" {
+	//       example_string_attribute = "Very long string..."
+	//     }
+	//
+	// The following TestCheckResourceAttrWith can be written to assert against
+	// the expected state values.
+	//
+	// NOTE: State value checking is only necessary for Computed attributes,
+	//       as the testing framework will automatically return test failures
+	//       for configured attributes that mismatch the saved state, however
+	//       this configuration and test is shown for illustrative purposes.
+
+	// Verify the attribute value string length is above 1000
+	resource.TestCheckResourceAttrWith("example_thing.test", "example_string_attribute", func(value string) error {
+		if len(value) <= 1000 {
+			return fmt.Errorf("should be longer than 1000 characters")
+		}
+		return nil
+	})
+}
+
+func ExampleTestCheckResourceAttrWith_typeInt() {
+	// This function is typically implemented in a TestStep type Check field,
+	// wrapped with ComposeAggregateTestCheckFunc to combine results from
+	// multiple checks.
+	//
+	// Given the following example configuration:
+	//
+	//     resource "example_thing" "test" {
+	//       example_int_attribute = 10
+	//     }
+	//
+	// The following TestCheckResourceAttrWith can be written to assert against
+	// the expected state values.
+	//
+	// NOTE: State value checking is only necessary for Computed attributes,
+	//       as the testing framework will automatically return test failures
+	//       for configured attributes that mismatch the saved state, however
+	//       this configuration and test is shown for illustrative purposes.
+
+	// Verify the attribute value is an integer, and it's between 5 (included) and 20 (excluded)
+	resource.TestCheckResourceAttrWith("example_thing.test", "example_string_attribute", func(value string) error {
+		valueInt, err := strconv.Atoi(value)
+		if err != nil {
+			return err
+		}
+
+		if valueInt < 5 && valueInt >= 20 {
+			return fmt.Errorf("should be between 5 and 20")
+		}
+		return nil
+	})
 }
 
 func ExampleTestCheckResourceAttrPair() {
