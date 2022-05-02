@@ -1,0 +1,798 @@
+---
+page_title: 'Plugin Development - Deprecations, Removals, and Renames Best Practices'
+description: 'Recommendations for deprecations, removals, and renames.'
+---
+
+# Deprecations, Removals, and Renames
+
+Terraform is trusted for managing many facets of infrastructure across many organizations. Part of that trust is due to consistent versioning guidelines and setting expectations for various levels of upgrades. Ensuring backwards compatibility for all patch and minor releases, potentially in concert with any upcoming major changes, is recommended and supported by the Terraform development framework. This allows operators to iteratively update their Terraform configurations rather than require massive refactoring.
+
+This guide is designed to walk through various scenarios where existing Terraform functionality requires future removal, while maintaining backwards compatibility. Further information about the versioning terminology (e.g. `MAJOR`.`MINOR`.`PATCH`) in this guide can be found in [the versioning guidelines documentation](/plugin/sdkv2/best-practices/versioning).
+
+~> **NOTE:** Removals should only ever occur in `MAJOR` version upgrades.
+
+## Table of Contents
+
+- [Provider Attribute Removal](#provider-attribute-removal)
+- [Provider Attribute Rename](#provider-attribute-rename)
+  - [Renaming a Required Attribute](#renaming-a-required-attribute)
+  - [Renaming an Optional Attribute](#renaming-an-optional-attribute)
+  - [Renaming a Computed Attribute](#renaming-a-computed-attribute)
+- [Provider Data Source or Resource Removal](#provider-data-source-or-resource-removal)
+- [Provider Data Source or Resource Rename](#provider-data-source-or-resource-rename)
+
+## Provider Attribute Removal
+
+The recommended process for removing an attribute from a data source or resource in a provider is as follows:
+
+1. Add `Deprecated` in the attribute schema definition. After an operator upgrades to this version, they will be shown a warning with the message provided when using the attribute, but the Terraform run will still complete.
+1. Ensure the changelog has an entry noting the deprecation.
+1. Release a `MINOR` version with the deprecation.
+1. In the next `MAJOR` version, remove all code associated with the attribute including the schema definition.
+1. Ensure the changelog has an entry noting the removal.
+1. Release the `MAJOR` version.
+
+## Provider Attribute Rename
+
+When renaming an attribute from one name to another, it is important to keep backwards compatibility with both existing Terraform configurations and the [Terraform state](/language/state) while operators migrate. To accomplish this, there will be some duplicated logic to support both attributes until the next `MAJOR` release. Once both attributes are appropriately handled, the process for deprecating and removing the old attribute is the same as noted in the [Provider Attribute Removal section](#provider-attribute-removal).
+
+The procedure for renaming an attribute depends on what type of attribute it is:
+
+- [Renaming a Required Attribute](#renaming-a-required-attribute)
+- [Renaming an Optional Attribute](#renaming-an-optional-attribute)
+- [Renaming a Computed Attribute](#renaming-a-computed-attribute)
+
+### Renaming a Required Attribute
+
+~> **NOTE:** If the schema definition does not contain `Optional` or `Required`, see the [Renaming a Computed Attribute section](#renaming-a-computed-attribute) instead. If the schema definition contains `Optional` instead of `Required`, see the [Renaming an Optional Attribute section](#renaming-an-optional-attribute).
+
+-> [Required attributes](/plugin/sdkv2/schemas/schema-behaviors#required) are also referred to as required "arguments" throughout the Terraform documentation.
+
+In general, the procedure here does two things:
+
+- Prevents the operator from needing to define two attributes with the same value.
+- Allows the operator to migrate the configuration to the new attribute at the same time requiring that any other references only work with the new attribute. This is to prevent a situation with Terraform showing a difference when the existing attribute is configured, but the new attribute is saved into the Terraform state. For example, in `terraform plan` output format:
+
+```
+existing_attribute: "" => "value"
+new_attribute:      "value" => ""
+```
+
+The recommended process is as follows:
+
+1. Replace `Required: true` with `Optional: true` in the existing attribute schema definition.
+1. Replace `Required` with `Optional` in the existing attribute documentation.
+1. Duplicate the schema definition of the existing attribute, renaming one of them with the new attribute name.
+1. Duplicate the documentation of the existing attribute, renaming one of them with the new attribute name.
+1. Add `Deprecated` to the schema definition of the existing (now the "old") attribute, noting to use the new attribute in the message.
+1. Add `**Deprecated**` to the documentation of the existing (now the "old") attribute, noting to use the new attribute.
+1. Add a note to the documentation that either the existing (now the "old") attribute or new attribute must be configured.
+1. Add `ConflictsWith` to the schema definitions of both the old and new attributes so they will present an error to the operator if both are configured at the same time.
+1. Add conditional logic in the `Create`, `Read`, and `Update` functions of the data source or resource to handle both attributes. Generally, this involves using [`ResourceData.GetOk()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/helper/schema#ResourceData.GetOk) (commonly `d.GetOk()` in HashiCorp maintained providers).
+1. Add conditional logic in the `Create` and `Update` function that returns an error if both the old and new attributes are not defined.
+1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal). When the old attribute is removed, update the schema definition and documentation of the new attribute back to `Required`.
+
+#### Example Renaming of a Required Attribute
+
+Given this sample resource:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:     schema.TypeString,
+                Required: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    existingAttribute := d.Get("existing_attribute").(string)
+    // add attribute to provider create API call
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("existing_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    existingAttribute := d.Get("existing_attribute").(string)
+    // add attribute to provider update API call
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+In order to support renaming `existing_attribute` to `new_attribute`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:          schema.TypeString,
+                Optional:      true,
+                ConflictsWith: []string{"new_attribute"},
+                Deprecated:    "use new_attribute instead",
+            },
+            "new_attribute": {
+                Type:          schema.TypeString,
+                Optional:      true,
+                ConflictsWith: []string{"existing_attribute"},
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    existingAttribute, existingAttributeOk := d.GetOk("existing_attribute")
+    newAttribute, newAttributeOk := d.GetOk("new_attribute")
+    if !existingAttributeOk && !newAttributeOk {
+        return errors.New("one of existing_attribute or new_attribute must be configured")
+    }
+    if existingAttributeOk {
+        // add existingAttribute to provider create API call
+    } else {
+        // add newAttribute to provider create API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if _, ok := d.GetOk("existing_attribute"); ok {
+        d.Set("existing_attribute", /* ... */)
+    } else {
+        d.Set("new_attribute", /* ... */)
+    }
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    existingAttribute, existingAttributeOk := d.GetOk("existing_attribute")
+    newAttribute, newAttributeOk := d.GetOk("new_attribute")
+    if !existingAttributeOk && !newAttributeOk {
+        return errors.New("one of existing_attribute or new_attribute must be configured")
+    }
+    if existingAttributeOk {
+        // add existingAttribute to provider update API call
+    } else {
+        // add newAttribute to provider update API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+When the `existing_attribute` is ready for removal, then this can be written as:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "new_attribute": {
+                Type:     schema.TypeString,
+                Required: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    newAttribute := d.Get("new_attribute").(string)
+    // add attribute to provider create API call
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("new_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    newAttribute := d.Get("new_attribute").(string)
+    // add attribute to provider update API call
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+### Renaming an Optional Attribute
+
+~> **NOTE:** If the schema definition does not contain `Optional` or `Required`, see the [Renaming a Computed Attribute section](#renaming-a-computed-attribute) instead. If the schema definition contains `Required` instead of `Optional`, see the [Renaming a Required Attribute section](#renaming-a-required-attribute).
+
+-> [Optional attributes](/plugin/sdkv2/schemas/schema-behaviors#optional) are also referred to as optional "arguments" throughout the Terraform documentation.
+
+In general, the procedure here allows the operator to migrate the configuration to the new attribute at the same time requiring that any other references only work with the new attribute. This is to prevent a situation with Terraform showing a difference when the existing attribute is configured, but the new attribute is saved into the Terraform state. For example, in `terraform plan` output format:
+
+```text
+existing_attribute: "" => "value"
+new_attribute:      "value" => ""
+```
+
+The recommended process is as follows:
+
+1. Duplicate the schema definition of the existing attribute, renaming one of them with the new attribute name.
+1. Duplicate the documentation of the existing attribute, renaming one of them with the new attribute name.
+1. Add `Deprecated` to the schema definition of the existing (now the "old") attribute, noting to use the new attribute in the message.
+1. Add `**Deprecated**` to the documentation of the existing (now the "old") attribute, noting to use the new attribute.
+1. Add `ConflictsWith` to the schema definitions of both the old and new attributes so they will present an error to the operator if both are configured at the same time.
+1. Add conditional logic in the `Create`, `Read`, and `Update` functions of the data source or resource to handle both attributes. Generally, this involves using [`ResourceData.GetOk()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/helper/schema#ResourceData.GetOk) (commonly `d.GetOk()` in HashiCorp maintained providers).
+1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal).
+
+#### Example Renaming of an Optional Attribute
+
+Given this sample resource:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:     schema.TypeString,
+                Optional: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("existing_attribute"); ok {
+        // add attribute to provider create API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("existing_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("existing_attribute"); ok {
+        // add attribute to provider update API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+In order to support renaming `existing_attribute` to `new_attribute`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:          schema.TypeString,
+                Optional:      true,
+                ConflictsWith: []string{"new_attribute"},
+                Deprecated:    "use new_attribute instead",
+            },
+            "new_attribute": {
+                Type:          schema.TypeString,
+                Optional:      true,
+                ConflictsWith: []string{"existing_attribute"},
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("existing_attribute"); ok {
+        // add attribute to provider create API call
+    } else if v, ok := d.GetOk("new_attribute"); ok {
+        // add attribute to provider create API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("existing_attribute"); ok {
+        d.Set("existing_attribute", /* ... */)
+    } else {
+        d.Set("new_attribute", /* ... */)
+    }
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("existing_attribute"); ok {
+        // add attribute to provider update API call
+    } else if v, ok := d.GetOk("new_attribute"); ok {
+        // add attribute to provider update API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+When the `existing_attribute` is ready for removal, then this can be written as:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: resourceExampleWidgetCreate,
+        Read:   resourceExampleWidgetRead,
+        Update: resourceExampleWidgetUpdate,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "new_attribute": {
+                Type:     schema.TypeString,
+                Optional: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("new_attribute"); ok {
+        // add attribute to provider create API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("new_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    if v, ok := d.GetOk("new_attribute"); ok {
+        // add attribute to provider update API call
+    }
+
+    // ... other logic ...
+    return resourceExampleWidgetRead(d, meta)
+}
+```
+
+### Renaming a Computed Attribute
+
+~> **NOTE:** If the schema definition contains `Optional` see the [Renaming an Optional Attribute section](#renaming-an-optional-attribute) instead. If the schema definition contains `Required` see the [Renaming a Required Attribute section](#renaming-a-required-attribute) instead.
+
+The recommended process is as follows:
+
+1. Duplicate the schema definition of the existing attribute, renaming one of them with the new attribute name.
+1. Duplicate the documentation of the existing attribute, renaming one of them with the new attribute name.
+1. Add `Deprecated` to the schema definition of the existing (now the "old") attribute, noting to use the new attribute in the message.
+1. Add `**Deprecated**` to the documentation of the existing (now the "old") attribute, noting to use the new attribute.
+1. Set both attributes in the Terraform state in the `Read` functions of the data source or resource.
+1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal).
+
+#### Example Renaming of a Computed Attribute
+
+Given this sample resource:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Read: resourceExampleWidgetRead,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:     schema.TypeString,
+                Computed: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("existing_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+```
+
+In order to support renaming `existing_attribute` to `new_attribute`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Read: resourceExampleWidgetRead,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "existing_attribute": {
+                Type:       schema.TypeString,
+                Computed:   true,
+                Deprecated: "use new_attribute instead",
+            },
+            "new_attribute": {
+                Type:     schema.TypeString,
+                Computed: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("existing_attribute", /* ... */)
+    d.Set("new_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+```
+
+When the `existing_attribute` is ready for removal, then this can be written as:
+
+```go
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Read: resourceExampleWidgetRead,
+
+        Schema: map[string]*schema.Schema{
+            // ... other attributes ...
+
+            "new_attribute": {
+                Type:     schema.TypeString,
+                Computed: true,
+            },
+        },
+    }
+}
+
+func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+    // ... other logic ...
+
+    d.Set("new_attribute", /* ... */)
+
+    // ... other logic ...
+    return nil
+}
+```
+
+## Provider Data Source or Resource Removal
+
+The recommended process for removing a data source or resource from a provider is as follows:
+
+1. Add `DeprecationMessage` in the data source or resource schema definition. After an operator upgrades to this version, they will be shown a warning with the message provided when using the deprecated data source or resource, but the Terraform run will still complete.
+1. Ensure the changelog has an entry noting the deprecation.
+1. Release a `MINOR` version with the deprecation.
+1. In the next `MAJOR` version, remove all code associated with the deprecated data source or resource except for the schema and replace the `Create` and `Read` functions to always return an error. Remove the documentation sidebar link and update the resource or data source documentation page to include information about the removal and any potential migration information. After an operator upgrades to this version, they will be shown an error about the missing data source or resource.
+1. Ensure the changelog has an entry noting the removal.
+1. Release the `MAJOR` version.
+1. In the next `MAJOR` version, remove all code associated with the removed data source or resource. Remove the resource or data source documentation page.
+1. Release the `MAJOR` version.
+
+### Example Resource Removal
+
+Given this sample provider and resource:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+            "example_widget": resourceExampleWidget(),
+        },
+    }
+}
+
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+    }
+}
+```
+
+In order to deprecate `example_widget`, this sample can be written as:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+            "example_widget": resourceExampleWidget(),
+        },
+    }
+}
+
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        DeprecationMessage: "use example_thing resource instead"
+    }
+}
+```
+
+To soft remove `example_widget` with a friendly error message, this sample can be written as:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+            "example_widget": resourceExampleWidget(),
+        },
+    }
+}
+
+func resourceExampleWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: func(d *schema.ResourceData, meta interface{}) error {
+            return errors.New("use example_thing resource instead")
+        },
+        Read: func(d *schema.ResourceData, meta interface{}) error {
+            return errors.New("use example_thing resource instead")
+        },
+    }
+}
+```
+
+To remove `example_widget`:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+        },
+    }
+}
+```
+
+## Provider Data Source or Resource Rename
+
+When renaming a resource from one name to another, it is important to keep backwards compatibility with both existing Terraform configurations and the Terraform state while operators migrate. To accomplish this, there will be some duplicated logic to support both resources until the next `MAJOR` release. Once both resources are appropriately handled, the process for deprecating and removing the old resource is the same as noted in the [Provider Data Source or Resource Removal section](#provider-data-source-or-resource-removal).
+
+The recommended process is as follows:
+
+1. Duplicate the code of the existing resource, renaming (and potentially modifying) functions as necessary.
+1. Duplicate the documentation of the existing resource, renaming (and potentially modifying) as necessary.
+1. Add `DeprecatedMessage` to the schema definition of the existing (now the "old") resource, noting to use the new resource in the message.
+1. Add `!> **WARNING:** This resource is deprecated and will be removed in the next major version` to the documentation of the existing (now the "old") resource, noting to use the new resource.
+1. Add the new resource to the provider `ResourcesMap`
+1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal).
+
+### Example Resource Renaming
+
+Given this sample provider and resource:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+
+            "example_existing_widget": resourceExampleExistingWidget(),
+        },
+    }
+}
+
+func resourceExampleExistingWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+    }
+}
+```
+
+In order to support renaming `example_existing_widget` to `example_new_widget`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+
+            "example_existing_widget": resourceExampleExistingWidget(),
+            "example_new_widget":      resourceExampleNewWidget(),
+        },
+    }
+}
+
+func resourceExampleExistingWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        DeprecationMessage: "use example_new_widget resource instead"
+    }
+}
+
+func resourceExampleNewWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+    }
+}
+```
+
+To soft remove `example_existing_widget` with a friendly error message:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+
+            "example_existing_widget": resourceExampleExistingWidget(),
+            "example_new_widget":      resourceExampleNewWidget(),
+        },
+    }
+}
+
+func resourceExampleExistingWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+
+        Create: func(d *schema.ResourceData, meta interface{}) error {
+            return errors.New("use example_new_widget resource instead")
+        },
+        Read: func(d *schema.ResourceData, meta interface{}) error {
+            return errors.New("use example_new_widget resource instead")
+        },
+    }
+}
+
+func resourceExampleNewWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+    }
+}
+```
+
+To remove `example_existing_widget`:
+
+```go
+func Provider() terraform.ResourceProvider {
+    return &schema.Provider{
+        // ... other configuration ...
+
+        ResourcesMap: map[string]*schema.Resource{
+            // ... other resources ...
+
+            "example_new_widget": resourceExampleNewWidget(),
+        },
+    }
+}
+
+func resourceExampleNewWidget() *schema.Resource {
+    return &schema.Resource{
+        // ... other configuration ...
+    }
+}
+```

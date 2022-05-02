@@ -1,0 +1,1054 @@
+---
+page_title: Terraform Plugin SDK v2 Upgrade Guide
+description: Upgrade guide for version 2 of the Terraform Plugin SDK.
+---
+
+# Terraform Plugin SDK v2 Upgrade Guide
+
+Version 2.0.0 of the Terraform Plugin SDK is a major release and includes some
+changes that you will need to consider when upgrading. This guide is meant to
+help you with that process, and only focuses on upgrades from version 1.13.1 to
+version 2.0.0.
+
+Most of the changes outlined in this guide have been previously marked as
+deprecated in the GoDoc comments for the functions involved in previous
+releases. These changes, such as deprecation notices, can always be found in
+the
+[CHANGELOG](https://github.com/hashicorp/terraform-plugin-sdk/blob/v2.0.0/CHANGELOG.md).
+
+Upgrade topics:
+
+* [Dropped Support for Terraform 0.11 and Below](#dropped-support-for-terraform-0-11-and-below)
+* [Version 2 of the Module](#version-2-of-the-module)
+* [A New Acceptance Testing Driver](#a-new-acceptance-testing-driver)
+* [More Support for `context.Context`](#more-support-for-context-context)
+* [Support for Diagnostics](#support-for-diagnostics)
+* [Support for Resource-Level and Field-Level Descriptions](#support-for-resource-level-and-field-level-descriptions)
+* [New Diagnostics-Enabled Map Validators](#new-diagnostics-enabled-map-validators)
+* [Support for Debuggable Provider Binaries](#support-for-debuggable-provider-binaries)
+* [Support for Provider Metadata](#support-for-provider-metadata)
+* [Louder `helper/schema.ResourceData.Set` Errors in Testing](#louder-helper-schema-resourcedata-set-errors-in-testing)
+* [More Consistent Usage of `github.com/mitchellh/go-testing-interface`](#more-consistent-usage-of-github-com-mitchellh-go-testing-interface)
+* [Corrected Results of `helper/acctest.RandIntRange`](#corrected-results-of-helper-acctest-randintrange)
+* [Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`](#clearer-handling-of-nil-for-helper-resource-nonretryableerror-and-helper-resource-retryableerror)
+* [More Robust Handling of `helper/schema.TypeSet` Hashes](#more-robust-handling-of-helper-schema-typeset-hashes)
+* [Stronger Validation for `helper/schema.Schema.Computed` Fields](#stronger-validation-for-helper-schema-schema-computed-fields)
+* [More Robust Validation of `helper/schema.TypeMap` `Elem`s](#more-robust-validation-of-helper-schema-typemap-elems)
+* [More Robust Validation of `helper/resource.TestCheckResourceAttrPair`](#more-robust-validation-of-helper-resource-testcheckresourceattrpair)
+* [More Robust Validation of Test Sweepers](#more-robust-validation-of-test-sweepers)
+* [Deprecation of `helper/schema.ExistsFunc`](#deprecation-of-helper-schema-existsfunc)
+* [Deprecation of `helper/schema.SchemaValidateFunc`](#deprecation-of-helper-schema-schemavalidatefunc)
+* [Removal of `helper/mutexkv` Package](#removal-of-helper-mutexkv-package)
+* [Removal of `helper/pathorcontents` Package](#removal-of-helper-pathorcontents-package)
+* [Removal of `httpclient` Package](#removal-of-httpclient-package)
+* [Removal of `helper/hashcode` Package](#removal-of-helper-hashcode-package)
+* [Removal of the `acctest` Package](#removal-of-the-acctest-package)
+* [Removal of the `terraform.ResourceProvider` Interface](#removal-of-the-terraform-resourceprovider-interface)
+* [Removal of the `helper/schema.Provider.StopContext` method](#removal-of-the-helper-schema-provider-stopcontext-method)
+* [Removal of `helper/schema.ResourceData.SetPartial`](#removal-of-helper-schema-resourcedata-setpartial)
+* [Removal of the `helper/schema.Provider.MetaReset` property](#removal-of-the-helper-schema-provider-metareset-property)
+* [Removal of Deprecated Validation Functions](#removal-of-deprecated-validation-functions)
+* [Removal of `helper/schema.Schema.PromoteSingle`](#removal-of-helper-schema-schema-promotesingle)
+* [Removal of `helper/schema.ResourceData.UnsafeSetFieldRaw`](#removal-of-helper-schema-resourcedata-unsafesetfieldraw)
+* [Removal of `helper/schema.Resource.Refresh`](#removal-of-helper-schema-resource-refresh)
+* [Removal of `helper/schema.Schema.Removed`](#removal-of-helper-schema-schema-removed)
+* [Removal of `helper/encryption` Package](#removal-of-helper-encryption-package)
+* [Removal of Discouraged Variables, Functions, Types, and Interfaces](#removal-of-discouraged-variables-functions-types-and-interfaces)
+
+## Dropped Support for Terraform 0.11 and Below
+
+As part of the [ongoing deprecation of Terraform 0.11](https://www.hashicorp.com/blog/deprecating-terraform-0-11-support-in-terraform-providers/), version 2.0.0 of the
+Terraform Plugin SDK can only be used to build providers with support for
+Terraform 0.12 and higher.
+
+It is recommended, but not required, that providers that have not already
+dropped support for 0.11 issue a major version bump when upgrading to version 2
+of the SDK, to indicate this dropped support.
+
+## Version 2 of the Module
+
+As part of the breaking changes, the Terraform Plugin SDK Go module has been
+upgraded to v2. This involves changing import paths from
+`github.com/hashicorp/terraform-plugin-sdk` to
+`github.com/hashicorp/terraform-plugin-sdk/v2`. This can be automated using the
+[`tf-sdk-migrator v2upgrade`](https://github.com/hashicorp/tf-sdk-migrator#tf-sdk-migrator-v2upgrade-migrate-from-sdkv1-to-sdkv2)
+command.
+
+## A New Acceptance Testing Driver
+
+In version 1.7.0 of the Terraform Plugin SDK, we enabled an optional binary
+acceptance test driver. This driver improves upon the old driver, which was
+based on an approximated version of Terraform reproduced in the SDK, by using a
+production binary of the Terraform CLI to drive the provider. This allows
+easier testing against multiple versions of Terraform and provides more
+accurate test results.
+
+Version 2 of the SDK makes this driver the default and only acceptance test
+driver. It also modifies the test driver to run the provider in the same
+process as the test code, which enables use of debuggers and more accurate
+results from the Go test coverage and race detection tooling.
+
+As part of this upgrade, support for listing providers other than the provider
+under test in `helper/resource.TestCase.Providers` or
+`helper/resource.TestCase.ProviderFactories` was lost. Providers that rely on
+other providers in their tests should add provider blocks to their test code,
+which will result in production versions of those providers being located in
+the provider cache on the local filesystem, or downloaded, as part of the
+normal operation of `terraform init`.
+
+As part of this upgrade, changes to Terraform’s CLI were also required. This
+means that running the tests for a provider requires version 0.12.26 or higher
+of the Terraform CLI.
+
+## More Support for `context.Context`
+
+To obtain more reliable timeouts and cancellation in provider code,
+`context.Context` has been plumbed throughout the Terraform Plugin SDK. In some
+cases, this was done in a backwards-compatible way; for example, the
+`helper/schema.CreateFunc`, `helper/schema.UpdateFunc`,
+`helper/schema.ReadFunc`, and `helper/schema.DeleteFunc` types all got
+context-aware versions (`helper/schema.CreateContextFunc`,
+`helper/schema.UpdateContextFunc`, `helper/schema.ReadContextFunc`,
+`helper/schema.DeleteContextFunc`, respectively).  The old versions are now
+deprecated, and we recommend you upgrade to the context-aware versions to get
+their improvements, but the old versions will continue working for now.
+Upgrading involves changing your function signature from
+`func(*helper/schema.ResourceData, interface{}) error` to
+`func(context.Context, *helper/schema.ResourceData, interface{})
+diag.Diagnostics`. (We’ll talk about `diag.Diagnostics` in the next section.)
+
+Not everything could have this backwards compatibility, however; some functions
+require the `context.Context` to be added now. Attempting to compile will list
+which of these affect your provider, but most people will see them in
+`helper/schema.CustomizeDiffFunc` and `helper/schema.StateUpgradeFunc`. All
+that needs to be done is adding a `context.Context` as the first parameter to
+these functions; it doesn’t need to be used or referenced.
+
+## Support for Diagnostics
+
+A number of new functions have been added that return a `diag.Diagnostics`
+type.  This type can be used to return multiple errors and warnings to
+Terraform, and to associate those errors or warnings with specific fields. The
+functions supporting diagnostics are:
+
+* `helper/schema.CreateContextFunc`
+* `helper/schema.ReadContextFunc`
+* `helper/schema.UpdateContextFunc`
+* `helper/schema.DeleteContextFunc`
+* `helper/schema.SchemaValidateDiagFunc`
+
+This exposes diagnostics support when creating, reading, updating, deleting,
+and validating your resources.
+
+```go
+func Create(ctx context.Context, *schema.ResourceData, meta interface{}) diag.Diagnostics {
+    // do some stuff
+    if err != nil {
+        // this is the standard way to convert a Go error to Diagnostics
+        return diag.FromErr(err)
+    }
+    
+    // Warning or Errors can be collected in a slice type
+    var diags diag.Diagnostics
+    
+    // Diagnostics supports warnings, a detailed message
+    // as well as linking to a specific attribute
+    // see github.com/hashicorp/go-cty for learning the Path types
+    if somethingThatRequiresWarning {
+        diags = append(diags, diag.Diagnostic{
+            Severity: diag.Warning,
+            Summary: "Warning level message",
+            Detail: "This is a warning, a very detailed one",
+            AttributePath: cty.Path{cty.GetAttrStep{Name: "foo"}},
+        })
+    }
+
+    // let’s return an error with the above warning
+    // another helper exists to format errors
+    if err != nil {
+        diags = append(diags, diag.Errorf("unexpected: %s", err)...)
+    }
+    return diags
+}
+```
+
+## Support for Resource-Level and Field-Level Descriptions
+
+The `helper/schema.Resource` and `helper/schema.Schema` types both now have
+`Description` properties that accept strings. These properties are laying the
+groundwork for future improvements to Terraform, and will have no visible
+effect to the Terraform CLI at the moment. If you’d like to build in support
+for your provider starting now, it’s recommended that you set these properties
+to whatever you’d document the resource or field as in your terraform.io docs
+for the resource.
+
+You can globally set the format of the text in these fields by setting the
+global variable `helper/schema.DescriptionKind`. Its acceptable values are
+`helper/schema.StringPlain` (plain text, the default) or
+`helper/schema.StringMarkdown` (markdown formatting).
+
+## New Diagnostics-Enabled Map Validators
+
+The new `helper/validation.MapKeyLenBetween` validator function validates that
+all the keys in a map have lengths within a specified range, and will use
+diagnostics to indicate precisely which keys are not.
+
+The new `helper/validation.MapValueLenBetween` validator function validates
+that all the values in a map have lengths within a specified range, and will
+use diagnostics to indicate precisely which values are not.
+
+The new `helper/validation.MapKeyMatch` validator function validates that all
+the keys in a map match a regular expression, and will use diagnostics to
+indicate precisely which keys do not.
+
+The new `helper/validation.MapValueMatch` validator function validates that all
+the values in a map match a regular expression, and will use diagnostics to
+indicate precisely which values do not.
+
+## Support for Debuggable Provider Binaries
+
+It is now possible to publish providers that can have debuggers like delve
+attached to them. To debug these providers, three things must be done:
+
+First, Terraform 0.12.26 or higher must be used when debugging.
+
+Second, the provider must modify its `main` function to optionally start a
+debuggable server. We recommend the following approach:
+
+```go
+func main() {
+    var debugMode bool
+
+    flag.BoolVar(&debugMode, "debuggable", false, "set to true to run the provider with support for debuggers like delve")
+    flag.Parse()
+
+    if debugMode {
+        err := plugin.Debug(context.Background(), "registry.terraform.io/namespace/provider",
+            &plugin.ServeOpts{
+                ProviderFunc: myprovider.Provider,
+            })
+        if err != nil {
+            log.Println(err.Error())
+        }
+    } else {
+        plugin.Serve(&plugin.ServeOpts{
+            ProviderFunc: myprovider.Provider})
+    }
+}
+```
+
+The `registry.terraform.io/namespace/provider` string above should be set to a
+provider address. For Terraform 0.12, this should be
+`registry.terraform.io/-/your-provider-name`, where `your-provider-name` is
+what is declared in the provider block in your HCL. For Terraform 0.13 and
+above, this should be whatever you set as your provider source. For example,
+the random provider would use `registry.terraform.io/hashicorp/random`.
+`myprovider.Provider` should be the function that returns a
+`*helper/schema.Provider` that serves as an entry point for your provider.
+
+Third, the provider must be started by delve, and Terraform must be told how to
+connect to it. Providers using `plugin.Debug` will output instructions on how
+to tell Terraform how to connect.
+
+-> **Note**: You can find more details on the [Debugging Providers page](/plugin/sdkv2/debugging).
+
+## Support for Provider Metadata
+
+A new feature, provider metadata, is landing in Terraform 0.13. This feature
+allows module authors and providers to share information through Terraform
+configs that will get passed to the provider with every resource. It is not
+intended for wide use, and usage of it should be coordinated with the Terraform
+Core team by [opening an issue](https://github.com/hashicorp/terraform/issues)
+so your use case can be understood and support for it can be maintained as this
+feature evolves over time.
+
+## Louder `helper/schema.ResourceData.Set` Errors in Testing
+
+Previously, using the `TF_SCHEMA_PANIC_ON_ERROR` environment variable would
+cause errors returned from calls to `helper/schema.ResourceData.Set` to elevate
+into panics. This environment variable is now removed, and its behavior is
+enabled on all tests. Calls to `helper/schema.ResourceData.Set` that would
+return an error in production contexts continue to return errors.
+
+## More Consistent Usage of `github.com/mitchellh/go-testing-interface`
+
+Previously, a number of our exported functions and methods in the
+`helper/resource`, `helper/schema`, and `helper/validation` packages relied on
+either Go’s built-in `testing` package or the SDK’s `helper/resource/testing`
+package. We have standardized around the
+`github.com/mitchellh/go-testing-interface` module instead. Changes required to
+accommodate this standardization should be caught at compile time, and should
+be fixed by updating the import.
+
+## Corrected Results of `helper/acctest.RandIntRange`
+
+The `helper/acctest.RandIntRange` function was previously buggy. It would
+return an integer between 0 and the difference between the arguments, not an
+integer between the arguments. It has been corrected to return an integer
+between the arguments. Any usage reliant on the old, buggy behavior should be
+updated.
+
+## Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`
+
+Previously, passing a `nil` error to `helper/resource.RetryableError` and
+`helper/resource.NonRetryableError` could lead to subtle bugs and even crashes.
+It will now return an error. Providers should check that the error is not `nil`
+before calling `helper/resource.NonRetryableError` or
+`helper/resource.RetryableError`.
+
+## More Robust Handling of `helper/schema.TypeSet` Hashes
+
+Generated hashes for `helper/schema.TypeSet` fields used to be collapsed if all
+the sub-fields had `Computed` set to `true`. This behavior was an error, and
+has been remedied. Providers that relied on the old behavior should be updated
+to use the new behavior. Almost all providers will require no changes.
+
+## Stronger Validation for `helper/schema.Schema.Computed` Fields
+
+Fields with the `Computed` property of their `helper/schema.Schema` set to
+`true` and the `Optional` property set to `false` now return an error if other
+properties that are only applicable to fields that can be modified are set.
+These fields include:
+
+* `AtLeastOneOf`
+* `ConflictsWith`
+* `Default`
+* `DefaultFunc`
+* `DiffSuppressFunc`
+* `ExactlyOneOf`
+* `InputDefault`
+* `MaxItems`
+* `MinItems`
+* `StateFunc`
+* `ValidateFunc`
+
+These properties should never be set on fields that don’t accept user input, as
+they are meaningless and their behavior is undefined in those situations.
+
+## More Robust Validation of `helper/schema.TypeMap` `Elem`s
+
+Using a `*helper/schema.Resource` as the value of the `Elem` property for a
+`*helper/schema.Schema` previously yielded unspecified and likely confusing
+behavior, and was unsupported. It now returns an error.
+
+## More Robust Validation of `helper/resource.TestCheckResourceAttrPair`
+
+Comparing the same field on the same resource with
+`helper/resource.TestCheckResourceAttrPair` will now return an error, as that
+comparison will always pass and is indicative of an implementation error.
+
+## More Robust Validation of Test Sweepers
+
+Previously, when a sweeper had a dependency on another sweeper that doesn’t
+exist, the SDK would log a warning, which was easy to miss. Now an explicit
+error will be returned, to make the implementation error easier to spot and
+fix.
+
+## Deprecation of `helper/schema.ExistsFunc`
+
+The `helper/schema.ExistsFunc` (usually set as the `Exists` property on
+`helper/schema.Resource`) is now deprecated. It duplicated functionality that
+could be achieved in Read, and often led to the same behavior being written
+twice. Providers should check for Not Found responses in Read, and call
+`helper/schema.ResourceData.SetId(“”)` and return no errors if a Not Found
+response is encountered, instead.
+
+## Deprecation of `helper/schema.SchemaValidateFunc`
+
+The `helper/schema.SchemaValidateFunc` type and the properties that use it,
+including `helper/schema.Schema.ValidateFunc`, are now deprecated in favor of
+`helper/schema.SchemaValidateDiagFunc`, which gains awareness for diagnostics,
+allowing more accurate errors to be returned.
+
+The `helper/validation` helper functions will have
+`helper/schema.SchemaValidateDiagFunc` equivalents of the validation functions
+added in a future release to ease the transition. Until that point, a
+wrapper can be used that wraps the warnings and errors returned from
+`helper/schema.SchemaValidateFunc` in a `diag.Diagnostics`.
+
+## Removal of `helper/mutexkv` Package
+
+The `helper/mutexkv` package provided convenience helpers for managing
+concurrency, but is not specifically related to Terraform plugin development,
+so it has been removed. We also saw many misuses of the package: providers
+using constant strings as keys (which can be replaced by just using a mutex),
+or overcomplicating locking when a more simplistic approach would have the same
+performance characteristics.
+
+Providers that need the functionality provided by the `helper/mutexkv` package
+are encouraged to copy the types and functions it provided into their own
+codebase, provided here under a public domain license:
+
+```go
+// MutexKV is a simple key/value store for arbitrary mutexes. It can be used to
+// serialize changes across arbitrary collaborators that share knowledge of the
+// keys they must serialize on.
+//
+// The initial use case is to let aws_security_group_rule resources serialize
+// their access to individual security groups based on SG ID.
+type MutexKV struct {
+    lock  sync.Mutex
+    store map[string]*sync.Mutex
+}
+
+// Locks the mutex for the given key. Caller is responsible for calling Unlock
+// for the same key
+func (m *MutexKV) Lock(key string) {
+    log.Printf("[DEBUG] Locking %q", key)
+    m.get(key).Lock()
+    log.Printf("[DEBUG] Locked %q", key)
+}
+
+// Unlock the mutex for the given key. Caller must have called Lock for the same key first
+func (m *MutexKV) Unlock(key string) {
+    log.Printf("[DEBUG] Unlocking %q", key)
+    m.get(key).Unlock()
+    log.Printf("[DEBUG] Unlocked %q", key)
+}
+
+// Returns a mutex for the given key, no guarantee of its lock status
+func (m *MutexKV) get(key string) *sync.Mutex {
+    m.lock.Lock()
+    defer m.lock.Unlock()
+    mutex, ok := m.store[key]
+    if !ok {
+        mutex = &sync.Mutex{}
+        m.store[key] = mutex
+    }
+    return mutex
+}
+
+// Returns a properly initialized MutexKV
+func NewMutexKV() *MutexKV {
+    return &MutexKV{
+        store: make(map[string]*sync.Mutex),
+    }
+}
+```
+
+## Removal of `helper/pathorcontents` Package
+
+The `helper/pathorcontents` package provided convenience helpers for working
+with file paths or the contents of files interchangeably, but is not
+specifically related to Terraform plugin development, so it has been removed.
+Overuse of file contents in Terraform state can also lead to problems: there
+are size limitations, for example, binary data can cause problems when stored
+in state, and in some cases it is an anti-pattern to store file contents in
+state.  Providers that need this functionality are encouraged to copy the
+function the package provided into their own codebase, provided here under a
+public domain license:
+
+```go
+// If the argument is a path, Read loads it and returns the contents,
+// otherwise the argument is assumed to be the desired contents and is simply
+// returned.
+//
+// The boolean second return value can be called `wasPath` - it indicates if a
+// path was detected and a file loaded.
+func Read(poc string) (string, bool, error) {
+    if len(poc) == 0 {
+        return poc, false, nil
+    }
+
+    path := poc
+    if path[0] == '~' {
+        var err error
+        path, err = homedir.Expand(path)
+        if err != nil {
+            return path, true, err
+        }
+    }
+
+    if _, err := os.Stat(path); err == nil {
+        contents, err := ioutil.ReadFile(path)
+        if err != nil {
+            return string(contents), true, err
+        }
+        return string(contents), true, nil
+    }
+
+    return poc, false, nil
+}
+```
+
+## Removal of `httpclient` Package
+
+The `httpclient` provided a function to return a User-Agent string. Providers
+are encouraged to construct User-Agent strings to suit their needs, as they
+know best how to represent their provider to their APIs. Providers wishing to
+replicate the User-Agent string used in version 1 can use the following code:
+
+```go
+fmt.Sprintf("HashiCorp Terraform/%s (+https://www.terraform.io) Terraform Plugin SDK/%s", version, meta.SDKVersionString())
+```
+
+Where `version` is the version of Terraform driving the plugin, available from
+`helper/schema.Provider.TerraformVersion`, and `meta` is the `meta` package in
+the Plugin SDK.
+
+For providers that don’t need compatibility with the old User-Agent string, the
+recommendation is to use the new `helper/schema.Provider.UserAgent` method,
+which will return a recommended User-Agent string when giving the provider name
+and version. We recommend [injecting provider versions at build
+time.](https://www.digitalocean.com/community/tutorials/using-ldflags-to-set-version-information-for-go-applications)
+
+## Removal of `helper/hashcode` Package
+
+The `helper/hashcode` package was a loose wrapper around functionality included
+in the standard library. It shouldn’t be necessary for most providers;
+providers are encouraged to reexamine their usage of it as part of the upgrade
+to v2 of the SDK, and only use it if necessary. Providers that still find the
+`helper/hashcode` package necessary are encouraged to copy its functionality,
+provided here under a public domain license, into their own codebase:
+
+```go
+// String hashes a string to a unique hashcode.
+//
+// crc32 returns a uint32, but for our use we need
+// and non negative integer. Here we cast to an integer
+// and invert it if the result is negative.
+func String(s string) int {
+    v := int(crc32.ChecksumIEEE([]byte(s)))
+    if v >= 0 {
+        return v
+    }
+    if -v >= 0 {
+        return -v
+    }
+    // v == MinInt
+    return 0
+}
+
+// Strings hashes a list of strings to a unique hashcode.
+func Strings(strings []string) string {
+    var buf bytes.Buffer
+
+    for _, s := range strings {
+        buf.WriteString(fmt.Sprintf("%s-", s))
+    }
+
+    return fmt.Sprintf("%d", String(buf.String()))
+}
+```
+
+## Removal of the `acctest` Package
+
+The binary acceptance test driver used to require the provider to call
+`acctest.UseBinaryDriver` in the `TestMain` function of the provider. This is
+no longer required, which makes the `acctest` package no longer necessary. Code
+utilising it can be safely deleted.
+
+## Removal of the `terraform.ResourceProvider` Interface
+
+The `terraform.ResourceProvider` interface has been removed. The concrete
+`*helper/schema.Provider` type should be used in its place. For most providers,
+this will involve changing the returned type of the `Provider()` function, and
+removing some type assertions; all necessary changes should be raised at
+compile time.
+
+## Removal of the `helper/schema.Provider.StopContext` method
+
+The `helper/schema.Provider.StopContext` method has been removed as its
+implementation has been reconfigured. Use `helper/schema.StopContext`, passing
+a `context.Context` originating from the context-aware
+`helper/schema.ConfigureContextFunc` instead.
+
+## Removal of `helper/schema.ResourceData.SetPartial`
+
+The `helper/schema.ResourceData.SetPartial` method was deprecated and has been
+removed. This method used to allow setting certain fields in state when
+`helper/schema.ResourceData.Partial` was set to `true`, but developers weren't
+clear under which circumstances that needed to happen.
+
+This method should never need to be used. `helper/schema.ResourceData.Partial`
+should be set to `true` before returning an error if the error should prevent
+any state from being part of the config being automatically persisted in state.
+For most providers, this doesn't matter, as the refresh step will take care of
+setting the state to what it should be.
+
+See [issue #476](https://github.com/hashicorp/terraform-plugin-sdk/issues/476)
+for more information.
+
+## Removal of the `helper/schema.Provider.MetaReset` property
+
+The `helper/schema.Provider.MetaReset` property allowed providers to set a
+function that would be called during testing to reset the `meta` associated with
+the provider. This function was never actually called, and so the property has
+been removed.
+
+## Removal of Deprecated Validation Functions
+
+The following `helper/validation` functions have been renamed, and the
+deprecated aliases have been removed:
+
+* `helper/validation.ValidateListUniqueStrings` (use
+  `helper/validation.ListOfUniqueStrings` instead)
+* `helper/validation.SingleIP` (use `helper/validation.IsIPAddress` instead)
+* `helper/validation.IPRange` (use `helper/validation.IsIPv4Range` instead)
+* `helper/validation.CIDRNetwork` (use `helper/validation.IsCIDRNetwork`
+  instead)
+* `helper/validation.ValidateJsonString` (use `helper/validation.StringIsJSON`
+  instead)
+* `helper/validation.ValidateRegexp` (use
+  `helper/validation.StringIsValidRegExp` instead)
+* `helper/validation.ValidateRFC3339TimeString` (use
+  `helper/validation.IsRFC3339Time` instead)
+
+## Removal of `helper/schema.Schema.PromoteSingle`
+
+The `PromotSingle` property of `*helper/schema.Schema` is a discouraged pattern
+and no longer valid after Terraform 0.12, and has been removed.
+
+## Removal of `helper/schema.ResourceData.UnsafeSetFieldRaw`
+
+The `helper/schema.ResourceData.UnsafeSetFieldRaw` method is a discouraged
+pattern that no longer functions after Terraform 0.12, and so the method has
+been removed.
+
+## Removal of `helper/schema.Resource.Refresh`
+
+The `helper/schema.Resource.Refresh` function was used in Terraform 0.11 and
+below, and is no longer needed. No providers should have been calling this
+function. Any that were, please [open an
+issue](https://github.com/hashicorp/terraform-plugin-sdk/issues) on the SDK to
+help us understand your use case so we can recommend a path forward.
+
+## Removal of `helper/schema.Schema.Removed`
+
+The `Removed` property of `helper/schema.Schema`, used to provide a friendly
+error message when a field has been removed after its [deprecation
+period](/plugin/sdkv2/best-practices/deprecations),
+behaved unexpectedly in tests and other situations. It has been removed. The
+recommendation is now to delete the field after the deprecation period, and let
+Terraform’s built-in error messaging indicate its removal.
+
+## Removal of `helper/encryption` Package
+
+The `helper/encryption` package supports an [anti-pattern that is now
+discouraged](/plugin/sdkv2/best-practices/sensitive-state#don-39-t-encrypt-state),
+so it has been removed. Providers relying on it should see the
+[documentation](/plugin/sdkv2/best-practices/sensitive-state)
+on that pattern and select an alternative approach.
+
+## Removal of Discouraged Variables, Functions, Types, and Interfaces
+
+The following variables, functions, types, and interfaces were part of the
+public API for the SDK, but were never intended for consumption by providers.
+They have all been removed. Any providers using them should [open an
+issue](https://github.com/hashicorp/terraform-plugin-sdk/issues) detailing
+their use case, and we can help find a path forward.
+
+* `helper/acctest.RemoteTestPrecheck`
+* `helper/acctest.SkipRemoteTestsEnvVar`
+* `helper/resource.GRPCTestProvider`
+* `helper/resource.LogOutput`
+* `helper/resource.Map`
+* `helper/resource.TestProvider`
+* `helper/schema.MultiMapReader`
+* `helper/schema.Provider.Input`
+* `plugin.Client`
+* `plugin.ClientConfig`
+* `plugin.DefaultProtocolVersion`
+* `plugin.GRPCProvider`
+* `plugin.GRPCProviderPlugin`
+* `plugin.GRPCProvisioner`
+* `plugin.GRPCProvisionerPlugin`
+* `plugin.HandShake.ProtocolVersion`
+* `plugin.ResourceProvider`
+* `plugin.ResourceProviderApplyArgs`
+* `plugin.ResourceProviderApplyResponse`
+* `plugin.ResourceProviderConfigureResponse`
+* `plugin.ResourceProviderDiffArgs`
+* `plugin.ResourceProviderDiffResponse`
+* `plugin.ResourceProviderGetSchemaArgs`
+* `plugin.ResourceProviderGetSchemaResponse`
+* `plugin.ResourceProviderImportStateArgs`
+* `plugin.ResourceProviderImportStateResponse`
+* `plugin.ResourceProviderInputArgs`
+* `plugin.ResourceProviderInputResponse`
+* `plugin.ResourceProviderPlugin`
+* `plugin.ResourceProviderReadDataApplyArgs`
+* `plugin.ResourceProviderReadDataApplyResponse`
+* `plugin.ResourceProviderReadDataDiffArgs`
+* `plugin.ResourceProviderReadDataDiffResponse`
+* `plugin.ResourceProviderRefreshArgs`
+* `plugin.ResourceProviderRefreshResponse`
+* `plugin.ResourceProviderServer`
+* `plugin.ResourceProviderStopResponse`
+* `plugin.ResourceProviderValidateArgs`
+* `plugin.ResourceProviderValidateResourceArgs`
+* `plugin.ResourceProviderValidateResourceResponse`
+* `plugin.ResourceProviderValidateResponse`
+* `plugin.UIInput`
+* `plugin.UIInputInputResponse`
+* `plugin.UIInputServer`
+* `plugin.UIOutput`
+* `plugin.UIOutputServer`
+* `plugin.VersionedPlugins no longer has a "provisioner" key`
+* `resource.RunNewTest`
+* `resource.TestDisableBinaryTestingFlagEnvVar`
+* `schema.Backend`
+* `schema.FromContextBackendConfig`
+* `schema.SetProto5`
+* `terraform.ApplyGraphBuilder`
+* `terraform.AttachResourceConfigTransformer`
+* `terraform.AttachSchemaTransformer`
+* `terraform.AttachStateTransformer`
+* `terraform.BackendState.Config`
+* `terraform.BackendState.Empty`
+* `terraform.BackendState.ForPlan`
+* `terraform.BackendState.SetConfig`
+* `terraform.BasicGraphBuilder`
+* `terraform.BuiltinEvalContext`
+* `terraform.CallbackUIOutput`
+* `terraform.CBDEdgeTransformer`
+* `terraform.CheckCoreVersionRequirements`
+* `terraform.CloseProviderEvalTree`
+* `terraform.CloseProviderTransformer`
+* `terraform.CloseProvisionerTransformer`
+* `terraform.ConcreteProviderNodeFunc`
+* `terraform.ConcreteResourceInstanceDeposedNodeFunc`
+* `terraform.ConcreteResourceInstanceNodeFunc`
+* `terraform.ConcreteResourceNodeFunc`
+* `terraform.ConfigTransformer`
+* `terraform.ConfigTreeDependencies`
+* `terraform.ConnectionBlockSupersetSchema`
+* `terraform.Context`
+* `terraform.ContextGraphOpts`
+* `terraform.ContextGraphWalker`
+* `terraform.ContextMeta`
+* `terraform.ContextOpts`
+* `terraform.CountBoundaryTransformer`
+* `terraform.DefaultVariableValues`
+* `terraform.DestroyEdge`
+* `terraform.DestroyEdgeTransformer`
+* `terraform.DestroyOutputTransformer`
+* `terraform.DestroyPlanGraphBuilder`
+* `terraform.DestroyValueReferenceTransformer`
+* `terraform.Diff (this was eventually cut)`
+* `terraform.Diff.ModuleByPath`
+* `terraform.Diff.RootModule`
+* `terraform.DiffAttrInput`
+* `terraform.DiffAttrOutput`
+* `terraform.DiffAttrType`
+* `terraform.DiffAttrUnknown`
+* `terraform.DiffChangeType`
+* `terraform.DiffCreate`
+* `terraform.DiffDestroy`
+* `terraform.DiffDestroyCreate`
+* `terraform.DiffInvalid`
+* `terraform.DiffNone`
+* `terraform.DiffRefresh`
+* `terraform.DiffTransformer`
+* `terraform.DiffUpdate`
+* `terraform.EphemeralState.DeepCopy`
+* `terraform.ErrNoState`
+* `terraform.Eval`
+* `terraform.EvalApply`
+* `terraform.EvalApplyPost`
+* `terraform.EvalApplyPre`
+* `terraform.EvalApplyProvisioners`
+* `terraform.EvalCheckModuleRemoved`
+* `terraform.EvalCheckPlannedChange`
+* `terraform.EvalCheckPreventDestroy`
+* `terraform.EvalCloseProvider`
+* `terraform.EvalCloseProvisioner`
+* `terraform.EvalConfigBlock`
+* `terraform.EvalConfigExpr`
+* `terraform.EvalConfigProvider`
+* `terraform.EvalContext`
+* `terraform.EvalCountFixZeroOneBoundaryGlobal`
+* `terraform.EvalDataForInstanceKey`
+* `terraform.EvalDataForNoInstanceKey`
+* `terraform.EvalDeleteLocal`
+* `terraform.EvalDeleteOutput`
+* `terraform.EvalDeposeState`
+* `terraform.EvalDiff`
+* `terraform.EvalDiffDestroy`
+* `terraform.EvalEarlyExitError`
+* `terraform.EvalFilter`
+* `terraform.EvalForgetResourceState`
+* `terraform.EvalGetProvider`
+* `terraform.EvalGetProvisioner`
+* `terraform.EvalGraphBuilder`
+* `terraform.EvalIf`
+* `terraform.EvalImportState`
+* `terraform.EvalImportStateVerify`
+* `terraform.EvalInitProvider`
+* `terraform.EvalInitProvisioner`
+* `terraform.EvalLocal`
+* `terraform.EvalMaybeRestoreDeposedObject`
+* `terraform.EvalMaybeTainted`
+* `terraform.EvalModuleCallArgument`
+* `terraform.EvalNode`
+* `terraform.EvalNodeFilterable`
+* `terraform.EvalNodeFilterFunc`
+* `terraform.EvalNodeFilterOp`
+* `terraform.EvalNodeOpFilterable`
+* `terraform.EvalNoop`
+* `terraform.EvalOpFilter`
+* `terraform.EvalRaw`
+* `terraform.EvalReadData`
+* `terraform.EvalReadDataApply`
+* `terraform.EvalReadDiff`
+* `terraform.EvalReadState`
+* `terraform.EvalReadStateDeposed`
+* `terraform.EvalReduceDiff`
+* `terraform.EvalRefresh`
+* `terraform.EvalRequireState`
+* `terraform.EvalReturnError`
+* `terraform.EvalSequence`
+* `terraform.EvalSetModuleCallArguments`
+* `terraform.Evaluator`
+* `terraform.EvalUpdateStateHook`
+* `terraform.EvalValidateCount`
+* `terraform.EvalValidateProvider`
+* `terraform.EvalValidateProvisioner`
+* `terraform.EvalValidateResource`
+* `terraform.EvalValidateSelfRef`
+* `terraform.EvalWriteDiff`
+* `terraform.EvalWriteOutput`
+* `terraform.EvalWriteResourceState`
+* `terraform.EvalWriteState`
+* `terraform.EvalWriteStateDeposed`
+* `terraform.ExpandTransform`
+* `terraform.ForcedCBDTransformer`
+* `terraform.Graph`
+* `terraform.GraphBuilder`
+* `terraform.GraphDot`
+* `terraform.GraphNodeAttachDestroyer`
+* `terraform.GraphNodeAttachProvider`
+* `terraform.GraphNodeAttachProviderConfigSchema`
+* `terraform.GraphNodeAttachProvisionerSchema`
+* `terraform.GraphNodeAttachResourceConfig`
+* `terraform.GraphNodeAttachResourceSchema`
+* `terraform.GraphNodeAttachResourceState`
+* `terraform.GraphNodeCloseProvider`
+* `terraform.GraphNodeCloseProvisioner`
+* `terraform.GraphNodeCreator`
+* `terraform.GraphNodeDeposedResourceInstanceObject`
+* `terraform.GraphNodeDeposer`
+* `terraform.GraphNodeDestroyer`
+* `terraform.GraphNodeDestroyerCBD`
+* `terraform.GraphNodeDynamicExpandable`
+* `terraform.GraphNodeEvalable`
+* `terraform.GraphNodeExpandable`
+* `terraform.GraphNodeProvider`
+* `terraform.GraphNodeProviderConsumer`
+* `terraform.GraphNodeProvisioner`
+* `terraform.GraphNodeProvisionerConsumer`
+* `terraform.GraphNodeReferenceable`
+* `terraform.GraphNodeReferenceOutside`
+* `terraform.GraphNodeReferencer`
+* `terraform.GraphNodeResource`
+* `terraform.GraphNodeResourceInstance`
+* `terraform.GraphNodeSubgraph`
+* `terraform.GraphNodeSubPath`
+* `terraform.GraphNodeTargetable`
+* `terraform.GraphNodeTargetDownstream`
+* `terraform.GraphTransformer`
+* `terraform.GraphTransformIf`
+* `terraform.GraphTransformMulti`
+* `terraform.GraphType`
+* `terraform.GraphTypeApply`
+* `terraform.GraphTypeEval`
+* `terraform.GraphTypeInvalid`
+* `terraform.GraphTypeLegacy`
+* `terraform.GraphTypeMap`
+* `terraform.GraphTypePlan`
+* `terraform.GraphTypePlanDestroy`
+* `terraform.GraphTypeRefresh`
+* `terraform.GraphTypeValidate`
+* `terraform.GraphVertexTransformer`
+* `terraform.GraphWalker`
+* `terraform.Hook`
+* `terraform.HookAction`
+* `terraform.HookActionContinue`
+* `terraform.HookActionHalt`
+* `terraform.ImportGraphBuilder`
+* `terraform.ImportOpts`
+* `terraform.ImportProviderValidateTransformer`
+* `terraform.ImportStateTransformer`
+* `terraform.ImportTarget`
+* `terraform.InputMode`
+* `terraform.InputModeProvider`
+* `terraform.InputModeStd`
+* `terraform.InputModeVar`
+* `terraform.InputModeVarUnset`
+* `terraform.InputOpts`
+* `terraform.InputValue`
+* `terraform.InputValues`
+* `terraform.InputValuesFromCaller`
+* `terraform.InstanceDiff.Copy`
+* `terraform.InstanceDiff.DelAttribute`
+* `terraform.InstanceDiff.GetAttributesLen`
+* `terraform.InstanceDiff.SetAttribute`
+* `terraform.InstanceDiff.SetDestroy`
+* `terraform.InstanceDiff.SetDestroyDeposed`
+* `terraform.InstanceDiff.SetTainted`
+* `terraform.InstanceInfo.ResourceAddress`
+* `terraform.InstanceKeyEvalData`
+* `terraform.InstanceType`
+* `terraform.LoadSchemas`
+* `terraform.LocalTransformer`
+* `terraform.MissingProviderTransformer`
+* `terraform.MissingProvisionerTransformer`
+* `terraform.MockEvalContext`
+* `terraform.MockHook`
+* `terraform.MockProvider`
+* `terraform.MockProvisioner`
+* `terraform.MockResourceProvider (this was removed)`
+* `terraform.MockResourceProvider.Input`
+* `terraform.MockResourceProvider.InputCalled`
+* `terraform.MockResourceProvider.InputConfig`
+* `terraform.MockResourceProvider.InputFn`
+* `terraform.MockResourceProvider.InputInput`
+* `terraform.MockResourceProvider.InputReturnConfig`
+* `terraform.MockResourceProvider.InputReturnError`
+* `terraform.MockResourceProvisioner`
+* `terraform.MockUIInput`
+* `terraform.MockUIOutput`
+* `terraform.ModuleDiff (this was eventually cut)`
+* `terraform.ModuleDiff.IsRoot`
+* `terraform.ModuleState.Empty`
+* `terraform.ModuleState.IsDescendent`
+* `terraform.ModuleState.IsRoot`
+* `terraform.ModuleState.Orphans`
+* `terraform.ModuleState.RemovedOutputs`
+* `terraform.ModuleState.View`
+* `terraform.ModuleVariableTransformer`
+* `terraform.MustShimLegacyState`
+* `terraform.NewContext`
+* `terraform.NewInstanceInfo`
+* `terraform.NewLegacyResourceAddress`
+* `terraform.NewLegacyResourceInstanceAddress`
+* `terraform.NewNodeAbstractResource`
+* `terraform.NewNodeAbstractResourceInstance`
+* `terraform.NewReferenceMap`
+* `terraform.NewResource`
+* `terraform.NewSemaphore`
+* `terraform.NilHook`
+* `terraform.NodeAbstractProvider`
+* `terraform.NodeAbstractResource`
+* `terraform.NodeAbstractResourceInstance`
+* `terraform.NodeApplyableModuleVariable`
+* `terraform.NodeApplyableOutput`
+* `terraform.NodeApplyableProvider`
+* `terraform.NodeApplyableResource`
+* `terraform.NodeApplyableResourceInstance`
+* `terraform.NodeCountBoundary`
+* `terraform.NodeDestroyableDataResourceInstance`
+* `terraform.NodeDestroyableOutput`
+* `terraform.NodeDestroyDeposedResourceInstanceObject`
+* `terraform.NodeDestroyResource`
+* `terraform.NodeDestroyResourceInstance`
+* `terraform.NodeDisabledProvider`
+* `terraform.NodeEvalableProvider`
+* `terraform.NodeLocal`
+* `terraform.NodeModuleRemoved`
+* `terraform.NodeOutputOrphan`
+* `terraform.NodePlanDeposedResourceInstanceObject`
+* `terraform.NodePlanDestroyableResourceInstance`
+* `terraform.NodePlannableResource`
+* `terraform.NodePlannableResourceInstance`
+* `terraform.NodePlannableResourceInstanceOrphan`
+* `terraform.NodeProvisioner`
+* `terraform.NodeRefreshableDataResource`
+* `terraform.NodeRefreshableDataResourceInstance`
+* `terraform.NodeRefreshableManagedResource`
+* `terraform.NodeRefreshableManagedResourceInstance`
+* `terraform.NodeRootVariable`
+* `terraform.NodeValidatableResource`
+* `terraform.NullGraphWalker`
+* `terraform.OrphanOutputTransformer`
+* `terraform.OrphanResourceCountTransformer`
+* `terraform.OrphanResourceInstanceTransformer`
+* `terraform.OrphanResourceTransformer`
+* `terraform.OutputTransformer`
+* `terraform.ParentProviderTransformer`
+* `terraform.ParseInstanceType`
+* `terraform.ParseResourceAddress`
+* `terraform.ParseResourceAddressForInstanceDiff`
+* `terraform.ParseResourceIndex`
+* `terraform.ParseResourcePath`
+* `terraform.ParseResourceStateKey`
+* `terraform.PathObjectCacheKey`
+* `terraform.Plan`
+* `terraform.PlanGraphBuilder`
+* `terraform.PrefixUIInput`
+* `terraform.ProviderConfigTransformer`
+* `terraform.ProviderEvalTree`
+* `terraform.ProviderHasDataSource`
+* `terraform.ProviderHasResource`
+* `terraform.ProviderSchema.SchemaForResourceAddr`
+* `terraform.ProviderSchema.SchemaForResourceType`
+* `terraform.ProviderTransformer`
+* `terraform.ProvisionerFactory`
+* `terraform.ProvisionerTransformer`
+* `terraform.ProvisionerUIOutput`
+* `terraform.PruneProviderTransformer`
+* `terraform.PruneUnusedValuesTransformer`
+* `terraform.ReadPlan`
+* `terraform.ReadState`
+* `terraform.ReadStateV1`
+* `terraform.ReadStateV2`
+* `terraform.ReadStateV3`
+* `terraform.ReferenceMap`
+* `terraform.ReferencesFromConfig`
+* `terraform.ReferenceTransformer`
+* `terraform.RefreshGraphBuilder`
+* `terraform.RemoteState.Equals`
+* `terraform.RemovableIfNotTargeted`
+* `terraform.RemovedModuleTransformer`
+* `terraform.Resource`
+* `terraform.ResourceAddress`
+* `terraform.ResourceAttrDiff.Empty`
+* `terraform.ResourceConfig.CheckSet`
+* `terraform.ResourceConfig.IsSet`
+* `terraform.ResourceCountTransformer`
+* `terraform.ResourceFlag`
+* `terraform.ResourceProviderCloser (this was removed)`
+* `terraform.ResourceProviderFactoryFixed (this was removed)`
+* `terraform.ResourceProviderResolver`
+* `terraform.ResourceProviderResolverFixed`
+* `terraform.ResourceProviderResolverFunc`
+* `terraform.ResourceProvisioner`
+* `terraform.ResourceProvisionerCloser`
+* `terraform.ResourceProvisionerFactory`
+* `terraform.RootTransformer`
+* `terraform.RootVariableTransformer`
+* `terraform.Schemas`
+* `terraform.Semaphore`
+* `terraform.ShimLegacyState`
+* `terraform.State.FromFutureTerraform`
+* `terraform.State.MarshalEqual`
+* `terraform.StateFilter`
+* `terraform.StateFilterResult`
+* `terraform.StateFilterResultSlice`
+* `terraform.StateTransformer`
+* `terraform.StateVersion`
+* `terraform.TargetsTransformer`
+* `terraform.TestStateFile`
+* `terraform.TransformProviders`
+* `terraform.TransitiveReductionTransformer`
+* `terraform.TypeDeposed`
+* `terraform.TypeInvalid`
+* `terraform.TypePrimary`
+* `terraform.TypeTainted`
+* `terraform.UIInput`
+* `terraform.UIOutput`
+* `terraform.UpgradeResourceState`
+* `terraform.ValidateGraphBuilder`
+* `terraform.ValueFromAutoFile`
+* `terraform.ValueFromCaller`
+* `terraform.ValueFromCLIArg`
+* `terraform.ValueFromConfig`
+* `terraform.ValueFromEnvVar`
+* `terraform.ValueFromInput`
+* `terraform.ValueFromNamedFile`
+* `terraform.ValueFromPlan`
+* `terraform.ValueFromUnknown`
+* `terraform.ValueSourceType`
+* `terraform.VertexTransformer`
+* `terraform.WritePlan`
+* `terraform.WriteState`

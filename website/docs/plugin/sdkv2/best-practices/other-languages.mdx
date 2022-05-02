@@ -1,0 +1,30 @@
+---
+page_title: Plugin Development - Non-Go Providers
+description: Information about writing providers in programming languages other than Go.
+---
+
+# Writing Non-Go Providers
+
+There has been a lot of interest in writing providers using languages other
+than Go, and people frequently ask for information on how to go about doing
+that. The Terraform team's policy at this time is that while it is technically
+possible to write providers in languages other than Go, our tooling,
+documentation, and ecosystem will all assume your provider is being written in
+and distributed as Go code for the time being. This means we will not be
+writing any documentation on how to build a non-Go provider, nor will we be
+providing support or answering questions about it.
+
+While it is possible to write a non-Go provider, thanks to Terraform's use of
+the gRPC protocol, it is harder than it may appear at first glance. Multiple
+packages, from encoders and decoders to Terraform's type system, would all need
+to be reimplemented in that new language. The Plugin SDK would also need to be
+reimplemented, which is not a trivial challenge. And the way non-Go providers
+would interact with the Registry, `terraform init`, and other pieces of the
+Terraform ecosystem is unclear.
+
+At this point, our efforts are focused on providing the best development
+experience for Terraform providers written in Go that we can. The Terraform
+provider development experience is still evolving aggressively, as is
+Terraform's interface for providers. We may reconsider this policy once there
+is a more stable interface to build on and our development experience with Go
+has matured and evolved sufficiently.

@@ -1,0 +1,329 @@
+---
+page_title: Terraform 0.12 Compatibility for Providers
+description: |-
+  Compatibility with Terraform 0.12 requires some changes to existing provider
+  codebases.
+---
+
+# Terraform 0.12 Compatibility for Providers
+
+Terraform 0.12 introduced a new type system for the Terraform language, and
+with it some changes to the representations of configuration, state, and plans.
+To support these changes, Terraform 0.12 introduced a new protocol for Terraform
+Core to interact with providers.
+
+The _provider protocol_ is the physical mechanism by which Terraform Core
+launches a provider executable and directs it to take actions. Provider
+developers do not generally interact with the protocol directly, but rather
+implement against the Terraform SDK (as described elsewhere in
+[the _Extend_ section](/plugin)) which in turn implements the provider side of
+the protocol itself.
+
+As a result, most of the work to support Terraform 0.12 comes just from
+upgrading to the latest Terraform SDK, which features support for both the
+old and new provider protocols.
+
+Although the SDK aims to abstract over as many of the differences as possible,
+the changes to the Terraform language were significant and so in practice
+some small adjustments to provider code may be required to ensure the best
+possible compatibility with Terraform 0.12. The goal of this guide is to
+describe some common situations and how to address them.
+
+-> **Note:** Terraform internally uses a separate versioning scheme for the
+provider protocol than for Terraform Core itself. The protocol version used in
+Terraform 0.10 and 0.11 has version number 4, while Terraform 0.12 uses version
+number 5. You may see these version numbers in error messages in the event of a
+protocol compatibility problem.
+
+## Upgrading to the latest Terraform SDK
+
+At the time of the Terraform 0.12 release, the Terraform SDK is a set of
+sub-directories inside the Terraform Core repository. Therefore upgrading
+to the latest Terraform SDK involves upgrading all of the dependencies on
+Go packages with the prefix `github.com/hashicorp/terraform/` to a version
+with support for the new provider protocol.
+
+~> **NOTE:** The SDK is now its own Go module. Existing providers should upgrade to at least v0.12.7 before [switching to the standalone SDK](/plugin/sdkv2/guides/v1-upgrade-guide). This is to isolate issues between Terraform SDK v0.11 and v0.12, and the standalone SDK. New providers should vendor the standalone SDK from the start.
+
+Terraform Core is now using
+[Go Modules](https://github.com/golang/go/wiki/Modules) for dependency
+management and vendoring, so we strongly recommend using Go Modules for
+dependency management in provider codebases too, which allows the `go` tool
+to automatically understand transitive dependencies and upgrade other required
+packages accordingly. Once your provider codebase is a Go Module, you can
+use the following commands to upgrade for Terraform 0.12 compatibility:
+
+```
+go get github.com/hashicorp/terraform@v0.12.0
+go mod tidy
+go mod vendor
+```
+
+After all of these commands are complete, you should find your version control
+detects changes to the `go.mod` and `go.sum` files as well as various files
+in the `vendor` subdirectory. While vendoring is not mandatory for providers,
+we still recommend using it to ensure dependencies remain consistent for now,
+until the Go team has finished deploying its new solutions for module
+distribution.
+
+With the updated SDK and its dependencies installed, you should be able to run
+your provider's tests in the usual way to see how things are working. For
+simple providers, this is likely to be all of the work required! However,
+we'd still recommend reading the following sections to learn about some specific
+situations where additional changes may be helpful or required, particularly
+if you see unexpected new test failures after upgrading.
+
+## Configuration Syntax Changes
+
+If your provider follows
+[the usual test patterns](/plugin/sdkv2/testing/acceptance-tests/testcase)
+then there will be configuration snippets in your tests that will, after
+upgrading the SDK, be parsed using the new configuration language engine from
+Terraform 0.12. Although the new syntax is broadly compatible, there are some
+minor incompatibilities that arose from compromises made to resolve ambiguities
+in the language and improve usability.
+
+If you see new configuration-related errors in your tests after upgrading, you
+may need to update the configuration snippets in similar ways to how an
+end-user might update their own configurations for compatibility. There are
+lots of details on the common situations in
+[the v0.12 upgrade guide](/language/upgrade-guides/0-12).
+
+If you see an error you're not sure how to resolve, it may help to copy the
+configuration snippet into a separate `.tf` file in a new directory and use
+[the `terraform 0.12upgrade` command](/cli/commands/0.12upgrade)
+to see what changes Terraform itself proposes.
+
+One particular situation that we've seen crop up a lot in provider upgrades
+is in the difference between configuration attributes vs. blocks. Terraform
+uses some different behavior for an attribute which is defined in the SDK
+with an `Elem` of type `*schema.Schema` vs. `*schema.Resource`, but previously
+those differences were not obvious to the user. Terraform 0.12 now enforces
+using argument syntax (with an equals sign) for normal attributes and
+primitive-typed collections, and block syntax (with no equals sign) for
+collections with an element type of `*schema.Resource`.
+
+The most common way this has arisen in existing providers is where an attribute
+is defined with a schema like this:
+
+```go
+"example": &schema.Schema{
+    Type: schema.TypeMap,
+    // ...
+    Elem: &schema.Schema{
+        Type: schema.TypeString,
+    },
+}
+```
+
+The canonical way to write this is with an equals sign to make it clear that
+we are assigning a map value rather than declaring a child object:
+
+```hcl
+example = {
+  "foo" = "bar"
+}
+```
+
+However, Terraform 0.11 and earlier would also permit omitting the equals sign,
+making this appear as if it were a nested object.
+
+If you see an error like the following from your tests after upgrading, adding
+the missing equals sign is usually the answer:
+
+```
+Error: Unsupported block type
+
+Blocks of type "example" are not expected here. Did you mean to define
+argument "example"? If so, use the equals sign to assign it a value.
+```
+
+The opposite situation is possible but less common: Terraform 0.11 and earlier
+permitted using an equals sign when declaring a nested resource, but that is
+no longer allowed in Terraform 0.12.
+
+The intent of this new stricter configuration handling is to help users
+predict what behavior they can expect for a particular name. Nested resources
+have fixed attribute names defined by the provider and can mix attributes
+defined by the user with attributes filled in by the provider itself, while
+simple arguments are always either entirely defined by the user or entirely
+defined by the provider, never a mixture. Think of a nested resource as being
+conceptually a separate object that happens to be nested, whereas an argument
+is simply a property of the main object.
+
+## Inaccurate Plans
+
+The intended contract for Terraform's plan phase is that the provider should
+produce as accurate as possible a description of what each resource object
+will look like after the apply operation is completed. Any attribute value
+that is not set in configuration and whose default cannot be predicted until
+apply time is marked as "unknown", as a placeholder for the final value.
+
+In Terraform 0.11 and prior, Terraform Core did not enforce that the final
+result be consistent with what was planned. If a provider produced a final
+result that disagreed with any known attribute in the plan, Terraform would
+just accept it and save it, most of the time letting that inconsistency go
+unnoticed.
+
+However, along with violating user expectations this would also tend to lead
+to errors on downstream resources including the message "diffs didn't match
+during apply". When Terraform 0.11 and prior returns this error, it is saying
+that when it re-ran the resource plan during the apply phase to incorporate
+values learned so far, the new plan had attribute values that were not equal
+to what was originally planned. This is because the downstream resource plan
+was derived from a predicted result from elsewhere, but the final result
+did not match the plan and thus the new plan is different.
+
+Terraform 0.12 includes a new safety check to detect when a provider produces
+a result that is inconsistent with what was planned. The error message text
+in that case will be similar to the following:
+
+```
+Error: Provider produced inconsistent result after apply
+
+When applying changes to null_resource.example, provider "null" produced an
+unexpected new value for .triggers["foo"]: was cty.StringVal("a"), but now
+cty.StringVal("b").
+
+This is a bug in the provider, which should be reported in the provider's
+own issue tracker.
+```
+
+Because such inconsistencies turned out to be quite common in existing
+provider implementations (a result of this not being enforced before), Terraform
+0.12 does not enforce this as a hard error for providers using the current
+version of the SDK, and so such problems will for now continue to return the
+new equivalent of the "diffs didn't match during apply" message, which has
+the following structure:
+
+```
+Error: Provider produced inconsistent final plan
+
+When expanding the plan for null_resource.downstream to include new values
+learned so far during apply, provider "null" produced an invalid new value for
+.triggers["from_other"]: was cty.StringVal("a"), but now cty.StringVal("b").
+
+This is a bug in the provider, which should be reported in the provider's own
+issue tracker.
+```
+
+This other error is reported from the perspective of the downstream resource
+that `null_resource.example.triggers["foo"]` was interpolated into, rather than
+the resource that caused the problem: `null_resource.example`.
+
+If you see either of these errors, the remedy is the same: implement
+[`CustomizeDiff`](/plugin/sdkv2/resources/customizing-differences)
+for the resource type that is causing the problem, and write logic to more
+accurately predict the outcome of any changes to `Computed` attributes.
+If you can predict the exact new value then that is preferable, but if you
+know only that it will change and can't predict what it will change to, you
+can explicitly set it to unknown to reflect that.
+
+For example, if your resource type has a `version` attribute that changes
+each time certain other attributes are updated, you can use
+[the `customdiff.ComputedIf` helper](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/helper/customdiff#ComputedIf)
+to reflect that in the plan:
+
+```go
+    CustomizeDiff: customdiff.ComputedIf("version", func(d *schema.ResourceDiff, meta interface{}) bool {
+        return d.HasChange("content") || d.HasChange("content_type")
+    })
+```
+
+With the above rule in place, references to the `version` attribute elsewhere
+in the configuration will correctly reflect that the value isn't known
+(in SDK terminology, "is computed") during the plan phase, so downstream
+resources know that the value won't be known until apply time.
+
+## Computed Resource Attributes
+
+The original intent of `Computed: true` in a schema was to say that a particular
+attribute has a default value but that default value won't be known until
+after the object is created.
+
+Because Terraform 0.11 and earlier did not make the strong distinction described
+above between argument vs. nested object syntax, it was inadvertently possible
+to set `Computed: true` for a whole collection of nested objects, which some
+providers have used as a way to distinguish between two user intents: to
+ignore the nested objects of a particular type altogether or to force there
+to be none of them.
+
+Terraform v0.12 does not support using `Computed` with a collection of
+sub-resources, but to avoid breaking existing uses of that mechanism for the
+reason described above, we introduced a compromise which you can read more
+about from the end-user perspective in
+[Attributes as Blocks](/language/attr-as-blocks).
+
+If you have an existing `Computed` attribute that has `Elem: *schema.Resource`
+and which expects to treat explicit assignment of an empty list differently
+than no blocks at all, you may need to opt in to this mechanism to preserve
+compatibility.
+
+To activate this special behavior, add to your attribute's schema the new
+`ConfigMode` field, set to `schema.SchemaConfigModeAttr`. For example:
+
+```go
+"example": &schema.Schema{
+    // This special mode is never needed unless Optional and Computed are set
+    // together, because otherwise there is no need to distinguish unset from
+    // empty.
+    Optional: true,
+    Computed: true,
+
+    // Activate the "Attributes as Blocks" processing mode
+    ConfigMode: schema.SchemaConfigModeAttr,
+
+    // This special mode only applies to lists or sets whose Elem is
+    // a nested resource object.
+    Type: schema.TypeList,
+    Elem: &schema.Resource{
+        // ...
+    },
+}
+```
+
+Only activate this mode if your provider has existing functionality that is
+depending on the ability to distinguish unset vs. explicitly empty for a
+nested resource collection. Turning it on has some implications for the handling
+of JSON syntax input (as described in the user-facing documentation linked
+above), so any schema attribute with it enabled will not behave exactly how
+the JSON syntax documentation suggests, and so we recommend keeping its usage
+to a minimum to avoid that confusion.
+
+For any new functionality added in future, we recommend separating the idea of
+defining nested objects from the idea of ignoring existing objects defined
+outside of the resource configuration. For example, you could add a separate
+boolean attribute, defaulting to false, which can be explicitly set to true
+to indicate that any additional objects not already tracked in the state
+should be ignored by the `Read` function, thus making it explicit in the user's
+configuration that there may be other objects present that are tracked
+somewhere else. For example:
+
+```hcl
+  disk {
+    # ...
+  }
+  disk {
+    # ...
+  }
+
+  ignore_other_disks = true
+```
+
+## Releasing the Updated Provider
+
+Once you consider your provider ready to release with v0.12 compatibility,
+if your provider is distributed by HashiCorp (that is, available for
+installation with `terraform init`) you must be sure to be explicit about
+the v0.12 compatibility when requesting a release from the Terraform team at
+HashiCorp, so the release can be marked with appropriate metadata.
+
+A new release with v0.12 compatibility is considered an enhancement, so it
+should increment the minor release portion of the version number unless it
+is grouped in with some unrelated breaking changes.
+
+If you maintain a community provider that is not distributed by HashiCorp,
+you can build and package your release archives as you usually would. The
+archives themselves have not changed in structure compared to previous
+releases. Be sure to note which release introduced Terraform v0.12
+compatibility in your release notes.

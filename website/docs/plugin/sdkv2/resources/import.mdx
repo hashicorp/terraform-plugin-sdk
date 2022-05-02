@@ -1,0 +1,216 @@
+---
+page_title: Resources - Import
+description: Implementing resource import support.
+---
+
+# Resources - Import
+
+Adding import support for Terraform resources will allow existing infrastructure to be managed within Terraform. This type of enhancement generally requires a small to moderate amount of code changes.
+
+~> **Note:** Operators are responsible for writing the appropriate configuration that will be associated with the resource import. This restriction may be removed in a future version of Terraform.
+
+When importing, the operator will specify the Terraform configuration address for the resource they wish to import, along with an identifier for import. The import identifier may be different than the resource identifier (`ResourceData.SetId()`) for compatibility reasons outlined below in the [Importer State Function](#importer-state-function) section.
+
+```console
+$ terraform import example_thing.foo abc123
+```
+
+## Overview of Implementation
+
+Implementing import support requires three changes: an `Importer` `State` function in the resource code, a `TestStep` with `ImportState: true` in the acceptance tests, and documentation of the import ID format.
+
+> **Hands-on:** Try the [Implement Import](https://learn.hashicorp.com/tutorials/terraform/provider-import?utm_source=WEBSITE&utm_medium=WEB_IO&utm_offer=ARTICLE_PAGE&utm_content=DOCS) tutorial on HashiCorp Learn. In this tutorial, you will implement the import functionality on an example Terraform provider.
+
+### Resource Code Implementation
+
+In the resource code (e.g. `resource_example_thing.go`), implement an `Importer` `State` function:
+
+```go
+func resourceExampleThing() *schema.Resource {
+  return &schema.Resource{
+    /* ... existing Resource functions ... */
+    Importer: &schema.ResourceImporter{
+      State: /* ... */,
+    },
+  }
+}
+```
+
+### Resource Acceptance Testing Implementation
+
+In the resource acceptance testing (e.g. `resource_example_thing_test.go`), implement `TestStep`s with `ImportState: true`:
+
+```go
+func TestAccExampleThing_basic(t *testing.T) {
+  /* ... potentially existing acceptance testing logic ... */
+
+  resource.ParallelTest(t, resource.TestCase{
+    /* ... existing TestCase functions ... */
+    Steps: []resource.TestStep{
+      /* ... existing TestStep ... */
+      {
+        ResourceName:      "example_thing.test",
+        ImportState:       true,
+        ImportStateVerify: true,
+      },
+    },
+  })
+}
+```
+
+### Resource Documentation Implementation
+
+In the resource documentation (e.g. `website/docs/r/example_thing.html.markdown`), add an `Import` documentation section at the bottom of the page:
+
+````
+## Import
+
+Service Thing can be imported using the id, e.g.
+
+```
+$ terraform import example_thing.example abc123
+```
+````
+
+## Additional Information
+
+### Recommendations for Import
+
+The items below are coding/testing styles that should generally be followed when implementing import support.
+
+- The `TestStep` including `ImportState` testing should not be performed solely in a separate acceptance test. This duplicates testing infrastructure/time and does not check that all resource configurations import into Terraform properly.
+- The `TestStep` including `ImportState` should be included in all applicable resource acceptance tests (except those that delete the resource in question, e.g. `_disappears` tests)
+- Import implementations should not change existing `Create` function `d.SetId()` calls. [Versioning best practices for Terraform Provider development](/plugin/sdkv2/best-practices/versioning#example-major-number-increments) notes that changing the resource ID is considered a breaking change for a major version upgrade as it makes the `id` attribute ambiguous between provider versions.
+- `ImportStateVerifyIgnore` should only be used where its not possible to `d.Set()` the attribute in the `Read` function (preferable) or `Importer` `State` function.
+
+### Importer State Function
+
+Where possible, prefer using `schema.ImportStatePassthrough` as the `Importer` `State` function:
+
+```go
+func resourceExampleThing() *schema.Resource {
+  return &schema.Resource{
+    /* ... existing Resource functions ... */
+    Importer: &schema.ResourceImporter{
+      State: schema.ImportStatePassthrough,
+    },
+  }
+}
+```
+
+This function requires the `Read` function to be able to refresh the entire resource with `d.Id()` _ONLY_. Sometimes it is possible to adjust the resource `Read` function to replace `d.Get()` use with `d.Id()` if they exactly match or add a function that parses the resource ID into the necessary attributes:
+
+```go
+// Illustrative example of parsing a resource ID into two parts to match requirements for Read function
+// In this example, the resource ID is a combination of attribute1 and attribute2, separated by a colon (:) character
+
+func resourceServiceThingExampleThingParseId(id string) (string, string, error) {
+  parts := strings.SplitN(id, ":", 2)
+
+  if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+    return "", "", fmt.Errorf("unexpected format of ID (%s), expected attribute1:attribute2", id)
+  }
+
+  return parts[0], parts[1], nil
+}
+
+// In the resource Read function:
+
+attribute1, attribute2, err := resourceServiceThingExampleThingParseId(d.Id())
+
+if err != nil {
+  return err
+}
+```
+
+More likely though, if the resource requires multiple attributes and they are not already in the resource ID, `Importer` `State` will require a custom function implementation beyond using `schema.ImportStatePassthrough`, seen below. The ID passed into `terraform import` should be parsed so `d.Set()` can be called the required attributes to make the `Read` function properly operate. The resource ID should also match the ID set during the resource `Create` function via `d.SetId()`.
+
+```go
+// Illustrative example of parsing the import ID during terraform import
+// This should only be used where the resource ID cannot be solely used
+// during the resource Read function.
+func resourceExampleThing() *schema.Resource {
+  return &schema.Resource{
+    /* ... other Resource functions ... */
+    Importer: &schema.ResourceImporter{
+      State:  func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+        // d.Id() here is the last argument passed to the `terraform import RESOURCE_TYPE.RESOURCE_NAME RESOURCE_ID` command
+        // Here we use a function to parse the import ID (like the example above) to simplify our logic
+        attribute1, attribute2, err := resourceServiceThingExampleThingParseId(d.Id())
+
+        if err != nil {
+          return nil, err
+        }
+
+        d.Set("attribute1", attribute1)
+        d.Set("attribute2", attribute2)
+        d.SetId(fmt.Sprintf("%s:%s", attribute1, attribute2))
+
+        return []*schema.ResourceData{d}, nil
+      },
+    },
+```
+
+### ImportStateVerifyIgnore
+
+~> **NOTE:** `ImportStateVerifyIgnore` should be used sparingly as it means Terraform will require a followup apply to the resource after import or operators must configure `lifecycle` configuration block `ignore_changes` argument (especially for attributes that are `ForceNew`).
+
+Some resource attributes only exist within the context of the Terraform resource or are only used to modify an API request during resource `Create`, `Update`, and `Delete` functions. In these cases, if implementation of the resource cannot obtain the value for the attribute in the `Read` function or its not determined/defaulted to the correct value during the `Importer` `State` function, the acceptance testing may return an error like the following:
+
+```text
+--- FAIL: TestAccExampleThing_namePrefix (18.56s)
+    testing.go:568: Step 2 error: ImportStateVerify attributes not equivalent. Difference is shown below. Top is actual, bottom is expected.
+
+        (map[string]string) {
+        }
+
+
+        (map[string]string) (len=1) {
+         (string) (len=11) "name_prefix": (string) (len=24) "test-7166041588452991103"
+        }
+```
+
+To have the import testing ignore this attribute's value being missing during import, the `ImportStateVerifyIgnore` field can be used with the list containing the name(s) of the attributes, e.g.
+
+```go
+func TestAccExampleThing_basic(t *testing.T) {
+  /* ... potentially existing acceptance testing logic ... */
+
+  resource.ParallelTest(t, resource.TestCase{
+    /* ... existing TestCase functions ... */
+    Steps: []resource.TestStep{
+      /* ... existing TestStep ... */
+      {
+        ResourceName:            "example_thing.test",
+        ImportState:             true,
+        ImportStateVerify:       true,
+        ImportStateVerifyIgnore: []string{"name_prefix"},
+      },
+    },
+  })
+}
+```
+
+### Multiple Resource Import
+
+~> **NOTE:** Multiple resource import is generally discouraged due to the implementation/testing complexity and since the resource addresses saved into the Terraform state will likely not align with the operator's configuration.
+
+The Terraform import framework supports importing multiple resources from a single state import function (sometimes referred to as "complex" imports), by adding elements to the returned `[]*schema.ResourceData`. Each of those new elements must have `ResourceData.SetType()` and `ResourceData.SetId()` called.
+
+Given our fictitious example resource, if the API supported many associations with it, we could perform an API lookup during the resource import function to find those associations and add them to the Terraform state during import.
+
+```go
+func resourceExampleThingImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+  // Perform API lookup using the import ID (d.Id()) and save those into a variable named associations
+
+  results := []*schema.ResourceData{d}
+  for _, association := range associations {
+    d := resourceExampleThingAssociation().Data(nil)
+    d.SetType("example_thing_association")
+    d.SetId(/* ... dependent on example_thing_association implementation ... */)
+    results = append(results, d)
+  }
+
+  return results, nil
+}
+```

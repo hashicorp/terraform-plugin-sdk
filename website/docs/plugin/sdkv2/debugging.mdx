@@ -1,0 +1,31 @@
+---
+page_title: Plugin Development - Debugging SDKv2 Providers
+description: How to implement debugger support in SDKv2 Terraform providers.
+---
+
+# Debugging SDKv2 Providers
+
+This page contains implementation details for inspecting runtime information of a Terraform provider developed with SDKv2 via a debugger tool. Review the top level [Debugging](/plugin/debugging) page for information pertaining to the overall Terraform provider debugging process and other inspection options, such as log-based debugging.
+
+## Code Implementation
+
+Update the `main` function for the project to conditionally enable the [`plugin/ServeOpts.Debug` field](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/plugin#ServeOpts.Debug). Conventionally, a `-debug` flag is used to control the `Debug` value.
+
+This example uses a `-debug` flag to enable debugging, otherwise starting the provider normally:
+
+```go
+func main() {
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
+	flag.Parse()
+
+	opts := &plugin.ServeOpts{
+		Debug:        debug,
+		ProviderAddr: "registry.terraform.io/example-namespace/example",
+		ProviderFunc: provider.New(),
+	}
+
+	plugin.Serve(opts)
+}
+```

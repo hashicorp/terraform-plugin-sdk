@@ -1,0 +1,140 @@
+[
+  { "heading": "SDKv2" },
+  { "title": "Overview", "path": "" },
+  {
+    "title": "Tutorials: Custom Providers",
+    "href": "https://learn.hashicorp.com/collections/terraform/providers?utm_source=WEBSITE&utm_medium=WEB_IO&utm_offer=ARTICLE_PAGE&utm_content=DOCS"
+  },
+  {
+    "title": "Schemas",
+    "routes": [
+      { "title": "Overview", "path": "schemas" },
+      { "title": "Schema Types", "path": "schemas/schema-types" },
+      {
+        "title": "Schema Behaviors",
+        "path": "schemas/schema-behaviors"
+      },
+      {
+        "title": "Schema Methods",
+        "path": "schemas/schema-methods",
+        "hidden": true
+      }
+    ]
+  },
+  {
+    "title": "Resources",
+    "routes": [
+      { "title": "Overview", "path": "resources" },
+      {
+        "title": "Customizing Differences",
+        "path": "resources/customizing-differences"
+      },
+      { "title": "Import", "path": "resources/import" },
+      {
+        "title": "Retries and Customizable Timeouts",
+        "path": "resources/retries-and-customizable-timeouts"
+      },
+      {
+        "title": "State Migration",
+        "path": "resources/state-migration"
+      }
+    ]
+  },
+  { "title": "Debugging Providers", "path": "debugging" },
+  {
+    "title": "Upgrade Guides",
+    "routes": [
+      {
+        "title": "Compatibility with Terraform 0.12",
+        "path": "guides/terraform-0.12-compatibility"
+      },
+      {
+        "title": "Switching to the standalone SDK",
+        "path": "guides/v1-upgrade-guide"
+      },
+      {
+        "title": "v2 Upgrade Guide",
+        "path": "guides/v2-upgrade-guide"
+      }
+    ]
+  },
+  {
+    "title": "Best Practices",
+    "routes": [
+      { "title": "Overview", "path": "best-practices" },
+      {
+        "title": "Naming",
+        "path": "best-practices/naming"
+      },
+      {
+        "title": "Depending on Providers",
+        "path": "best-practices/depending-on-providers"
+      },
+      {
+        "title": "Deprecations, Removals, and Renames",
+        "path": "best-practices/deprecations"
+      },
+      {
+        "title": "Detecting Drift",
+        "path": "best-practices/detecting-drift"
+      },
+      {
+        "title": "Handling Sensitive Data",
+        "path": "best-practices/sensitive-state"
+      },
+      {
+        "title": "Testing Patterns",
+        "path": "best-practices/testing"
+      },
+      {
+        "title": "Versioning and Changelog",
+        "path": "best-practices/versioning"
+      },
+      {
+        "title": "Writing Non-Go Providers",
+        "path": "best-practices/other-languages"
+      }
+    ]
+  },
+  {
+    "title": "Testing",
+    "routes": [
+      { "title": "Overview", "path": "testing" },
+      {
+        "title": "Acceptance Testing",
+        "routes": [
+          {
+            "title": "Overview",
+            "path": "testing/acceptance-tests"
+          },
+          {
+            "title": "Test Cases",
+            "path": "testing/acceptance-tests/testcase"
+          },
+          {
+            "title": "Test Steps",
+            "path": "testing/acceptance-tests/teststep"
+          },
+          {
+            "title": "Sweepers",
+            "path": "testing/acceptance-tests/sweepers"
+          }
+        ]
+      },
+      {
+        "title": "Testing API",
+        "path": "testing/testing-api",
+        "hidden": true
+      },
+      {
+        "title": "Testing Patterns",
+        "path": "testing/testing-patterns",
+        "hidden": true
+      },
+      {
+        "title": "Unit Testing",
+        "path": "testing/unit-testing"
+      }
+    ]
+  }
+]
