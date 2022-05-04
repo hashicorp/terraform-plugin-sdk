@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.16.1
 	github.com/hashicorp/terraform-json v0.13.0
 	github.com/hashicorp/terraform-plugin-go v0.9.0
-	github.com/hashicorp/terraform-plugin-log v0.3.0
+	github.com/hashicorp/terraform-plugin-log v0.4.0
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-testing-interface v1.14.1
 	github.com/mitchellh/mapstructure v1.5.0
