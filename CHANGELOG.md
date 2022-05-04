@@ -1,3 +1,17 @@
+# 2.15.0 (May 4, 2022)
+
+FEATURES:
+
+* helper/resource: New `TestCheckResourceAttrWith` test helper, that simplifies checking of attribute values via custom functions ([#950](https://github.com/hashicorp/terraform-plugin-sdk/issues/950))
+
+ENHANCEMENTS:
+
+* helper/schema: Propagated `tf_data_source_type`, `tf_req_id`, `tf_resource_type`, and `tf_rpc` fields in log entries ([#955](https://github.com/hashicorp/terraform-plugin-sdk/issues/955))
+
+BUG FIXES:
+
+* helper/resource: Prevented `Unable to create logging subsystem with AdditionalLocationOffset due to missing root logger options` warning logs during acceptance testing ([#955](https://github.com/hashicorp/terraform-plugin-sdk/issues/955))
+
 # 2.14.0 (April 14, 2022)
 
 NOTES:
