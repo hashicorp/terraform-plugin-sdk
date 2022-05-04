@@ -1,0 +1,7 @@
+```release-note:bug
+helper/resource: Prevented `Unable to create logging subsystem with AdditionalLocationOffset due to missing root logger options` warning logs during acceptance testing
+```
+
+```release-note:enhancement
+helper/schema: Propagated `tf_data_source_type`, `tf_req_id`, `tf_resource_type`, and `tf_rpc` fields in log entries
+```
