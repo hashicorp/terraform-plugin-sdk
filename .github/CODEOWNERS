@@ -1,1 +1,2 @@
 * @hashicorp/terraform-devex
+/website/**/*.mdx @hashicorp/terraform-devex @hashicorp/team-tw-packer-and-terraform
