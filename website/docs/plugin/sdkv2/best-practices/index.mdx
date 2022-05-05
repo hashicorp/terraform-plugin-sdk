@@ -1,0 +1,85 @@
+---
+page_title: Plugin Development - Best Practices
+description: >-
+  Patterns that ensure a consistent user experience, including naming,
+  deprecation, beta features, testing, and versioning.
+---
+
+# Terraform Plugin Best Practices
+
+A key feature of Terraform is its plugin system, which separates the details of
+specific vendor APIs from the shared logic for managing state, managing configuration,
+and providing a safe plan and apply lifecycle. Plugins are responsible
+for the  implementation of functionality for provisioning resources for a
+specific cloud provider, allowing each provider to fully support its unique
+resources and lifecycles and not settling for the lowest common denominator
+across all provider resources of that type (virtual machines, networks,
+configuration management systems, et. al). While each provider is unique, over
+the years we’ve accumulated some patterns that should be adhered to, to
+ensure a consistent user experience when using Terraform for any given provider.
+Listed below are a few best practices we’ve found that generally apply to most
+Providers, with a brief description of each, and link to read more. Each
+practice is also linked in navigation on the left.
+
+This section is a work in progress, with more sections to come.
+
+## Naming
+
+[Naming][naming] resources, data sources, and attributes in plugins is how plugin authors
+expose their functionality to operators and using patterns common to other plugins
+lays the foundation for a good user experience.
+
+## Deprecations, Removals, and Renames
+
+Over time, remote services evolve and better workflows are designed.
+Terraform's plugin system has functionality to aid in iterative improvements.
+In [Deprecations, Removals, and Renames][deprecations], we cover procedures for
+backwards compatible code and documentation updates to ensure that operators
+are well informed of changes ahead of functionality being removed or renamed.
+
+## Enabling beta features
+
+As a provider, you might want to enable new resources that are still in beta.
+Those resources might change later on.
+As a general practice, you can enable your provider to support those beta features
+by using a environment variable such as `PROVIDERX_ENABLE_BETA`.
+Once your resources are out of beta and reach a stable status, you can use those
+resources by default without requiring an environment variable.
+
+## Detecting Drift
+
+Terraform is a declarative tool designed to be the source of truth for
+infrastructure. In order to safely and predictably change and iterate
+infrastructure, Terraform needs to be able to detect changes made outside of
+its configuration and provide means of reconciliation. In [Detecting
+Drift][drift], we cover some best practices to ensure Terraform's statefile is
+an accurate reflection of reality, to provide accurate plan and apply
+functionality.
+
+## Testing Patterns
+
+Terraform developers are encouraged to write acceptance tests that create real
+resource to verify the behavior of plugins, ensuring a reliable and safe
+way to manage infrastructure. In [Testing Patterns][testing-patterns] we cover
+some basic acceptance tests that almost all resources should have to validate
+not only the functionality of the resource, but that the resource behaves as
+Terraform would expect.
+
+## Versioning and Changelog
+
+Terraform development serves two distinct audiences: those writing plugin code
+and those implementing them. By clearly and consistently allowing operators to
+easily understand changes in plugin implementation via version numbering and
+documenting those changes, a trust is formed between the two audiences. In
+[Versioning and Changelog][versioning] we cover some guidelines when deciding
+release versions and how to relay changes through documentation.
+
+[naming]: /plugin/sdkv2/best-practices/naming
+
+[deprecations]: /plugin/sdkv2/best-practices/deprecations
+
+[drift]: /plugin/sdkv2/best-practices/detecting-drift
+
+[testing-patterns]: /plugin/sdkv2/best-practices/testing
+
+[versioning]: /plugin/sdkv2/best-practices/versioning
