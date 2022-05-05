@@ -1,3 +1,10 @@
+#############################################################
+# Note: This script is maintained by the Web / Digital team #
+#                                                           #
+# This is meant to be executed during a Vercel CI job, and  #
+# not locally.                                              #
+#############################################################
+
 # Repo which we are cloning and executing npm run build:deploy-preview within
 REPO_TO_CLONE=terraform-website
 # Set the subdirectory name for the terraform-website app
