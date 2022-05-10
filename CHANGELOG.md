@@ -4,7 +4,7 @@ ENHANCEMENTS:
 * helper/resource: Added error logging before failing tests, so errors are visible in test output and any separate log file ([#958](https://github.com/hashicorp/terraform-plugin-sdk/issues/958))
 
 BUG FIXES:
-* Updated version of [hc-install](github.com/hashicorp/hc-install) in response to change in HashiCorp Release API [sending back a different `Content-Type` header](https://github.com/hashicorp/hc-install/issues/56). This was causing failures when the SDK attempted to install Terraform. ([#960](https://github.com/hashicorp/terraform-plugin-sdk/issues/960))
+* helper/resource: Updated version of [hc-install](github.com/hashicorp/hc-install) in response to change in HashiCorp Release API [sending back a different `Content-Type` header](https://github.com/hashicorp/hc-install/issues/56). This was causing failures when the SDK attempted to install Terraform. ([#960](https://github.com/hashicorp/terraform-plugin-sdk/issues/960))
 
 # 2.15.0 (May 4, 2022)
 
