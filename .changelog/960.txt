@@ -1,0 +1,3 @@
+```release-note:bug
+helper/resource: Updated version of [hc-install](github.com/hashicorp/hc-install) in response to change in HashiCorp Release API [sending back a different `Content-Type` header](https://github.com/hashicorp/hc-install/issues/56). This was causing failures when the SDK attempted to install Terraform.
+```
