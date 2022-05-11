@@ -25,7 +25,7 @@ jobs:
         with:
           go-version: ${{ steps.go-version.outputs.version }}
       - run: go mod download
-      - uses: golangci/golangci-lint-action@v3.1.0
+      - uses: golangci/golangci-lint-action@v3.2.0
         with:
           skip-go-installation: true
   terraform-provider-corner:
