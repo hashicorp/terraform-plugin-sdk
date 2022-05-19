@@ -2109,7 +2109,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 				})
 			}
 		default:
-			panic(fmt.Sprintf("Unknown validation type: %#v", schema.Type))
+			panic(fmt.Sprintf("Unknown validation type: %#v", valueType))
 		}
 	}
 	return diags
