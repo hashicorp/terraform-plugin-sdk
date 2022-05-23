@@ -20,6 +20,6 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ steps.go-version.outputs.version }}
-      - uses: goreleaser/goreleaser-action@v2
+      - uses: goreleaser/goreleaser-action@v3
         with:
           args: check
