@@ -23,44 +23,64 @@ func init() {
 	}
 }
 
-func TestParallelTest(t *testing.T) {
-	mt := new(mockT)
+// testExpectTFatal provides a wrapper for logic which should call
+// (*testing.T).Fatal() or (*testing.T).Fatalf().
+//
+// Since we do not want the wrapping test to fail when an expected test error
+// occurs, it is required that the testLogic passed in uses
+// github.com/mitchellh/go-testing-interface.RuntimeT instead of the real
+// *testing.T.
+//
+// If Fatal() or Fatalf() is not called in the logic, the real (*testing.T).Fatal() will
+// be called to fail the test.
+func testExpectTFatal(t *testing.T, testLogic func()) {
+	t.Helper()
 
-	ParallelTest(mt, TestCase{IsUnitTest: true})
-
-	if !mt.ParallelCalled {
-		t.Fatal("Parallel() not called")
-	}
-}
-
-func TestTest_factoryError(t *testing.T) {
-	resourceFactoryError := fmt.Errorf("resource factory error")
-
-	factory := func() (*schema.Provider, error) { //nolint:unparam // required signature
-		return nil, resourceFactoryError
-	}
-	mt := new(mockT)
-	recovered := false
+	var recoverIface interface{}
 
 	func() {
 		defer func() {
-			r := recover()
-			// this string is hardcoded in github.com/mitchellh/go-testing-interface
-			if s, ok := r.(string); !ok || !strings.HasPrefix(s, "testing.T failed, see logs for output") {
-				panic(r)
-			}
-			recovered = true
+			recoverIface = recover()
 		}()
-		Test(mt, TestCase{
-			ProviderFactories: map[string]func() (*schema.Provider, error){
-				"test": factory,
-			},
-			IsUnitTest: true,
-		})
+
+		testLogic()
 	}()
 
-	if !recovered {
-		t.Fatalf("test should've failed fatally")
+	if recoverIface == nil {
+		t.Fatalf("expected t.Fatal(), got none")
+	}
+
+	recoverStr, ok := recoverIface.(string)
+
+	if !ok {
+		t.Fatalf("expected string from recover(), got: %v (%T)", recoverIface, recoverIface)
+	}
+
+	// this string is hardcoded in github.com/mitchellh/go-testing-interface
+	if !strings.HasPrefix(recoverStr, "testing.T failed, see logs for output") {
+		t.Fatalf("expected t.Fatal(), got: %s", recoverStr)
+	}
+}
+
+func TestParallelTest(t *testing.T) {
+	mt := new(mockT)
+
+	ParallelTest(mt, TestCase{
+		IsUnitTest: true,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"test": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return nil, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: "# not empty",
+			},
+		},
+	})
+
+	if !mt.ParallelCalled {
+		t.Fatal("Parallel() not called")
 	}
 }
 
