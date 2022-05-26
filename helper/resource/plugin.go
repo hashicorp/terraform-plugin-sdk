@@ -116,8 +116,9 @@ func runProviderCommand(ctx context.Context, t testing.T, f func() error, wd *pl
 
 	// This should not happen, but prevent panics just in case.
 	if factories == nil {
-		logging.HelperResourceError(ctx, "Provider factories are missing to run Terraform command. Please report this bug in the testing framework.")
-		t.Fatalf("Provider factories are missing to run Terraform command. Please report this bug in the testing framework.")
+		err := fmt.Errorf("Provider factories are missing to run Terraform command. Please report this bug in the testing framework.")
+		logging.HelperResourceError(ctx, err.Error())
+		return err
 	}
 
 	// Run the providers in the same process as the test runner using the
