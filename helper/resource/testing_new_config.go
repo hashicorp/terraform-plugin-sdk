@@ -16,24 +16,6 @@ import (
 func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugintest.WorkingDir, step TestStep, providers *providerFactories) error {
 	t.Helper()
 
-	if !step.Destroy {
-		var state *terraform.State
-		var err error
-		err = runProviderCommand(ctx, t, func() error {
-			state, err = getState(ctx, t, wd)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, wd, providers)
-		if err != nil {
-			return err
-		}
-		if err := testStepTaint(ctx, state, step); err != nil {
-			return fmt.Errorf("Error when tainting resources: %s", err)
-		}
-	}
-
 	err := wd.SetConfig(ctx, step.Config)
 	if err != nil {
 		return fmt.Errorf("Error setting config: %w", err)

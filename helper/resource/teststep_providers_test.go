@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -256,6 +257,79 @@ func TestTest_TestStep_ExternalProviders_To_ProviderFactories(t *testing.T) {
 											ForceNew: true,
 											Optional: true,
 											Type:     schema.TypeMap,
+										},
+									},
+								},
+							},
+						}, nil
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ExternalProviders_To_ProviderFactories_StateUpgraders(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		Steps: []TestStep{
+			{
+				Config: `resource "null_resource" "test" {}`,
+				ExternalProviders: map[string]ExternalProvider{
+					"null": {
+						Source:            "registry.terraform.io/hashicorp/null",
+						VersionConstraint: "3.1.1",
+					},
+				},
+			},
+			{
+				Check:  TestCheckResourceAttr("null_resource.test", "id", "test-schema-version-1"),
+				Config: `resource "null_resource" "test" {}`,
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"null": func() (*schema.Provider, error) { //nolint:unparam // required signature
+						return &schema.Provider{
+							ResourcesMap: map[string]*schema.Resource{
+								"null_resource": {
+									CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										d.SetId("test")
+										return nil
+									},
+									DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										return nil
+									},
+									ReadContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										return nil
+									},
+									Schema: map[string]*schema.Schema{
+										"triggers": {
+											Elem:     &schema.Schema{Type: schema.TypeString},
+											ForceNew: true,
+											Optional: true,
+											Type:     schema.TypeMap,
+										},
+									},
+									SchemaVersion: 1, // null 3.1.3 is version 0
+									StateUpgraders: []schema.StateUpgrader{
+										{
+											Type: cty.Object(map[string]cty.Type{
+												"id":       cty.String,
+												"triggers": cty.Map(cty.String),
+											}),
+											Upgrade: func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+												// null 3.1.3 sets the id attribute to a stringified random integer.
+												// Double check that our resource wasn't created by this TestStep.
+												id, ok := rawState["id"].(string)
+
+												if !ok || id == "test" {
+													return rawState, fmt.Errorf("unexpected rawState: %v", rawState)
+												}
+
+												rawState["id"] = "test-schema-version-1"
+
+												return rawState, nil
+											},
+											Version: 0,
 										},
 									},
 								},
