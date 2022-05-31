@@ -6,7 +6,6 @@ on:
     paths:
       - .github/workflows/ci-go.yml
       - .golangci.yml
-      - .go-version
       - go.mod
       - '**.go'
 
@@ -18,12 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: go-version
-        # Reference: https://github.com/actions/setup-go/issues/23
-        run: echo "::set-output name=version::$(cat ./.go-version)"
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ steps.go-version.outputs.version }}
+          go-version-file: 'go.mod'
       - run: go mod download
       - uses: golangci/golangci-lint-action@v3.2.0
   terraform-provider-corner:
@@ -37,13 +33,9 @@ jobs:
         with:
           path: terraform-provider-corner
           repository: hashicorp/terraform-provider-corner
-      - id: go-version
-        # Reference: https://github.com/actions/setup-go/issues/23
-        run: echo "::set-output name=version::$(cat ./.go-version)"
-        working-directory: .
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ steps.go-version.outputs.version }}
+          go-version-file: 'go.mod'
       - run: go mod edit -replace=github.com/hashicorp/terraform-plugin-sdk/v2=../
       - run: go mod tidy
       - run: go test -v ./...
