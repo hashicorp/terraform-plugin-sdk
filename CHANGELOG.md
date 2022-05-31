@@ -1,3 +1,17 @@
+# 2.17.0 (May 31, 2022)
+
+NOTES:
+
+* helper/resource: Provider references or external installation can now be handled at either the `TestCase` or `TestStep` level. Using the `TestStep` handling, advanced use cases are now enabled such as state upgrade acceptance testing. ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
+ENHANCEMENTS:
+
+* helper/resource: Added `TestStep` type `ExternalProviders`, `ProtoV5ProviderFactories`, `ProtoV6ProviderFactories`, and `ProviderFactories` fields ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
+BUG FIXES:
+
+* helper/resource: Removed extraneous `terraform state show` command when not using the `TestStep` type `Taint` field ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
 # 2.16.0 (May 10, 2022)
 
 ENHANCEMENTS:
