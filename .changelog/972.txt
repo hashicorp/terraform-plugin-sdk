@@ -1,0 +1,11 @@
+```release-note:note
+helper/resource: Provider references or external installation can now be handled at either the `TestCase` or `TestStep` level. Using the `TestStep` handling, advanced use cases are now enabled such as state upgrade acceptance testing.
+```
+
+```release-note:enhancement
+helper/resource: Added `TestStep` type `ExternalProviders`, `ProtoV5ProviderFactories`, `ProtoV6ProviderFactories`, and `ProviderFactories` fields
+```
+
+```release-note:bug
+helper/resource: Removed extraneous `terraform state show` command when not using the `TestStep` type `Taint` field
+```
