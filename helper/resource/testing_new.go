@@ -25,7 +25,7 @@ func runPostTestDestroy(ctx context.Context, t testing.T, c TestCase, wd *plugin
 	if err != nil {
 		if c.ExpectDestroyError != nil {
 			logging.HelperResourceDebug(ctx, "Checking TestCase ExpectDestroyError")
-			if !step.ExpectDestroyError.MatchString(err.Error()) {
+			if !c.ExpectDestroyError.MatchString(err.Error()) {
 				logging.HelperResourceError(ctx,
 					fmt.Sprintf("Error running post test destroy: expected an error with pattern (%s)", c.ExpectDestroyError.String()),
 					map[string]interface{}{logging.KeyError: err},
