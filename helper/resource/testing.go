@@ -395,6 +395,11 @@ type TestCase struct {
 	// tests based on certain errors.
 	ErrorCheck ErrorCheckFunc
 
+	// ExpectDestroyError allows the construction of test cases that we expect to fail
+	// with an error in the post test destroy phase.
+	// The specified regexp must match against the error for the test to pass.
+	ExpectDestroyError *regexp.Regexp
+
 	// Steps are the apply sequences done within the context of the
 	// same state. Each step can have its own check to verify correctness.
 	Steps []TestStep

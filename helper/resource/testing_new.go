@@ -21,7 +21,20 @@ func runPostTestDestroy(ctx context.Context, t testing.T, c TestCase, wd *plugin
 	err := runProviderCommand(ctx, t, func() error {
 		return wd.Destroy(ctx)
 	}, wd, providers)
+
 	if err != nil {
+		if c.ExpectDestroyError != nil {
+			logging.HelperResourceDebug(ctx, "Checking TestCase ExpectDestroyError")
+			if !step.ExpectDestroyError.MatchString(err.Error()) {
+				logging.HelperResourceError(ctx,
+					fmt.Sprintf("Error running post test destroy: expected an error with pattern (%s)", c.ExpectDestroyError.String()),
+					map[string]interface{}{logging.KeyError: err},
+				)
+				t.Fatalf("Unexpected error with post test destroy, expected an error with pattern (%s), no match on: %s", c.ExpectDestroyError.String(), err)
+			}
+			logging.HelperResourceDebug(ctx, "Matched the expected Destroy error, be sure to clean up any dangling resources with a Sweeper or subsequent TestCase")
+			return nil
+		}
 		return err
 	}
 
