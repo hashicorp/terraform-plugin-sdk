@@ -119,7 +119,6 @@ func TestMain(m interface {
 		sweepers := filterSweepers(*flagSweepRun, sweeperFuncs)
 
 		if _, err := runSweepers(regions, sweepers, *flagSweepAllowFailures); err != nil {
-			log.Printf("[ERROR] Running sweepers: %s", err)
 			os.Exit(1)
 		}
 	} else {
@@ -238,6 +237,7 @@ func runSweeperWithRegion(region string, s *Sweeper, sweepers map[string]*Sweepe
 		depSweeper, ok := sweepers[dep]
 
 		if !ok {
+			log.Printf("[ERROR] Sweeper (%s) has dependency (%s), but that sweeper was not found", s.Name, dep)
 			return fmt.Errorf("sweeper (%s) has dependency (%s), but that sweeper was not found", s.Name, dep)
 		}
 
