@@ -119,6 +119,7 @@ func TestMain(m interface {
 		sweepers := filterSweepers(*flagSweepRun, sweeperFuncs)
 
 		if _, err := runSweepers(regions, sweepers, *flagSweepAllowFailures); err != nil {
+			log.Printf("[ERROR] Running sweepers: %s", err)
 			os.Exit(1)
 		}
 	} else {
