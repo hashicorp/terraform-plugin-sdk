@@ -1,0 +1,3 @@
+```release-note:bug
+helper/resource: Ensured errors are always logged.
+```
