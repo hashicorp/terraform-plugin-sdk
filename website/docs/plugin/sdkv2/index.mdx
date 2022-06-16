@@ -33,5 +33,5 @@ Terraform Plugin SDKv2 is an established way to develop Terraform Plugins on [pr
 
 The [terraform-plugin-framework](/plugin/framework) is a new way to develop Terraform providers, offering improvements and new features from Terraform Plugin SDKv2. You can refactor individual resources and data sources over time with the following compatibility:
 
-* Terraform 0.12 and later: First, [translate your provider](/plugin/mux/translating-protocol-version-6-to-5) into a protocol version 5 provider. Then [combine your provider](/plugin/mux/combining-protocol-version-5-providers) with the translated provider. You will not be able to use [protocol version 6](/plugin/how-terraform-works#protocol-version-6) features.
-* Terraform 1.0 and later: First, [translate your provider](/plugin/mux/translating-protocol-version-5-to-6) into a protocol version 6 provider. Then [combine your provider](/plugin/mux/combining-protocol-version-6-providers) with the translated provider.
+* Terraform 0.12 and later: [Combine your provider](/plugin/mux/combining-protocol-version-5-providers) with the framework provider. You will not be able to use [protocol version 6](/plugin/how-terraform-works#protocol-version-6) features.
+* Terraform 1.0 and later: First, [translate your provider](/plugin/mux/translating-protocol-version-5-to-6) into a protocol version 6 provider. Then [combine your provider](/plugin/mux/combining-protocol-version-6-providers) with the framework provider.
