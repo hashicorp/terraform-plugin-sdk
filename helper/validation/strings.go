@@ -67,7 +67,7 @@ func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
-// [deplicated]
+// [deprecated]
 // StringLenBetween returns a SchemaValidateFunc which tests if the provided value
 // is of type string and has 'Byte' length between min and max (inclusive)
 func StringLenBetween(min, max int) schema.SchemaValidateFunc {
