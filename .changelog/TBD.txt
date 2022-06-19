@@ -1,0 +1,11 @@
+```release-note:note
+helper/validation: The `StringLenBetween()` function is being deprecated in favor of the `StringBytesBetween()` function
+```
+
+```release-note:feature
+helper/validation: Added `StringRuneCountBetween()` function for validate string with `number of characters`
+```
+
+```release-note:enhancement
+helper/validation: Added validation for parameters at `StringLenBetween()` function
+```
