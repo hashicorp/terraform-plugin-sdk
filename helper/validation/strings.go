@@ -78,6 +78,17 @@ func StringLenBetween(min, max int) schema.SchemaValidateFunc {
 // is of type string and has 'Byte' length between min and max (inclusive)
 func StringBytesBetween(min, max int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (warnings []string, errors []error) {
+
+		if min < 0 {
+			errors = append(errors, fmt.Errorf("min must be zero or natural number (actual: %d)", min))
+		}
+		if max < 0 {
+			errors = append(errors, fmt.Errorf("max must be zero or natural number (actual: %d)", max))
+		}
+		if min > max {
+			errors = append(errors, fmt.Errorf("min must be less than or equal to max (actual: min=%d, max=%d)", min, max))
+		}
+
 		v, ok := i.(string)
 		if !ok {
 			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
@@ -96,6 +107,17 @@ func StringBytesBetween(min, max int) schema.SchemaValidateFunc {
 // is of type string and has 'Rune' length between min and max (inclusive)
 func StringRuneCountBetween(min, max int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (warnings []string, errors []error) {
+
+		if min < 0 {
+			errors = append(errors, fmt.Errorf("min must be zero or natural number (actual: %d)", min))
+		}
+		if max < 0 {
+			errors = append(errors, fmt.Errorf("max must be zero or natural number (actual: %d)", max))
+		}
+		if min > max {
+			errors = append(errors, fmt.Errorf("min must be less than or equal to max (actual: min=%d, max=%d)", min, max))
+		}
+
 		v, ok := i.(string)
 		if !ok {
 			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
