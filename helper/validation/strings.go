@@ -67,7 +67,8 @@ func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
-// [deprecated]
+// Deprecated: Use StringBytesBetween() instead.
+// **Recommend StringRuneCountBetween()** in order to count 'String length' correctly
 // StringLenBetween returns a SchemaValidateFunc which tests if the provided value
 // is of type string and has 'Byte' length between min and max (inclusive)
 func StringLenBetween(min, max int) schema.SchemaValidateFunc {
@@ -76,6 +77,7 @@ func StringLenBetween(min, max int) schema.SchemaValidateFunc {
 
 // StringBytesBetween returns a SchemaValidateFunc which tests if the provided value
 // is of type string and has 'Byte' length between min and max (inclusive)
+// **Recommend StringRuneCountBetween()** in order to count 'String length' correctly
 func StringBytesBetween(min, max int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (warnings []string, errors []error) {
 
