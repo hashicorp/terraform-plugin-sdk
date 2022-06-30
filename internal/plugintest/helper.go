@@ -139,6 +139,28 @@ func (h *Helper) NewWorkingDir(ctx context.Context, t TestControl) (*WorkingDir,
 		return nil, fmt.Errorf("unable to disable terraform-exec provider verification: %w", err)
 	}
 
+	if tfLog := os.Getenv(EnvTfLog); tfLog != "" {
+		logging.HelperResourceTrace(
+			ctx,
+			fmt.Sprintf("Setting terraform-exec log level via %s environment variable, if Terraform CLI is version 0.15 or later", EnvTfLog),
+			map[string]interface{}{logging.KeyTestTerraformLogLevel: tfLog},
+		)
+
+		err := tf.SetLog(tfLog)
+
+		if err != nil {
+			if !errors.As(err, new(*tfexec.ErrVersionMismatch)) {
+				return nil, fmt.Errorf("unable to set terraform-exec log level (%s): %w", tfLog, err)
+			}
+
+			logging.HelperResourceWarn(
+				ctx,
+				fmt.Sprintf("Unable to set terraform-exec log level via %s environment variable, as Terraform CLI is version 0.14 or earlier. It will default to TRACE.", EnvTfLog),
+				map[string]interface{}{logging.KeyTestTerraformLogLevel: "TRACE"},
+			)
+		}
+	}
+
 	var logPath, logPathEnvVar string
 
 	if tfAccLogPath := os.Getenv(EnvTfAccLogPath); tfAccLogPath != "" {

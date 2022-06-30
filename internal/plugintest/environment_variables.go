@@ -18,6 +18,18 @@ const (
 	// If TF_LOG_PATH_MASK is set, it takes precedence over this value.
 	EnvTfAccLogPath = "TF_ACC_LOG_PATH"
 
+	// Environment variable with level to filter Terraform logs during
+	// acceptance testing. This value sets TF_LOG in a safe manner when
+	// executing Terraform CLI commands, which would otherwise be ignored
+	// since it could interfere with how the underlying execution is performed.
+	//
+	// If not set, but TF_ACC_LOG_PATH or TF_LOG_PATH_MASK is set, it defaults
+	// to TRACE. If Terraform CLI is version 0.14 or earlier, it will have no
+	// separate affect from the TF_ACC_LOG_PATH or TF_LOG_PATH_MASK behavior,
+	// as those earlier versions of Terraform are unreliable with the logging
+	// level being outside TRACE.
+	EnvTfLog = "TF_LOG"
+
 	// Environment variable with path containing the string %s, which is
 	// replaced with the test name, to save separate Terraform logs during
 	// acceptance testing. This value sets TF_LOG_PATH in a safe manner when
