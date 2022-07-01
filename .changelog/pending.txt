@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Added `TF_LOG` environment variable passthrough to Terraform during acceptance testing on versions 0.15 and later
-```
