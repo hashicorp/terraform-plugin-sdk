@@ -34,6 +34,12 @@ const (
 	// The Terraform CLI logging level (TF_LOG) for used for an acceptance test.
 	KeyTestTerraformLogLevel = "test_terraform_log_level"
 
+	// The Terraform CLI logging level (TF_LOG_CORE) for used for an acceptance test.
+	KeyTestTerraformLogCoreLevel = "test_terraform_log_core_level"
+
+	// The Terraform CLI logging level (TF_LOG_PROVIDER) for used for an acceptance test.
+	KeyTestTerraformLogProviderLevel = "test_terraform_log_provider_level"
+
 	// The path to the Terraform CLI logging file used for an acceptance test.
 	//
 	// This should match where the rest of the acceptance test logs are going
