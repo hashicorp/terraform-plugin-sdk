@@ -1,3 +1,14 @@
+# 2.18.0 (July 5, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Added `TF_ACC_LOG`, `TF_LOG_CORE`, and `TF_LOG_PROVIDER` environment variable handling for Terraform versions 0.15 and later ([#993](https://github.com/hashicorp/terraform-plugin-sdk/issues/993))
+* helper/schema: Added sdk.proto logger request duration and response diagnostics logging ([#996](https://github.com/hashicorp/terraform-plugin-sdk/issues/996))
+
+BUG FIXES:
+
+* helper/resource: Ensured errors are always logged. ([#983](https://github.com/hashicorp/terraform-plugin-sdk/issues/983))
+
 # 2.17.0 (May 31, 2022)
 
 NOTES:
