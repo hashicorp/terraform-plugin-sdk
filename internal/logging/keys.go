@@ -31,13 +31,13 @@ const (
 	// The TestStep number of the test being executed. Starts at 1.
 	KeyTestStepNumber = "test_step_number"
 
-	// The Terraform CLI logging level (TF_LOG) for used for an acceptance test.
+	// The Terraform CLI logging level (TF_LOG) used for an acceptance test.
 	KeyTestTerraformLogLevel = "test_terraform_log_level"
 
-	// The Terraform CLI logging level (TF_LOG_CORE) for used for an acceptance test.
+	// The Terraform CLI logging level (TF_LOG_CORE) used for an acceptance test.
 	KeyTestTerraformLogCoreLevel = "test_terraform_log_core_level"
 
-	// The Terraform CLI logging level (TF_LOG_PROVIDER) for used for an acceptance test.
+	// The Terraform CLI logging level (TF_LOG_PROVIDER) used for an acceptance test.
 	KeyTestTerraformLogProviderLevel = "test_terraform_log_provider_level"
 
 	// The path to the Terraform CLI logging file used for an acceptance test.
