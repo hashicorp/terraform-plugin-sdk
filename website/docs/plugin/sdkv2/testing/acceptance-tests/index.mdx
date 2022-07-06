@@ -267,6 +267,12 @@ By default, there is no logging output when running the `go test` command. Use o
 | `TF_ACC_LOG_PATH` | N/A | Set a file path for all logs during testing. Use `TF_LOG_PATH_MASK` to configure individual log files per test. |
 | `TF_LOG_PATH_MASK` | N/A | Set a file path containing the string `%s`, which is replaced with the test name, to write a separate log file per test. Use `TF_ACC_LOG_PATH` to configure a single log file for all tests. |
 
+The logs associated with each test can output across incorrect files as each new test starts if the provider is using the Go standard library [`log` package](https://pkg.go.dev/log) for logging, acceptance testing that uses [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest), and `TF_LOG_PATH_MASK`. To resolve this issue, choose one of the following approaches:
+
+* Use [`terraform-plugin-log`](/plugin/log/writing) based logging. Each logger will be correctly associated with each test name output.
+* Wrap testing execution so that each test is individually executed with `go test`. Since each `go test` process will have its own `log` package output handling, logging will be correctly associated with each test name output.
+* Replace [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest) with [`helper/resource.Test()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#Test) and ensure [`(*testing.T).Parallel()`](https://pkg.go.dev/testing#T.Parallel) is not called in tests. This serializes all testing so each test will be associated with each test name output.
+
 ## Troubleshooting
 
 This section lists common errors encountered during testing.
