@@ -409,6 +409,16 @@ func EnvDefaultFunc(k string, dv interface{}) SchemaDefaultFunc {
 
 		return dv, nil
 	}
+	return func() (interface{}, error) {
+		v := os.Getenv(k)
+		if v == "" {
+			return dv, nil
+		}
+		if v == "true" || v == "false" {
+			return strconv.ParseBool(v)
+		}
+		return v, nil
+	}
 }
 
 // MultiEnvDefaultFunc is a helper function that returns the value of the first
