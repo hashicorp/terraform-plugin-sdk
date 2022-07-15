@@ -20,8 +20,8 @@ func TestInitContext(t *testing.T) {
 
 	// Simulate root logger fields that would have been associated by
 	// terraform-plugin-go prior to the InitContext() call.
-	ctx = tfsdklog.With(ctx, "tf_rpc", "GetProviderSchema")
-	ctx = tfsdklog.With(ctx, "tf_req_id", "123-testing-123")
+	ctx = tfsdklog.SetField(ctx, "tf_rpc", "GetProviderSchema")
+	ctx = tfsdklog.SetField(ctx, "tf_req_id", "123-testing-123")
 
 	ctx = logging.InitContext(ctx)
 
