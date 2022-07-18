@@ -22,17 +22,17 @@ WEBSITE_DOCKER_RUN_FLAGS=--interactive \
 
 default: test
 
-test: fmtcheck generate
+test: generate
 	go test ./...
+
+lint:
+	golangci-lint run
 
 generate:
 	go generate ./...
 
 fmt:
-	gofmt -w $(GOFMT_FILES)
-
-fmtcheck:
-	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
+	gofmt -s -w -e $(GOFMT_FILES)
 
 # Run the terraform.io website to preview local content changes 
 website:
@@ -55,4 +55,4 @@ website/build-local:
 	@docker build https://github.com/hashicorp/terraform-website.git\#$(WEBSITE_BRANCH) \
 		-t $(WEBSITE_DOCKER_IMAGE_LOCAL)
 
-.PHONY: default fmt fmtcheck generate test website website/local website/build-local
+.PHONY: default fmt lint generate test website website/local website/build-local
