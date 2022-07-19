@@ -11,66 +11,106 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-const (
-	// FieldHttpOperationType is the field key used by NewLoggingHTTPTransport when logging the type of operation via tflog.
-	FieldHttpOperationType = "__HTTP_OP_TYPE__"
-
-	// OperationHttpRequest is the field value used by NewLoggingHTTPTransport when logging a request via tflog.
-	OperationHttpRequest = "HTTP_REQ"
-
-	// FieldHttpRequestMethod is the field key used by NewLoggingHTTPTransport when logging a request method via tflog.
-	FieldHttpRequestMethod = "__HTTP_REQ_METHOD__"
-
-	// FieldHttpRequestUri is the field key used by NewLoggingHTTPTransport when logging a request URI via tflog.
-	FieldHttpRequestUri = "__HTTP_REQ_URI__"
-
-	// FieldHttpRequestVersion is the field key used by NewLoggingHTTPTransport when logging a request HTTP version via tflog.
-	FieldHttpRequestVersion = "__HTTP_REQ_VERSION__"
-
-	// OperationHttpResponse is the field value used by NewLoggingHTTPTransport when logging a response via tflog.
-	OperationHttpResponse = "HTTP_RES"
-
-	// FieldHttpResponseVersion is the field key used by NewLoggingHTTPTransport when logging a response HTTP version via tflog.
-	FieldHttpResponseVersion = "__HTTP_RES_VERSION__"
-
-	// FieldHttpResponseStatusCode is the field key used by NewLoggingHTTPTransport when logging a response status code via tflog.
-	FieldHttpResponseStatusCode = "__HTTP_RES_STATUS__"
-
-	// FieldHttpResponseReason is the field key used by NewLoggingHTTPTransport when logging a response reason phrase via tflog.
-	FieldHttpResponseReason = "__HTTP_RES_REASON__"
-)
-
-// ConfigureReqCtxFunc is the type of function accepted by loggingHTTPTransport.WithConfigureRequestContext,
-// to configure the request subsystem logging context before the actual logging.
-type ConfigureReqCtxFunc func(ctx context.Context, subsystem string) context.Context
-
-type loggingHTTPTransport struct {
-	subsystem       string
-	transport       http.RoundTripper
-	configureReqCtx ConfigureReqCtxFunc
+// NewLoggingHTTPTransport creates a wrapper around an *http.RoundTripper,
+// designed to be used for the `Transport` field of http.Client.
+//
+// This logs each pair of HTTP request/response that it handles.
+// The logging is done via `tflog`, that is part of the terraform-plugin-log
+// library, included by this SDK.
+//
+// The request/response is logged via tflog.Debug, using the context.Context
+// attached to the http.Request that the transport receives as input
+// of http.RoundTripper RoundTrip method.
+//
+// It's responsibility of the developer using this transport, to ensure that each
+// http.Request it handles is configured with the SDK-initialized Provider Root Logger
+// context.Context, that it's passed to all resources/data-sources/provider entry-points
+// (i.e. schema.Resource fields like `CreateContext`, `ReadContext`, etc.).
+//
+// This also gives the developer the flexibility to further configure the
+// logging behaviour via the above-mentioned context: please see
+// https://www.terraform.io/plugin/log/writing.
+func NewLoggingHTTPTransport(t http.RoundTripper) *loggingHttpTransport {
+	return &loggingHttpTransport{"", false, t}
 }
 
-func (t *loggingHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Create a new subsystem logging context from the request context
-	ctx := tflog.NewSubsystem(req.Context(), t.subsystem)
+// NewSubsystemLoggingHTTPTransport creates a wrapper around an *http.RoundTripper,
+// designed to be used for the `Transport` field of http.Client.
+//
+// This logs each pair of HTTP request/response that it handles.
+// The logging is done via `tflog`, that is part of the terraform-plugin-log
+// library, included by this SDK.
+//
+// The request/response is logged via tflog.SubsystemDebug, using the context.Context
+// attached to the http.Request that the transport receives as input
+// of http.RoundTripper RoundTrip method, as well as the `subsystem` string
+// provided at construction time.
+//
+// It's responsibility of the developer using this transport, to ensure that each
+// http.Request it handles is configured with a Subsystem Logger
+// context.Context that was initialized via tflog.NewSubsystem.
+//
+// This also gives the developer the flexibility to further configure the
+// logging behaviour via the above-mentioned context: please see
+// https://www.terraform.io/plugin/log/writing.
+func NewSubsystemLoggingHTTPTransport(subsystem string, t http.RoundTripper) *loggingHttpTransport {
+	return &loggingHttpTransport{subsystem, true, t}
+}
 
-	// If set, allow for further configuration of the new subsystem logging context
-	if t.configureReqCtx != nil {
-		ctx = t.configureReqCtx(ctx, t.subsystem)
+const (
+	// FieldHttpOperationType is the field key used by NewSubsystemLoggingHTTPTransport when logging the type of operation via tflog.
+	FieldHttpOperationType = "tf_http_op_type"
+
+	// OperationHttpRequest is the field value used by NewSubsystemLoggingHTTPTransport when logging a request via tflog.
+	OperationHttpRequest = "request"
+
+	// FieldHttpRequestMethod is the field key used by NewSubsystemLoggingHTTPTransport when logging a request method via tflog.
+	FieldHttpRequestMethod = "tf_http_req_method"
+
+	// FieldHttpRequestUri is the field key used by NewSubsystemLoggingHTTPTransport when logging a request URI via tflog.
+	FieldHttpRequestUri = "tf_http_req_uri"
+
+	// FieldHttpRequestVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a request HTTP version via tflog.
+	FieldHttpRequestVersion = "tf_http_req_version"
+
+	// OperationHttpResponse is the field value used by NewSubsystemLoggingHTTPTransport when logging a response via tflog.
+	OperationHttpResponse = "response"
+
+	// FieldHttpResponseVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a response HTTP version via tflog.
+	FieldHttpResponseVersion = "tf_http_res_version"
+
+	// FieldHttpResponseStatusCode is the field key used by NewSubsystemLoggingHTTPTransport when logging a response status code via tflog.
+	FieldHttpResponseStatusCode = "tf_http_res_status"
+
+	// FieldHttpResponseReason is the field key used by NewSubsystemLoggingHTTPTransport when logging a response reason phrase via tflog.
+	FieldHttpResponseReason = "tf_http_res_reason"
+)
+
+type loggingHttpTransport struct {
+	subsystem      string
+	logToSubsystem bool
+	transport      http.RoundTripper
+}
+
+func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx := req.Context()
+
+	// Grub the outgoing request bytes
+	reqDump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		t.Error(ctx, "HTTP Request introspection failed", map[string]interface{}{
+			"error": fmt.Sprintf("%#v", err),
+		})
 	}
 
-	if IsDebugOrHigher() {
-		// Grub the outgoing request bytes
-		reqDump, err := httputil.DumpRequestOut(req, true)
-		if err != nil {
-			tflog.SubsystemError(ctx, t.subsystem, "HTTP Request introspection failed", map[string]interface{}{
-				"error": fmt.Sprintf("%#v", err),
-			})
-		}
-
-		// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
-		msg, fields := decomposeRequestBytes(reqDump)
-		tflog.SubsystemDebug(ctx, t.subsystem, msg, fields)
+	// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
+	msg, fields, err := parseRequestBytes(reqDump)
+	if err != nil {
+		t.Error(ctx, "Failed to parse request bytes for logging", map[string]interface{}{
+			"error": err,
+		})
+	} else {
+		t.Debug(ctx, msg, fields)
 	}
 
 	// Invoke the wrapped RoundTrip now
@@ -79,66 +119,44 @@ func (t *loggingHTTPTransport) RoundTrip(req *http.Request) (*http.Response, err
 		return res, err
 	}
 
-	if IsDebugOrHigher() {
-		// Grub the incoming response bytes
-		resDump, err := httputil.DumpResponse(res, true)
-		if err != nil {
-			tflog.SubsystemError(ctx, t.subsystem, "HTTP Response introspection error", map[string]interface{}{
-				"error": fmt.Sprintf("%#v", err),
-			})
-		}
+	// Grub the incoming response bytes
+	resDump, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		t.Error(ctx, "HTTP Response introspection error", map[string]interface{}{
+			"error": fmt.Sprintf("%#v", err),
+		})
+	}
 
-		// Decompose the response bytes in a message (HTTP body) and fields (HTTP headers), then log it
-		msg, fields := decomposeResponseBytes(resDump)
-		tflog.SubsystemDebug(ctx, t.subsystem, msg, fields)
+	// Decompose the response bytes in a message (HTTP body) and fields (HTTP headers), then log it
+	msg, fields, err = parseResponseBytes(resDump)
+	if err != nil {
+		t.Error(ctx, "Failed to parse response bytes for logging", map[string]interface{}{
+			"error": err,
+		})
+	} else {
+		t.Debug(ctx, msg, fields)
 	}
 
 	return res, nil
 }
 
-// NewLoggingHTTPTransport creates a wrapper around a *http.RoundTripper,
-// designed to be used for the `Transport` field of http.Client.
-//
-// This logs each pair of HTTP request/response that it handles.
-// The logging is done via `tflog`, that is part of the terraform-plugin-log
-// library, included by this SDK.
-//
-// The request/response is logged via tflog.SubsystemDebug, and the `subsystem`
-// is the one provide here.
-//
-// IMPORTANT: For logging to work, it's mandatory that each http.Request it handles
-// is configured with the Context (i.e. `Request.WithContext(ctx)`)
-// that the SDK passes into all resources/data-sources/provider entry-points
-// (i.e. schema.Resource fields like `CreateContext`, `ReadContext`, etc.).
-func NewLoggingHTTPTransport(subsystem string, t http.RoundTripper) *loggingHTTPTransport {
-	return &loggingHTTPTransport{subsystem, t, nil}
+func (t *loggingHttpTransport) Debug(ctx context.Context, msg string, fields ...map[string]interface{}) {
+	if t.logToSubsystem {
+		tflog.SubsystemDebug(ctx, t.subsystem, msg, fields...)
+	} else {
+		tflog.Debug(ctx, msg, fields...)
+	}
 }
 
-// WithConfigureRequestContext allows to optionally configure a callback ConfigureReqCtxFunc.
-// This is used by the underlying structure to allow user to configure the
-// http.Request context.Context, before the request is executed and the logger
-// tflog.SubsystemDebug invoked.
-//
-// Log entries will be structured to contain:
-//
-//   * the HTTP message first line, broken up into "fields" (see `FieldHttp*` constants)
-//   * the Headers, each as "fields" of the log
-//   * the Request/Response Body as "message" of the log
-//
-// For example, here is how to add an extra field to each log emitted here,
-// as well as masking fields that have a specific key:
-//
-//   t.WithConfigureRequestContext(func (ctx context.Context, subsystem string) context.Context {
-//     ctx = tflog.SetField(ctx, "additional_key", "additional_value")
-//     ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "secret", "token", "Authorization")
-//   })
-//
-func (t *loggingHTTPTransport) WithConfigureRequestContext(callback ConfigureReqCtxFunc) *loggingHTTPTransport {
-	t.configureReqCtx = callback
-	return t
+func (t *loggingHttpTransport) Error(ctx context.Context, msg string, fields ...map[string]interface{}) {
+	if t.logToSubsystem {
+		tflog.SubsystemError(ctx, t.subsystem, msg, fields...)
+	} else {
+		tflog.Error(ctx, msg, fields...)
+	}
 }
 
-func decomposeRequestBytes(b []byte) (string, map[string]interface{}) {
+func parseRequestBytes(b []byte) (string, map[string]interface{}, error) {
 	parts := strings.Split(string(b), "\r\n")
 
 	// We will end up with a number of fields equivalent to the number of parts + 1:
@@ -163,14 +181,17 @@ func decomposeRequestBytes(b []byte) (string, map[string]interface{}) {
 		}
 
 		headerParts := strings.Split(parts[i], ": ")
-		fields[headerParts[0]] = headerParts[1]
+		if len(headerParts) != 2 {
+			return "", nil, fmt.Errorf("failed to parse header line %q", parts[i])
+		}
+		fields[strings.TrimSpace(headerParts[0])] = strings.TrimSpace(headerParts[1])
 	}
 
 	// HTTP Response Body: the last part is always the body (can be empty)
-	return parts[len(parts)-1], fields
+	return parts[len(parts)-1], fields, nil
 }
 
-func decomposeResponseBytes(b []byte) (string, map[string]interface{}) {
+func parseResponseBytes(b []byte) (string, map[string]interface{}, error) {
 	parts := strings.Split(string(b), "\r\n")
 
 	// We will end up with a number of fields equivalent to the number of parts:
@@ -202,9 +223,12 @@ func decomposeResponseBytes(b []byte) (string, map[string]interface{}) {
 		}
 
 		headerParts := strings.Split(parts[i], ": ")
-		fields[headerParts[0]] = headerParts[1]
+		if len(headerParts) != 2 {
+			return "", nil, fmt.Errorf("failed to parse header line %q", parts[i])
+		}
+		fields[strings.TrimSpace(headerParts[0])] = strings.TrimSpace(headerParts[1])
 	}
 
 	// HTTP Response Body: the last part is always the body (can be empty)
-	return parts[len(parts)-1], fields
+	return parts[len(parts)-1], fields, nil
 }
