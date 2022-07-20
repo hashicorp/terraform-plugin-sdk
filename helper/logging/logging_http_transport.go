@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/textproto"
@@ -161,42 +163,14 @@ func decomposeRequestForLogging(req *http.Request) (string, map[string]interface
 	// Create a reader around the request full body
 	reqReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
 
-	// Ignore the first line: it contains non-header content
-	// that we have already captured above.
-	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
-	// to fail as it cannot parse the first line.
-	_, _ = reqReader.ReadLine()
-
-	// Read the request MIME-style headers
-	mimeHeader, err := reqReader.ReadMIMEHeader()
+	err = readHeadersIntoFields(reqReader, fields)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// Set the headers as fields to log
-	for k, v := range mimeHeader {
-		if len(v) == 1 {
-			fields[k] = v[0]
-		} else {
-			fields[k] = v
-		}
-	}
-
 	// Read the rest of the body content,
 	// into what will be the log message
-	var msgBuilder strings.Builder
-	for {
-		line, err := reqReader.ReadContinuedLine()
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			} else {
-				return "", nil, err
-			}
-		}
-		msgBuilder.WriteString(line)
-	}
-	return msgBuilder.String(), fields, nil
+	return readRestToString(reqReader), fields, nil
 }
 
 func decomposeResponseForLogging(res *http.Response) (string, map[string]interface{}, error) {
@@ -221,16 +195,30 @@ func decomposeResponseForLogging(res *http.Response) (string, map[string]interfa
 	// Create a reader around the response full body
 	resReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(resBytes)))
 
-	// Ignore the first line: it contains non-header content
-	// that we have already captured above.
-	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
-	// to fail as it cannot parse the first line.
-	_, _ = resReader.ReadLine()
-
-	// Read the response MIME-style headers
-	mimeHeader, err := resReader.ReadMIMEHeader()
+	err = readHeadersIntoFields(resReader, fields)
 	if err != nil {
 		return "", nil, err
+	}
+
+	// Read the rest of the body content,
+	// into what will be the log message
+	return readRestToString(resReader), fields, nil
+}
+
+func readHeadersIntoFields(reader *textproto.Reader, fields map[string]interface{}) error {
+	// Ignore the first line: it contains non-header content
+	// that we have already captured.
+	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
+	// to fail as it cannot parse the first line.
+	_, err := reader.ReadLine()
+	if err != nil {
+		return err
+	}
+
+	// Read the MIME-style headers
+	mimeHeader, err := reader.ReadMIMEHeader()
+	if err != nil {
+		return err
 	}
 
 	// Set the headers as fields to log
@@ -242,19 +230,18 @@ func decomposeResponseForLogging(res *http.Response) (string, map[string]interfa
 		}
 	}
 
-	// Read the rest of the body content,
-	// into what will be the log message
-	var msgBuilder strings.Builder
+	return nil
+}
+
+func readRestToString(reader *textproto.Reader) string {
+	var builder strings.Builder
 	for {
-		line, err := resReader.ReadContinuedLine()
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			} else {
-				return "", nil, err
-			}
+		line, err := reader.ReadContinuedLine()
+		if errors.Is(err, io.EOF) {
+			break
 		}
-		msgBuilder.WriteString(line)
+		builder.WriteString(line)
 	}
-	return msgBuilder.String(), fields, nil
+
+	return builder.String()
 }
