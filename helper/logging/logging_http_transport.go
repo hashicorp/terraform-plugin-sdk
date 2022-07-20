@@ -1,11 +1,12 @@
 package logging
 
 import (
+	"bufio"
+	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"strconv"
+	"net/textproto"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -70,20 +71,20 @@ const (
 	// FieldHttpRequestUri is the field key used by NewSubsystemLoggingHTTPTransport when logging a request URI via tflog.
 	FieldHttpRequestUri = "tf_http_req_uri"
 
-	// FieldHttpRequestVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a request HTTP version via tflog.
-	FieldHttpRequestVersion = "tf_http_req_version"
+	// FieldHttpRequestProtoVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a request HTTP version via tflog.
+	FieldHttpRequestProtoVersion = "tf_http_req_version"
 
 	// OperationHttpResponse is the field value used by NewSubsystemLoggingHTTPTransport when logging a response via tflog.
 	OperationHttpResponse = "response"
 
-	// FieldHttpResponseVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a response HTTP version via tflog.
-	FieldHttpResponseVersion = "tf_http_res_version"
+	// FieldHttpResponseProtoVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a response HTTP protocol version via tflog.
+	FieldHttpResponseProtoVersion = "tf_http_res_version"
 
 	// FieldHttpResponseStatusCode is the field key used by NewSubsystemLoggingHTTPTransport when logging a response status code via tflog.
-	FieldHttpResponseStatusCode = "tf_http_res_status"
+	FieldHttpResponseStatusCode = "tf_http_res_status_code"
 
-	// FieldHttpResponseReason is the field key used by NewSubsystemLoggingHTTPTransport when logging a response reason phrase via tflog.
-	FieldHttpResponseReason = "tf_http_res_reason"
+	// FieldHttpResponseStatusReason is the field key used by NewSubsystemLoggingHTTPTransport when logging a response status reason phrase via tflog.
+	FieldHttpResponseStatusReason = "tf_http_res_status_reason"
 )
 
 type loggingHttpTransport struct {
@@ -95,16 +96,8 @@ type loggingHttpTransport struct {
 func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
 
-	// Grub the outgoing request bytes
-	reqDump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		t.Error(ctx, "HTTP Request introspection failed", map[string]interface{}{
-			"error": fmt.Sprintf("%#v", err),
-		})
-	}
-
-	// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
-	msg, fields, err := parseRequestBytes(reqDump)
+	//// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
+	msg, fields, err := decomposeRequestForLogging(req)
 	if err != nil {
 		t.Error(ctx, "Failed to parse request bytes for logging", map[string]interface{}{
 			"error": err,
@@ -119,16 +112,8 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 		return res, err
 	}
 
-	// Grub the incoming response bytes
-	resDump, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		t.Error(ctx, "HTTP Response introspection error", map[string]interface{}{
-			"error": fmt.Sprintf("%#v", err),
-		})
-	}
-
 	// Decompose the response bytes in a message (HTTP body) and fields (HTTP headers), then log it
-	msg, fields, err = parseResponseBytes(resDump)
+	msg, fields, err = decomposeResponseForLogging(res)
 	if err != nil {
 		t.Error(ctx, "Failed to parse response bytes for logging", map[string]interface{}{
 			"error": err,
@@ -156,79 +141,120 @@ func (t *loggingHttpTransport) Error(ctx context.Context, msg string, fields ...
 	}
 }
 
-func parseRequestBytes(b []byte) (string, map[string]interface{}, error) {
-	parts := strings.Split(string(b), "\r\n")
-
-	// We will end up with a number of fields equivalent to the number of parts + 1:
-	// - the first will be split into 3 parts
-	// - the last 2 are "end of headers" and "body"
-	// - one extra for the operation type
-	fields := make(map[string]interface{}, len(parts)+1)
+func decomposeRequestForLogging(req *http.Request) (string, map[string]interface{}, error) {
+	fields := make(map[string]interface{}, len(req.Header)+4)
 	fields[FieldHttpOperationType] = OperationHttpRequest
 
-	// HTTP Request Line
-	reqLineParts := strings.Split(parts[0], " ")
-	fields[FieldHttpRequestMethod] = reqLineParts[0]
-	fields[FieldHttpRequestUri] = reqLineParts[1]
-	fields[FieldHttpRequestVersion] = reqLineParts[2]
+	fields[FieldHttpRequestMethod] = req.Method
+	fields[FieldHttpRequestUri] = req.URL.RequestURI()
+	fields[FieldHttpRequestProtoVersion] = req.Proto
 
-	// HTTP Request Headers
-	var i int
-	for i = 1; i < len(parts)-2; i++ {
-		// Check if we reached the end of the headers
-		if parts[i] == "" {
-			break
-		}
-
-		headerParts := strings.Split(parts[i], ": ")
-		if len(headerParts) != 2 {
-			return "", nil, fmt.Errorf("failed to parse header line %q", parts[i])
-		}
-		fields[strings.TrimSpace(headerParts[0])] = strings.TrimSpace(headerParts[1])
+	// Get the full body of the request, including headers appended by http.Transport:
+	// this is necessary because the http.Request at this stage doesn't contain
+	// all the headers that will be eventually sent.
+	// We rely on `httputil.DumpRequestOut` to obtain the actual bytes that will be sent out.
+	reqBytes, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		return "", nil, err
 	}
 
-	// HTTP Response Body: the last part is always the body (can be empty)
-	return parts[len(parts)-1], fields, nil
+	// Create a reader around the request full body
+	reqReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
+
+	// Ignore the first line: it contains non-header content
+	// that we have already captured above.
+	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
+	// to fail as it cannot parse the first line.
+	_, _ = reqReader.ReadLine()
+
+	// Read the request MIME-style headers
+	mimeHeader, err := reqReader.ReadMIMEHeader()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Set the headers as fields to log
+	for k, v := range mimeHeader {
+		if len(v) == 1 {
+			fields[k] = v[0]
+		} else {
+			fields[k] = v
+		}
+	}
+
+	// Read the rest of the body content,
+	// into what will be the log message
+	var msgBuilder strings.Builder
+	for {
+		line, err := reqReader.ReadContinuedLine()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			} else {
+				return "", nil, err
+			}
+		}
+		msgBuilder.WriteString(line)
+	}
+	return msgBuilder.String(), fields, nil
 }
 
-func parseResponseBytes(b []byte) (string, map[string]interface{}, error) {
-	parts := strings.Split(string(b), "\r\n")
-
-	// We will end up with a number of fields equivalent to the number of parts:
-	// - the first will be split into 3 parts
-	// - the last 2 are "end of headers" and "body"
-	// - one extra for the operation type
-	fields := make(map[string]interface{}, len(parts))
+func decomposeResponseForLogging(res *http.Response) (string, map[string]interface{}, error) {
+	fields := make(map[string]interface{}, len(res.Header)+4)
 	fields[FieldHttpOperationType] = OperationHttpResponse
 
-	// HTTP Message Status Line
-	reqLineParts := strings.Split(parts[0], " ")
-	fields[FieldHttpResponseVersion] = reqLineParts[0]
-	// NOTE: Unlikely, but if we can't parse the status code,
-	// we set its field value to string
-	statusCode, err := strconv.Atoi(reqLineParts[1])
+	fields[FieldHttpResponseProtoVersion] = res.Proto
+	fields[FieldHttpResponseStatusCode] = res.StatusCode
+	fields[FieldHttpResponseStatusReason] = res.Status
+
+	// Get the full body of the response:
+	// this is necessary because the http.Response `Body` is a ReadCloser,
+	// so the only way to read it's content without affecting the final consumer
+	// of this response, is to rely on `httputil.DumpRequestOut`,
+	// that handles duplicating the underlying buffers and make the extraction
+	// of these bytes transparent.
+	resBytes, err := httputil.DumpResponse(res, true)
 	if err != nil {
-		fields[FieldHttpResponseStatusCode] = reqLineParts[1]
-	} else {
-		fields[FieldHttpResponseStatusCode] = statusCode
-	}
-	fields[FieldHttpResponseReason] = reqLineParts[2]
-
-	// HTTP Response Headers
-	var i int
-	for i = 1; i < len(parts)-2; i++ {
-		// Check if we reached the end of the headers
-		if parts[i] == "" {
-			break
-		}
-
-		headerParts := strings.Split(parts[i], ": ")
-		if len(headerParts) != 2 {
-			return "", nil, fmt.Errorf("failed to parse header line %q", parts[i])
-		}
-		fields[strings.TrimSpace(headerParts[0])] = strings.TrimSpace(headerParts[1])
+		return "", nil, err
 	}
 
-	// HTTP Response Body: the last part is always the body (can be empty)
-	return parts[len(parts)-1], fields, nil
+	// Create a reader around the response full body
+	resReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(resBytes)))
+
+	// Ignore the first line: it contains non-header content
+	// that we have already captured above.
+	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
+	// to fail as it cannot parse the first line.
+	_, _ = resReader.ReadLine()
+
+	// Read the response MIME-style headers
+	mimeHeader, err := resReader.ReadMIMEHeader()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Set the headers as fields to log
+	for k, v := range mimeHeader {
+		if len(v) == 1 {
+			fields[k] = v[0]
+		} else {
+			fields[k] = v
+		}
+	}
+
+	// Read the rest of the body content,
+	// into what will be the log message
+	var msgBuilder strings.Builder
+	for {
+		line, err := resReader.ReadContinuedLine()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			} else {
+				return "", nil, err
+			}
+		}
+		msgBuilder.WriteString(line)
+	}
+	return msgBuilder.String(), fields, nil
 }
