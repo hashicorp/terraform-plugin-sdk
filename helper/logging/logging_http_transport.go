@@ -34,7 +34,7 @@ import (
 // logging behaviour via the above-mentioned context: please see
 // https://www.terraform.io/plugin/log/writing.
 func NewLoggingHTTPTransport(t http.RoundTripper) *loggingHttpTransport {
-	return &loggingHttpTransport{"", false, t}
+	return &loggingHttpTransport{"", t}
 }
 
 // NewSubsystemLoggingHTTPTransport creates a wrapper around an *http.RoundTripper,
@@ -56,8 +56,11 @@ func NewLoggingHTTPTransport(t http.RoundTripper) *loggingHttpTransport {
 // This also gives the developer the flexibility to further configure the
 // logging behaviour via the above-mentioned context: please see
 // https://www.terraform.io/plugin/log/writing.
+//
+// Please note: setting `subsystem` to an empty string it's equivalent to
+// using NewLoggingHTTPTransport.
 func NewSubsystemLoggingHTTPTransport(subsystem string, t http.RoundTripper) *loggingHttpTransport {
-	return &loggingHttpTransport{subsystem, true, t}
+	return &loggingHttpTransport{subsystem, t}
 }
 
 const (
@@ -90,15 +93,14 @@ const (
 )
 
 type loggingHttpTransport struct {
-	subsystem      string
-	logToSubsystem bool
-	transport      http.RoundTripper
+	subsystem string
+	transport http.RoundTripper
 }
 
 func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
 
-	//// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
+	// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
 	msg, fields, err := decomposeRequestForLogging(req)
 	if err != nil {
 		t.Error(ctx, "Failed to parse request bytes for logging", map[string]interface{}{
@@ -128,7 +130,7 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func (t *loggingHttpTransport) Debug(ctx context.Context, msg string, fields ...map[string]interface{}) {
-	if t.logToSubsystem {
+	if t.subsystem != "" {
 		tflog.SubsystemDebug(ctx, t.subsystem, msg, fields...)
 	} else {
 		tflog.Debug(ctx, msg, fields...)
@@ -136,7 +138,7 @@ func (t *loggingHttpTransport) Debug(ctx context.Context, msg string, fields ...
 }
 
 func (t *loggingHttpTransport) Error(ctx context.Context, msg string, fields ...map[string]interface{}) {
-	if t.logToSubsystem {
+	if t.subsystem != "" {
 		tflog.SubsystemError(ctx, t.subsystem, msg, fields...)
 	} else {
 		tflog.Error(ctx, msg, fields...)
@@ -181,28 +183,31 @@ func decomposeResponseForLogging(res *http.Response) (string, map[string]interfa
 	fields[FieldHttpResponseStatusCode] = res.StatusCode
 	fields[FieldHttpResponseStatusReason] = res.Status
 
-	// Get the full body of the response:
-	// this is necessary because the http.Response `Body` is a ReadCloser,
-	// so the only way to read it's content without affecting the final consumer
-	// of this response, is to rely on `httputil.DumpRequestOut`,
-	// that handles duplicating the underlying buffers and make the extraction
-	// of these bytes transparent.
-	resBytes, err := httputil.DumpResponse(res, true)
+	// Set the headers as fields to log
+	for k, v := range res.Header {
+		if len(v) == 1 {
+			fields[k] = v[0]
+		} else {
+			fields[k] = v
+		}
+	}
+
+	// Read the whole response body
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// Create a reader around the response full body
-	resReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(resBytes)))
+	// Make a copy of the response body bytes, to be returned as log message
+	msgBytes := make([]byte, len(resBody))
+	copy(msgBytes, resBody)
 
-	err = readHeadersIntoFields(resReader, fields)
-	if err != nil {
-		return "", nil, err
-	}
+	// Wrap the bytes from the response body, back into an io.ReadCloser,
+	// to respect the interface of http.Response, as expected by users of the
+	// http.Client
+	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
 
-	// Read the rest of the body content,
-	// into what will be the log message
-	return readRestToString(resReader), fields, nil
+	return string(resBody), fields, nil
 }
 
 func readHeadersIntoFields(reader *textproto.Reader, fields map[string]interface{}) error {
