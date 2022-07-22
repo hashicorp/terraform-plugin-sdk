@@ -71,8 +71,12 @@ It is possible we already fixed the bug you're experiencing.
 
  - [ ] **Search for possible duplicate suggestions**: It's helpful to keep
    suggestions consolidated to one thread, so do a quick search on existing
-	@@ -81,6 +81,8 @@ type.
-   "how do servers' schemas get merged?" in mind. This helps us ensure the
+   issues to check if anybody else has suggested the same thing. You can scope
+   searches by the label `documentation` to help narrow things down.
+
+ - [ ] **Describe the questions you're hoping the documentation will answer**:
+   It's very helpful when writing documentation to have specific questions like
+   "how do I implement a default value?" in mind. This helps us ensure the
    documentation is targeted, specific, and framed in a useful way.
 
  - [ ] **Contribute**: This repository contains the markdown files that generate versioned documentation for [terraform.io/plugin/sdkv2](https://www.terraform.io/plugin/sdkv2). Please open a pull request with documentation changes. Refer to the [website README](../website/README.md) for more information.
