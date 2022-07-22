@@ -50,7 +50,7 @@ or submitting a patch.
 
 ## New Issue
 
-We welcome issues of all kinds including feature requests, bug reports or documentation suggestions. Below are guidelines for well-formed issues of each type.
+We welcome issues of all kinds including feature requests, bug reports or documentation contributions. Below are guidelines for well-formed issues of each type.
 
 ### Bug Reports
 
@@ -66,6 +66,16 @@ It is possible we already fixed the bug you're experiencing.
  - [ ] **Search for possible duplicate requests**: It's helpful to keep requests consolidated to one thread, so do a quick search on existing requests to check if anybody else has reported the same thing. You can scope searches by the label `enhancement` to help narrow things down.
 
  - [ ] **Include a use case description**: In addition to describing the behavior of the feature you'd like to see added, it's helpful to also lay out the reason why the feature would be important and how it would benefit the wider Terraform ecosystem. Use case in context of 1 provider is good, wider context of more providers is better.
+
+### Documentation Contributions
+
+ - [ ] **Search for possible duplicate suggestions**: It's helpful to keep
+   suggestions consolidated to one thread, so do a quick search on existing
+	@@ -81,6 +81,8 @@ type.
+   "how do servers' schemas get merged?" in mind. This helps us ensure the
+   documentation is targeted, specific, and framed in a useful way.
+
+ - [ ] **Contribute**: This repository contains the markdown files that generate versioned documentation for [terraform.io/plugin/sdkv2](https://www.terraform.io/plugin/sdkv2). Please open a pull request with documentation changes. Refer to the [website README](../website/README.md) for more information.
 
 ## New Pull Request
 
