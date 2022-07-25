@@ -45,12 +45,13 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 	reqEntry := entries[0]
 	if diff := cmp.Diff(reqEntry, map[string]interface{}{
 		"@level":              "debug",
-		"@message":            "An example multiline request body",
+		"@message":            "Sending HTTP Request",
 		"@module":             "provider",
 		"tf_http_op_type":     "request",
 		"tf_http_req_method":  "GET",
 		"tf_http_req_uri":     "/",
 		"tf_http_req_version": "HTTP/1.1",
+		"tf_http_req_body":    "An example multiline request body",
 		"Accept-Encoding":     "gzip",
 		"Host":                "www.terraform.io",
 		"User-Agent":          "Go-http-client/1.1",
@@ -63,6 +64,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 	expectedResEntryFields := map[string]interface{}{
 		"@level":                    "debug",
 		"@module":                   "provider",
+		"@message":                  "Received HTTP Response",
 		"Content-Type":              "text/html",
 		"tf_http_op_type":           "response",
 		"tf_http_res_status_code":   float64(200),
@@ -76,7 +78,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 	}
 
 	expectedNonEmptyEntryFields := []string{
-		"@message", "Etag", "Date", "X-Frame-Options", "Server",
+		"tf_http_res_body", "Etag", "Date", "X-Frame-Options", "Server",
 	}
 	for _, ek := range expectedNonEmptyEntryFields {
 		if ev, ok := resEntry[ek]; !ok || ev == "" {
@@ -119,12 +121,13 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 	reqEntry := entries[0]
 	if diff := cmp.Diff(reqEntry, map[string]interface{}{
 		"@level":              "debug",
-		"@message":            "An example multiline request body",
+		"@message":            "Sending HTTP Request",
 		"@module":             "provider.test-subsystem",
 		"tf_http_op_type":     "request",
 		"tf_http_req_method":  "GET",
 		"tf_http_req_uri":     "/",
 		"tf_http_req_version": "HTTP/1.1",
+		"tf_http_req_body":    "An example multiline request body",
 		"Accept-Encoding":     "gzip",
 		"Host":                "www.terraform.io",
 		"User-Agent":          "Go-http-client/1.1",
@@ -137,6 +140,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 	expectedResEntryFields := map[string]interface{}{
 		"@level":                    "debug",
 		"@module":                   "provider.test-subsystem",
+		"@message":                  "Received HTTP Response",
 		"Content-Type":              "text/html",
 		"tf_http_op_type":           "response",
 		"tf_http_res_status_code":   float64(200),
@@ -150,7 +154,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 	}
 
 	expectedNonEmptyEntryFields := []string{
-		"@message", "Etag", "Date", "X-Frame-Options", "Server",
+		"tf_http_res_body", "Etag", "Date", "X-Frame-Options", "Server",
 	}
 	for _, ek := range expectedNonEmptyEntryFields {
 		if ev, ok := resEntry[ek]; !ok || ev == "" {
@@ -162,7 +166,8 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 	ctx, loggerOutput := setupRootLogger()
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "tf_http_op_type")
-	ctx = tflog.MaskMessageRegexes(ctx, regexp.MustCompile(`<html>.*</html>`))
+	ctx = tflog.MaskAllFieldValuesRegexes(ctx, regexp.MustCompile(`<html>.*</html>`))
+	ctx = tflog.MaskMessageStrings(ctx, "Request", "Response")
 
 	transport := logging.NewLoggingHTTPTransport(http.DefaultTransport)
 	client := http.Client{
@@ -186,14 +191,22 @@ func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 		t.Fatalf("unexpected amount of logs produced; expected 2, got %d", len(entries))
 	}
 
+	if diff := cmp.Diff(entries[0]["@message"], "Sending HTTP ***"); diff != "" {
+		t.Fatalf("unexpected difference for logging message of request:\n%s", diff)
+	}
+
+	if diff := cmp.Diff(entries[1]["@message"], "Received HTTP ***"); diff != "" {
+		t.Fatalf("unexpected difference for logging message of response:\n%s", diff)
+	}
+
 	expectedMaskedEntryFields := map[string]interface{}{
-		"tf_http_op_type": "***",
-		"@message":        "<!DOCTYPE html>***",
+		"tf_http_op_type":  "***",
+		"tf_http_res_body": "<!DOCTYPE html>***",
 	}
 	for _, entry := range entries {
-		for ek, ev := range expectedMaskedEntryFields {
-			if entry[ek] != "" && entry[ek] != ev {
-				t.Fatalf("Unexpected value for field %q; expected %q, got %q", ek, ev, entry[ek])
+		for expectedK, expectedV := range expectedMaskedEntryFields {
+			if entryV, ok := entry[expectedK]; ok && entryV != expectedV {
+				t.Fatalf("Unexpected value for field %q; expected %q, got %q", expectedK, expectedV, entry[expectedK])
 			}
 		}
 	}
@@ -201,7 +214,7 @@ func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 
 func TestNewLoggingHTTPTransport_LogOmitting(t *testing.T) {
 	ctx, loggerOutput := setupRootLogger()
-	ctx = tflog.OmitLogWithMessageRegexes(ctx, regexp.MustCompile("(?i)<html>"))
+	ctx = tflog.OmitLogWithMessageRegexes(ctx, regexp.MustCompile("(?i)rEsPoNsE"))
 	ctx = tflog.OmitLogWithFieldKeys(ctx, "tf_http_req_method")
 
 	transport := logging.NewLoggingHTTPTransport(http.DefaultTransport)

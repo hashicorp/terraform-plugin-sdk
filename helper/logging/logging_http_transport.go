@@ -64,32 +64,57 @@ func NewSubsystemLoggingHTTPTransport(subsystem string, t http.RoundTripper) *lo
 }
 
 const (
-	// FieldHttpOperationType is the field key used by NewSubsystemLoggingHTTPTransport when logging the type of operation via tflog.
+	// FieldHttpOperationType is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging the type of HTTP operation via tflog.
 	FieldHttpOperationType = "tf_http_op_type"
 
-	// OperationHttpRequest is the field value used by NewSubsystemLoggingHTTPTransport when logging a request via tflog.
+	// OperationHttpRequest is the field value used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request via tflog.
 	OperationHttpRequest = "request"
 
-	// FieldHttpRequestMethod is the field key used by NewSubsystemLoggingHTTPTransport when logging a request method via tflog.
-	FieldHttpRequestMethod = "tf_http_req_method"
-
-	// FieldHttpRequestUri is the field key used by NewSubsystemLoggingHTTPTransport when logging a request URI via tflog.
-	FieldHttpRequestUri = "tf_http_req_uri"
-
-	// FieldHttpRequestProtoVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a request HTTP version via tflog.
-	FieldHttpRequestProtoVersion = "tf_http_req_version"
-
-	// OperationHttpResponse is the field value used by NewSubsystemLoggingHTTPTransport when logging a response via tflog.
+	// OperationHttpResponse is the field value used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response via tflog.
 	OperationHttpResponse = "response"
 
-	// FieldHttpResponseProtoVersion is the field key used by NewSubsystemLoggingHTTPTransport when logging a response HTTP protocol version via tflog.
+	// FieldHttpRequestMethod is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request method via tflog.
+	FieldHttpRequestMethod = "tf_http_req_method"
+
+	// FieldHttpRequestUri is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request URI via tflog.
+	FieldHttpRequestUri = "tf_http_req_uri"
+
+	// FieldHttpRequestProtoVersion is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request HTTP version via tflog.
+	FieldHttpRequestProtoVersion = "tf_http_req_version"
+
+	// FieldHttpRequestBody is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request body via tflog.
+	FieldHttpRequestBody = "tf_http_req_body"
+
+	// FieldHttpResponseProtoVersion is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response protocol version via tflog.
 	FieldHttpResponseProtoVersion = "tf_http_res_version"
 
-	// FieldHttpResponseStatusCode is the field key used by NewSubsystemLoggingHTTPTransport when logging a response status code via tflog.
+	// FieldHttpResponseStatusCode is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response status code via tflog.
 	FieldHttpResponseStatusCode = "tf_http_res_status_code"
 
-	// FieldHttpResponseStatusReason is the field key used by NewSubsystemLoggingHTTPTransport when logging a response status reason phrase via tflog.
+	// FieldHttpResponseStatusReason is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response status reason phrase via tflog.
 	FieldHttpResponseStatusReason = "tf_http_res_status_reason"
+
+	// FieldHttpResponseBody is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response body via tflog.
+	FieldHttpResponseBody = "tf_http_res_body"
+
+	// MessageHttpRequest is the message used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request via tflog.
+	MessageHttpRequest = "Sending HTTP Request"
+
+	// MessageHttpResponse is the message used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response via tflog.
+	MessageHttpResponse = "Received HTTP Response"
 )
 
 type loggingHttpTransport struct {
@@ -101,13 +126,13 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 	ctx := req.Context()
 
 	// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
-	msg, fields, err := decomposeRequestForLogging(req)
+	fields, err := decomposeRequestForLogging(req)
 	if err != nil {
 		t.Error(ctx, "Failed to parse request bytes for logging", map[string]interface{}{
 			"error": err,
 		})
 	} else {
-		t.Debug(ctx, msg, fields)
+		t.Debug(ctx, MessageHttpRequest, fields)
 	}
 
 	// Invoke the wrapped RoundTrip now
@@ -117,13 +142,13 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	// Decompose the response bytes in a message (HTTP body) and fields (HTTP headers), then log it
-	msg, fields, err = decomposeResponseForLogging(res)
+	fields, err = decomposeResponseForLogging(res)
 	if err != nil {
 		t.Error(ctx, "Failed to parse response bytes for logging", map[string]interface{}{
 			"error": err,
 		})
 	} else {
-		t.Debug(ctx, msg, fields)
+		t.Debug(ctx, MessageHttpResponse, fields)
 	}
 
 	return res, nil
@@ -145,7 +170,7 @@ func (t *loggingHttpTransport) Error(ctx context.Context, msg string, fields ...
 	}
 }
 
-func decomposeRequestForLogging(req *http.Request) (string, map[string]interface{}, error) {
+func decomposeRequestForLogging(req *http.Request) (map[string]interface{}, error) {
 	fields := make(map[string]interface{}, len(req.Header)+4)
 	fields[FieldHttpOperationType] = OperationHttpRequest
 
@@ -159,7 +184,7 @@ func decomposeRequestForLogging(req *http.Request) (string, map[string]interface
 	// We rely on `httputil.DumpRequestOut` to obtain the actual bytes that will be sent out.
 	reqBytes, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	// Create a reader around the request full body
@@ -167,15 +192,15 @@ func decomposeRequestForLogging(req *http.Request) (string, map[string]interface
 
 	err = readHeadersIntoFields(reqReader, fields)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	// Read the rest of the body content,
-	// into what will be the log message
-	return readRestToString(reqReader), fields, nil
+	// Read the rest of the body content
+	fields[FieldHttpRequestBody] = readRestToString(reqReader)
+	return fields, nil
 }
 
-func decomposeResponseForLogging(res *http.Response) (string, map[string]interface{}, error) {
+func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, error) {
 	fields := make(map[string]interface{}, len(res.Header)+4)
 	fields[FieldHttpOperationType] = OperationHttpResponse
 
@@ -195,7 +220,7 @@ func decomposeResponseForLogging(res *http.Response) (string, map[string]interfa
 	// Read the whole response body
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	// Make a copy of the response body bytes, to be returned as log message
@@ -207,7 +232,9 @@ func decomposeResponseForLogging(res *http.Response) (string, map[string]interfa
 	// http.Client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
 
-	return string(resBody), fields, nil
+	fields[FieldHttpResponseBody] = string(resBody)
+
+	return fields, nil
 }
 
 func readHeadersIntoFields(reader *textproto.Reader, fields map[string]interface{}) error {
