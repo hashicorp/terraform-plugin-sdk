@@ -203,54 +203,17 @@ func decomposeRequestForLogging(req *http.Request) (map[string]interface{}, erro
 	// Create a reader around the request full body
 	reqReader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
 
-	err = readHeadersIntoFields(reqReader, fields)
+	err = fieldHeadersFromRequestReader(reqReader, fields)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read the rest of the body content
-	fields[FieldHttpRequestBody] = readRestToString(reqReader)
+	fields[FieldHttpRequestBody] = bodyFromRestOfRequestReader(reqReader)
 	return fields, nil
 }
 
-func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, error) {
-	fields := make(map[string]interface{}, len(res.Header)+4)
-	fields[FieldHttpOperationType] = OperationHttpResponse
-
-	fields[FieldHttpResponseProtoVersion] = res.Proto
-	fields[FieldHttpResponseStatusCode] = res.StatusCode
-	fields[FieldHttpResponseStatusReason] = res.Status
-
-	// Set the headers as fields to log
-	for k, v := range res.Header {
-		if len(v) == 1 {
-			fields[k] = v[0]
-		} else {
-			fields[k] = v
-		}
-	}
-
-	// Read the whole response body
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make a copy of the response body bytes, to be returned as log message
-	msgBytes := make([]byte, len(resBody))
-	copy(msgBytes, resBody)
-
-	// Wrap the bytes from the response body, back into an io.ReadCloser,
-	// to respect the interface of http.Response, as expected by users of the
-	// http.Client
-	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
-
-	fields[FieldHttpResponseBody] = string(resBody)
-
-	return fields, nil
-}
-
-func readHeadersIntoFields(reader *textproto.Reader, fields map[string]interface{}) error {
+func fieldHeadersFromRequestReader(reader *textproto.Reader, fields map[string]interface{}) error {
 	// Ignore the first line: it contains non-header content
 	// that we have already captured.
 	// Skipping this step, would cause the following call to `ReadMIMEHeader()`
@@ -278,7 +241,7 @@ func readHeadersIntoFields(reader *textproto.Reader, fields map[string]interface
 	return nil
 }
 
-func readRestToString(reader *textproto.Reader) string {
+func bodyFromRestOfRequestReader(reader *textproto.Reader) string {
 	var builder strings.Builder
 	for {
 		line, err := reader.ReadContinuedLine()
@@ -289,4 +252,37 @@ func readRestToString(reader *textproto.Reader) string {
 	}
 
 	return builder.String()
+}
+
+func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, error) {
+	fields := make(map[string]interface{}, len(res.Header)+4)
+	fields[FieldHttpOperationType] = OperationHttpResponse
+
+	fields[FieldHttpResponseProtoVersion] = res.Proto
+	fields[FieldHttpResponseStatusCode] = res.StatusCode
+	fields[FieldHttpResponseStatusReason] = res.Status
+
+	// Set the headers as fields to log
+	for k, v := range res.Header {
+		if len(v) == 1 {
+			fields[k] = v[0]
+		} else {
+			fields[k] = v
+		}
+	}
+
+	// Read the whole response body
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap the bytes from the response body, back into an io.ReadCloser,
+	// to respect the interface of http.Response, as expected by users of the
+	// http.Client
+	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
+
+	fields[FieldHttpResponseBody] = string(resBody)
+
+	return fields, nil
 }

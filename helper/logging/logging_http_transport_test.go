@@ -3,6 +3,7 @@ package logging_test
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"regexp"
 	"testing"
@@ -212,6 +213,10 @@ func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 		t.Fatalf("request failed: %v", err)
 	}
 	defer res.Body.Close()
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
 
 	entries, err := tflogtest.MultilineJSONDecode(loggerOutput)
 	if err != nil {
@@ -240,6 +245,10 @@ func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 				t.Fatalf("Unexpected value for field %q; expected %q, got %q", expectedK, expectedV, entry[expectedK])
 			}
 		}
+	}
+
+	if diff := cmp.Diff(entries[1]["tf_http_res_body"], string(resBody)); diff == "" {
+		t.Fatalf("expected HTTP response body and content of field 'tf_http_res_body' to differ, but they do not")
 	}
 }
 
