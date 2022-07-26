@@ -21,7 +21,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - run: go mod download
-      - uses: golangci/golangci-lint-action@v3.2.0
+      - uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
   terraform-provider-corner:
     defaults:
       run:

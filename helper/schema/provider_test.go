@@ -1002,8 +1002,7 @@ func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			os.Unsetenv(uaEnvVar)
-			os.Setenv(uaEnvVar, tc.envVarValue)
+			t.Setenv(uaEnvVar, tc.envVarValue)
 			p := &Provider{TerraformVersion: "4.5.6"}
 			givenUA := p.UserAgent(tc.providerName, tc.providerVersion)
 			if givenUA != tc.expected {
