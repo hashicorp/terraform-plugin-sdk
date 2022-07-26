@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"strings"
 
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -108,6 +109,9 @@ const (
 	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response body via tflog.
 	FieldHttpResponseBody = "tf_http_res_body"
 
+	// FieldHttpTransactionId is the field key used by NewLoggingHTTPTransport
+	// and NewSubsystemLoggingHTTPTransport when logging an HTTP transaction via tflog.
+	FieldHttpTransactionId = "tf_http_trans_id"
 )
 
 type loggingHttpTransport struct {
@@ -117,6 +121,7 @@ type loggingHttpTransport struct {
 
 func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
+	ctx = t.AddTransactionIdField(ctx)
 
 	// Decompose the request bytes in a message (HTTP body) and fields (HTTP headers), then log it
 	fields, err := decomposeRequestForLogging(req)
@@ -160,6 +165,21 @@ func (t *loggingHttpTransport) Error(ctx context.Context, msg string, fields ...
 		tflog.SubsystemError(ctx, t.subsystem, msg, fields...)
 	} else {
 		tflog.Error(ctx, msg, fields...)
+	}
+}
+
+func (t *loggingHttpTransport) AddTransactionIdField(ctx context.Context) context.Context {
+	tId, err := uuid.GenerateUUID()
+
+	if err != nil {
+		tId = "Unable to assign Transaction ID: " + err.Error()
+	}
+
+	if t.subsystem != "" {
+		return tflog.SubsystemSetField(ctx, t.subsystem, FieldHttpTransactionId, tId)
+	} else {
+		return tflog.SetField(ctx, FieldHttpTransactionId, tId)
+
 	}
 }
 

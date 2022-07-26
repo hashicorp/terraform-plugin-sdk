@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
@@ -42,6 +43,19 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 		t.Fatalf("unexpected amount of logs produced; expected 2, got %d", len(entries))
 	}
 
+	if transId, ok := entries[0]["tf_http_trans_id"]; !ok || transId != entries[1]["tf_http_trans_id"] {
+		t.Fatalf("expected to find the same 'tf_http_trans_id' in both req/res entries, got %q", transId)
+	}
+
+	transId, ok := entries[0]["tf_http_trans_id"].(string)
+	if !ok {
+		t.Fatalf("expected 'tf_http_trans_id' to be a string, got %T", transId)
+	}
+
+	if _, err := uuid.ParseUUID(transId); err != nil {
+		t.Fatalf("expected 'tf_http_trans_id' to be contain a valid UUID, but got an error: %v", err)
+	}
+
 	reqEntry := entries[0]
 	if diff := cmp.Diff(reqEntry, map[string]interface{}{
 		"@level":              "debug",
@@ -52,6 +66,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 		"tf_http_req_uri":     "/",
 		"tf_http_req_version": "HTTP/1.1",
 		"tf_http_req_body":    "An example multiline request body",
+		"tf_http_trans_id":    transId,
 		"Accept-Encoding":     "gzip",
 		"Host":                "www.terraform.io",
 		"User-Agent":          "Go-http-client/1.1",
@@ -70,6 +85,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 		"tf_http_res_status_code":   float64(200),
 		"tf_http_res_version":       "HTTP/2.0",
 		"tf_http_res_status_reason": "200 OK",
+		"tf_http_trans_id":          transId,
 	}
 	for ek, ev := range expectedResEntryFields {
 		if resEntry[ek] != ev {
@@ -118,6 +134,19 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 		t.Fatalf("unexpected amount of logs produced; expected 2, got %d", len(entries))
 	}
 
+	if transId, ok := entries[0]["tf_http_trans_id"]; !ok || transId != entries[1]["tf_http_trans_id"] {
+		t.Fatalf("expected to find the same 'tf_http_trans_id' in both req/res entries, got %q", transId)
+	}
+
+	transId, ok := entries[0]["tf_http_trans_id"].(string)
+	if !ok {
+		t.Fatalf("expected 'tf_http_trans_id' to be a string, got %T", transId)
+	}
+
+	if _, err := uuid.ParseUUID(transId); err != nil {
+		t.Fatalf("expected 'tf_http_trans_id' to be contain a valid UUID, but got an error: %v", err)
+	}
+
 	reqEntry := entries[0]
 	if diff := cmp.Diff(reqEntry, map[string]interface{}{
 		"@level":              "debug",
@@ -128,6 +157,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 		"tf_http_req_uri":     "/",
 		"tf_http_req_version": "HTTP/1.1",
 		"tf_http_req_body":    "An example multiline request body",
+		"tf_http_trans_id":    transId,
 		"Accept-Encoding":     "gzip",
 		"Host":                "www.terraform.io",
 		"User-Agent":          "Go-http-client/1.1",
@@ -146,6 +176,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 		"tf_http_res_status_code":   float64(200),
 		"tf_http_res_version":       "HTTP/2.0",
 		"tf_http_res_status_reason": "200 OK",
+		"tf_http_trans_id":          transId,
 	}
 	for ek, ev := range expectedResEntryFields {
 		if resEntry[ek] != ev {
