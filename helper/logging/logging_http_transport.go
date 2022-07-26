@@ -108,13 +108,6 @@ const (
 	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response body via tflog.
 	FieldHttpResponseBody = "tf_http_res_body"
 
-	// MessageHttpRequest is the message used by NewLoggingHTTPTransport
-	// and NewSubsystemLoggingHTTPTransport when logging an HTTP request via tflog.
-	MessageHttpRequest = "Sending HTTP Request"
-
-	// MessageHttpResponse is the message used by NewLoggingHTTPTransport
-	// and NewSubsystemLoggingHTTPTransport when logging an HTTP response via tflog.
-	MessageHttpResponse = "Received HTTP Response"
 )
 
 type loggingHttpTransport struct {
@@ -132,7 +125,7 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 			"error": err,
 		})
 	} else {
-		t.Debug(ctx, MessageHttpRequest, fields)
+		t.Debug(ctx, "Sending HTTP Request", fields)
 	}
 
 	// Invoke the wrapped RoundTrip now
@@ -148,7 +141,7 @@ func (t *loggingHttpTransport) RoundTrip(req *http.Request) (*http.Response, err
 			"error": err,
 		})
 	} else {
-		t.Debug(ctx, MessageHttpResponse, fields)
+		t.Debug(ctx, "Received HTTP Response", fields)
 	}
 
 	return res, nil
