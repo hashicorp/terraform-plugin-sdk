@@ -231,10 +231,14 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 			err := testStepNewImportState(ctx, t, helper, wd, step, appliedCfg, providers)
 			if step.ExpectError != nil {
 				var fnRegexp *regexp.Regexp = nil
+				var fnErrorCheck func(error) error = nil
 				switch step.ExpectError.(type) {
 				case *regexp.Regexp:
 					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
 					fnRegexp = step.ExpectError.(*regexp.Regexp)
+				case func(error) error:
+					logging.HelperResourceDebug(ctx, "func(error) error type ExpectError specified")
+					fnErrorCheck = step.ExpectError.(func(error) error)
 				default:
 					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
 					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
@@ -247,12 +251,24 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 					t.Fatalf("Step %d/%d error running import: expected an error but got none", stepNumber, len(c.Steps))
 				}
 				if fnRegexp != nil {
+					logging.HelperResourceTrace(ctx, "Checking ExpectError regexp")
 					if !fnRegexp.MatchString(err.Error()) {
 						logging.HelperResourceError(ctx,
 							fmt.Sprintf("Error running import: expected an error with pattern (%s)", fnRegexp.String()),
 							map[string]interface{}{logging.KeyError: err},
 						)
 						t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
+					}
+				}
+				if fnErrorCheck != nil {
+					logging.HelperResourceTrace(ctx, "Calling ExpectError function")
+					checkedErr := fnErrorCheck(err)
+					if checkedErr != nil {
+						logging.HelperResourceError(ctx,
+							fmt.Sprintf("Error running import: expected error checking function to return nil got %v", checkedErr),
+							map[string]interface{}{logging.KeyError: err},
+						)
+						t.Fatalf("Step %d/%d error running import, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
 					}
 				}
 			} else {
@@ -281,10 +297,14 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 			err := testStepNewConfig(ctx, t, c, wd, step, providers)
 			if step.ExpectError != nil {
 				var fnRegexp *regexp.Regexp = nil
+				var fnErrorCheck func(error) error = nil
 				switch step.ExpectError.(type) {
 				case *regexp.Regexp:
 					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
 					fnRegexp = step.ExpectError.(*regexp.Regexp)
+				case func(error) error:
+					logging.HelperResourceDebug(ctx, "func(error) error type ExpectError specified")
+					fnErrorCheck = step.ExpectError.(func(error) error)
 				default:
 					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
 					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
@@ -298,12 +318,24 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 					t.Fatalf("Step %d/%d, expected an error but got none", stepNumber, len(c.Steps))
 				}
 				if fnRegexp != nil {
+					logging.HelperResourceTrace(ctx, "Checking ExpectError regexp")
 					if !fnRegexp.MatchString(err.Error()) {
 						logging.HelperResourceError(ctx,
 							fmt.Sprintf("Expected an error with pattern (%s)", fnRegexp.String()),
 							map[string]interface{}{logging.KeyError: err},
 						)
 						t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", stepNumber, len(c.Steps), err)
+					}
+				}
+				if fnErrorCheck != nil {
+					logging.HelperResourceTrace(ctx, "Calling ExpectError function")
+					checkedErr := fnErrorCheck(err)
+					if checkedErr != nil {
+						logging.HelperResourceError(ctx,
+							fmt.Sprintf("Expected error checking function to return nil got %v", checkedErr),
+							map[string]interface{}{logging.KeyError: err},
+						)
+						t.Fatalf("Step %d/%d, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
 					}
 				}
 			} else {
