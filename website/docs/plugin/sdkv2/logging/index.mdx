@@ -1,0 +1,26 @@
+---
+page_title: Plugin Development - Logging
+description: |-
+  Producing high quality logs can make a huge difference when trying to debug an issue.
+  Learn more about how to set-up logging and write meaningful logs.
+---
+
+# Logging
+
+Terraform Plugin SDKv2 integrates with a [structured logging framework](https://www.terraform.io/plugin/log): [terraform-plugin-log](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log). This plays a crucial role in building providers that facilitate timely [debugging](https://www.terraform.io/plugin/debugging) of issues.
+
+## Managing Log Output
+
+Learn how to use [environment variables and other methods](https://www.terraform.io/plugin/log/managing) to enable and filter logs.
+
+## Writing Log Output
+
+Learn how to [implement code in provider logic](https://www.terraform.io/plugin/log/writing) to output logs.
+
+## Filtering Log Output
+
+Learn how to [implement code in provider logic](https://www.terraform.io/plugin/log/filtering) to mask certain log messages and structured log fields or omit logs entirely.
+
+## Log HTTP Transactions
+
+Learn how to [set up the Logging HTTP Transport](./logging/http-transport) to log HTTP Transactions via the [structured logging framework](https://www.terraform.io/plugin/log).
