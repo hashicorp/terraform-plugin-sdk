@@ -40,10 +40,10 @@ each [TestStep][5] in the TestCase. If the last plan results in a non-empty
 plan, Terraform will exit with an error. This enables developers to ensure that
 configurations apply cleanly. In the case of introducing regression tests or
 otherwise testing specific error behavior, TestStep offers a boolean field
-[ExpectNonEmptyPlan][6] as well [ExpectError][7] regex field to specify ways the
-test framework can handle expected failures. If these properties are omitted and
-either a non-empty plan occurs or an error encountered, Terraform will fail the
-test.
+[ExpectNonEmptyPlan][6] as well [ExpectError][7] field (regex or function) to
+specify ways the test framework can handle expected failures. If these
+properties are omitted and either a non-empty plan occurs or an error
+encountered, Terraform will fail the test.
 
 After all TestSteps have been ran, Terraform then runs destroy, and ends by
 running any CheckDestroy function provided.
@@ -332,10 +332,60 @@ func TestAccExampleWidget_expectError(t *testing.T) {
 }
 ```
 
-`ExpectError` expects a valid regular expression, and the error message must
-match in order to consider the error as expected and allow the test to pass. If
-the regular expression does not match, the `TestStep` fails explaining that the
-configuration did not produce the error expected.
+In this case, `ExpectError` expects a valid regular expression, and the error
+message must match in order to consider the error as expected and allow the
+test to pass. If the regular expression does not match, the `TestStep` fails
+explaining that the configuration did not produce the error expected.
+
+However, there are cases where matching against a regexp is not sufficient,
+furthermore as the Golang default regexp implementation does not support
+complex regexp patterns like Perl regexp exclusion patterns for instance.
+
+This is why, one can also specify a function which will parse the returned
+error and customize its validation by returning an error if it does not
+match user expectations and nil if it does:
+
+```go
+func TestAccExampleWidget_expectErrorComplexFunction(t *testing.T) {
+	var widget example.Widget
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckExampleResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				// use a configuration that we expect to fail a validator
+				// on the resource Name attribute, which only allows alphanumeric
+				// characters
+				Config:      testAccExampleResourceError(rName + "*$%%^"),
+				// No check function is given because we expect this configuration
+				// to fail before any infrastructure is created
+				ExpectError: testAccComplexErrorChecking("str1", "str2"),
+			},
+		},
+	})
+}
+
+// This is a more complex example as it returns a function which will be
+// called with the proper parameters
+// Of course it can also be very simple like:
+// func testAccComplexErrorChecking(err error) error {
+//	return nil
+// }
+// in which case the code above will become:
+// 				ExpectError: testAccComplexErrorChecking,
+
+func testAccComplexErrorChecking(str1, str2 string) func(error) error {
+        return func(err error) error {
+		if strings.Contains(err.Error(), str1) && !strings.Contains(err.Error(), str2) {
+			return fmt.Errorf("This is not the expected error %v", err)
+		}
+		return nil
+        }
+}
+```
 
 [Back to top](#table-of-contents)
 
