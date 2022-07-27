@@ -494,7 +494,7 @@ type TestStep struct {
 	// ExpectError allows the construction of test cases that we expect to fail
 	// with an error. The specified regexp must match against the error for the
 	// test to pass.
-	ExpectError *regexp.Regexp
+	ExpectError interface{}
 
 	// PlanOnly can be set to only run `plan` with this configuration, and not
 	// actually apply it. This is useful for ensuring config changes result in

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
@@ -229,6 +230,15 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 
 			err := testStepNewImportState(ctx, t, helper, wd, step, appliedCfg, providers)
 			if step.ExpectError != nil {
+				var fnRegexp *regexp.Regexp = nil
+				switch step.ExpectError.(type) {
+				case *regexp.Regexp:
+					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
+					fnRegexp = step.ExpectError.(*regexp.Regexp)
+				default:
+					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+				}
 				logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
 				if err == nil {
 					logging.HelperResourceError(ctx,
@@ -236,12 +246,14 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 					)
 					t.Fatalf("Step %d/%d error running import: expected an error but got none", stepNumber, len(c.Steps))
 				}
-				if !step.ExpectError.MatchString(err.Error()) {
-					logging.HelperResourceError(ctx,
-						fmt.Sprintf("Error running import: expected an error with pattern (%s)", step.ExpectError.String()),
-						map[string]interface{}{logging.KeyError: err},
-					)
-					t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), step.ExpectError.String(), err)
+				if fnRegexp != nil {
+					if !fnRegexp.MatchString(err.Error()) {
+						logging.HelperResourceError(ctx,
+							fmt.Sprintf("Error running import: expected an error with pattern (%s)", fnRegexp.String()),
+							map[string]interface{}{logging.KeyError: err},
+						)
+						t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
+					}
 				}
 			} else {
 				if err != nil && c.ErrorCheck != nil {
@@ -268,6 +280,15 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 
 			err := testStepNewConfig(ctx, t, c, wd, step, providers)
 			if step.ExpectError != nil {
+				var fnRegexp *regexp.Regexp = nil
+				switch step.ExpectError.(type) {
+				case *regexp.Regexp:
+					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
+					fnRegexp = step.ExpectError.(*regexp.Regexp)
+				default:
+					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+				}
 				logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
 
 				if err == nil {
@@ -276,12 +297,14 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 					)
 					t.Fatalf("Step %d/%d, expected an error but got none", stepNumber, len(c.Steps))
 				}
-				if !step.ExpectError.MatchString(err.Error()) {
-					logging.HelperResourceError(ctx,
-						fmt.Sprintf("Expected an error with pattern (%s)", step.ExpectError.String()),
-						map[string]interface{}{logging.KeyError: err},
-					)
-					t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", stepNumber, len(c.Steps), err)
+				if fnRegexp != nil {
+					if !fnRegexp.MatchString(err.Error()) {
+						logging.HelperResourceError(ctx,
+							fmt.Sprintf("Expected an error with pattern (%s)", fnRegexp.String()),
+							map[string]interface{}{logging.KeyError: err},
+						)
+						t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", stepNumber, len(c.Steps), err)
+					}
 				}
 			} else {
 				if err != nil && c.ErrorCheck != nil {
