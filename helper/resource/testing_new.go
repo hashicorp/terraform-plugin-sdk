@@ -257,7 +257,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 							fmt.Sprintf("Error running import: expected an error with pattern (%s)", fnRegexp.String()),
 							map[string]interface{}{logging.KeyError: err},
 						)
-						t.Fatalf("Step %d/%d error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
+						t.Fatalf("Step %d/%d, error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
 					}
 				}
 				if fnErrorCheck != nil {
@@ -268,7 +268,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 							fmt.Sprintf("Error running import: expected error checking function to return nil got %v", checkedErr),
 							map[string]interface{}{logging.KeyError: err},
 						)
-						t.Fatalf("Step %d/%d error running import, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
+						t.Fatalf("Step %d/%d, error running import, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
 					}
 				}
 			} else {
@@ -282,7 +282,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 						"Error running import",
 						map[string]interface{}{logging.KeyError: err},
 					)
-					t.Fatalf("Step %d/%d error running import: %s", stepNumber, len(c.Steps), err)
+					t.Fatalf("Step %d/%d, error running import: %s", stepNumber, len(c.Steps), err)
 				}
 			}
 
@@ -324,7 +324,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 							fmt.Sprintf("Expected an error with pattern (%s)", fnRegexp.String()),
 							map[string]interface{}{logging.KeyError: err},
 						)
-						t.Fatalf("Step %d/%d, expected an error with pattern, no match on: %s", stepNumber, len(c.Steps), err)
+						t.Fatalf("Step %d/%d, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
 					}
 				}
 				if fnErrorCheck != nil {
@@ -351,7 +351,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 						"Unexpected error",
 						map[string]interface{}{logging.KeyError: err},
 					)
-					t.Fatalf("Step %d/%d error: %s", stepNumber, len(c.Steps), err)
+					t.Fatalf("Step %d/%d, error: %s", stepNumber, len(c.Steps), err)
 				}
 			}
 
