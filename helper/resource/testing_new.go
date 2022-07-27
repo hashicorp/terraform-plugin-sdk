@@ -40,6 +40,65 @@ func runPostTestDestroy(ctx context.Context, t testing.T, c TestCase, wd *plugin
 	return nil
 }
 
+func handleExpectError(msg string, ctx context.Context, t testing.T, c TestCase, stepNumber int, step TestStep, err error) {
+	if step.ExpectError != nil {
+		var fnRegexp *regexp.Regexp = nil
+		var fnErrorCheck func(error) error = nil
+		switch step.ExpectError.(type) {
+		case *regexp.Regexp:
+			logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
+			fnRegexp = step.ExpectError.(*regexp.Regexp)
+		case func(error) error:
+			logging.HelperResourceDebug(ctx, "func(error) error type ExpectError specified")
+			fnErrorCheck = step.ExpectError.(func(error) error)
+		default:
+			logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+			t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
+		}
+		logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
+		if err == nil {
+			logging.HelperResourceError(ctx,
+				fmt.Sprintf("%s: expected an error but got none", msg),
+			)
+			t.Fatalf("Step %d/%d, %s: expected an error but got none", stepNumber, len(c.Steps), msg)
+		}
+		if fnRegexp != nil {
+			logging.HelperResourceTrace(ctx, "Checking ExpectError regexp")
+			if !fnRegexp.MatchString(err.Error()) {
+				logging.HelperResourceError(ctx,
+					fmt.Sprintf("%s: expected an error with pattern (%s)", msg, fnRegexp.String()),
+					map[string]interface{}{logging.KeyError: err},
+				)
+				t.Fatalf("Step %d/%d, %s, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), msg, fnRegexp.String(), err)
+			}
+		}
+		if fnErrorCheck != nil {
+			logging.HelperResourceTrace(ctx, "Calling ExpectError function")
+			checkedErr := fnErrorCheck(err)
+			if checkedErr != nil {
+				logging.HelperResourceError(ctx,
+					fmt.Sprintf("%s: expected error checking function to return nil got %v", msg, checkedErr),
+					map[string]interface{}{logging.KeyError: err},
+				)
+				t.Fatalf("Step %d/%d, %s, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), msg, err, checkedErr)
+			}
+		}
+	} else {
+		if err != nil && c.ErrorCheck != nil {
+			logging.HelperResourceDebug(ctx, "Calling TestCase ErrorCheck")
+			err = c.ErrorCheck(err)
+			logging.HelperResourceDebug(ctx, "Called TestCase ErrorCheck")
+		}
+		if err != nil {
+			logging.HelperResourceError(ctx,
+				msg,
+				map[string]interface{}{logging.KeyError: err},
+			)
+			t.Fatalf("Step %d/%d, %s, uncaught error: %s", stepNumber, len(c.Steps), msg, err)
+		}
+	}
+}
+
 func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest.Helper) {
 	t.Helper()
 
@@ -227,138 +286,18 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 
 		if step.ImportState {
 			logging.HelperResourceTrace(ctx, "TestStep is ImportState mode")
-
 			err := testStepNewImportState(ctx, t, helper, wd, step, appliedCfg, providers)
-			if step.ExpectError != nil {
-				var fnRegexp *regexp.Regexp = nil
-				var fnErrorCheck func(error) error = nil
-				switch step.ExpectError.(type) {
-				case *regexp.Regexp:
-					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
-					fnRegexp = step.ExpectError.(*regexp.Regexp)
-				case func(error) error:
-					logging.HelperResourceDebug(ctx, "func(error) error type ExpectError specified")
-					fnErrorCheck = step.ExpectError.(func(error) error)
-				default:
-					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
-					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
-				}
-				logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
-				if err == nil {
-					logging.HelperResourceError(ctx,
-						"Error running import: expected an error but got none",
-					)
-					t.Fatalf("Step %d/%d error running import: expected an error but got none", stepNumber, len(c.Steps))
-				}
-				if fnRegexp != nil {
-					logging.HelperResourceTrace(ctx, "Checking ExpectError regexp")
-					if !fnRegexp.MatchString(err.Error()) {
-						logging.HelperResourceError(ctx,
-							fmt.Sprintf("Error running import: expected an error with pattern (%s)", fnRegexp.String()),
-							map[string]interface{}{logging.KeyError: err},
-						)
-						t.Fatalf("Step %d/%d, error running import, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
-					}
-				}
-				if fnErrorCheck != nil {
-					logging.HelperResourceTrace(ctx, "Calling ExpectError function")
-					checkedErr := fnErrorCheck(err)
-					if checkedErr != nil {
-						logging.HelperResourceError(ctx,
-							fmt.Sprintf("Error running import: expected error checking function to return nil got %v", checkedErr),
-							map[string]interface{}{logging.KeyError: err},
-						)
-						t.Fatalf("Step %d/%d, error running import, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
-					}
-				}
-			} else {
-				if err != nil && c.ErrorCheck != nil {
-					logging.HelperResourceDebug(ctx, "Calling TestCase ErrorCheck")
-					err = c.ErrorCheck(err)
-					logging.HelperResourceDebug(ctx, "Called TestCase ErrorCheck")
-				}
-				if err != nil {
-					logging.HelperResourceError(ctx,
-						"Error running import",
-						map[string]interface{}{logging.KeyError: err},
-					)
-					t.Fatalf("Step %d/%d, error running import: %s", stepNumber, len(c.Steps), err)
-				}
-			}
-
+			handleExpectError("Error running import", ctx, t, c, stepNumber, step, err)
 			logging.HelperResourceDebug(ctx, "Finished TestStep")
-
 			continue
 		}
 
 		if step.Config != "" {
 			logging.HelperResourceTrace(ctx, "TestStep is Config mode")
-
 			err := testStepNewConfig(ctx, t, c, wd, step, providers)
-			if step.ExpectError != nil {
-				var fnRegexp *regexp.Regexp = nil
-				var fnErrorCheck func(error) error = nil
-				switch step.ExpectError.(type) {
-				case *regexp.Regexp:
-					logging.HelperResourceDebug(ctx, "Regexp type ExpectError specified")
-					fnRegexp = step.ExpectError.(*regexp.Regexp)
-				case func(error) error:
-					logging.HelperResourceDebug(ctx, "func(error) error type ExpectError specified")
-					fnErrorCheck = step.ExpectError.(func(error) error)
-				default:
-					logging.HelperResourceError(ctx, fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
-					t.Fatalf(fmt.Sprintf("Unknown type specified for ExpectError %T", step.ExpectError))
-				}
-				logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
-
-				if err == nil {
-					logging.HelperResourceError(ctx,
-						"Expected an error but got none",
-					)
-					t.Fatalf("Step %d/%d, expected an error but got none", stepNumber, len(c.Steps))
-				}
-				if fnRegexp != nil {
-					logging.HelperResourceTrace(ctx, "Checking ExpectError regexp")
-					if !fnRegexp.MatchString(err.Error()) {
-						logging.HelperResourceError(ctx,
-							fmt.Sprintf("Expected an error with pattern (%s)", fnRegexp.String()),
-							map[string]interface{}{logging.KeyError: err},
-						)
-						t.Fatalf("Step %d/%d, expected an error with pattern (%s), no match on: %s", stepNumber, len(c.Steps), fnRegexp.String(), err)
-					}
-				}
-				if fnErrorCheck != nil {
-					logging.HelperResourceTrace(ctx, "Calling ExpectError function")
-					checkedErr := fnErrorCheck(err)
-					if checkedErr != nil {
-						logging.HelperResourceError(ctx,
-							fmt.Sprintf("Expected error checking function to return nil got %v", checkedErr),
-							map[string]interface{}{logging.KeyError: err},
-						)
-						t.Fatalf("Step %d/%d, expected error to match some conditions: %s (%s)", stepNumber, len(c.Steps), err, checkedErr)
-					}
-				}
-			} else {
-				if err != nil && c.ErrorCheck != nil {
-					logging.HelperResourceDebug(ctx, "Calling TestCase ErrorCheck")
-
-					err = c.ErrorCheck(err)
-
-					logging.HelperResourceDebug(ctx, "Called TestCase ErrorCheck")
-				}
-				if err != nil {
-					logging.HelperResourceError(ctx,
-						"Unexpected error",
-						map[string]interface{}{logging.KeyError: err},
-					)
-					t.Fatalf("Step %d/%d, error: %s", stepNumber, len(c.Steps), err)
-				}
-			}
-
+			handleExpectError("Error running config", ctx, t, c, stepNumber, step, err)
 			appliedCfg = step.Config
-
 			logging.HelperResourceDebug(ctx, "Finished TestStep")
-
 			continue
 		}
 
