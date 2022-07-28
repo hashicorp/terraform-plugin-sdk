@@ -12,7 +12,6 @@ We do not recommend using this original helper because it is designed to log the
 
 Instead, we recommend using the [terraform-plugin-log](https://www.terraform.io/plugin/log) library to produce logs for your provider. This library does not present the same security concerns and provides [log filtering](https://www.terraform.io/plugin/log/filtering) functionality. This page explains how to set up the new `RoundTripper()` helper to log HTTP Transactions with `terraform-plugin-log`. 
 
-
 # Setting Up Logging for HTTP Transactions
 
 The recommended logging helper for SDK is built on top of [terraform-plugin-log](https://www.terraform.io/plugin/log). This lets you leverage the features from our structured logging framework without having to write an entire implementation of `http.RoundTripper`.
@@ -23,7 +22,6 @@ There are two functions inside `helper/logging` that target a specific logging s
 * `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`: Use this method when you want logging against a `tflog` Provider [Subsystem logger](https://www.terraform.io/plugin/log/writing#subsystems). The `subsystem` string you use with `NewSubsystemLoggingHTTPTransport()` must match the [pre-created subsystem logger name](https://www.terraform.io/plugin/log/writing#create-subsystems).
 
 To set up HTTP transport, you must create the HTTP Client to use the new transport and then add logging configuration to the HTTP request context.
-
 
 ### Creating the HTTP Client 
 
@@ -47,7 +45,7 @@ func New() (*schema.Provider, error) {
         }
     }
 }
-
+```
 
 ## Adding Context to HTTP Requests
 
@@ -70,7 +68,6 @@ defer res.Body.Close()
 ```
 
 Use the [`(http.Request).WithContext()` method](https://pkg.go.dev/net/http#Request.WithContext) to set the context for the `http.Request` if the request is generated separately from where the `context.Context` is available.
-
 
 ## HTTP Transaction Log Format
 
@@ -176,7 +173,6 @@ Each log contains the following information, which is represented as [fields](ht
 |      `tf_http_res_version` | Response HTTP version                                                                                                                                                                | Ex. `"HTTP/2.0"`                                                                                      |      Response      |
 |             (Other fields) | Request / Response headers. One field per header. If the header contains a single value, the log field value is set to that value. Otherwise, the field value is a slice of strings. |                                                                                                       | Request / Response |
 
-
 ## Filtering Sensitive Data
 
 To [filter logs](https://www.terraform.io/plugin/log/filtering), you must configure the `context.Context` before before it is added to the `http.Request`.
@@ -199,7 +195,6 @@ if err != nil {
 }
 defer res.Body.Close()
 ```
-
 
 # Links
 
