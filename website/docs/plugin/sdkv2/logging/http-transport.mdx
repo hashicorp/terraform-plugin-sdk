@@ -27,7 +27,7 @@ To set up HTTP transport, you must create the HTTP Client to use the new transpo
 
 ### Creating the HTTP Client 
 
-Once the correct _Transport _has been created, it should be used when setting up the `http.Client` that the provider is going to use. For example, a good place to set up the client could be the `schema.Provider` `ConfigureContextFunc`:
+After you create the transport , you must use it to set up the `http.Client` for the provider. The following example sets up the client in `schema.Provider` `ConfigureContextFunc`. The client is identical to the default Golang `http.Client`, except it uses the new logging transport.
 
 ```go
 func New() (*schema.Provider, error) {
@@ -47,9 +47,6 @@ func New() (*schema.Provider, error) {
         }
     }
 }
-```
-
-This will set up a client that is identical to the default Golang `http.Client`, except it uses the new logging transport.
 
 
 ## Adding Context to HTTP Requests
