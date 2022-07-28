@@ -1,3 +1,13 @@
+# 2.20.0 (July 28, 2022)
+
+NOTES:
+
+* helper/logging: Existing `NewTransport()` is now deprecated in favour of using the new `NewLoggingHTTPTransport()` or `NewSubsystemLoggingHTTPTransport()` ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
+FEATURES:
+
+* helper/logging: New `NewLoggingHTTPTransport()` and `NewSubsystemLoggingHTTPTransport()` functions, providing `http.RoundTripper` Transport implementations that log request/response using [terraform-plugin-log](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log) ([#546](https://github.com/hashicorp/terraform-plugin-sdk/issues/546)) ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
 # 2.19.0 (July 15, 2022)
 
 NOTES:
