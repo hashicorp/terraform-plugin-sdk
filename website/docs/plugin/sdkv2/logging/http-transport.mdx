@@ -1,36 +1,31 @@
 ---
 page_title: Plugin Development - Logging HTTP Transport
 description: |-
-  SDKv2 provides a helper to easily send all the HTTP Transactions to structured logging.
+  SDKv2 provides a helper to send all the HTTP transactions to structured logging.
 ---
 
-# Background
+# HTTP Transport
 
-Since Terraform `v0.9.5`, the public interface used by Provider Developers included an _helper_ inside the package `helper/logging`: [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go), an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper). This was provided as an easy way for Terraform provider developers to add _DEBUG-level_ logging to the HTTP transactions of their provider.
+Terraform's public interface has included `helper/logging`: [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since v0.9.5. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
 
-Unfortunately this helper is designed to log the entirety of each request/response it handles, including every header and the entire body, regardless of how _sensitive_ the content is. Over time security concerns have been [raised](https://github.com/hashicorp/terraform-plugin-sdk/issues/2), and required provider developers to build [workarounds](https://github.com/hashicorp/terraform-provider-tfe/pull/479).
+We do not recommend using this original helper because it is designed to log the entirety of each request and response. This includes any sensitive content that may be present in the message header or body, presenting security concerns.
 
-The recommended way to produce logs from your provider is using **[terraform-plugin-log](https://www.terraform.io/plugin/log)** library, and that provides [log filtering](https://www.terraform.io/plugin/log/filtering) functionality. So, we built a new _RoundTripper_ to deprecate the existing one.
-
-
-# Setting up logging for HTTP Transactions
-
-SDK offers helpers to put in place logging of HTTP Transactions: it’s built on top of **[terraform-plugin-log](https://www.terraform.io/plugin/log)**, so it allows to leverage its features, without having to write the whole implementation of `http.RoundTripper`.
-
-There are 2 functions inside the package `helper/logging`, each targeting a specific logging setup that the provider developer might have chosen (see [“Writing Log Output”](https://www.terraform.io/plugin/log/writing) for details):
-
-* `NewLoggingHTTPTransport(transport http.RoundTripper)`
-* `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`
-
-Using one or the other depends on the developer, and if they want their logging to happen against the `tflog` Provider root logger, or against a `tflog` Provider [Subsystem logger](https://www.terraform.io/plugin/log/writing#subsystems). For the latter, the only thing to remember is that the `subsystem` string used with `NewSubsystemLoggingHTTPTransport()`, has to match the [pre-created subsystem logger name](https://www.terraform.io/plugin/log/writing#create-subsystems).
-
-To make use of our logging transport, there are 2 things that a provider developer should do:
-
-* Setting up the HTTP Client to use this new Transport
-* Ensuring that each HTTP Request, before being submitted to the Client, carries the configured `context.Context`, storing the desired logging configuration
+Instead, we recommend using the [terraform-plugin-log](https://www.terraform.io/plugin/log) library to produce logs for your provider. This library does not present the same security concerns and provides [log filtering](https://www.terraform.io/plugin/log/filtering) functionality. This page explains how to set up the new `RoundTripper()` helper to log HTTP Transactions with `terraform-plugin-log`. 
 
 
-## Creating HTTP Client that uses the new logging transport
+# Setting Up Logging for HTTP Transactions
+
+The recommended logging helper for SDK is built on top of [terraform-plugin-log](https://www.terraform.io/plugin/log). This lets you leverage the features from our structured logging framework without having to write an entire implementation of `http.RoundTripper`.
+
+There are two functions inside `helper/logging` that target a specific logging setup for your provider. Refer to [“Writing Log Output”](https://www.terraform.io/plugin/log/writing) for details.
+
+* `NewLoggingHTTPTransport(transport http.RoundTripper)`: Use this method when you want logging against the `tflog` Provider root logger.
+* `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`: Use this method when you want logging against a `tflog` Provider [Subsystem logger](https://www.terraform.io/plugin/log/writing#subsystems). The `subsystem` string you use with `NewSubsystemLoggingHTTPTransport()` must match the [pre-created subsystem logger name](https://www.terraform.io/plugin/log/writing#create-subsystems).
+
+To set up HTTP transport, you must create the HTTP Client to use the new transport and then add logging configuration to the HTTP request context.
+
+
+### Creating the HTTP Client 
 
 Once the correct _Transport _has been created, it should be used when setting up the `http.Client` that the provider is going to use. For example, a good place to set up the client could be the `schema.Provider` `ConfigureContextFunc`:
 
@@ -57,11 +52,11 @@ func New() (*schema.Provider, error) {
 This will set up a client that is identical to the default Golang `http.Client`, except it uses the new logging transport.
 
 
-## Sending HTTP Requests with the appropriate Context
+## Adding Context to HTTP Requests
 
-All calls to `tflog` package functionality must use an SDK provided `context.Context`, which stores the logging implementation. Providers written with `terraform-plugin-sdk` must use context-aware functionality, such as the [`helper/schema.Resource` type `ReadContext` field](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Resource.ReadContext).
+All calls to the `tflog` package must contain an SDK provided `context.Context` that stores the logging implementation. Providers written with `terraform-plugin-sdk` must use context-aware functionality, such as the [`helper/schema.Resource` type `ReadContext` field](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Resource.ReadContext).
 
-Use [`http.NewRequestWithContext()` function](https://pkg.go.dev/net/http#NewRequestWithContext) to create an HTTP request that includes the logging configuration from the `context.Context`. For example:
+The following example uses [`http.NewRequestWithContext()` function](https://pkg.go.dev/net/http#NewRequestWithContext) to create an HTTP request that includes the logging configuration from the `context.Context`. 
 
 ```go
 // inside a context-aware Resource function
@@ -77,12 +72,16 @@ if err != nil {
 defer res.Body.Close()
 ```
 
-Use the [`(http.Request).WithContext()` method](https://pkg.go.dev/net/http#Request.WithContext) to set the context for the `http.Request` if the request is generated separate from where the `context.Context` is available.
+Use the [`(http.Request).WithContext()` method](https://pkg.go.dev/net/http#Request.WithContext) to set the context for the `http.Request` if the request is generated separately from where the `context.Context` is available.
 
 
-## Log format for an HTTP Transaction
+## HTTP Transaction Log Format
 
-Each HTTP Transaction processed by the new logging transport, will result in 2 log entries. Here is how the log for the HTTP Request towards [https://terraform.io](https://terraform.io) looks like:
+The logging transport produces two log entries for each HTTP transaction: one for the request and one for the response. 
+
+### Request Example
+
+The following example shows a log generated from an HTTP Request to [https://terraform.io](https://terraform.io).
 
 ```text
 2022-07-26T18:54:08.880+0100 [DEBUG] provider: Sending HTTP Request: Accept-Encoding=gzip Content-Length=0 \
@@ -91,7 +90,7 @@ Each HTTP Transaction processed by the new logging transport, will result in 2 l
     tf_http_req_uri=/ tf_http_req_version=HTTP/1.1 tf_http_trans_id=7e80e48d-8f32-f527-1412-52a8c84359e7
 ```
 
-And, if [logging in JSON format](https://www.terraform.io/internals/debugging) is enabled:
+The following example shows the same logs after you enable [logging in JSON format](https://www.terraform.io/internals/debugging).
 
 ```json
 {
@@ -114,7 +113,9 @@ And, if [logging in JSON format](https://www.terraform.io/internals/debugging) i
 }
 ```
 
-And the corresponding HTTP Response:
+### Response Example
+
+The following example shows logs from a [https://terraform.io](https://terraform.io) HTTP response.
 
 ```text
 2022-07-26T18:54:10.734+0100 [DEBUG] provider: Received HTTP Response: Age=9 \
@@ -128,7 +129,7 @@ And the corresponding HTTP Response:
     tf_http_trans_id=7e80e48d-8f32-f527-1412-52a8c84359e7
 ```
 
-And in JSON format:
+the following example shows the same logs in JSON format.
 
 ```json
 {
@@ -160,12 +161,14 @@ And in JSON format:
 }
 ```
 
-The log contains various parts, represented as [fields](https://www.terraform.io/plugin/log/writing#fields) in the JSON format above. It’s important to familiarize yourself with those:
+### Log Information
+
+Each log contains the following information, which is represented as [fields](https://www.terraform.io/plugin/log/writing#fields) in the JSON format.
 
 |             Log field name | Description                                                                                                                                                              | Possible values                                                                                       |     Applies to     |
 |---------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|:------------------:|
 |          `tf_http_op_type` | Which HTTP operation log refers to                                                                                                                                       | [`request`, `response`]                                                                               | Request / Response |
-|         `tf_http_trans_id` | Unique identifier used by Request and Response that belong to the same HTTP Transaction.                                                                                 | A universally unique identifier ([UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)) | Request / Response |
+|         `tf_http_trans_id` | Unique identifier used by Request and Response that belong to the same HTTP Transaction                                                                                 | A universally unique identifier ([UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)) | Request / Response |
 |         `tf_http_req_body` | Request body                                                                                                                                                             |                                                                                                       |      Request       |
 |       `tf_http_req_method` | Request method                                                                                                                                                           | A canonical [HTTP methods](https://developer.mozilla.org/en-US/docs/Web/HTTP/Method)                  |      Request       |
 |          `tf_http_req_uri` | Request URI                                                                                                                                                              | Ex. `"/path"`                                                                                         |      Request       |
@@ -174,14 +177,14 @@ The log contains various parts, represented as [fields](https://www.terraform.io
 |  `tf_http_res_status_code` | Response status code                                                                                                                                                     | A canonical [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)              |      Response      |
 | `tf_http_res_status_reason | Response status reason                                                                                                                                                   | Canonical textual description of the corresponding `tf_http_res_status_code`                          |      Response      |
 |      `tf_http_res_version` | Response HTTP version                                                                                                                                                    | Ex. `"HTTP/2.0"`                                                                                      |      Response      |
-|             (Other fields) | Request / Response headers. One field per header. If header contains a single value, field value will be set to that. Otherwise, field value will be a slice of strings. |                                                                                                       | Request / Response |
+|             (Other fields) | Request / Response headers. One field per header. If the header contains a single value, the log field value is set to that value. Otherwise, the field value is a slice of strings. |                                                                                                       | Request / Response |
 
 
-## Filtering sensitive data
+## Filtering Sensitive Data
 
-To configure [log filtering](https://www.terraform.io/plugin/log/filtering) in the HTTP Transport to the provider needs, all it is required is to configure the `context.Context` before it's set in the `http.Request`.
+To [filter logs](https://www.terraform.io/plugin/log/filtering), you must configure the `context.Context` before before it is added to the `http.Request`.
 
-For example, when using `NewSubsystemLoggingHTTPTransport()` to log our HTTP Transactions, to mask all the header values of the HTTP Requests containing an `Authorization` and `Proxy-Authorization` credentials:
+The following example masks all the header values of HTTP Requests containing an `Authorization` and `Proxy-Authorization` credentials.
 
 ```go
 // inside a context-aware Resource function

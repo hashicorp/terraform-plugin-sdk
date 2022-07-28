@@ -1,13 +1,12 @@
 ---
 page_title: Plugin Development - Logging
 description: |-
-  Producing high quality logs can make a huge difference when trying to debug an issue.
-  Learn more about how to set-up logging and write meaningful logs.
+  High-quality logs are important when debugging your provider. Learn to set-up logging and write meaningful logs.
 ---
 
 # Logging
 
-Terraform Plugin SDKv2 integrates with a [structured logging framework](https://www.terraform.io/plugin/log): [terraform-plugin-log](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log). This plays a crucial role in building providers that facilitate timely [debugging](https://www.terraform.io/plugin/debugging) of issues.
+Terraform Plugin SDKv2 integrates with the structured logging framework [terraform-plugin-log](https://www.terraform.io/plugin/log). High-quality logs are critical to quickly [debugging your provider](https://www.terraform.io/plugin/debugging).
 
 ## Managing Log Output
 
@@ -19,8 +18,8 @@ Learn how to [implement code in provider logic](https://www.terraform.io/plugin/
 
 ## Filtering Log Output
 
-Learn how to [implement code in provider logic](https://www.terraform.io/plugin/log/filtering) to mask certain log messages and structured log fields or omit logs entirely.
+Learn how to [implement code in provider logic](https://www.terraform.io/plugin/log/filtering) to omit logs or mask specific log messages and structured log fields.
 
 ## Log HTTP Transactions
 
-Learn how to [set up the Logging HTTP Transport](./logging/http-transport) to log HTTP Transactions via the [structured logging framework](https://www.terraform.io/plugin/log).
+Learn how to [set up the Logging HTTP Transport](./logging/http-transport) to log HTTP Transactions with the [structured logging framework](https://www.terraform.io/plugin/log).
