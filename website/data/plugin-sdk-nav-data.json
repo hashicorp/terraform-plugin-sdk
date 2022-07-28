@@ -97,6 +97,19 @@
     ]
   },
   {
+    "title": "Logging",
+    "routes": [
+      {
+        "title": "Overview",
+        "path": "logging"
+      },
+      {
+        "title": "HTTP Transport",
+        "path": "logging/http-transport"
+      }
+    ]
+  },
+  {
     "title": "Testing",
     "routes": [
       { "title": "Overview", "path": "testing" },
