@@ -6,7 +6,7 @@ description: |-
 
 # HTTP Transport
 
-Terraform's public interface has included `helper/logging`: [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since v0.9.5. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
+Terraform's public interface has included `helper/logging` [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since `v0.9.5`. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
 
 We do not recommend using this original helper because it is designed to log the entirety of each request and response. This includes any sensitive content that may be present in the message header or body, presenting security concerns.
 
@@ -169,7 +169,7 @@ Each log contains the following information, which is represented as [fields](ht
 |      `tf_http_req_version` | Request HTTP version                                                                                                                                                                 | Ex. `"HTTP/1.1"`                                                                                      |      Request       |
 |         `tf_http_res_body` | Response body                                                                                                                                                                        |                                                                                                       |      Response      |
 |  `tf_http_res_status_code` | Response status code                                                                                                                                                                 | A canonical [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)              |      Response      |
-| `tf_http_res_status_reason | Response status reason                                                                                                                                                               | Canonical textual description of the corresponding `tf_http_res_status_code`                          |      Response      |
+| `tf_http_res_status_reason` | Response status reason                                                                                                                                                               | Canonical textual description of the corresponding `tf_http_res_status_code`                          |      Response      |
 |      `tf_http_res_version` | Response HTTP version                                                                                                                                                                | Ex. `"HTTP/2.0"`                                                                                      |      Response      |
 |             (Other fields) | Request / Response headers. One field per header. If the header contains a single value, the log field value is set to that value. Otherwise, the field value is a slice of strings. |                                                                                                       | Request / Response |
 
