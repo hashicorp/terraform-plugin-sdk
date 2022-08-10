@@ -721,6 +721,9 @@ func (m schemaMap) Diff(
 
 			// Preserve the DestroyTainted flag
 			result2.DestroyTainted = result.DestroyTainted
+			result2.RawConfig = result.RawConfig
+			result2.RawPlan = result.RawPlan
+			result2.RawState = result.RawState
 
 			// Reset the data to not contain state. We have to call init()
 			// again in order to reset the FieldReaders.
