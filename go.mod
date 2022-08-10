@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-plugin-sdk/v2
 
-go 1.17
+go 1.18
 
 require (
 	github.com/apparentlymart/go-cidr v1.1.0
