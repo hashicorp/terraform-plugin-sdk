@@ -81,7 +81,7 @@ The retry helper takes a timeout and a retry function.
 In the context of a `CREATE` function, once the backend responds with the desired state, invoke the `READ` function. If `READ` errors, return that error wrapped with `resource.NonRetryableError`. Otherwise, return `nil` (no error) from the retry function.
 
 ```go
-func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleInstanceCreate(d *schema.ResourceData, meta any) error {
     name := d.Get("name").(string)
     client := meta.(*ExampleClient)
     resp, err := client.CreateInstance(name)
@@ -120,7 +120,7 @@ func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) err
 Use `resource.StateChangeConf` when your resource has multiple states to progress though, you require fine grained control of retry and delay timing, or you want to ensure a minimum number of occurrences of a target state is reached (this is very common when dealing with eventually consistent APIs, where a response can reply back with an old state between calls before becoming consistent).
 
 ```go
-func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleInstanceCreate(d *schema.ResourceData, meta any) error {
     name := d.Get("name").(string)
     client := meta.(*ExampleClient)
     resp, err := client.CreateInstance(name)
@@ -135,7 +135,7 @@ func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) err
         Target: []string{
             client.ExampleInstanceStateCreateComplete,
         },
-        Refresh: func() (interface{}, string, error) {
+        Refresh: func() (any, string, error) {
             resp, err := client.DescribeInstance(name)
             if err != nil {
                 0, "", err

@@ -133,7 +133,7 @@ func resourceExampleThing() *schema.Resource {
   return &schema.Resource{
     /* ... other Resource functions ... */
     Importer: &schema.ResourceImporter{
-      State:  func(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+      State:  func(d *schema.ResourceData, meta any) ([]*schema.ResourceData, error) {
         // d.Id() here is the last argument passed to the `terraform import RESOURCE_TYPE.RESOURCE_NAME RESOURCE_ID` command
         // Here we use a function to parse the import ID (like the example above) to simplify our logic
         attribute1, attribute2, err := resourceServiceThingExampleThingParseId(d.Id())
@@ -200,7 +200,7 @@ The Terraform import framework supports importing multiple resources from a sing
 Given our fictitious example resource, if the API supported many associations with it, we could perform an API lookup during the resource import function to find those associations and add them to the Terraform state during import.
 
 ```go
-func resourceExampleThingImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+func resourceExampleThingImportState(d *schema.ResourceData, meta any) ([]*schema.ResourceData, error) {
   // Perform API lookup using the import ID (d.Id()) and save those into a variable named associations
 
   results := []*schema.ResourceData{d}
