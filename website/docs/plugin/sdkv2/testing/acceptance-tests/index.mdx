@@ -136,7 +136,7 @@ Create a [GitHub Actions workflow](https://docs.github.com/en/actions/using-work
 
 Use the [`matrix`](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix) strategy for more advanced configuration, such as running acceptance testing against multiple Terraform CLI versions.
 
-The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.17 and Terraform CLI 1.1:
+The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.18 and Terraform CLI 1.2:
 
 ```yaml
 name: Terraform Provider Tests
@@ -156,13 +156,13 @@ jobs:
     name: Acceptance Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: hashicorp/setup-terraform@v1
+          go-version: '1.18'
+      - uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: '1.1.*'
+          terraform_version: '1.2.*'
           terraform_wrapper: false
       - run: go test -v -cover ./...
         env:
@@ -171,15 +171,15 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
+          go-version: '1.18'
       - run: go test -v -cover ./...
 ```
 
 
-The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.17 and Terraform CLI 0.12 through 1.1:
+The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.18 and Terraform CLI 0.12 through 1.2:
 
 ```yaml
 name: Terraform Provider Tests
@@ -208,12 +208,13 @@ jobs:
           - '0.15.*'
           - '1.0.*'
           - '1.1.*'
+          - '1.2.*'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: hashicorp/setup-terraform@v1
+          go-version: '1.18'
+      - uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
@@ -224,10 +225,10 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
+          go-version: '1.18'
       - run: go test -v -cover ./...
 ```
 
