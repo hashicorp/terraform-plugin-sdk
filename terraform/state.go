@@ -1145,7 +1145,6 @@ func parseResourceStateKey(k string) (*ResourceStateKey, error) {
 //
 // Extra is just extra data that a provider can return that we store
 // for later, but is not exposed in any way to the user.
-//
 type ResourceState struct {
 	// This is filled in and managed by Terraform, and is the resource
 	// type itself such as "mycloud_instance". If a resource provider sets
