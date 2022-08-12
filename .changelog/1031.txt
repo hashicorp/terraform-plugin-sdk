@@ -1,0 +1,3 @@
+```release-note:enhancement
+helper/resource: `TestStep.Taint` now calls `terraform taint` command ([#1030](https://github.com/hashicorp/terraform-plugin-sdk/issues/1030))
+```

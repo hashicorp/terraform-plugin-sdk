@@ -10,8 +10,10 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestStepProviderConfig(t *testing.T) {
@@ -340,6 +342,66 @@ func TestTest_TestStep_ExternalProviders_To_ProviderFactories_StateUpgraders(t *
 			},
 		},
 	})
+}
+
+func TestTest_TestStep_Taint(t *testing.T) {
+	t.Parallel()
+
+	var idOne, idTwo string
+
+	Test(t, TestCase{
+		ExternalProviders: map[string]ExternalProvider{
+			"random": {
+				Source:            "registry.terraform.io/hashicorp/random",
+				VersionConstraint: "3.3.2",
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "random_string" "test" {
+					length = 10
+				}`,
+				Check: ComposeAggregateTestCheckFunc(
+					TestCheckResourceAttr("random_string.test", "length", "10"),
+					ExtractResourceAttr("random_string.test", "id", &idOne),
+				),
+			},
+			{
+				Taint: []string{"random_string.test"},
+				Config: `resource "random_string" "test" {
+					length = 10
+				}`,
+				Check: ComposeAggregateTestCheckFunc(
+					TestCheckResourceAttr("random_string.test", "length", "10"),
+					ExtractResourceAttr("random_string.test", "id", &idTwo),
+				),
+			},
+		},
+	})
+
+	if idOne == idTwo {
+		t.Errorf("taint is not causing destroy-create cycle, idOne == idTwo: %s == %s", idOne, idTwo)
+	}
+}
+
+func ExtractResourceAttr(resourceName string, attributeName string, attributeValue *string) TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("resource name %s not found in state", resourceName)
+		}
+
+		attrValue, ok := rs.Primary.Attributes[attributeName]
+
+		if !ok {
+			return fmt.Errorf("attribute %s not found in resource %s state", attributeName, resourceName)
+		}
+
+		*attributeValue = attrValue
+
+		return nil
+	}
 }
 
 func TestTest_TestStep_ProtoV5ProviderFactories(t *testing.T) {
