@@ -265,7 +265,7 @@ default value of `us-west` is given.
 "region": {
   Type:     schema.TypeString,
   Required: true,
-  DefaultFunc: func() (interface{}, error) {
+  DefaultFunc: func() (any, error) {
     if v := os.Getenv("PROVIDER_REGION"); v != "" {
       return v, nil
     }
@@ -319,7 +319,7 @@ In this example, the `StateFunc` converts a string value to all lower case.
   Type:     schema.TypeString,
   ForceNew: true,
   Required: true,
-  StateFunc: func(val interface{}) string {
+  StateFunc: func(val any) string {
     return strings.ToLower(val.(string))
   },
 },
@@ -361,7 +361,7 @@ In this example, the `ValidateFunc` ensures the integer provided is a value betw
 "amount": &schema.Schema{
  Type:     schema.TypeInt,
  Required: true,
- ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+ ValidateFunc: func(val any, key string) (warns []string, errs []error) {
    v := val.(int)
    if v < 0 || v > 10 {
      errs = append(errs, fmt.Errorf("%q must be between 0 and 10 inclusive, got: %d", key, v))
@@ -399,7 +399,7 @@ In this example, the `ValidateDiagFunc` ensures the string is `abc`.
 "sample": &schema.Schema{
  Type:             schema.TypeString,
  Required:         true,
- ValidateDiagFunc: func(v interface{}, p cty.Path) diag.Diagnostics {
+ ValidateDiagFunc: func(v any, p cty.Path) diag.Diagnostics {
 		value := v.(string)
     expected := "abc"
 		var diags diag.Diagnostics

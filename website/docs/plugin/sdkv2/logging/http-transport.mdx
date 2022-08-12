@@ -32,7 +32,7 @@ func New() (*schema.Provider, error) {
     return &schema.Provider{
         // omitting the rest of the schema definition
 
-        ConfigureContextFunc: func (ctx context.Context, rsc *schema.ResourceData) (interface{}, diag.Diagnostics) {
+        ConfigureContextFunc: func (ctx context.Context, rsc *schema.ResourceData) (any, diag.Diagnostics) {
 
             // omitting provider-specific configuration logic
 

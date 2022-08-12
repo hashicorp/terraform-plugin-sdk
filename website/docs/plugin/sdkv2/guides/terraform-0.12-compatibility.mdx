@@ -225,7 +225,7 @@ each time certain other attributes are updated, you can use
 to reflect that in the plan:
 
 ```go
-    CustomizeDiff: customdiff.ComputedIf("version", func(d *schema.ResourceDiff, meta interface{}) bool {
+    CustomizeDiff: customdiff.ComputedIf("version", func(d *schema.ResourceDiff, meta any) bool {
         return d.HasChange("content") || d.HasChange("content_type")
     })
 ```

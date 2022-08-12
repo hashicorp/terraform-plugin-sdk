@@ -54,7 +54,7 @@ DiffSuppressFunc SchemaDiffSuppressFunc
 //
 // If either of these is set, then the user won't be asked for input
 // for this key if the default is not nil.
-Default     interface{}
+Default     any
 DefaultFunc SchemaDefaultFunc
 
 // Description is used as the description for docs or asking for user
@@ -90,7 +90,7 @@ StateFunc SchemaStateFunc
 // *Resource. If it is *Schema, the element type is just a simple value.
 // If it is *Resource, the element type is a complex structure,
 // potentially with its own lifecycle.
-Elem interface{}
+Elem any
 
 // The following fields are only set for a TypeList or TypeSet.
 //
@@ -159,7 +159,7 @@ Deprecated string
 Removed string
 
 // ValidateFunc allows individual fields to define arbitrary validation
-// logic. It is yielded the provided config value as an interface{} that is
+// logic. It is yielded the provided config value as an any that is
 // guaranteed to be of the proper Schema type, and it can yield warnings or
 // errors based on inspection of that value.
 //
