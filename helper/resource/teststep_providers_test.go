@@ -350,30 +350,39 @@ func TestTest_TestStep_Taint(t *testing.T) {
 	var idOne, idTwo string
 
 	Test(t, TestCase{
-		ExternalProviders: map[string]ExternalProvider{
-			"random": {
-				Source:            "registry.terraform.io/hashicorp/random",
-				VersionConstraint: "3.3.2",
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_id": {
+							CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								d.SetId(time.Now().String())
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							Schema: map[string]*schema.Schema{},
+						},
+					},
+				}, nil
 			},
 		},
 		Steps: []TestStep{
 			{
-				Config: `resource "random_string" "test" {
-					length = 10
-				}`,
+				Config: `resource "random_id" "test" {}`,
 				Check: ComposeAggregateTestCheckFunc(
-					TestCheckResourceAttr("random_string.test", "length", "10"),
-					ExtractResourceAttr("random_string.test", "id", &idOne),
+					extractResourceAttr("random_id.test", "id", &idOne),
 				),
 			},
 			{
-				Taint: []string{"random_string.test"},
-				Config: `resource "random_string" "test" {
-					length = 10
-				}`,
+				Taint: []string{"random_id.test"},
+				Config: `resource "random_id" "test" {}`,
 				Check: ComposeAggregateTestCheckFunc(
-					TestCheckResourceAttr("random_string.test", "length", "10"),
-					ExtractResourceAttr("random_string.test", "id", &idTwo),
+					extractResourceAttr("random_id.test", "id", &idTwo),
 				),
 			},
 		},
@@ -384,7 +393,7 @@ func TestTest_TestStep_Taint(t *testing.T) {
 	}
 }
 
-func ExtractResourceAttr(resourceName string, attributeName string, attributeValue *string) TestCheckFunc {
+func extractResourceAttr(resourceName string, attributeName string, attributeValue *string) TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 

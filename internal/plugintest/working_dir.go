@@ -310,7 +310,7 @@ func (wd *WorkingDir) Taint(ctx context.Context, address string) error {
 
 	err := wd.tf.Taint(context.Background(), address)
 
-	logging.HelperResourceTrace(ctx, "Called Terraform CLI import command")
+	logging.HelperResourceTrace(ctx, "Called Terraform CLI taint command")
 
 	return err
 }
