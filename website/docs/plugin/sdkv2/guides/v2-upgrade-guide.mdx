@@ -113,8 +113,8 @@ context-aware versions (`helper/schema.CreateContextFunc`,
 deprecated, and we recommend you upgrade to the context-aware versions to get
 their improvements, but the old versions will continue working for now.
 Upgrading involves changing your function signature from
-`func(*helper/schema.ResourceData, interface{}) error` to
-`func(context.Context, *helper/schema.ResourceData, interface{})
+`func(*helper/schema.ResourceData, any) error` to
+`func(context.Context, *helper/schema.ResourceData, any)
 diag.Diagnostics`. (We’ll talk about `diag.Diagnostics` in the next section.)
 
 Not everything could have this backwards compatibility, however; some functions
@@ -141,7 +141,7 @@ This exposes diagnostics support when creating, reading, updating, deleting,
 and validating your resources.
 
 ```go
-func Create(ctx context.Context, *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func Create(ctx context.Context, *schema.ResourceData, meta any) diag.Diagnostics {
     // do some stuff
     if err != nil {
         // this is the standard way to convert a Go error to Diagnostics

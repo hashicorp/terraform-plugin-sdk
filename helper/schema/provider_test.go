@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+const invalidDurationErrMsg = "time: invalid duration \"invalid\""
+
 func TestProviderGetSchema(t *testing.T) {
 	// This functionality is already broadly tested in core_schema_test.go,
 	// so this is just to ensure that the call passes through correctly.
