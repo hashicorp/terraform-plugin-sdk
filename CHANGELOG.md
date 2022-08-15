@@ -1,3 +1,12 @@
+# 2.21.0 (August 15, 2022)
+
+NOTES:
+* This Go module has been updated to Go 1.18 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1027](https://github.com/hashicorp/terraform-plugin-sdk/issues/1027))
+
+BUG FIXES:
+* helper/resource: Fixed `TestStep` type `Taint` field usage to properly recreate resources ([#1031](https://github.com/hashicorp/terraform-plugin-sdk/issues/1031))
+* helper/schema: Ensured `RawConfig`, `RawPlan`, and `RawState` are correctly copied during planning with recreation ([#1024](https://github.com/hashicorp/terraform-plugin-sdk/issues/1024))
+
 # 2.20.0 (July 28, 2022)
 
 NOTES:
