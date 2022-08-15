@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
@@ -379,7 +380,7 @@ func TestTest_TestStep_Taint(t *testing.T) {
 				),
 			},
 			{
-				Taint: []string{"random_id.test"},
+				Taint:  []string{"random_id.test"},
 				Config: `resource "random_id" "test" {}`,
 				Check: ComposeAggregateTestCheckFunc(
 					extractResourceAttr("random_id.test", "id", &idTwo),
