@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestStepProviderConfig(t *testing.T) {
@@ -340,6 +343,75 @@ func TestTest_TestStep_ExternalProviders_To_ProviderFactories_StateUpgraders(t *
 			},
 		},
 	})
+}
+
+func TestTest_TestStep_Taint(t *testing.T) {
+	t.Parallel()
+
+	var idOne, idTwo string
+
+	Test(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_id": {
+							CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								d.SetId(time.Now().String())
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							Schema: map[string]*schema.Schema{},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "random_id" "test" {}`,
+				Check: ComposeAggregateTestCheckFunc(
+					extractResourceAttr("random_id.test", "id", &idOne),
+				),
+			},
+			{
+				Taint:  []string{"random_id.test"},
+				Config: `resource "random_id" "test" {}`,
+				Check: ComposeAggregateTestCheckFunc(
+					extractResourceAttr("random_id.test", "id", &idTwo),
+				),
+			},
+		},
+	})
+
+	if idOne == idTwo {
+		t.Errorf("taint is not causing destroy-create cycle, idOne == idTwo: %s == %s", idOne, idTwo)
+	}
+}
+
+func extractResourceAttr(resourceName string, attributeName string, attributeValue *string) TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+
+		if !ok {
+			return fmt.Errorf("resource name %s not found in state", resourceName)
+		}
+
+		attrValue, ok := rs.Primary.Attributes[attributeName]
+
+		if !ok {
+			return fmt.Errorf("attribute %s not found in resource %s state", attributeName, resourceName)
+		}
+
+		*attributeValue = attrValue
+
+		return nil
+	}
 }
 
 func TestTest_TestStep_ProtoV5ProviderFactories(t *testing.T) {

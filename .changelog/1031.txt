@@ -1,0 +1,3 @@
+```release-note:bug
+helper/resource: Fixed `TestStep` type `Taint` field usage to properly recreate resources
+```
