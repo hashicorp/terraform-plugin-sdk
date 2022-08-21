@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 }
 
 // sharedClientForRegion returns a common provider client configured for the specified region
-func sharedClientForRegion(region string) (interface{}, error) {
+func sharedClientForRegion(region string) (any, error) {
   ...
   return client, nil
 }

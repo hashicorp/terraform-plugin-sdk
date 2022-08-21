@@ -40,6 +40,68 @@
       }
     ]
   },
+  {
+    "title": "Logging",
+    "routes": [
+      {
+        "title": "Overview",
+        "path": "logging"
+      },
+      {
+        "title": "Writing Logs",
+        "href": "/plugin/log/writing"
+      },
+      {
+        "title": "Filtering Logs",
+        "href": "/plugin/log/filtering"
+      },
+      {
+        "title": "HTTP Transport",
+        "path": "logging/http-transport"
+      }
+    ]
+  },
+  {
+    "title": "Testing",
+    "routes": [
+      { "title": "Overview", "path": "testing" },
+      {
+        "title": "Acceptance Testing",
+        "routes": [
+          {
+            "title": "Overview",
+            "path": "testing/acceptance-tests"
+          },
+          {
+            "title": "Test Cases",
+            "path": "testing/acceptance-tests/testcase"
+          },
+          {
+            "title": "Test Steps",
+            "path": "testing/acceptance-tests/teststep"
+          },
+          {
+            "title": "Sweepers",
+            "path": "testing/acceptance-tests/sweepers"
+          }
+        ]
+      },
+      {
+        "title": "Testing API",
+        "path": "testing/testing-api",
+        "hidden": true
+      },
+      {
+        "title": "Testing Patterns",
+        "path": "testing/testing-patterns",
+        "hidden": true
+      },
+      {
+        "title": "Unit Testing",
+        "path": "testing/unit-testing"
+      }
+    ]
+  },
   { "title": "Debugging Providers", "path": "debugging" },
   {
     "title": "Upgrade Guides",
@@ -93,47 +155,6 @@
       {
         "title": "Writing Non-Go Providers",
         "path": "best-practices/other-languages"
-      }
-    ]
-  },
-  {
-    "title": "Testing",
-    "routes": [
-      { "title": "Overview", "path": "testing" },
-      {
-        "title": "Acceptance Testing",
-        "routes": [
-          {
-            "title": "Overview",
-            "path": "testing/acceptance-tests"
-          },
-          {
-            "title": "Test Cases",
-            "path": "testing/acceptance-tests/testcase"
-          },
-          {
-            "title": "Test Steps",
-            "path": "testing/acceptance-tests/teststep"
-          },
-          {
-            "title": "Sweepers",
-            "path": "testing/acceptance-tests/sweepers"
-          }
-        ]
-      },
-      {
-        "title": "Testing API",
-        "path": "testing/testing-api",
-        "hidden": true
-      },
-      {
-        "title": "Testing Patterns",
-        "path": "testing/testing-patterns",
-        "hidden": true
-      },
-      {
-        "title": "Unit Testing",
-        "path": "testing/unit-testing"
       }
     ]
   }

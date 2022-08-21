@@ -1,3 +1,39 @@
+# 2.21.0 (August 15, 2022)
+
+NOTES:
+* This Go module has been updated to Go 1.18 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1027](https://github.com/hashicorp/terraform-plugin-sdk/issues/1027))
+
+BUG FIXES:
+* helper/resource: Fixed `TestStep` type `Taint` field usage to properly recreate resources ([#1031](https://github.com/hashicorp/terraform-plugin-sdk/issues/1031))
+* helper/schema: Ensured `RawConfig`, `RawPlan`, and `RawState` are correctly copied during planning with recreation ([#1024](https://github.com/hashicorp/terraform-plugin-sdk/issues/1024))
+
+# 2.20.0 (July 28, 2022)
+
+NOTES:
+
+* helper/logging: Existing `NewTransport()` is now deprecated in favour of using the new `NewLoggingHTTPTransport()` or `NewSubsystemLoggingHTTPTransport()` ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
+FEATURES:
+
+* helper/logging: New `NewLoggingHTTPTransport()` and `NewSubsystemLoggingHTTPTransport()` functions, providing `http.RoundTripper` Transport implementations that log request/response using [terraform-plugin-log](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log) ([#546](https://github.com/hashicorp/terraform-plugin-sdk/issues/546)) ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
+# 2.19.0 (July 15, 2022)
+
+NOTES:
+
+* The underlying `terraform-plugin-log` dependency has been updated to v0.6.0, which includes log filtering support and breaking changes of `With()` to `SetField()` function names. Any provider logging which calls those functions may require updates. ([#1003](https://github.com/hashicorp/terraform-plugin-sdk/issues/1003))
+
+# 2.18.0 (July 5, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Added `TF_ACC_LOG`, `TF_LOG_CORE`, and `TF_LOG_PROVIDER` environment variable handling for Terraform versions 0.15 and later ([#993](https://github.com/hashicorp/terraform-plugin-sdk/issues/993))
+* helper/schema: Added sdk.proto logger request duration and response diagnostics logging ([#996](https://github.com/hashicorp/terraform-plugin-sdk/issues/996))
+
+BUG FIXES:
+
+* helper/resource: Ensured errors are always logged. ([#983](https://github.com/hashicorp/terraform-plugin-sdk/issues/983))
+
 # 2.17.0 (May 31, 2022)
 
 NOTES:

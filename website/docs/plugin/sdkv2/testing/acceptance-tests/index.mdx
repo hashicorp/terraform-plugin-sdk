@@ -136,7 +136,7 @@ Create a [GitHub Actions workflow](https://docs.github.com/en/actions/using-work
 
 Use the [`matrix`](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix) strategy for more advanced configuration, such as running acceptance testing against multiple Terraform CLI versions.
 
-The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.17 and Terraform CLI 1.1:
+The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.18 and Terraform CLI 1.2:
 
 ```yaml
 name: Terraform Provider Tests
@@ -156,13 +156,13 @@ jobs:
     name: Acceptance Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: hashicorp/setup-terraform@v1
+          go-version: '1.18'
+      - uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: '1.1.*'
+          terraform_version: '1.2.*'
           terraform_wrapper: false
       - run: go test -v -cover ./...
         env:
@@ -171,15 +171,15 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
+          go-version: '1.18'
       - run: go test -v -cover ./...
 ```
 
 
-The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.17 and Terraform CLI 0.12 through 1.1:
+The following example workflow runs acceptance testing for the provider using the latest patch versions of Go 1.18 and Terraform CLI 0.12 through 1.2:
 
 ```yaml
 name: Terraform Provider Tests
@@ -208,12 +208,13 @@ jobs:
           - '0.15.*'
           - '1.0.*'
           - '1.1.*'
+          - '1.2.*'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
-      - uses: hashicorp/setup-terraform@v1
+          go-version: '1.18'
+      - uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
@@ -224,10 +225,10 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
+          go-version: '1.18'
       - run: go test -v -cover ./...
 ```
 
@@ -238,14 +239,40 @@ A number of environment variables are available to control aspects of acceptance
 | Environment Variable Name | Default | Description |
 |---------------------------|---------|-------------|
 | `TF_ACC` | N/A | Set to any value to enable acceptance testing via the [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest) and [`helper/resource.Test()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#Test) functions. |
-| `TF_ACC_LOG_PATH` | N/A | Set a path for Terraform logs during testing. Refer to `TF_LOG_PATH_MASK` to configure individual log files per test. |
 | `TF_ACC_PROVIDER_HOST`: | `registry.terraform.io` | Set the hostname of the provider under test, such as `example.com` in the `example.com/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](https://www.terraform.io/language/settings#specifying-provider-requirements). |
 | `TF_ACC_PROVIDER_NAMESPACE` | `hashicorp` | Set the namespace of the provider under test, such as `myorg` in the `registry.terraform.io/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](https://www.terraform.io/language/settings#specifying-provider-requirements). |
 | `TF_ACC_STATE_LINEAGE` | N/A | Set to `1` to enable state lineage debug logs, which are normally suppressed during acceptance testing. |
 | `TF_ACC_TEMP_DIR` | Operating system specific via [`os.TempDir()`](https://pkg.go.dev/os#TempDir) | Set a temporary directory used for testing files and installing Terraform CLI, if installation is required. |
 | `TF_ACC_TERRAFORM_PATH` | N/A | Set the path to a Terraform CLI binary on the local filesystem to be used during testing. It must be executable. If not found and `TF_ACC_TERRAFORM_VERSION` is not set, an error is returned. |
 | `TF_ACC_TERRAFORM_VERSION` | N/A | Set the exact version of Terraform CLI to automatically install into `TF_ACC_TEMP_DIR`. For example, `1.1.6` or `v1.0.11`. |
-| `TF_LOG_PATH_MASK` | N/A | Set a file path containing the string `%s`, which is replaced with the test name, to write a separate log file per test. Refer to `TF_ACC_LOG_PATH` to configure a single log file for all tests. |
+
+### Logging Environment Variables
+
+A number of environment variables available to control logging aspects during acceptance test execution. Some of these modify or replace the production behaviors defined in [managing provider log output](/plugin/log/managing) and [debugging Terraform](/internals/debugging).
+
+#### Logging Levels
+
+| Environment Variable Name | Default | Description |
+|---------------------------|---------|-------------|
+| `TF_ACC_LOG` | N/A | Set the `TF_LOG` environment variable used by Terraform CLI while testing. If set, overrides `TF_LOG_CORE`. Use `TF_LOG_CORE` and `TF_LOG_PROVIDER` to configure separate levels for Terraform CLI logging. |
+| `TF_LOG` | N/A | Set the log level for the Go standard library `log` package. If set to any level, sets the `TRACE` log level for any SDK and provider logs written by [`terraform-plugin-log`](/plugin/log/writing). Use the `TF_LOG_SDK*` and `TF_LOG_PROVIDER_*` environment variables described in [managing log output](/plugin/log/managing) to decrease or disable SDK and provider logs written by [`terraform-plugin-log`](/plugin/log/writing). Use `TF_ACC_LOG`, `TF_LOG_CORE`, or `TF_LOG_PROVIDER` environment variables to set the logging levels used by Terraform CLI while testing. |
+| `TF_LOG_CORE` | `TF_ACC_LOG` | Set the `TF_LOG_CORE` environment variable used by Terraform CLI logging of graph operations and other core functionality while testing. If `TF_ACC_LOG` is set, this setting has no effect. Use `TF_LOG_PROVIDER` to configure a separate level for Terraform CLI logging of external providers while testing (e.g. defined by the `TestCase` or `TestStep` type `ExternalProviders` field). |
+| `TF_LOG_PROVIDER` | `TF_ACC_LOG` | Set the `TF_LOG_PROVIDER` environment variable used by Terraform CLI logging of external providers while testing (e.g. defined by the `TestCase` or `TestStep` type `ExternalProviders` field). If set, overrides `TF_ACC_LOG`. Use `TF_LOG_CORE` to configure a separate level for Terraform CLI logging of graph operations and other core functionality while testing. |
+
+#### Logging Output
+
+By default, there is no logging output when running the `go test` command. Use one of the below environment variables to output logs to the local filesystem or use the `go test` command `-v` (verbose) flag to view logging without writing file(s).
+
+| Environment Variable Name | Default | Description |
+|---------------------------|---------|-------------|
+| `TF_ACC_LOG_PATH` | N/A | Set a file path for all logs during testing. Use `TF_LOG_PATH_MASK` to configure individual log files per test. |
+| `TF_LOG_PATH_MASK` | N/A | Set a file path containing the string `%s`, which is replaced with the test name, to write a separate log file per test. Use `TF_ACC_LOG_PATH` to configure a single log file for all tests. |
+
+The logs associated with each test can output across incorrect files as each new test starts if the provider is using the Go standard library [`log` package](https://pkg.go.dev/log) for logging, acceptance testing that uses [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest), and `TF_LOG_PATH_MASK`. To resolve this issue, choose one of the following approaches:
+
+* Use [`terraform-plugin-log`](/plugin/log/writing) based logging. Each logger will be correctly associated with each test name output.
+* Wrap testing execution so that each test is individually executed with `go test`. Since each `go test` process will have its own `log` package output handling, logging will be correctly associated with each test name output.
+* Replace [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest) with [`helper/resource.Test()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#Test) and ensure [`(*testing.T).Parallel()`](https://pkg.go.dev/testing#T.Parallel) is not called in tests. This serializes all testing so each test will be associated with each test name output.
 
 ## Troubleshooting
 

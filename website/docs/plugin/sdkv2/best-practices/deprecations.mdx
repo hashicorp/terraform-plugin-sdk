@@ -96,7 +96,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     existingAttribute := d.Get("existing_attribute").(string)
@@ -106,7 +106,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("existing_attribute", /* ... */)
@@ -115,7 +115,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     existingAttribute := d.Get("existing_attribute").(string)
@@ -155,7 +155,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     existingAttribute, existingAttributeOk := d.GetOk("existing_attribute")
@@ -173,7 +173,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if _, ok := d.GetOk("existing_attribute"); ok {
@@ -186,7 +186,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     existingAttribute, existingAttributeOk := d.GetOk("existing_attribute")
@@ -227,7 +227,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     newAttribute := d.Get("new_attribute").(string)
@@ -237,7 +237,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("new_attribute", /* ... */)
@@ -246,7 +246,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     newAttribute := d.Get("new_attribute").(string)
@@ -304,7 +304,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("existing_attribute"); ok {
@@ -315,7 +315,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("existing_attribute", /* ... */)
@@ -324,7 +324,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("existing_attribute"); ok {
@@ -365,7 +365,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("existing_attribute"); ok {
@@ -378,7 +378,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("existing_attribute"); ok {
@@ -391,7 +391,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("existing_attribute"); ok {
@@ -427,7 +427,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetCreate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("new_attribute"); ok {
@@ -438,7 +438,7 @@ func resourceExampleWidgetCreate(d *schema.ResourceData, meta interface{}) error
     return resourceExampleWidgetRead(d, meta)
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("new_attribute", /* ... */)
@@ -447,7 +447,7 @@ func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func resourceExampleWidgetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetUpdate(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     if v, ok := d.GetOk("new_attribute"); ok {
@@ -494,7 +494,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("existing_attribute", /* ... */)
@@ -529,7 +529,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("existing_attribute", /* ... */)
@@ -560,7 +560,7 @@ func resourceExampleWidget() *schema.Resource {
     }
 }
 
-func resourceExampleWidgetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleWidgetRead(d *schema.ResourceData, meta any) error {
     // ... other logic ...
 
     d.Set("new_attribute", /* ... */)
@@ -647,10 +647,10 @@ func resourceExampleWidget() *schema.Resource {
     return &schema.Resource{
         // ... other configuration ...
 
-        Create: func(d *schema.ResourceData, meta interface{}) error {
+        Create: func(d *schema.ResourceData, meta any) error {
             return errors.New("use example_thing resource instead")
         },
-        Read: func(d *schema.ResourceData, meta interface{}) error {
+        Read: func(d *schema.ResourceData, meta any) error {
             return errors.New("use example_thing resource instead")
         },
     }
@@ -759,10 +759,10 @@ func resourceExampleExistingWidget() *schema.Resource {
     return &schema.Resource{
         // ... other configuration ...
 
-        Create: func(d *schema.ResourceData, meta interface{}) error {
+        Create: func(d *schema.ResourceData, meta any) error {
             return errors.New("use example_new_widget resource instead")
         },
-        Read: func(d *schema.ResourceData, meta interface{}) error {
+        Read: func(d *schema.ResourceData, meta any) error {
             return errors.New("use example_new_widget resource instead")
         },
     }

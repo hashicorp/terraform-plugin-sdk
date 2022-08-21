@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+const invalidDurationErrMsg = "time: invalid duration \"invalid\""
+
 func TestProviderGetSchema(t *testing.T) {
 	// This functionality is already broadly tested in core_schema_test.go,
 	// so this is just to ensure that the call passes through correctly.
@@ -1002,8 +1004,7 @@ func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			os.Unsetenv(uaEnvVar)
-			os.Setenv(uaEnvVar, tc.envVarValue)
+			t.Setenv(uaEnvVar, tc.envVarValue)
 			p := &Provider{TerraformVersion: "4.5.6"}
 			givenUA := p.UserAgent(tc.providerName, tc.providerVersion)
 			if givenUA != tc.expected {
