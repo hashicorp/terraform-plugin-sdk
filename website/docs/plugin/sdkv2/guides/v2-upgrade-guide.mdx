@@ -176,9 +176,9 @@ func Create(ctx context.Context, *schema.ResourceData, meta any) diag.Diagnostic
 
 The `helper/schema.Resource` and `helper/schema.Schema` types both now have
 `Description` properties that accept strings. These properties are laying the
-groundwork for future improvements to Terraform, and will have no visible
-effect to the Terraform CLI at the moment. If you’d like to build in support
-for your provider starting now, it’s recommended that you set these properties
+groundwork for future improvements to Terraform, and has no visible
+effect to the Terraform CLI at the moment. If you want to build in support
+for your provider starting now, we recommend that you set these properties
 to whatever you would document the resource or field as in your provider documentation for the resource.
 
 You can globally set the format of the text in these fields by setting the
