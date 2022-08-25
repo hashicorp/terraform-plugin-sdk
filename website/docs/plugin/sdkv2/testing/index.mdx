@@ -10,11 +10,10 @@ description: |-
 Here we cover information needed to write successful tests for Terraform
 Plugins. Tests are a vital part of the Terraform ecosystem, verifying we can
 deliver on our mission to safely and predictably create, change, and improve
-infrastructure. Documentation for Terraform tests are broken into categories
-briefly described below. Each category has more detailed information by clicking
-on the matching item in the left navigation.
+infrastructure. Documentation for Terraform tests falls into categories
+briefly described on this page. Each category has more detailed information on a separate page within the documentation.
 
--> **Note:** Recent versions of Terraform CLI also support [developer overrides in the CLI configuration](/cli/config/config-file#development-overrides-for-provider-developers), which can be useful for manually testing providers. The acceptance testing framework uses real Terraform CLI executions, so developer overrides are only recommended as a last resort option for missing functionality.
+-> **Note:** Recent versions of Terraform CLI also support [developer overrides in the CLI configuration](/cli/config/config-file#development-overrides-for-provider-developers), which can be useful for manually testing providers. The acceptance testing framework uses real Terraform CLI executions, so we only recommend developer overrides as a last resort option for missing functionality.
 
 ## Acceptance Tests
 
@@ -46,7 +45,7 @@ For a given plugin, Acceptance Tests can be run from the root of the project by
 using a common make task:
 
 ```shell
-$ make testacc 
+$ make testacc
 ```
 
 See [Acceptance Testing](/plugin/sdkv2/testing/acceptance-tests) to learn more.
@@ -67,8 +66,3 @@ $ make test
 ```
 
 See [Unit Testing](/plugin/sdkv2/testing/unit-testing) to learn more.
-
-## Next Steps
-
-See the navigation on the left of this page for documentation and guides on
-writing tests for Terraform Plugins.
