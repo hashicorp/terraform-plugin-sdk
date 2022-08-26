@@ -939,6 +939,14 @@ func (r *Resource) ReadDataApply(
 		return nil, diag.FromErr(err)
 	}
 
+	rt := ResourceTimeout{}
+	if _, ok := d.Meta[TimeoutKey]; ok {
+		if err := rt.DiffDecode(d); err != nil {
+			logging.HelperSchemaError(ctx, "Error decoding ResourceTimeout", map[string]interface{}{logging.KeyError: err})
+		}
+	}
+	data.timeouts = &rt
+
 	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := r.read(ctx, data, meta)
 	logging.HelperSchemaTrace(ctx, "Called downstream")
