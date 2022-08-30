@@ -109,9 +109,15 @@ func SerializeResourceForHash(buf *bytes.Buffer, val interface{}, resource *Reso
 			continue
 		}
 
+		innerVal := m[k]
+		if innerSchema.StateFunc != nil {
+			// Normalize the value used to calculate the hash so that
+			// Plan/Apply values match.
+			innerVal = innerSchema.StateFunc(innerVal)
+		}
+
 		buf.WriteString(k)
 		buf.WriteRune(':')
-		innerVal := m[k]
 		SerializeValueForHash(buf, innerVal, innerSchema)
 	}
 }
