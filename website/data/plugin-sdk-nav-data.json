@@ -36,7 +36,7 @@
       }
     ]
   },
-  {"title": "Overview", "path": "logging"},
+  {"title": "Overview", "path": "Logging"},
   {
     "title": "Testing",
     "routes": [
