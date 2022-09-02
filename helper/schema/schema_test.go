@@ -5792,10 +5792,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			Config: map[string]interface{}{
 				"old_news": hcl2shim.UnknownVariableValue,
 			},
-
-			Warnings: []string{
-				"Warning: Argument is deprecated: please use 'new_news' instead",
-			},
+			Err: false,
 		},
 
 		"Required sub-resource field": {
