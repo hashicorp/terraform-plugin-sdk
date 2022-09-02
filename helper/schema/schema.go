@@ -1735,15 +1735,7 @@ func (m schemaMap) validate(
 	// The SDK has to allow the unknown value through initially, so that
 	// Required fields set via an interpolated value are accepted.
 	if !isWhollyKnown(raw) {
-		if schema.Deprecated != "" {
-			return append(diags, diag.Diagnostic{
-				Severity:      diag.Warning,
-				Summary:       "Argument is deprecated",
-				Detail:        schema.Deprecated,
-				AttributePath: path,
-			})
-		}
-		return diags
+		return nil
 	}
 
 	err = validateConflictingAttributes(k, schema, c)
