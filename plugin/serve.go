@@ -76,8 +76,11 @@ type ServeOpts struct {
 	// the terraform-plugin-log logging sink.
 	UseTFLogSink testing.T
 
-	// ProviderAddr is the address of the provider under test, like
-	// registry.terraform.io/hashicorp/random.
+	// ProviderAddr is the address of the provider under test or debugging,
+	// such as registry.terraform.io/hashicorp/random. This value is used in
+	// the TF_REATTACH_PROVIDERS environment variable during debugging so
+	// Terraform can correctly match the provider address in the Terraform
+	// configuration to the running provider binary.
 	ProviderAddr string
 }
 
