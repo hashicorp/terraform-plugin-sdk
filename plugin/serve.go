@@ -55,6 +55,10 @@ type ServeOpts struct {
 	// information needed for Terraform to connect to the provider to stdout.
 	// os.Interrupt will be captured and used to stop the server.
 	//
+	// Ensure the ProviderAddr field is correctly set when this is enabled,
+	// otherwise the TF_REATTACH_PROVIDERS environment variable will not
+	// correctly point Terraform to the running provider binary.
+	//
 	// This option cannot be combined with TestConfig.
 	Debug bool
 
