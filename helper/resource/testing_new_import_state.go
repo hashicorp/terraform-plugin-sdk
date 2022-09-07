@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	testing "github.com/mitchellh/go-testing-interface"
+	"github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
@@ -86,8 +86,17 @@ func testStepNewImportState(ctx context.Context, t testing.T, helper *plugintest
 			t.Fatal("Cannot import state with no specified config")
 		}
 	}
-	importWd := helper.RequireNewWorkingDir(ctx, t)
-	defer importWd.Close()
+
+	var importWd *plugintest.WorkingDir
+
+	// Use the same working directory to persist the state from import
+	if step.ImportStatePersist {
+		importWd = wd
+	} else {
+		importWd = helper.RequireNewWorkingDir(ctx, t)
+		defer importWd.Close()
+	}
+
 	err = importWd.SetConfig(ctx, step.Config)
 	if err != nil {
 		t.Fatalf("Error setting test config: %s", err)
