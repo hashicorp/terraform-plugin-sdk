@@ -610,7 +610,10 @@ func TestTest_TestStep_ProviderFactories_Import_Inline(t *testing.T) {
 											val := d.Id()
 
 											d.SetId("none")
-											d.Set("result", val)
+											err := d.Set("result", val)
+											if err != nil {
+												panic(err)
+											}
 
 											return []*schema.ResourceData{d}, nil
 										},
@@ -677,7 +680,10 @@ func TestTest_TestStep_ProviderFactories_Import_InlineWithTest(t *testing.T) {
 									val := d.Id()
 
 									d.SetId("none")
-									d.Set("result", val)
+									err := d.Set("result", val)
+									if err != nil {
+										panic(err)
+									}
 
 									return []*schema.ResourceData{d}, nil
 								},
