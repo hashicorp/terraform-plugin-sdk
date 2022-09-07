@@ -610,7 +610,13 @@ func TestTest_TestStep_ProviderFactories_Import_Inline(t *testing.T) {
 											val := d.Id()
 
 											d.SetId("none")
+
 											err := d.Set("result", val)
+											if err != nil {
+												panic(err)
+											}
+
+											err = d.Set("length", len(val))
 											if err != nil {
 												panic(err)
 											}
@@ -630,16 +636,94 @@ func TestTest_TestStep_ProviderFactories_Import_Inline(t *testing.T) {
 				ImportStateCheck: composeImportStateCheck(
 					testCheckResourceAttrInstanceState("id", "none"),
 					testCheckResourceAttrInstanceState("result", "Z=:cbrJE?Ltg"),
-					testCheckNoResourceAttrInstanceState("length"),
+					testCheckResourceAttrInstanceState("length", "12"),
 				),
 			},
 		},
 	})
 }
 
-func TestTest_TestStep_ProviderFactories_Import_InlineWithTest(t *testing.T) {
+func TestTest_TestStep_ProviderFactories_Import_Inline_WithPersistMatch(t *testing.T) {
 	var result1, result2 string
 
+	t.Parallel()
+
+	Test(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_password": {
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"length": {
+									Required: true,
+									ForceNew: true,
+									Type:     schema.TypeInt,
+								},
+								"result": {
+									Type:      schema.TypeString,
+									Computed:  true,
+									Sensitive: true,
+								},
+
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+							Importer: &schema.ResourceImporter{
+								StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+									val := d.Id()
+
+									d.SetId("none")
+
+									err := d.Set("result", val)
+									if err != nil {
+										panic(err)
+									}
+
+									err = d.Set("length", len(val))
+									if err != nil {
+										panic(err)
+									}
+
+									return []*schema.ResourceData{d}, nil
+								},
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config:             `resource "random_password" "test" { length = 12 }`,
+				ResourceName:       "random_password.test",
+				ImportState:        true,
+				ImportStateId:      "Z=:cbrJE?Ltg",
+				ImportStatePersist: true,
+				ImportStateCheck: composeImportStateCheck(
+					testExtractResourceAttrInstanceState("result", &result1),
+				),
+			},
+			{
+				Config: `resource "random_password" "test" { length = 12 }`,
+				Check: ComposeTestCheckFunc(
+					testExtractResourceAttr("random_password.test", "result", &result2),
+					testCheckAttributeValuesEqual(&result1, &result2),
+				),
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ProviderFactories_Import_Inline_WithoutPersist(t *testing.T) {
 	t.Parallel()
 
 	Test(t, TestCase{
@@ -680,7 +764,13 @@ func TestTest_TestStep_ProviderFactories_Import_InlineWithTest(t *testing.T) {
 									val := d.Id()
 
 									d.SetId("none")
+
 									err := d.Set("result", val)
+									if err != nil {
+										panic(err)
+									}
+
+									err = d.Set("length", len(val))
 									if err != nil {
 										panic(err)
 									}
@@ -699,16 +789,12 @@ func TestTest_TestStep_ProviderFactories_Import_InlineWithTest(t *testing.T) {
 				ResourceName:       "random_password.test",
 				ImportState:        true,
 				ImportStateId:      "Z=:cbrJE?Ltg",
-				ImportStatePersist: true,
-				ImportStateCheck: composeImportStateCheck(
-					testExtractResourceAttrInstanceState("result", &result1),
-				),
+				ImportStatePersist: false,
 			},
 			{
 				Config: `resource "random_password" "test" { length = 12 }`,
 				Check: ComposeTestCheckFunc(
-					testExtractResourceAttr("random_password.test", "result", &result2),
-					testCheckAttributeValuesEqual(&result1, &result2),
+					TestCheckNoResourceAttr("random_password.test", "result"),
 				),
 			},
 		},
@@ -741,7 +827,7 @@ func TestTest_TestStep_ProviderFactories_Import_External(t *testing.T) {
 	})
 }
 
-func TestTest_TestStep_ProviderFactories_Import_ExternalWithTest(t *testing.T) {
+func TestTest_TestStep_ProviderFactories_Import_External_WithPersistMatch(t *testing.T) {
 	var result1, result2 string
 
 	t.Parallel()
@@ -768,6 +854,39 @@ func TestTest_TestStep_ProviderFactories_Import_ExternalWithTest(t *testing.T) {
 				Check: ComposeTestCheckFunc(
 					testExtractResourceAttr("random_password.test", "result", &result2),
 					testCheckAttributeValuesEqual(&result1, &result2),
+				),
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ProviderFactories_Import_External_WithoutPersistNonMatch(t *testing.T) {
+	var result1, result2 string
+
+	t.Parallel()
+
+	Test(t, TestCase{
+		ExternalProviders: map[string]ExternalProvider{
+			"random": {
+				Source: "registry.terraform.io/hashicorp/random",
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config:             `resource "random_password" "test" { length = 12 }`,
+				ResourceName:       "random_password.test",
+				ImportState:        true,
+				ImportStateId:      "Z=:cbrJE?Ltg",
+				ImportStatePersist: false,
+				ImportStateCheck: composeImportStateCheck(
+					testExtractResourceAttrInstanceState("result", &result1),
+				),
+			},
+			{
+				Config: `resource "random_password" "test" { length = 12 }`,
+				Check: ComposeTestCheckFunc(
+					testExtractResourceAttr("random_password.test", "result", &result2),
+					testCheckAttributeValuesDiffer(&result1, &result2),
 				),
 			},
 		},
@@ -867,6 +986,16 @@ func testCheckAttributeValuesEqual(i *string, j *string) TestCheckFunc {
 	return func(s *terraform.State) error {
 		if testStringValue(i) != testStringValue(j) {
 			return fmt.Errorf("attribute values are different, got %s and %s", testStringValue(i), testStringValue(j))
+		}
+
+		return nil
+	}
+}
+
+func testCheckAttributeValuesDiffer(i *string, j *string) TestCheckFunc {
+	return func(s *terraform.State) error {
+		if testStringValue(i) == testStringValue(j) {
+			return fmt.Errorf("attribute values are the same")
 		}
 
 		return nil
