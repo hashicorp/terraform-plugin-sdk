@@ -924,23 +924,6 @@ func testExtractResourceAttrInstanceState(attributeName string, attributeValue *
 	}
 }
 
-func testCheckNoResourceAttrInstanceState(attributeName string) ImportStateCheckFunc {
-	return func(is []*terraform.InstanceState) error {
-		if len(is) != 1 {
-			return fmt.Errorf("unexpected number of instance states: %d", len(is))
-		}
-
-		s := is[0]
-
-		_, ok := s.Attributes[attributeName]
-		if ok {
-			return fmt.Errorf("attribute %s found in instance state", attributeName)
-		}
-
-		return nil
-	}
-}
-
 func testCheckResourceAttrInstanceState(attributeName, attributeValue string) ImportStateCheckFunc {
 	return func(is []*terraform.InstanceState) error {
 		if len(is) != 1 {
