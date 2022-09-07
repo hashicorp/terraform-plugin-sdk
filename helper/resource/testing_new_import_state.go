@@ -105,13 +105,6 @@ func testStepNewImportState(ctx context.Context, t testing.T, helper *plugintest
 	logging.HelperResourceDebug(ctx, "Running Terraform CLI init and import")
 
 	err = runProviderCommand(ctx, t, func() error {
-		return importWd.Init(ctx)
-	}, importWd, providers)
-	if err != nil {
-		t.Fatalf("Error running init: %s", err)
-	}
-
-	err = runProviderCommand(ctx, t, func() error {
 		return importWd.Import(ctx, step.ResourceName, importId)
 	}, importWd, providers)
 	if err != nil {
