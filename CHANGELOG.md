@@ -1,3 +1,14 @@
+# 2.22.0 (September 8, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Add ImportStatePersist to optionally persist state generated during import ([#1052](https://github.com/hashicorp/terraform-plugin-sdk/issues/1052))
+
+BUG FIXES:
+
+* helper/schema: Delayed deprecated attribute warnings for unknown values, which may be null ([#1047](https://github.com/hashicorp/terraform-plugin-sdk/issues/1047))
+* helper/schema: Included path information in list size diagnostics for cases where Terraform does not include the configuration source ([#826](https://github.com/hashicorp/terraform-plugin-sdk/issues/826))
+
 # 2.21.0 (August 15, 2022)
 
 NOTES:
