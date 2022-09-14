@@ -49,6 +49,9 @@ const (
 	// The path to the Terraform CLI used for an acceptance test.
 	KeyTestTerraformPath = "test_terraform_path"
 
+	// Terraform plan output generated during a TestStep.
+	KeyTestTerraformPlan = "test_terraform_plan"
+
 	// The working directory of the acceptance test.
 	KeyTestWorkingDirectory = "test_working_directory"
 )
