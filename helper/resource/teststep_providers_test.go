@@ -17,6 +17,539 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func TestStepMergedConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		testCase TestCase
+		testStep TestStep
+		expected string
+	}{
+		"testcase-externalproviders-and-protov5providerfactories": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+					"localtest": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-and-protov6providerfactories": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"localtest": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-and-providerfactories": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"localtest": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-missing-source-and-versionconstraint": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {},
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+provider "test" {}
+
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-source-and-versionconstraint": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-source": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source: "registry.terraform.io/hashicorp/test",
+					},
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-externalproviders-versionconstraint": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						VersionConstraint: "1.2.3",
+					},
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-protov5providerfactories": {
+			testCase: TestCase{
+				ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+					"test": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-protov6providerfactories": {
+			testCase: TestCase{
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"test": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+		"testcase-providerfactories": {
+			testCase: TestCase{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"test": nil,
+				},
+			},
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-and-protov5providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+					"localtest": nil,
+				},
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-and-protov6providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"localtest": nil,
+				},
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-and-providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"localtest": nil,
+				},
+				Config: `
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+
+
+resource "externaltest_test" "test" {}
+
+resource "localtest_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-missing-source-and-versionconstraint": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {},
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+provider "test" {}
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-source-and-versionconstraint": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-source": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source: "registry.terraform.io/hashicorp/test",
+					},
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-versionconstraint": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						VersionConstraint: "1.2.3",
+					},
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "test" {}
+
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-protov5providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+					"test": nil,
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-protov6providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"test": nil,
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-providerfactories": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"test": nil,
+				},
+				Config: `
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+resource "test_test" "test" {}
+`,
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := testCase.testStep.mergedConfig(context.Background(), testCase.testCase)
+
+			if diff := cmp.Diff(strings.TrimSpace(got), strings.TrimSpace(testCase.expected)); diff != "" {
+				t.Errorf("unexpected difference: %s", diff)
+			}
+		})
+	}
+}
+
 func TestStepProviderConfig(t *testing.T) {
 	t.Parallel()
 
@@ -24,6 +557,81 @@ func TestStepProviderConfig(t *testing.T) {
 		testStep TestStep
 		expected string
 	}{
+		"externalproviders-and-protov5providerfactories": {
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+					"localtest": nil,
+				},
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+`,
+		},
+		"externalproviders-and-protov6providerfactories": {
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
+					"localtest": nil,
+				},
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+`,
+		},
+		"externalproviders-and-providerfactories": {
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"externaltest": {
+						Source:            "registry.terraform.io/hashicorp/externaltest",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"localtest": nil,
+				},
+			},
+			expected: `
+terraform {
+  required_providers {
+    externaltest = {
+      source = "registry.terraform.io/hashicorp/externaltest"
+      version = "1.2.3"
+    }
+  }
+}
+
+provider "externaltest" {}
+`,
+		},
 		"externalproviders-missing-source-and-versionconstraint": {
 			testStep: TestStep{
 				ExternalProviders: map[string]ExternalProvider{
@@ -220,6 +828,79 @@ func TestTest_TestStep_ExternalProviders_Error(t *testing.T) {
 				},
 			},
 		})
+	})
+}
+
+func TestTest_TestStep_ExternalProviders_NonHashiCorpNamespace(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		Steps: []TestStep{
+			{
+				ExternalProviders: map[string]ExternalProvider{
+					// This can be set to any provider outside the hashicorp namespace.
+					// bflad/scaffoldingtest happens to be a published version of
+					// terraform-provider-scaffolding-framework.
+					"scaffoldingtest": {
+						Source:            "registry.terraform.io/bflad/scaffoldingtest",
+						VersionConstraint: "0.1.0",
+					},
+				},
+				Config: `resource "scaffoldingtest_example" "test" {}`,
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ExternalProvidersAndProviderFactories_NonHashiCorpNamespace(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		Steps: []TestStep{
+			{
+				ExternalProviders: map[string]ExternalProvider{
+					// This can be set to any provider outside the hashicorp namespace.
+					// bflad/scaffoldingtest happens to be a published version of
+					// terraform-provider-scaffolding-framework.
+					"scaffoldingtest": {
+						Source:            "registry.terraform.io/bflad/scaffoldingtest",
+						VersionConstraint: "0.1.0",
+					},
+				},
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"null": func() (*schema.Provider, error) { //nolint:unparam // required signature
+						return &schema.Provider{
+							ResourcesMap: map[string]*schema.Resource{
+								"null_resource": {
+									CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										d.SetId("test")
+										return nil
+									},
+									DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										return nil
+									},
+									ReadContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+										return nil
+									},
+									Schema: map[string]*schema.Schema{
+										"triggers": {
+											Elem:     &schema.Schema{Type: schema.TypeString},
+											ForceNew: true,
+											Optional: true,
+											Type:     schema.TypeMap,
+										},
+									},
+								},
+							},
+						}, nil
+					},
+				},
+				Config: `
+					resource "null_resource" "test" {}
+					resource "scaffoldingtest_example" "test" {}
+				`,
+			},
+		},
 	})
 }
 
