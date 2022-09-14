@@ -31,6 +31,9 @@ const (
 	// The TestStep number of the test being executed. Starts at 1.
 	KeyTestStepNumber = "test_step_number"
 
+	// Terraform configuration used during acceptance testing Terraform operations.
+	KeyTestTerraformConfiguration = "test_terraform_configuration"
+
 	// The Terraform CLI logging level (TF_LOG) used for an acceptance test.
 	KeyTestTerraformLogLevel = "test_terraform_log_level"
 

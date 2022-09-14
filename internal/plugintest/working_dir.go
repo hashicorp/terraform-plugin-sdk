@@ -76,6 +76,8 @@ func (wd *WorkingDir) GetHelper() *Helper {
 // Destroy to establish the configuration. Any previously-set configuration is
 // discarded and any saved plan is cleared.
 func (wd *WorkingDir) SetConfig(ctx context.Context, cfg string) error {
+	logging.HelperResourceTrace(ctx, "Setting Terraform configuration", map[string]any{logging.KeyTestTerraformConfiguration: cfg})
+
 	outFilename := filepath.Join(wd.baseDir, ConfigFileName)
 	rmFilename := filepath.Join(wd.baseDir, ConfigFileNameJSON)
 	bCfg := []byte(cfg)
