@@ -1,3 +1,14 @@
+# 2.23.0 (September 15, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Added Terraform configuration to `TRACE` logging ([#1059](https://github.com/hashicorp/terraform-plugin-sdk/issues/1059))
+* helper/resource: Added `terraform plan` output to `TRACE` logging ([#1058](https://github.com/hashicorp/terraform-plugin-sdk/issues/1058))
+
+BUG FIXES:
+
+* helper/resource: Prevented `Inconsistent dependency lock file` errors when using `ExternalProviders` outside the `hashicorp` namespace ([#1057](https://github.com/hashicorp/terraform-plugin-sdk/issues/1057))
+
 # 2.22.0 (September 8, 2022)
 
 ENHANCEMENTS:
