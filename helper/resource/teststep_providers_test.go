@@ -1574,6 +1574,69 @@ func TestTest_TestStep_ProviderFactories_Import_External_WithoutPersistNonMatch(
 	})
 }
 
+func TestTest_TestStep_ProviderFactories_Refresh_Inline(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_password": {
+							CreateContext: func(ctx context.Context, d *schema.ResourceData, i interface{}) diag.Diagnostics {
+								d.SetId("id")
+								err := d.Set("min_special", 10)
+								if err != nil {
+									panic(err)
+								}
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								err := d.Set("min_special", 2)
+								if err != nil {
+									panic(err)
+								}
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"min_special": {
+									Computed: true,
+									Type:     schema.TypeInt,
+								},
+
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "random_password" "test" { }`,
+				Check:  TestCheckResourceAttr("random_password.test", "min_special", "10"),
+			},
+			{
+				Config:       `resource "random_password" "test" { }`,
+				RefreshState: true,
+				RefreshStateCheck: composeRefreshStateCheck(
+					testCheckResourceAttrInstanceStateRefresh("min_special", "2"),
+				),
+			},
+			{
+				Config: `resource "random_password" "test" { }`,
+				Check:  TestCheckResourceAttr("random_password.test", "min_special", "2"),
+			},
+		},
+	})
+}
+
 func composeImportStateCheck(fs ...ImportStateCheckFunc) ImportStateCheckFunc {
 	return func(s []*terraform.InstanceState) error {
 		for i, f := range fs {
@@ -1606,6 +1669,39 @@ func testExtractResourceAttrInstanceState(attributeName string, attributeValue *
 }
 
 func testCheckResourceAttrInstanceState(attributeName, attributeValue string) ImportStateCheckFunc {
+	return func(is []*terraform.InstanceState) error {
+		if len(is) != 1 {
+			return fmt.Errorf("unexpected number of instance states: %d", len(is))
+		}
+
+		s := is[0]
+
+		attrVal, ok := s.Attributes[attributeName]
+		if !ok {
+			return fmt.Errorf("attribute %s found in instance state", attributeName)
+		}
+
+		if attrVal != attributeValue {
+			return fmt.Errorf("expected: %s got: %s", attributeValue, attrVal)
+		}
+
+		return nil
+	}
+}
+
+func composeRefreshStateCheck(fs ...RefreshStateCheckFunc) RefreshStateCheckFunc {
+	return func(s []*terraform.InstanceState) error {
+		for i, f := range fs {
+			if err := f(s); err != nil {
+				return fmt.Errorf("check %d/%d error: %s", i+1, len(fs), err)
+			}
+		}
+
+		return nil
+	}
+}
+
+func testCheckResourceAttrInstanceStateRefresh(attributeName, attributeValue string) RefreshStateCheckFunc {
 	return func(is []*terraform.InstanceState) error {
 		if len(is) != 1 {
 			return fmt.Errorf("unexpected number of instance states: %d", len(is))
