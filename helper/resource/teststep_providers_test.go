@@ -1625,9 +1625,7 @@ func TestTest_TestStep_ProviderFactories_Refresh_Inline(t *testing.T) {
 			{
 				Config:       `resource "random_password" "test" { }`,
 				RefreshState: true,
-				RefreshStateCheck: composeRefreshStateCheck(
-					testCheckResourceAttrInstanceStateRefresh("min_special", "2"),
-				),
+				Check:        TestCheckResourceAttr("random_password.test", "min_special", "2"),
 			},
 			{
 				Config: `resource "random_password" "test" { }`,
@@ -1669,39 +1667,6 @@ func testExtractResourceAttrInstanceState(attributeName string, attributeValue *
 }
 
 func testCheckResourceAttrInstanceState(attributeName, attributeValue string) ImportStateCheckFunc {
-	return func(is []*terraform.InstanceState) error {
-		if len(is) != 1 {
-			return fmt.Errorf("unexpected number of instance states: %d", len(is))
-		}
-
-		s := is[0]
-
-		attrVal, ok := s.Attributes[attributeName]
-		if !ok {
-			return fmt.Errorf("attribute %s found in instance state", attributeName)
-		}
-
-		if attrVal != attributeValue {
-			return fmt.Errorf("expected: %s got: %s", attributeValue, attrVal)
-		}
-
-		return nil
-	}
-}
-
-func composeRefreshStateCheck(fs ...RefreshStateCheckFunc) RefreshStateCheckFunc {
-	return func(s []*terraform.InstanceState) error {
-		for i, f := range fs {
-			if err := f(s); err != nil {
-				return fmt.Errorf("check %d/%d error: %s", i+1, len(fs), err)
-			}
-		}
-
-		return nil
-	}
-}
-
-func testCheckResourceAttrInstanceStateRefresh(attributeName, attributeValue string) RefreshStateCheckFunc {
 	return func(is []*terraform.InstanceState) error {
 		if len(is) != 1 {
 			return fmt.Errorf("unexpected number of instance states: %d", len(is))

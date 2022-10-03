@@ -292,9 +292,6 @@ type ImportStateCheckFunc func([]*terraform.InstanceState) error
 // generation for ImportState tests.
 type ImportStateIdFunc func(*terraform.State) (string, error)
 
-// RefreshStateCheckFunc is the check function for RefreshState tests
-type RefreshStateCheckFunc func([]*terraform.InstanceState) error
-
 // ErrorCheckFunc is a function providers can use to handle errors.
 type ErrorCheckFunc func(error) error
 
@@ -580,11 +577,6 @@ type TestStep struct {
 	// RefreshState, if true, will test the functionality of `terraform
 	// refresh` by refreshing the state.
 	RefreshState bool
-
-	// RefreshStateCheck checks state following `terraform refresh`. It
-	// should be used to verify that the state has the expected resources,
-	// IDs, and attributes.
-	RefreshStateCheck RefreshStateCheckFunc
 
 	// ProviderFactories can be specified for the providers that are valid for
 	// this TestStep. When providers are specified at the TestStep level, all

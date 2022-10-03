@@ -72,25 +72,14 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 	}
 
 	// Go through the refreshed state and verify
-	if step.RefreshStateCheck != nil {
-		logging.HelperResourceTrace(ctx, "Using TestStep RefreshStateCheck")
+	if step.Check != nil {
+		logging.HelperResourceDebug(ctx, "Calling TestStep Check for RefreshState")
 
-		var states []*terraform.InstanceState
-		for _, r := range refreshState.RootModule().Resources {
-			if r.Primary != nil {
-				is := r.Primary.DeepCopy()
-				is.Ephemeral.Type = r.Type // otherwise the check function cannot see the type
-				states = append(states, is)
-			}
-		}
-
-		logging.HelperResourceDebug(ctx, "Calling TestStep RefreshStateCheck")
-
-		if err := step.RefreshStateCheck(states); err != nil {
+		if err := step.Check(refreshState); err != nil {
 			t.Fatal(err)
 		}
 
-		logging.HelperResourceDebug(ctx, "Called TestStep RefreshStateCheck")
+		logging.HelperResourceDebug(ctx, "Called TestStep Check for RefreshState")
 	}
 
 	return nil
