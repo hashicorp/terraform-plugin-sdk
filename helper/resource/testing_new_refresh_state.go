@@ -2,8 +2,10 @@ package resource
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/davecgh/go-spew/spew"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
@@ -11,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.WorkingDir, step TestStep, cfg string, providers *providerFactories) error {
+func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.WorkingDir, step TestStep, providers *providerFactories) error {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()
@@ -27,29 +29,6 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 	}, wd, providers)
 	if err != nil {
 		t.Fatalf("Error getting state: %s", err)
-	}
-
-	if step.Config == "" {
-		logging.HelperResourceTrace(ctx, "Using prior TestStep Config for refresh")
-
-		step.Config = cfg
-		if step.Config == "" {
-			t.Fatal("Cannot refresh state with no specified config")
-		}
-	}
-
-	err = wd.SetConfig(ctx, step.Config)
-	if err != nil {
-		t.Fatalf("Error setting test config: %s", err)
-	}
-
-	logging.HelperResourceDebug(ctx, "Running Terraform CLI init and refresh")
-
-	err = runProviderCommand(ctx, t, func() error {
-		return wd.Init(ctx)
-	}, wd, providers)
-	if err != nil {
-		t.Fatalf("Error running init: %s", err)
 	}
 
 	err = runProviderCommand(ctx, t, func() error {
@@ -80,6 +59,40 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 		}
 
 		logging.HelperResourceDebug(ctx, "Called TestStep Check for RefreshState")
+	}
+
+	// do a plan
+	err = runProviderCommand(ctx, t, func() error {
+		if step.Destroy {
+			return wd.CreateDestroyPlan(ctx)
+		}
+		return wd.CreatePlan(ctx)
+	}, wd, providers)
+	if err != nil {
+		return fmt.Errorf("Error running post-apply plan: %w", err)
+	}
+
+	var plan *tfjson.Plan
+	err = runProviderCommand(ctx, t, func() error {
+		var err error
+		plan, err = wd.SavedPlan(ctx)
+		return err
+	}, wd, providers)
+	if err != nil {
+		return fmt.Errorf("Error retrieving post-apply plan: %w", err)
+	}
+
+	if !planIsEmpty(plan) && !step.ExpectNonEmptyPlan {
+		var stdout string
+		err = runProviderCommand(ctx, t, func() error {
+			var err error
+			stdout, err = wd.SavedPlanRawStdout(ctx)
+			return err
+		}, wd, providers)
+		if err != nil {
+			return fmt.Errorf("Error retrieving formatted plan output: %w", err)
+		}
+		return fmt.Errorf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
 	}
 
 	return nil

@@ -114,7 +114,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 
 	logging.HelperResourceDebug(ctx, "Starting TestSteps")
 
-	// use this to track last step succesfully applied
+	// use this to track last step successfully applied
 	// acts as default for import tests
 	var appliedCfg string
 
@@ -244,7 +244,7 @@ func runNewTest(ctx context.Context, t testing.T, c TestCase, helper *plugintest
 		if step.RefreshState {
 			logging.HelperResourceTrace(ctx, "TestStep is RefreshState mode")
 
-			err := testStepNewRefreshState(ctx, t, wd, step, appliedCfg, providers)
+			err := testStepNewRefreshState(ctx, t, wd, step, providers)
 			if step.ExpectError != nil {
 				logging.HelperResourceDebug(ctx, "Checking TestStep ExpectError")
 				if err == nil {
