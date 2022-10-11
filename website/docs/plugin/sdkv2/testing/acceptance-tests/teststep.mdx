@@ -14,8 +14,8 @@ under test.
 
 ## Test Modes
 
-Terraform’s test framework facilitates two distinct modes of acceptance tests,
-_Lifecycle_ and _Import_.
+Terraform’s test framework facilitates three distinct modes of acceptance tests,
+_Lifecycle_, _Import_ and _Refresh_.
 
 _Lifecycle_ mode is the most common mode, and is used for testing plugins by
 providing one or more configuration files with the same logic as would be used
@@ -24,6 +24,10 @@ when running `terraform apply`.
 _Import_ mode is used for testing resource functionality to import existing
 infrastructure into a Terraform statefile, using the same logic as would be used
 when running `terraform import`.
+
+_Refresh_ mode is used for testing resource functionality to refresh existing
+infrastructure, using the same logic as would be used when running
+`terraform refresh`.
 
 An acceptance test’s mode is implicitly determined by the fields provided in the
 `TestStep` definition. The applicable fields are defined in the [TestStep

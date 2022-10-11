@@ -1624,7 +1624,6 @@ func TestTest_TestStep_ProviderFactories_Refresh_Inline(t *testing.T) {
 				Check:  TestCheckResourceAttr("random_password.test", "min_special", "10"),
 			},
 			{
-				Config:       `resource "random_password" "test" { }`,
 				RefreshState: true,
 				Check:        TestCheckResourceAttr("random_password.test", "min_special", "2"),
 			},
