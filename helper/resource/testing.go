@@ -575,14 +575,12 @@ type TestStep struct {
 	//---------------------------------------------------------------
 
 	// RefreshState, if true, will test the functionality of `terraform
-	// refresh` by refreshing the state, running a plan and optionally
-	// running checks.
+	// refresh` by refreshing the state, running any checks against the
+	// refreshed state, and running a plan to verify against unexpected plan
+	// differences.
 	//
 	// If the refresh is expected to result in a non-empty plan
 	// ExpectNonEmptyPlan should be set to true in the same TestStep.
-	//
-	// If RefreshState is true the Config from the previous TestStep is used
-	// and Config, if defined, is ignored.
 	//
 	// RefreshState cannot be the first TestStep and, it is mutually exclusive
 	// with ImportState.

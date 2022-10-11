@@ -20,6 +20,7 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 	spewConf.SortKeys = true
 
 	var err error
+	// Explicitly ensure prior state exists before refresh.
 	err = runProviderCommand(ctx, t, func() error {
 		_, err = getState(ctx, t, wd)
 		if err != nil {
@@ -63,9 +64,6 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 
 	// do a plan
 	err = runProviderCommand(ctx, t, func() error {
-		if step.Destroy {
-			return wd.CreateDestroyPlan(ctx)
-		}
 		return wd.CreatePlan(ctx)
 	}, wd, providers)
 	if err != nil {
@@ -92,7 +90,7 @@ func testStepNewRefreshState(ctx context.Context, t testing.T, wd *plugintest.Wo
 		if err != nil {
 			return fmt.Errorf("Error retrieving formatted plan output: %w", err)
 		}
-		return fmt.Errorf("After applying this test step, the plan was not empty.\nstdout:\n\n%s", stdout)
+		return fmt.Errorf("After refreshing state during this test step, a followup plan was not empty.\nstdout:\n\n%s", stdout)
 	}
 
 	return nil
