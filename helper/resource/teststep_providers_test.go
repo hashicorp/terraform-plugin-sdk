@@ -1707,9 +1707,9 @@ func TestTest_TestStep_ProviderFactories_RefreshWithPlanModifier_Inline(t *testi
 				Check:              TestCheckResourceAttr("random_password.test", "special", "true"),
 			},
 			{
-				Config:             `resource "random_password" "test" { }`,
-				Check:              TestCheckResourceAttr("random_password.test", "special", "false"),
-				ExpectNonEmptyPlan: true,
+				PreConfig: setTimeForTest(time.Now()),
+				Config:    `resource "random_password" "test" { }`,
+				Check:     TestCheckResourceAttr("random_password.test", "special", "false"),
 			},
 		},
 	})
