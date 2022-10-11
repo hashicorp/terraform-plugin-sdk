@@ -44,6 +44,8 @@ func (s TestStep) hasProviders(_ context.Context) bool {
 // validate ensures the TestStep is valid based on the following criteria:
 //
 //   - Config or ImportState or RefreshState is set.
+//   - Config and RefreshState are not both set.
+//   - RefreshState and Destroy are not both set.
 //   - RefreshState is not the first TestStep.
 //   - Providers are not specified (ExternalProviders,
 //     ProtoV5ProviderFactories, ProtoV6ProviderFactories, ProviderFactories)
@@ -61,6 +63,18 @@ func (s TestStep) validate(ctx context.Context, req testStepValidateRequest) err
 
 	if s.Config == "" && !s.ImportState && !s.RefreshState {
 		err := fmt.Errorf("TestStep missing Config or ImportState or RefreshState")
+		logging.HelperResourceError(ctx, "TestStep validation error", map[string]interface{}{logging.KeyError: err})
+		return err
+	}
+
+	if s.Config != "" && s.RefreshState {
+		err := fmt.Errorf("TestStep cannot have Config and RefreshState")
+		logging.HelperResourceError(ctx, "TestStep validation error", map[string]interface{}{logging.KeyError: err})
+		return err
+	}
+
+	if s.RefreshState && s.Destroy {
+		err := fmt.Errorf("TestStep cannot have RefreshState and Destroy")
 		logging.HelperResourceError(ctx, "TestStep validation error", map[string]interface{}{logging.KeyError: err})
 		return err
 	}
