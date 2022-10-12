@@ -102,6 +102,14 @@ func TestTestStepValidate(t *testing.T) {
 			testStepValidateRequest: testStepValidateRequest{},
 			expectedError:           fmt.Errorf("TestStep cannot have ImportState and RefreshState in same step"),
 		},
+		"destroy-and-refreshstate-both-true": {
+			testStep: TestStep{
+				Destroy:      true,
+				RefreshState: true,
+			},
+			testStepValidateRequest: testStepValidateRequest{},
+			expectedError:           fmt.Errorf("TestStep cannot have RefreshState and Destroy"),
+		},
 		"externalproviders-overlapping-providerfactories": {
 			testStep: TestStep{
 				Config: "# not empty",
