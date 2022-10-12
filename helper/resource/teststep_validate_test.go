@@ -85,6 +85,13 @@ func TestTestStepValidate(t *testing.T) {
 			testStepValidateRequest: testStepValidateRequest{},
 			expectedError:           fmt.Errorf("TestStep missing Config or ImportState or RefreshState"),
 		},
+		"config-and-refreshstate-both-set": {
+			testStep: TestStep{
+				Config:       "# not empty",
+				RefreshState: true,
+			},
+			expectedError: fmt.Errorf("TestStep cannot have Config and RefreshState"),
+		},
 		"refreshstate-first-step": {
 			testStep: TestStep{
 				RefreshState: true,
