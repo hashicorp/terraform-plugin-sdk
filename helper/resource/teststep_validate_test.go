@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -79,12 +80,42 @@ func TestTestStepValidate(t *testing.T) {
 		testStepValidateRequest testStepValidateRequest
 		expectedError           error
 	}{
-		"config-and-importstate-missing": {
-			testStep: TestStep{},
-			testStepValidateRequest: testStepValidateRequest{
-				TestCaseHasProviders: true,
+		"config-and-importstate-and-refreshstate-missing": {
+			testStep:                TestStep{},
+			testStepValidateRequest: testStepValidateRequest{},
+			expectedError:           fmt.Errorf("TestStep missing Config or ImportState or RefreshState"),
+		},
+		"config-and-refreshstate-both-set": {
+			testStep: TestStep{
+				Config:       "# not empty",
+				RefreshState: true,
 			},
-			expectedError: fmt.Errorf("TestStep missing Config or ImportState"),
+			expectedError: fmt.Errorf("TestStep cannot have Config and RefreshState"),
+		},
+		"refreshstate-first-step": {
+			testStep: TestStep{
+				RefreshState: true,
+			},
+			testStepValidateRequest: testStepValidateRequest{
+				StepNumber: 1,
+			},
+			expectedError: fmt.Errorf("TestStep cannot have RefreshState as first step"),
+		},
+		"importstate-and-refreshstate-both-true": {
+			testStep: TestStep{
+				ImportState:  true,
+				RefreshState: true,
+			},
+			testStepValidateRequest: testStepValidateRequest{},
+			expectedError:           fmt.Errorf("TestStep cannot have ImportState and RefreshState in same step"),
+		},
+		"destroy-and-refreshstate-both-true": {
+			testStep: TestStep{
+				Destroy:      true,
+				RefreshState: true,
+			},
+			testStepValidateRequest: testStepValidateRequest{},
+			expectedError:           fmt.Errorf("TestStep cannot have RefreshState and Destroy"),
 		},
 		"externalproviders-overlapping-providerfactories": {
 			testStep: TestStep{

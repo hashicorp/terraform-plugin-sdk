@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -1572,6 +1573,157 @@ func TestTest_TestStep_ProviderFactories_Import_External_WithoutPersistNonMatch(
 			},
 		},
 	})
+}
+
+func TestTest_TestStep_ProviderFactories_Refresh_Inline(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_password": {
+							CreateContext: func(ctx context.Context, d *schema.ResourceData, i interface{}) diag.Diagnostics {
+								d.SetId("id")
+								err := d.Set("min_special", 10)
+								if err != nil {
+									panic(err)
+								}
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								err := d.Set("min_special", 2)
+								if err != nil {
+									panic(err)
+								}
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"min_special": {
+									Computed: true,
+									Type:     schema.TypeInt,
+								},
+
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "random_password" "test" { }`,
+				Check:  TestCheckResourceAttr("random_password.test", "min_special", "10"),
+			},
+			{
+				RefreshState: true,
+				Check:        TestCheckResourceAttr("random_password.test", "min_special", "2"),
+			},
+			{
+				Config: `resource "random_password" "test" { }`,
+				Check:  TestCheckResourceAttr("random_password.test", "min_special", "2"),
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ProviderFactories_RefreshWithPlanModifier_Inline(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"random": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"random_password": {
+							CustomizeDiff: customdiff.All(
+								func(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+									special := d.Get("special").(bool)
+									if special == true {
+										err := d.SetNew("special", false)
+										if err != nil {
+											panic(err)
+										}
+									}
+									return nil
+								},
+							),
+							CreateContext: func(ctx context.Context, d *schema.ResourceData, i interface{}) diag.Diagnostics {
+								d.SetId("id")
+								err := d.Set("special", false)
+								if err != nil {
+									panic(err)
+								}
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								t := getTimeForTest()
+								if t.After(time.Now().Add(time.Hour * 1)) {
+									err := d.Set("special", true)
+									if err != nil {
+										panic(err)
+									}
+								}
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"special": {
+									Computed: true,
+									Type:     schema.TypeBool,
+									ForceNew: true,
+								},
+
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "random_password" "test" { }`,
+				Check:  TestCheckResourceAttr("random_password.test", "special", "false"),
+			},
+			{
+				PreConfig:          setTimeForTest(time.Now().Add(time.Hour * 2)),
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check:              TestCheckResourceAttr("random_password.test", "special", "true"),
+			},
+			{
+				PreConfig: setTimeForTest(time.Now()),
+				Config:    `resource "random_password" "test" { }`,
+				Check:     TestCheckResourceAttr("random_password.test", "special", "false"),
+			},
+		},
+	})
+}
+
+func setTimeForTest(t time.Time) func() {
+	return func() {
+		getTimeForTest = func() time.Time {
+			return t
+		}
+	}
+}
+
+var getTimeForTest = func() time.Time {
+	return time.Now()
 }
 
 func composeImportStateCheck(fs ...ImportStateCheckFunc) ImportStateCheckFunc {
