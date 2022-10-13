@@ -1,3 +1,11 @@
+# 2.24.0 (October 13, 2022)
+
+ENHANCEMENTS:
+* helper/resource: Added `TestStep` type `RefreshState` field, which enables a step that refreshes state without an explicit apply or configuration changes ([#1070](https://github.com/hashicorp/terraform-plugin-sdk/issues/1070))
+
+BUG FIXES:
+* helper/resource: Fixed `TestStep` type `ImportStateVerify` field so that it only matches against resources following a change in behaviour in Terraform 1.3 that imports both resources and their dependent data sources ([#1077](https://github.com/hashicorp/terraform-plugin-sdk/issues/1077))
+
 # 2.23.0 (September 15, 2022)
 
 ENHANCEMENTS:
