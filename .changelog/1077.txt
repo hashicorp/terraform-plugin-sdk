@@ -1,0 +1,3 @@
+```release-note:bug
+helper/resource: Fixed `TestStep` type `ImportStateVerify` field so that it only matches against resources following a change in behaviour in Terraform 1.3 that imports both resources and their dependent data sources
+```
