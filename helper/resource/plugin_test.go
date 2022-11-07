@@ -1,13 +1,17 @@
 package resource
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 )
 
 func TestProtoV5ProviderFactoriesMerge(t *testing.T) {
@@ -232,5 +236,64 @@ func TestSdkProviderFactoriesMerge(t *testing.T) {
 				t.Errorf("unexpected difference: %s", diff)
 			}
 		})
+	}
+}
+
+func TestRunProviderCommand(t *testing.T) {
+	currentDir, err := os.Getwd()
+
+	if err != nil {
+		t.Fatalf("unable to get working directory: %s", err)
+	}
+
+	ctx := context.Background()
+	funcCalled := false
+	helper := plugintest.AutoInitProviderHelper(ctx, currentDir)
+
+	err = runProviderCommand(
+		ctx,
+		t,
+		func() error {
+			funcCalled = true
+			return nil
+		},
+		helper.RequireNewWorkingDir(ctx, t),
+		&providerFactories{
+			legacy: map[string]func() (*schema.Provider, error){
+				"examplecloud": func() (*schema.Provider, error) { //nolint:unparam // required signature
+					return &schema.Provider{
+						ResourcesMap: map[string]*schema.Resource{
+							"examplecloud_thing": {
+								CreateContext: func(ctx context.Context, d *schema.ResourceData, i interface{}) diag.Diagnostics {
+									d.SetId("id")
+
+									return nil
+								},
+								DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+									return nil
+								},
+								ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+									return nil
+								},
+								Schema: map[string]*schema.Schema{
+									"id": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+								},
+							},
+						},
+					}, nil
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !funcCalled {
+		t.Error("expected func to be called")
 	}
 }
