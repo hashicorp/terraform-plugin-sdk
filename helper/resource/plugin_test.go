@@ -3,16 +3,149 @@ package resource
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
+
+func testRunProviderCommand(t *testing.T, ctx context.Context, opts *plugin.ServeOpts, wd *plugintest.WorkingDir, f func() error) {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	t.Log("starting provider")
+
+	config, _, err := plugin.DebugServe(ctx, opts)
+
+	if err != nil {
+		t.Fatalf("unable to serve provider: %s", err)
+	}
+
+	tfexecConfig := tfexec.ReattachConfig{
+		Protocol:        config.Protocol,
+		ProtocolVersion: config.ProtocolVersion,
+		Pid:             config.Pid,
+		Test:            config.Test,
+		Addr: tfexec.ReattachConfigAddr{
+			Network: config.Addr.Network,
+			String:  config.Addr.String,
+		},
+	}
+
+	reattachInfo := map[string]tfexec.ReattachConfig{
+		opts.ProviderAddr: tfexecConfig,
+	}
+
+	wd.SetReattachInfo(ctx, reattachInfo)
+
+	t.Log("running command")
+
+	if err := f(); err != nil {
+		t.Errorf("error running Terraform: %s", err)
+	}
+
+	wd.UnsetReattachInfo()
+}
+
+func TestPanicAtTheDisco(t *testing.T) {
+	t.Setenv("CHECKPOINT_DISABLE", "1")
+
+	currentDir, err := os.Getwd()
+
+	if err != nil {
+		t.Fatalf("unable to get working directory: %s", err)
+	}
+
+	ctx := context.Background()
+
+	helper := plugintest.AutoInitProviderHelper(ctx, currentDir)
+	wd := helper.RequireNewWorkingDir(ctx, t)
+	t.Logf("working directory: %s", wd.GetHelper().WorkingDirectory())
+
+	if err := wd.SetConfig(ctx, `resource "test_thing" "test" {}`); err != nil {
+		t.Fatalf("error setting configuration: %s", err)
+	}
+
+	provider := &schema.Provider{
+		ResourcesMap: map[string]*schema.Resource{
+			"test_thing": {
+				CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+					d.SetId("id")
+
+					return nil
+				},
+				DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+					return nil
+				},
+				ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+					return nil
+				},
+				Schema: map[string]*schema.Schema{
+					"id": {
+						Computed: true,
+						Type:     schema.TypeString,
+					},
+				},
+			},
+		},
+	}
+	providerAddress := "registry.terraform.io/hashicorp/test"
+
+	grpcProviderServer := schema.NewGRPCProviderServer(provider)
+	// Prevent goroutine leak
+	//defer grpcProviderServer.StopProvider(ctx, nil) //nolint:errcheck // does not return errors
+
+	opts := &plugin.ServeOpts{
+		GRPCProviderFunc: func() tfprotov5.ProviderServer {
+			return grpcProviderServer
+		},
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:   "plugintest",
+			Level:  hclog.Trace,
+			Output: io.Discard,
+		}),
+		NoLogOutputOverride: true,
+		UseTFLogSink:        t,
+		ProviderAddr:        providerAddress,
+	}
+
+	t.Log("Calling init")
+	testRunProviderCommand(t, ctx, opts, wd, func() error {
+		return wd.Init(ctx)
+	})
+
+	t.Log("Calling plan")
+	testRunProviderCommand(t, ctx, opts, wd, func() error {
+		return wd.CreatePlan(ctx)
+	})
+
+	t.Log("Calling apply")
+	testRunProviderCommand(t, ctx, opts, wd, func() error {
+		return wd.Apply(ctx)
+	})
+
+	t.Log("Calling show")
+	testRunProviderCommand(t, ctx, opts, wd, func() error {
+		_, err := wd.State(ctx)
+		return err
+	})
+
+	t.Log("Calling refresh")
+	testRunProviderCommand(t, ctx, opts, wd, func() error {
+		return wd.Refresh(ctx)
+	})
+}
 
 func TestProtoV5ProviderFactoriesMerge(t *testing.T) {
 	t.Parallel()
