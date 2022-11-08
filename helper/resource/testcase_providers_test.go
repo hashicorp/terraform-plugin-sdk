@@ -17,8 +17,9 @@ func TestTestCaseProviderConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		testCase TestCase
-		expected string
+		testCase          TestCase
+		skipProviderBlock bool
+		expected          string
 	}{
 		"externalproviders-and-protov5providerfactories": {
 			testCase: TestCase{
@@ -102,6 +103,27 @@ provider "externaltest" {}
 				},
 			},
 			expected: `provider "test" {}`,
+		},
+		"externalproviders-skip-provider-block": {
+			testCase: TestCase{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+			},
+			skipProviderBlock: true,
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+`,
 		},
 		"externalproviders-source-and-versionconstraint": {
 			testCase: TestCase{
@@ -205,7 +227,7 @@ provider "test" {}
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := test.testCase.providerConfig(context.Background())
+			got := test.testCase.providerConfig(context.Background(), test.skipProviderBlock)
 
 			if diff := cmp.Diff(strings.TrimSpace(got), strings.TrimSpace(test.expected)); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)

@@ -18,6 +18,114 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func TestStepConfigHasProviderBlock(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		testStep TestStep
+		expected bool
+	}{
+		"no-config": {
+			testStep: TestStep{},
+			expected: false,
+		},
+		"provider-meta-attribute": {
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {
+  provider = test.test
+}
+`,
+			},
+			expected: false,
+		},
+		"provider-object-attribute": {
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {
+  test = {
+	provider = {
+	  test = true
+	}
+  }
+}
+`,
+			},
+			expected: false,
+		},
+		"provider-string-attribute": {
+			testStep: TestStep{
+				Config: `
+resource "test_test" "test" {
+  test = {
+	provider = "test"
+  }
+}
+`,
+			},
+			expected: false,
+		},
+		"provider-block-quoted-with-attributes": {
+			testStep: TestStep{
+				Config: `
+provider "test" {
+  test = true
+}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: true,
+		},
+		"provider-block-unquoted-with-attributes": {
+			testStep: TestStep{
+				Config: `
+provider test {
+  test = true
+}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: true,
+		},
+		"provider-block-quoted-without-attributes": {
+			testStep: TestStep{
+				Config: `
+provider "test" {}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: true,
+		},
+		"provider-block-unquoted-without-attributes": {
+			testStep: TestStep{
+				Config: `
+provider test {}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: true,
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := testCase.testStep.configHasProviderBlock(context.Background())
+
+			if testCase.expected != got {
+				t.Errorf("expected %t, got %t", testCase.expected, got)
+			}
+		})
+	}
+}
+
 func TestStepMergedConfig(t *testing.T) {
 	t.Parallel()
 
@@ -393,6 +501,105 @@ resource "externaltest_test" "test" {}
 resource "localtest_test" "test" {}
 `,
 		},
+		"teststep-externalproviders-config-with-provider-block-quoted": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				Config: `
+provider "test" {}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+
+
+provider "test" {}
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-config-with-provider-block-unquoted": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				Config: `
+provider test {}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+
+
+provider test {}
+
+resource "test_test" "test" {}
+`,
+		},
+		"teststep-externalproviders-config-with-terraform-block": {
+			testCase: TestCase{},
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+				Config: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+resource "test_test" "test" {}
+`,
+			},
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+
+resource "test_test" "test" {}
+`,
+		},
 		"teststep-externalproviders-missing-source-and-versionconstraint": {
 			testCase: TestCase{},
 			testStep: TestStep{
@@ -555,8 +762,9 @@ func TestStepProviderConfig(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
-		testStep TestStep
-		expected string
+		testStep          TestStep
+		skipProviderBlock bool
+		expected          string
 	}{
 		"externalproviders-and-protov5providerfactories": {
 			testStep: TestStep{
@@ -640,6 +848,27 @@ provider "externaltest" {}
 				},
 			},
 			expected: `provider "test" {}`,
+		},
+		"externalproviders-skip-provider-block": {
+			testStep: TestStep{
+				ExternalProviders: map[string]ExternalProvider{
+					"test": {
+						Source:            "registry.terraform.io/hashicorp/test",
+						VersionConstraint: "1.2.3",
+					},
+				},
+			},
+			skipProviderBlock: true,
+			expected: `
+terraform {
+  required_providers {
+    test = {
+      source = "registry.terraform.io/hashicorp/test"
+      version = "1.2.3"
+    }
+  }
+}
+`,
 		},
 		"externalproviders-source-and-versionconstraint": {
 			testStep: TestStep{
@@ -735,7 +964,7 @@ provider "test" {}
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.testStep.providerConfig(context.Background())
+			got := testCase.testStep.providerConfig(context.Background(), testCase.skipProviderBlock)
 
 			if diff := cmp.Diff(strings.TrimSpace(got), strings.TrimSpace(testCase.expected)); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)
