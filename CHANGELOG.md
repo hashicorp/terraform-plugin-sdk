@@ -1,3 +1,12 @@
+# 2.24.1 (November 14, 2022)
+
+BUG FIXES:
+
+* helper/resource: Fixed `TestStep` type `ImportStateCheck` field so that it only matches against resources following a change in behaviour in Terraform 1.3 that imports both resources and data sources into state ([#1089](https://github.com/hashicorp/terraform-plugin-sdk/issues/1089))
+* helper/resource: Prevented go-plugin goroutine leak per Terraform command ([#1095](https://github.com/hashicorp/terraform-plugin-sdk/issues/1095))
+* helper/resource: Prevented goroutine leak per Terraform command when testing terraform-plugin-sdk based providers via `Providers` or `ProviderFactories` ([#1091](https://github.com/hashicorp/terraform-plugin-sdk/issues/1091))
+* helper/resource: Prevented provider configuration already given error when `TestStep` type `Config` field already contained provider configuration block ([#1092](https://github.com/hashicorp/terraform-plugin-sdk/issues/1092))
+
 # 2.24.0 (October 13, 2022)
 
 ENHANCEMENTS:
