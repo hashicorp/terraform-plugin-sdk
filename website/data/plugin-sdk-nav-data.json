@@ -1,6 +1,7 @@
 [
   { "heading": "SDKv2" },
   { "title": "Overview", "path": "" },
+  { "title": "Migrate to the Framework", "href": "https://developer.hashicorp.com/terraform/plugin/framework/migrating" },
   {
     "title": "Schemas",
     "routes": [
