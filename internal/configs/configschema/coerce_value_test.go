@@ -3,7 +3,6 @@ package configschema
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags"
@@ -566,7 +565,7 @@ func TestCoerceValue(t *testing.T) {
 			wantTy := test.Schema.ImpliedType()
 			gotTy := gotValue.Type()
 			if errs := gotTy.TestConformance(wantTy); len(errs) > 0 {
-				t.Errorf("empty value has incorrect type\ngot: %#v\nwant: %#v\nerrors: %s", gotTy, wantTy, spew.Sdump(errs))
+				t.Errorf("empty value has incorrect type\ngot: %#v\nwant: %#v\nerrors: %#v", gotTy, wantTy, errs)
 			}
 		})
 	}

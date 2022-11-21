@@ -3,7 +3,6 @@ package objchange
 import (
 	"testing"
 
-	"github.com/apparentlymart/go-dump/dump"
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
@@ -299,10 +298,7 @@ func TestNormalizeObjectFromLegacySDK(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			got := NormalizeObjectFromLegacySDK(test.Input, test.Schema)
 			if !got.RawEquals(test.Want) {
-				t.Errorf(
-					"wrong result\ngot:  %s\nwant: %s",
-					dump.Value(got), dump.Value(test.Want),
-				)
+				t.Errorf("wrong result\ngot:  %#v\nwant: %#v", got, test.Want)
 			}
 		})
 	}

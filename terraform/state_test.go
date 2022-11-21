@@ -6,8 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 )
@@ -108,8 +107,8 @@ func TestStateAddModule(t *testing.T) {
 			actual = append(actual, m.Path)
 		}
 
-		if !reflect.DeepEqual(actual, tc.Out) {
-			t.Fatalf("wrong result\ninput: %sgot:   %#v\nwant:  %#v", spew.Sdump(tc.In), actual, tc.Out)
+		if diff := cmp.Diff(tc.Out, actual); diff != "" {
+			t.Fatalf("unexpected difference: %s", diff)
 		}
 	}
 }

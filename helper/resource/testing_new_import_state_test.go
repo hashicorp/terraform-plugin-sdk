@@ -80,3 +80,116 @@ func TestTest_TestStep_ImportStateCheck_SkipDataSourceState(t *testing.T) {
 		},
 	})
 }
+
+func TestTest_TestStep_ImportStateVerify(t *testing.T) {
+	t.Parallel()
+
+	UnitTest(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"examplecloud": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"examplecloud_thing": {
+							CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								d.SetId("resource-test")
+
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								_ = d.Set("other", "testvalue")
+
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"other": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+							Importer: &schema.ResourceImporter{
+								StateContext: schema.ImportStatePassthroughContext,
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "examplecloud_thing" "test" {}`,
+			},
+			{
+				ResourceName:      "examplecloud_thing.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ImportStateVerifyIgnore(t *testing.T) {
+	t.Parallel()
+
+	UnitTest(t, TestCase{
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"examplecloud": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return &schema.Provider{
+					ResourcesMap: map[string]*schema.Resource{
+						"examplecloud_thing": {
+							CreateContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								d.SetId("resource-test")
+
+								_ = d.Set("create_only", "testvalue")
+
+								return nil
+							},
+							DeleteContext: func(_ context.Context, _ *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								return nil
+							},
+							ReadContext: func(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
+								_ = d.Set("read_only", "testvalue")
+
+								return nil
+							},
+							Schema: map[string]*schema.Schema{
+								"create_only": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+								"read_only": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+								"id": {
+									Computed: true,
+									Type:     schema.TypeString,
+								},
+							},
+							Importer: &schema.ResourceImporter{
+								StateContext: schema.ImportStatePassthroughContext,
+							},
+						},
+					},
+				}, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: `resource "examplecloud_thing" "test" {}`,
+			},
+			{
+				ResourceName:            "examplecloud_thing.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"create_only"},
+			},
+		},
+	})
+}
