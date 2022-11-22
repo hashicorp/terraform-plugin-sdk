@@ -56,8 +56,16 @@ func RandStringFromCharSet(strlen int, charSet string) string {
 	return string(result)
 }
 
-// RandSSHKeyPair generates a public and private SSH key pair. The public key is
-// returned in OpenSSH format, and the private key is PEM encoded.
+// RandSSHKeyPair generates a random public and private SSH key pair.
+//
+// The public key is returned in OpenSSH authorized key format, for example:
+//
+//	ssh-rsa XXX comment
+//
+// The private key is RSA algorithm, 1024 bits, PEM encoded, and has no
+// passphrase. Testing with different or stricter security requirements should
+// use the standard library [crypto] and [golang.org/x/crypto/ssh] packages
+// directly.
 func RandSSHKeyPair(comment string) (string, string, error) {
 	privateKey, privateKeyPEM, err := genPrivateKey()
 	if err != nil {
