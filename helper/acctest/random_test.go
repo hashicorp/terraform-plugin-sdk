@@ -2,6 +2,7 @@ package acctest
 
 import (
 	"crypto/rsa"
+	"net/netip"
 	"regexp"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestRandIpAddress(t *testing.T) {
 		},
 		{
 			s:           "abcdefg",
-			expectedErr: "invalid CIDR address: abcdefg",
+			expectedErr: "netip.ParsePrefix(\"abcdefg\"): no '/'",
 		},
 	}
 
@@ -61,8 +62,16 @@ func TestRandIpAddress(t *testing.T) {
 			if msg != tc.expectedErr {
 				t.Fatalf("expected test case %d to fail with %q but got %q", i, tc.expectedErr, msg)
 			}
-		} else if !tc.expected.MatchString(v) {
-			t.Fatalf("expected test case %d to return %q but got %q", i, tc.expected, v)
+
+			return
+		}
+
+		if !tc.expected.MatchString(v) {
+			t.Errorf("expected test case %d to return %q but got %q", i, tc.expected, v)
+		}
+
+		if !netip.MustParsePrefix(tc.s).Contains(netip.MustParseAddr(v)) {
+			t.Errorf("unexpected IP (%s) for prefix (%s)", v, tc.s)
 		}
 	}
 }
