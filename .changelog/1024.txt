@@ -1,3 +1,0 @@
-```release-note:bug
-helper/schema: Ensured `RawConfig`, `RawPlan`, and `RawState` are correctly copied during planning with recreation
-```

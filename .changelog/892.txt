@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Removed extraneous Terraform CLI `show` command each `TestStep` unless using `TestCase.IDRefreshName`
-```

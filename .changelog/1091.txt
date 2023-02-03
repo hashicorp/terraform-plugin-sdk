@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Prevented goroutine leak per Terraform command when testing terraform-plugin-sdk based providers via `Providers` or `ProviderFactories`
-```

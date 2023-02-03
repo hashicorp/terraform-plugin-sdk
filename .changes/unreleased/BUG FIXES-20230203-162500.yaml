@@ -1,0 +1,8 @@
+kind: BUG FIXES
+body: 'helper/schema: Allow diagnostic messages with incorrect UTF-8 encoding to pass
+  through with the invalid sequences replaced with the Unicode Replacement Character.
+  This avoids returning the unhelpful message "string field contains invalid UTF-8"
+  in that case.'
+time: 2023-02-03T16:25:00.97554-05:00
+custom:
+  Issue: "1111"

@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Add ImportStatePersist to optionally persist state generated during import
-```

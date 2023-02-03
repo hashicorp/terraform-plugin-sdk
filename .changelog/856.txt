@@ -1,3 +1,0 @@
-```release-note:bug
-plugin: Prevent potential process leak on Windows platforms
-```

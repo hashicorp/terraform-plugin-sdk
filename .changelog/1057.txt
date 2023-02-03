@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Prevented `Inconsistent dependency lock file` errors when using `ExternalProviders` outside the `hashicorp` namespace
-```

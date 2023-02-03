@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Prevented provider configuration already given error when `TestStep` type `Config` field already contained provider configuration block
-```
