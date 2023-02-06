@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Prevented go-plugin goroutine leak per Terraform command
-```

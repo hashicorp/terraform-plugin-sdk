@@ -1,7 +1,0 @@
-```release-note:note
-helper/schema: The `Schema` type `DiffSuppressOnRefresh` field opts in to using `DiffSuppressFunc` to detect normalization changes during refresh, using the same rules as for planning. This can prevent normalization cascading downstream and producing confusing changes in other resources, and will avoid reporting "Values changed outside of Terraform" for normalization-only situations. This is a desirable behavior for most attributes that have `DiffSuppressFunc` and so would ideally be on by default, but it is opt-in for backward compatibility reasons.
-```
-
-```release-note:enhancement
-helper/schema: Added the `DiffSuppressOnRefresh` field to the `Schema` type
-```

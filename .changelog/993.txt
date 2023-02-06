@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Added `TF_ACC_LOG`, `TF_LOG_CORE`, and `TF_LOG_PROVIDER` environment variable handling for Terraform versions 0.15 and later
-```

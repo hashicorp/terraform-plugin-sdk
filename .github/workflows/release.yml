@@ -1,9 +1,16 @@
 name: release
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      versionNumber:
+        description: 'Release version number (v#.#.#)'
+        type: string
+        required: true
+
+env:
+  CI_COMMIT_AUTHOR: hc-github-team-tf-provider-devex
+  CI_COMMIT_EMAIL: github-team-tf-provider-devex@hashicorp.com
 
 permissions:
   # Allow creating GitHub release
@@ -12,19 +19,72 @@ permissions:
   issues: write
 
 jobs:
+  changelog-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.changelog-version.outputs.version }}
+    steps:
+      - id: changelog-version
+        run: echo "version=$(echo "${{ inputs.versionNumber }}" | cut -c 2-)" >> "$GITHUB_OUTPUT"
+  changelog:
+    needs: changelog-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: 0
+      - name: Batch changes
+        uses: miniscruff/changie-action@7d8e4c245da691d57ca34019a0504321fa7b7e07 # v1.0.0
+        with:
+          version: latest
+          args: batch ${{ needs.changelog-version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge changes
+        uses: miniscruff/changie-action@7d8e4c245da691d57ca34019a0504321fa7b7e07 # v1.0.0
+        with:
+          version: latest
+          args: merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Git push changelog
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+          git add .
+          git commit -a -m "Update changelog"
+          git push
+  release-tag:
+    needs: changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+        with:
+          fetch-depth: 0
+      - name: Git push release tag
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+          git pull
+          git tag "${{ inputs.versionNumber }}"
+          git push origin "${{ inputs.versionNumber }}"
   goreleaser:
+    needs: [ changelog-version, changelog, release-tag ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
-          # Required for release notes
+          ref: ${{ inputs.versionNumber }}
           fetch-depth: 0
       - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
         with:
           go-version-file: 'go.mod'
       - name: Generate Release Notes
-        # Fetch CHANGELOG.md contents up to Git tag prior to this release, skipping top two lines
-        run: sed -n -e "1{/# /d;}" -e "2{/^$/d;}" -e "/# $(git describe --abbrev=0 --exclude="$(git describe --abbrev=0 --match='v*.*.*' --tags)" --match='v*.*.*' --tags | tr -d v)/q;p" CHANGELOG.md > /tmp/release-notes.txt
+        run: |
+          cd .changes
+          sed -e "1{/# /d;}" -e "2{/^$/d;}" ${{ needs.changelog-version.outputs.version }}.md > /tmp/release-notes.txt
       - uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

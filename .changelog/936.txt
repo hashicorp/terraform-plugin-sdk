@@ -1,3 +1,0 @@
-```release-note:bug
-helper/schema: Prevented missing SDK logging entries and confusing provider.stdio TRACE logging entries
-```

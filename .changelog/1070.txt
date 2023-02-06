@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Added `TestStep` type `RefreshState` field, which enables a step that refreshes state without an explicit apply or configuration changes
-```

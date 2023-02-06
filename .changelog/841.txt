@@ -1,3 +1,0 @@
-```release-note:bug
-helper/schema: Allowed `Schema` with `TypeInt` to accept `string` values from `DefaultFunc`, such as `EnvDefaultFunc` ([#841](https://github.com/hashicorp/terraform-plugin-sdk/pull/841))
-```
