@@ -249,7 +249,7 @@ Third, the provider must be started by delve, and Terraform must be told how to
 connect to it. Providers using `plugin.Debug` will output instructions on how
 to tell Terraform how to connect.
 
--> **Note**: You can find more details on the [Debugging Providers page](/plugin/sdkv2/debugging).
+-> **Note**: You can find more details on the [Debugging Providers page](/terraform/plugin/sdkv2/debugging).
 
 ## Support for Provider Metadata
 
@@ -616,7 +616,7 @@ help us understand your use case so we can recommend a path forward.
 
 The `Removed` property of `helper/schema.Schema`, used to provide a friendly
 error message when a field has been removed after its [deprecation
-period](/plugin/sdkv2/best-practices/deprecations),
+period](/terraform/plugin/sdkv2/best-practices/deprecations),
 behaved unexpectedly in tests and other situations. It has been removed. The
 recommendation is now to delete the field after the deprecation period, and let
 Terraform’s built-in error messaging indicate its removal.
@@ -624,9 +624,9 @@ Terraform’s built-in error messaging indicate its removal.
 ## Removal of `helper/encryption` Package
 
 The `helper/encryption` package supports an [anti-pattern that is now
-discouraged](/plugin/sdkv2/best-practices/sensitive-state#don-39-t-encrypt-state),
+discouraged](/terraform/plugin/sdkv2/best-practices/sensitive-state#don-39-t-encrypt-state),
 so it has been removed. Providers relying on it should see the
-[documentation](/plugin/sdkv2/best-practices/sensitive-state)
+[documentation](/terraform/plugin/sdkv2/best-practices/sensitive-state)
 on that pattern and select an alternative approach.
 
 ## Removal of Discouraged Variables, Functions, Types, and Interfaces
