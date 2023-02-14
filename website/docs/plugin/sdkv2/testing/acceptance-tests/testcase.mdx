@@ -7,6 +7,12 @@ description: |-
 
 # Acceptance Tests: TestCases
 
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
+
 Acceptance tests are expressed in terms of **Test Cases**, each using one or
 more Terraform configurations designed to create a set of resources under test,
 and then verify the actual infrastructure created. Terraform’s `resource`
