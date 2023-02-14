@@ -239,8 +239,8 @@ A number of environment variables are available to control aspects of acceptance
 | Environment Variable Name | Default | Description |
 |---------------------------|---------|-------------|
 | `TF_ACC` | N/A | Set to any value to enable acceptance testing via the [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest) and [`helper/resource.Test()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#Test) functions. |
-| `TF_ACC_PROVIDER_HOST`: | `registry.terraform.io` | Set the hostname of the provider under test, such as `example.com` in the `example.com/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](/language/settings#specifying-provider-requirements). |
-| `TF_ACC_PROVIDER_NAMESPACE` | `hashicorp` | Set the namespace of the provider under test, such as `myorg` in the `registry.terraform.io/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](/language/settings#specifying-provider-requirements). |
+| `TF_ACC_PROVIDER_HOST`: | `registry.terraform.io` | Set the hostname of the provider under test, such as `example.com` in the `example.com/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](/terraform/language/settings#specifying-provider-requirements). |
+| `TF_ACC_PROVIDER_NAMESPACE` | `hashicorp` | Set the namespace of the provider under test, such as `myorg` in the `registry.terraform.io/myorg/myprovider` provider source address. This is only required if any [`TestStep.Config`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestStep.Config) specifies a provider source address, such as in the [`terraform` configuration block `required_providers` attribute](/terraform/language/settings#specifying-provider-requirements). |
 | `TF_ACC_STATE_LINEAGE` | N/A | Set to `1` to enable state lineage debug logs, which are normally suppressed during acceptance testing. |
 | `TF_ACC_TEMP_DIR` | Operating system specific via [`os.TempDir()`](https://pkg.go.dev/os#TempDir) | Set a temporary directory used for testing files and installing Terraform CLI, if installation is required. |
 | `TF_ACC_TERRAFORM_PATH` | N/A | Set the path to a Terraform CLI binary on the local filesystem to be used during testing. It must be executable. If not found and `TF_ACC_TERRAFORM_VERSION` is not set, an error is returned. |
@@ -248,14 +248,14 @@ A number of environment variables are available to control aspects of acceptance
 
 ### Logging Environment Variables
 
-A number of environment variables available to control logging aspects during acceptance test execution. Some of these modify or replace the production behaviors defined in [managing provider log output](/plugin/log/managing) and [debugging Terraform](/internals/debugging).
+A number of environment variables available to control logging aspects during acceptance test execution. Some of these modify or replace the production behaviors defined in [managing provider log output](/terraform/plugin/log/managing) and [debugging Terraform](/terraform/internals/debugging).
 
 #### Logging Levels
 
 | Environment Variable Name | Default | Description |
 |---------------------------|---------|-------------|
 | `TF_ACC_LOG` | N/A | Set the `TF_LOG` environment variable used by Terraform CLI while testing. If set, overrides `TF_LOG_CORE`. Use `TF_LOG_CORE` and `TF_LOG_PROVIDER` to configure separate levels for Terraform CLI logging. |
-| `TF_LOG` | N/A | Set the log level for the Go standard library `log` package. If set to any level, sets the `TRACE` log level for any SDK and provider logs written by [`terraform-plugin-log`](/plugin/log/writing). Use the `TF_LOG_SDK*` and `TF_LOG_PROVIDER_*` environment variables described in [managing log output](/plugin/log/managing) to decrease or disable SDK and provider logs written by [`terraform-plugin-log`](/plugin/log/writing). Use `TF_ACC_LOG`, `TF_LOG_CORE`, or `TF_LOG_PROVIDER` environment variables to set the logging levels used by Terraform CLI while testing. |
+| `TF_LOG` | N/A | Set the log level for the Go standard library `log` package. If set to any level, sets the `TRACE` log level for any SDK and provider logs written by [`terraform-plugin-log`](/terraform/plugin/log/writing). Use the `TF_LOG_SDK*` and `TF_LOG_PROVIDER_*` environment variables described in [managing log output](/terraform/plugin/log/managing) to decrease or disable SDK and provider logs written by [`terraform-plugin-log`](/terraform/plugin/log/writing). Use `TF_ACC_LOG`, `TF_LOG_CORE`, or `TF_LOG_PROVIDER` environment variables to set the logging levels used by Terraform CLI while testing. |
 | `TF_LOG_CORE` | `TF_ACC_LOG` | Set the `TF_LOG_CORE` environment variable used by Terraform CLI logging of graph operations and other core functionality while testing. If `TF_ACC_LOG` is set, this setting has no effect. Use `TF_LOG_PROVIDER` to configure a separate level for Terraform CLI logging of external providers while testing (e.g. defined by the `TestCase` or `TestStep` type `ExternalProviders` field). |
 | `TF_LOG_PROVIDER` | `TF_ACC_LOG` | Set the `TF_LOG_PROVIDER` environment variable used by Terraform CLI logging of external providers while testing (e.g. defined by the `TestCase` or `TestStep` type `ExternalProviders` field). If set, overrides `TF_ACC_LOG`. Use `TF_LOG_CORE` to configure a separate level for Terraform CLI logging of graph operations and other core functionality while testing. |
 
@@ -270,7 +270,7 @@ By default, there is no logging output when running the `go test` command. Use o
 
 The logs associated with each test can output across incorrect files as each new test starts if the provider is using the Go standard library [`log` package](https://pkg.go.dev/log) for logging, acceptance testing that uses [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest), and `TF_LOG_PATH_MASK`. To resolve this issue, choose one of the following approaches:
 
-* Use [`terraform-plugin-log`](/plugin/log/writing) based logging. Each logger will be correctly associated with each test name output.
+* Use [`terraform-plugin-log`](/terraform/plugin/log/writing) based logging. Each logger will be correctly associated with each test name output.
 * Wrap testing execution so that each test is individually executed with `go test`. Since each `go test` process will have its own `log` package output handling, logging will be correctly associated with each test name output.
 * Replace [`helper/resource.ParallelTest()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#ParallelTest) with [`helper/resource.Test()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#Test) and ensure [`(*testing.T).Parallel()`](https://pkg.go.dev/testing#T.Parallel) is not called in tests. This serializes all testing so each test will be associated with each test name output.
 
@@ -300,4 +300,4 @@ helping users safely and predictably create, change, and improve
 infrastructure. In our next section we detail how to create “Test Cases”,
 individual acceptance tests using Terraform’s testing framework, in order to
 build and verify real infrastructure. [Proceed to Test
-Cases](/plugin/sdkv2/testing/acceptance-tests/testcase)
+Cases](/terraform/plugin/sdkv2/testing/acceptance-tests/testcase)
