@@ -1006,6 +1006,160 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 	}
 }
 
+// Timeouts should never be present in imported resources.
+// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1145
+func TestImportResourceState_Timeouts_None(t *testing.T) {
+	t.Parallel()
+
+	resourceDefinition := &Resource{
+		Importer: &ResourceImporter{
+			StateContext: ImportStatePassthroughContext,
+		},
+		Schema: map[string]*Schema{
+			"string_attribute": {
+				Type:     TypeString,
+				Optional: true,
+			},
+		},
+	}
+	resourceTypeName := "test"
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			resourceTypeName: resourceDefinition,
+		},
+	})
+
+	schema := resourceDefinition.CoreConfigSchema()
+
+	// Import shim state should not require all attributes.
+	stateVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"id": cty.StringVal("test"),
+	}))
+
+	if err != nil {
+		t.Fatalf("unable to coerce state value: %s", err)
+	}
+
+	testReq := &tfprotov5.ImportResourceStateRequest{
+		ID:       "test",
+		TypeName: resourceTypeName,
+	}
+
+	resp, err := server.ImportResourceState(context.Background(), testReq)
+
+	if err != nil {
+		t.Fatalf("unexpected error during ImportResourceState: %s", err)
+	}
+
+	if resp == nil {
+		t.Fatal("expected ImportResourceState response")
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		var diagnostics []string
+
+		for _, diagnostic := range resp.Diagnostics {
+			diagnostics = append(diagnostics, fmt.Sprintf("%s: %s: %s", diagnostic.Severity, diagnostic.Summary, diagnostic.Detail))
+		}
+
+		t.Fatalf("unexpected ImportResourceState diagnostics: %s", strings.Join(diagnostics, " | "))
+	}
+
+	if len(resp.ImportedResources) != 1 {
+		t.Fatalf("expected 1 ImportedResource, got: %#v", resp.ImportedResources)
+	}
+
+	gotStateVal, err := msgpack.Unmarshal(resp.ImportedResources[0].State.MsgPack, schema.ImpliedType())
+
+	if err != nil {
+		t.Fatalf("unexpected error during MessagePack unmarshal: %s", err)
+	}
+
+	if diff := cmp.Diff(stateVal, gotStateVal, valueComparer); diff != "" {
+		t.Errorf("unexpected difference: %s", diff)
+	}
+}
+
+// Timeouts should never be present in imported resources.
+// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1145
+func TestImportResourceState_Timeouts_Removed(t *testing.T) {
+	t.Parallel()
+
+	resourceDefinition := &Resource{
+		Importer: &ResourceImporter{
+			StateContext: ImportStatePassthroughContext,
+		},
+		Schema: map[string]*Schema{
+			"string_attribute": {
+				Type:     TypeString,
+				Optional: true,
+			},
+		},
+		Timeouts: &ResourceTimeout{
+			Create: DefaultTimeout(10 * time.Minute),
+			Read:   DefaultTimeout(10 * time.Minute),
+		},
+	}
+	resourceTypeName := "test"
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			resourceTypeName: resourceDefinition,
+		},
+	})
+
+	schema := resourceDefinition.CoreConfigSchema()
+
+	// Import shim state should not require all attributes.
+	stateVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+		"id": cty.StringVal("test"),
+	}))
+
+	if err != nil {
+		t.Fatalf("unable to coerce state value: %s", err)
+	}
+
+	testReq := &tfprotov5.ImportResourceStateRequest{
+		ID:       "test",
+		TypeName: resourceTypeName,
+	}
+
+	resp, err := server.ImportResourceState(context.Background(), testReq)
+
+	if err != nil {
+		t.Fatalf("unexpected error during ImportResourceState: %s", err)
+	}
+
+	if resp == nil {
+		t.Fatal("expected ImportResourceState response")
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		var diagnostics []string
+
+		for _, diagnostic := range resp.Diagnostics {
+			diagnostics = append(diagnostics, fmt.Sprintf("%s: %s: %s", diagnostic.Severity, diagnostic.Summary, diagnostic.Detail))
+		}
+
+		t.Fatalf("unexpected ImportResourceState diagnostics: %s", strings.Join(diagnostics, " | "))
+	}
+
+	if len(resp.ImportedResources) != 1 {
+		t.Fatalf("expected 1 ImportedResource, got: %#v", resp.ImportedResources)
+	}
+
+	gotStateVal, err := msgpack.Unmarshal(resp.ImportedResources[0].State.MsgPack, schema.ImpliedType())
+
+	if err != nil {
+		t.Fatalf("unexpected error during MessagePack unmarshal: %s", err)
+	}
+
+	if diff := cmp.Diff(stateVal, gotStateVal, valueComparer); diff != "" {
+		t.Errorf("unexpected difference: %s", diff)
+	}
+}
+
 func TestReadDataSource(t *testing.T) {
 	t.Parallel()
 

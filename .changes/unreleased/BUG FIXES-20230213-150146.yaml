@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: 'helper/schema: Prevented unexpected difference for timeouts on first plan after
+  import'
+time: 2023-02-13T15:01:46.441029-05:00
+custom:
+  Issue: "1146"
