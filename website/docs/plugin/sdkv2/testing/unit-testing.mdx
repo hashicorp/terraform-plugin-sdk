@@ -7,6 +7,12 @@ description: |-
 
 # Unit Testing
 
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
+
 Testing plugin code in small, isolated units is distinct from Acceptance Tests,
 and does not require network connections. Unit tests are commonly used for
 testing helper methods that expand or flatten API responses into data structures

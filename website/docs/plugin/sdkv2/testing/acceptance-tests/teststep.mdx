@@ -7,6 +7,12 @@ description: |-
 
 # Acceptance Tests: TestSteps
 
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
+
 `TestStep`s represent the application of an actual Terraform configuration file
 to a given state. Each step requires a configuration as input and provides
 developers several means of validating the behavior of the specific resource
