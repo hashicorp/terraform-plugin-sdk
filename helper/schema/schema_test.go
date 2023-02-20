@@ -8798,6 +8798,26 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 
 			Err: true,
 		},
+		"default func and required with": {
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeBool,
+					Optional: true,
+				},
+				"bar": {
+					Type:         TypeBool,
+					Optional:     true,
+					RequiredWith: []string{"foo"},
+					DefaultFunc:  func() (interface{}, error) { return true, nil },
+				},
+			},
+
+			Config: map[string]interface{}{
+				"foo": true,
+			},
+
+			Err: false,
+		},
 	}
 
 	for tn, tc := range cases {
