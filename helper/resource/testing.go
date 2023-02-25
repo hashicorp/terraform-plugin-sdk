@@ -388,6 +388,10 @@ type TestCase struct {
 	// are tested alongside real resources
 	PreventPostDestroyRefresh bool
 
+	// PreventPostDestroy can be set to true for cases where resources
+	// are tested alongside real resources
+	PreventPostDestroy bool
+
 	// CheckDestroy is called after the resource is finally destroyed
 	// to allow the tester to test that the resource is truly gone.
 	CheckDestroy TestCheckFunc

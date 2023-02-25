@@ -18,6 +18,10 @@ import (
 func runPostTestDestroy(ctx context.Context, t testing.T, c TestCase, wd *plugintest.WorkingDir, providers *providerFactories, statePreDestroy *terraform.State) error {
 	t.Helper()
 
+	if c.PreventPostDestroy {
+		return nil
+	}
+
 	err := runProviderCommand(ctx, t, func() error {
 		return wd.Destroy(ctx)
 	}, wd, providers)
