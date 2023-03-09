@@ -132,10 +132,6 @@
       {
         "title": "Handling Sensitive Data",
         "path": "best-practices/sensitive-state"
-      },
-      {
-        "title": "Versioning and Changelog",
-        "path": "best-practices/versioning"
       }
     ]
   }

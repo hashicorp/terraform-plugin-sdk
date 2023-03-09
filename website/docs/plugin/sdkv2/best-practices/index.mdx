@@ -2,7 +2,7 @@
 page_title: Plugin Development - Best Practices
 description: >-
   Patterns that ensure a consistent user experience, including naming,
-  deprecation, beta features, and versioning.
+  deprecation, and beta features.
 ---
 
 # Terraform Plugin Best Practices
@@ -53,19 +53,8 @@ Drift][drift], we cover some best practices to ensure Terraform's statefile is
 an accurate reflection of reality, to provide accurate plan and apply
 functionality.
 
-## Versioning and Changelog
-
-Terraform development serves two distinct audiences: those writing plugin code
-and those implementing them. By clearly and consistently allowing operators to
-easily understand changes in plugin implementation via version numbering and
-documenting those changes, a trust is formed between the two audiences. In
-[Versioning and Changelog][versioning] we cover some guidelines when deciding
-release versions and how to relay changes through documentation.
-
 [naming]: /terraform/plugin/sdkv2/best-practices/naming
 
 [deprecations]: /terraform/plugin/sdkv2/best-practices/deprecations
 
 [drift]: /terraform/plugin/sdkv2/best-practices/detecting-drift
-
-[versioning]: /terraform/plugin/sdkv2/best-practices/versioning

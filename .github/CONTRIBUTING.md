@@ -125,7 +125,7 @@ Dependency management is performed by [dependabot](https://docs.github.com/en/co
 HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade.
 
 We follow Terraform Plugin
-[changelog specifications](https://www.terraform.io/plugin/sdkv2/best-practices/versioning#changelog-specification).
+[changelog specifications](https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#changelog-specification).
 
 #### Changie Automation Tool
 This project uses the [Changie](https://changie.dev/) automation tool for changelog automation.
@@ -136,7 +136,7 @@ After Changie is installed on your local machine, run:
 ```bash
 changie new
 ```
-and choose a `kind` of change corresponding to the Terraform Plugin [changelog categories](https://developer.hashicorp.com/terraform/plugin/sdkv2/best-practices/versioning#categorization)
+and choose a `kind` of change corresponding to the Terraform Plugin [changelog categories](https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#categorization)
 
 Fill out the body field following the entry format. Changie will then prompt for a Github issue or pull request number.
 
