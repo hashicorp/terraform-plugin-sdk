@@ -118,10 +118,6 @@
         "path": "best-practices/naming"
       },
       {
-        "title": "Depending on Providers",
-        "path": "best-practices/depending-on-providers"
-      },
-      {
         "title": "Deprecations, Removals, and Renames",
         "path": "best-practices/deprecations"
       },
