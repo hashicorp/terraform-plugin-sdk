@@ -134,10 +134,6 @@
         "path": "best-practices/sensitive-state"
       },
       {
-        "title": "Testing Patterns",
-        "path": "best-practices/testing"
-      },
-      {
         "title": "Versioning and Changelog",
         "path": "best-practices/versioning"
       },
