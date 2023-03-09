@@ -114,10 +114,6 @@
     "routes": [
       { "title": "Overview", "path": "best-practices" },
       {
-        "title": "Naming",
-        "path": "best-practices/naming"
-      },
-      {
         "title": "Deprecations, Removals, and Renames",
         "path": "best-practices/deprecations"
       },

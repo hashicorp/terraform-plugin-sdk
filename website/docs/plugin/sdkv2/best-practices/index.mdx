@@ -1,8 +1,7 @@
 ---
 page_title: Plugin Development - Best Practices
 description: >-
-  Patterns that ensure a consistent user experience, including naming,
-  deprecation, and beta features.
+  Patterns that ensure a consistent user experience, including deprecation and beta features.
 ---
 
 # Terraform Plugin Best Practices
@@ -19,12 +18,6 @@ the years, we accumulated recommended patterns that help ensure a consistent use
 Providers, with a brief description of each, and link to read more. 
 
 This section is a work in progress, with more sections to come.
-
-## Naming
-
-[Naming][naming] resources, data sources, and attributes in plugins is how plugin authors
-expose their functionality to operators and using patterns common to other plugins
-lays the foundation for a good user experience.
 
 ## Deprecations, Removals, and Renames
 
@@ -52,8 +45,6 @@ its configuration and provide means of reconciliation. In [Detecting
 Drift][drift], we cover some best practices to ensure Terraform's statefile is
 an accurate reflection of reality, to provide accurate plan and apply
 functionality.
-
-[naming]: /terraform/plugin/sdkv2/best-practices/naming
 
 [deprecations]: /terraform/plugin/sdkv2/best-practices/deprecations
 
