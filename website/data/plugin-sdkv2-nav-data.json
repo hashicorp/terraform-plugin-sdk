@@ -136,10 +136,6 @@
       {
         "title": "Versioning and Changelog",
         "path": "best-practices/versioning"
-      },
-      {
-        "title": "Writing Non-Go Providers",
-        "path": "best-practices/other-languages"
       }
     ]
   }
