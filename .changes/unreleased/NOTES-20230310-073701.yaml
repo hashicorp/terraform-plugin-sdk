@@ -1,0 +1,6 @@
+kind: NOTES
+body: '''helper/resource: Deprecated `RetryContext()`, `StateChangeConf`, and associated
+  `*Error` types. Use the `helper/retry` package instead.'
+time: 2023-03-10T07:37:01.40605Z
+custom:
+  Issue: "1167"

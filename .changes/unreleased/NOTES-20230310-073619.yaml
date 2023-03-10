@@ -1,0 +1,6 @@
+kind: NOTES
+body: '''helper/resource: Deprecated `PrefixedUniqueId()` and `UniqueId()`. Use the
+  `helper/id` package instead.'''
+time: 2023-03-10T07:36:19.907948Z
+custom:
+  Issue: "1167"
