@@ -4,8 +4,41 @@ import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
+
+// Deprecated: Use helper/id package instead. This is required for migrating acceptance
+// testing to terraform-plugin-testing.
+const UniqueIdPrefix = id.UniqueIdPrefix
+
+// Helper for a resource to generate a unique identifier w/ default prefix
+//
+// Deprecated: Use helper/id package instead. This is required for migrating acceptance
+// testing to terraform-plugin-testing.
+func UniqueId() string {
+	return id.UniqueId()
+}
+
+// Deprecated: Use helper/id package instead. This is required for migrating acceptance
+// testing to terraform-plugin-testing.
+const UniqueIDSuffixLength = id.UniqueIDSuffixLength
+
+// Helper for a resource to generate a unique identifier w/ given prefix
+//
+// After the prefix, the ID consists of an incrementing 26 digit value (to match
+// previous timestamp output).  After the prefix, the ID consists of a timestamp
+// and an incrementing 8 hex digit value The timestamp means that multiple IDs
+// created with the same prefix will sort in the order of their creation, even
+// across multiple terraform executions, as long as the clock is not turned back
+// between calls, and as long as any given terraform execution generates fewer
+// than 4 billion IDs.
+//
+// Deprecated: Use helper/id package instead. This is required for migrating acceptance
+// testing to terraform-plugin-testing.
+func PrefixedUniqueId(prefix string) string {
+	return id.PrefixedUniqueId(prefix)
+}
 
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
@@ -103,7 +136,7 @@ func NonRetryableError(err error) *RetryError {
 	r := retry.NonRetryableError(err)
 
 	return &RetryError{
-		Err:       err,
+		Err:       r.Err,
 		Retryable: r.Retryable,
 	}
 }
