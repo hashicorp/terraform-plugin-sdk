@@ -11,10 +11,10 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.5.0
-	github.com/hashicorp/hcl/v2 v2.16.1
+	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.18.1
-	github.com/hashicorp/terraform-json v0.15.0
+	github.com/hashicorp/terraform-json v0.16.0
 	github.com/hashicorp/terraform-plugin-go v0.14.3
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	github.com/mitchellh/copystructure v1.2.0
