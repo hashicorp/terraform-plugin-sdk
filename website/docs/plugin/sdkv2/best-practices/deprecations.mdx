@@ -682,7 +682,7 @@ The recommended process is as follows:
 1. Add `DeprecatedMessage` to the schema definition of the existing (now the "old") resource, noting to use the new resource in the message.
 1. Add `!> **WARNING:** This resource is deprecated and will be removed in the next major version` to the documentation of the existing (now the "old") resource, noting to use the new resource.
 1. Add the new resource to the provider `ResourcesMap`
-1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal).
+1. Follow the rest of the procedures in the [Provider Data Source or Resource Removal section](#provider-data-source-or-resource-removal).
 
 ### Example Resource Renaming
 
@@ -708,7 +708,7 @@ func resourceExampleExistingWidget() *schema.Resource {
 }
 ```
 
-In order to support renaming `example_existing_widget` to `example_new_widget`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+In order to support renaming `example_existing_widget` to `example_new_widget`, this sample can be written as the following to support both resources simultaneously until the `example_existing_widget` resource is removed:
 
 ```go
 func Provider() terraform.ResourceProvider {
