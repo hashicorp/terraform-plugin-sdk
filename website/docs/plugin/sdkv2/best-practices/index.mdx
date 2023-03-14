@@ -4,7 +4,13 @@ description: >-
   Patterns that ensure a consistent user experience, including deprecation, beta features, and detecting drift.
 ---
 
-# Terraform Plugin Best Practices
+<Highlight>
+
+This best practices section only contains guidance for plugins built with the [legacy SDK](/terraform/plugin/sdkv2). More generic best practices that apply to both legacy SDK and [Plugin Framework](/terraform/plugin/framework) can be found in the [Plugin Development Best Practices](/terraform/plugin/best-practices) section.
+
+</Highlight>
+
+# Terraform SDKv2 Best Practices
 
 A key feature of Terraform is its plugin system, which separates the details of
 specific vendor APIs from the shared logic for managing state, managing configuration,
@@ -14,10 +20,7 @@ specific cloud provider, allowing each provider to fully support its unique
 resources and lifecycles and not settling for the lowest common denominator
 across all provider resources of that type (virtual machines, networks,
 configuration management systems, et. al). While each provider is unique, over
-the years, we accumulated recommended patterns that help ensure a consistent user experience when using Terraform for any given provider. This page describes best practices that generally apply to most
-Providers, with a brief description of each, and link to read more. 
-
-This section is a work in progress, with more sections to come.
+the years, we accumulated recommended patterns that help ensure a consistent user experience when using Terraform for any given provider. This page describes best practices that generally apply to most Providers built with the legacy SDK, with a brief description of each, and link to read more. 
 
 ## Deprecations, Removals, and Renames
 
