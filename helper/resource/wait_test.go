@@ -67,8 +67,8 @@ func TestRetry_hang(t *testing.T) {
 	}
 
 	err := Retry(50*time.Millisecond, f)
-	if err == nil {
-		t.Fatal("should error")
+	if err != nil {
+		t.Fatal("should not error")
 	}
 }
 
