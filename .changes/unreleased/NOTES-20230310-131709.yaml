@@ -1,7 +1,0 @@
-kind: NOTES
-body: 'helper/resource: Deprecated `RetryContext()`, `StateChangeConf`, and associated
-  `*Error` types. Use the `helper/retry` package instead. These deprecations are to
-  assist in migrating to terraform-plugin-testing'
-time: 2023-03-10T13:17:09.544612Z
-custom:
-  Issue: "1167"
