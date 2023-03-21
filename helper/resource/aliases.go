@@ -92,7 +92,7 @@ type RetryFunc = retry.RetryFunc
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
 func RetryContext(ctx context.Context, timeout time.Duration, f RetryFunc) error {
-	return retry.RetryContext(ctx, timeout, retry.RetryFunc(f))
+	return retry.RetryContext(ctx, timeout, f)
 }
 
 // Retry is a basic wrapper around StateChangeConf that will just retry
@@ -101,7 +101,7 @@ func RetryContext(ctx context.Context, timeout time.Duration, f RetryFunc) error
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
 func Retry(timeout time.Duration, f RetryFunc) error {
-	return retry.Retry(timeout, retry.RetryFunc(f))
+	return retry.Retry(timeout, f)
 }
 
 // RetryError is the required return type of RetryFunc. It forces client code
