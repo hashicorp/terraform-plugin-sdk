@@ -42,19 +42,19 @@ func PrefixedUniqueId(prefix string) string {
 
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type NotFoundError retry.NotFoundError
+type NotFoundError = retry.NotFoundError
 
 // UnexpectedStateError is returned when Refresh returns a state that's neither in Target nor Pending
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type UnexpectedStateError retry.UnexpectedStateError
+type UnexpectedStateError = retry.UnexpectedStateError
 
 // TimeoutError is returned when WaitForState times out
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type TimeoutError retry.TimeoutError
+type TimeoutError = retry.TimeoutError
 
 // StateRefreshFunc is a function type used for StateChangeConf that is
 // responsible for refreshing the item being watched for a state change.
@@ -69,19 +69,19 @@ type TimeoutError retry.TimeoutError
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type StateRefreshFunc retry.StateRefreshFunc
+type StateRefreshFunc = retry.StateRefreshFunc
 
 // StateChangeConf is the configuration struct used for `WaitForState`.
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type StateChangeConf retry.StateChangeConf
+type StateChangeConf = retry.StateChangeConf
 
 // RetryFunc is the function retried until it succeeds.
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type RetryFunc retry.RetryFunc
+type RetryFunc = retry.RetryFunc
 
 // RetryContext is a basic wrapper around StateChangeConf that will just retry
 // a function until it no longer returns an error.
@@ -109,7 +109,7 @@ func Retry(timeout time.Duration, f RetryFunc) error {
 //
 // Deprecated: Use helper/retry package instead. This is required for migrating acceptance
 // testing to terraform-plugin-testing.
-type RetryError retry.RetryError
+type RetryError = retry.RetryError
 
 // RetryableError is a helper to create a RetryError that's retryable from a
 // given error. To prevent logic errors, will return an error when passed a
