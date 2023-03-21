@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/resource: Prevented build errors with type aliasing added in v2.26.0'
+time: 2023-03-21T08:56:55.662651-04:00
+custom:
+  Issue: "1176"
