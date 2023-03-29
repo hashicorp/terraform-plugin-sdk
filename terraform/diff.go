@@ -747,11 +747,14 @@ func (d *InstanceDiff) applyCollectionDiff(path []string, attrs map[string]strin
 	}
 
 	currentKey := prefix + name
+	currentKeyDot := currentKey + "."
+	currentKeyDotPct := currentKeyDot + "%"
+	currentKeyDotSharp := currentKeyDot + "#"
 
 	// check the index first for special handling
 	for k, diff := range d.Attributes {
 		// check the index value, which can be set, and 0
-		if k == currentKey+".#" || k == currentKey+".%" || k == currentKey {
+		if k == currentKeyDotSharp || k == currentKeyDotPct || k == currentKey {
 			if diff.NewRemoved {
 				return result, nil
 			}
@@ -773,7 +776,7 @@ func (d *InstanceDiff) applyCollectionDiff(path []string, attrs map[string]strin
 	noDiff := true
 	keys := map[string]bool{}
 	for k := range d.Attributes {
-		if !strings.HasPrefix(k, currentKey+".") {
+		if !strings.HasPrefix(k, currentKeyDot) {
 			continue
 		}
 		noDiff = false
@@ -782,7 +785,7 @@ func (d *InstanceDiff) applyCollectionDiff(path []string, attrs map[string]strin
 
 	noAttrs := true
 	for k := range attrs {
-		if !strings.HasPrefix(k, currentKey+".") {
+		if !strings.HasPrefix(k, currentKeyDot) {
 			continue
 		}
 		noAttrs = false
