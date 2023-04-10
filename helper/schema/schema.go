@@ -88,10 +88,6 @@ type Schema struct {
 	// Optional indicates whether the practitioner can choose to not enter
 	// a value in the configuration for this attribute. Optional cannot be used
 	// with Required.
-	//
-	// If also using Default or DefaultFunc, Computed should also be enabled,
-	// otherwise Terraform can output warning logs or "inconsistent result
-	// after apply" errors.
 	Optional bool
 
 	// Computed indicates whether the provider may return its own value for
