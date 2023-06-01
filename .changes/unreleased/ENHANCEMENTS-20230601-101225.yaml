@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'all: Improved SDK logging performance when messages would be skipped due to
+  configured logging level'
+time: 2023-06-01T10:12:25.753902-04:00
+custom:
+  Issue: "1202"
