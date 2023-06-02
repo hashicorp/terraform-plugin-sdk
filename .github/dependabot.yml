@@ -14,3 +14,7 @@ updates:
       - dependency-name: "github.com/hashicorp/go-hclog"
       # go-plugin should only be updated via terraform-plugin-go
       - dependency-name: "github.com/hashicorp/go-plugin"
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "daily"
