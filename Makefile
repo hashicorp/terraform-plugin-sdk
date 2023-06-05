@@ -10,6 +10,7 @@ lint:
 
 generate:
 	go generate ./...
+	cd tools; go generate ./...
 
 fmt:
 	gofmt -s -w -e $(GOFMT_FILES)
