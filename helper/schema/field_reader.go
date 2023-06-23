@@ -84,7 +84,7 @@ func addrToSchema(addr []string, schemaMap map[string]*Schema) []*Schema {
 			case *Resource:
 				current = &Schema{
 					Type: typeObject,
-					Elem: v.Schema,
+					Elem: v.SchemaMap(),
 				}
 			case *Schema:
 				current = v

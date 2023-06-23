@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Added `Resource` type `SchemaFunc` field and `SchemaMap` method,
+  which can reduce resident memory usage with large schemas'
+time: 2023-06-23T10:24:12.025356-04:00
+custom:
+  Issue: "1217"
