@@ -91,7 +91,7 @@ func SerializeResourceForHash(buf *bytes.Buffer, val interface{}, resource *Reso
 	if val == nil {
 		return
 	}
-	sm := resource.Schema
+	sm := resource.SchemaMap()
 	m := val.(map[string]interface{})
 	var keys []string
 	allComputed := true

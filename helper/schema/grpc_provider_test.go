@@ -807,6 +807,23 @@ func TestApplyResourceChange(t *testing.T) {
 				},
 			},
 		},
+		{
+			Description: "CreateContext_SchemaFunc",
+			TestResource: &Resource{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"id": {
+							Type:     TypeString,
+							Computed: true,
+						},
+					}
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("bar") // expected in response
+					return nil
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -1224,6 +1241,47 @@ func TestReadDataSource(t *testing.T) {
 								Type:     TypeString,
 								Computed: true,
 							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							d.SetId("test-id")
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadDataSourceRequest{
+				TypeName: "test",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.EmptyObject,
+						cty.NullVal(cty.EmptyObject),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadDataSourceResponse{
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("test-id"),
+						}),
+					),
+				},
+			},
+		},
+		"SchemaFunc": {
+			server: NewGRPCProviderServer(&Provider{
+				DataSourcesMap: map[string]*Resource{
+					"test": {
+						SchemaFunc: func() map[string]*Schema {
+							return map[string]*Schema{
+								"id": {
+									Type:     TypeString,
+									Computed: true,
+								},
+							}
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
 							d.SetId("test-id")
