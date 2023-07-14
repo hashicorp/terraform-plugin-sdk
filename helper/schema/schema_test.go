@@ -1387,6 +1387,113 @@ func TestSchemaMap_Diff(t *testing.T) {
 		{
 			Name: "Maps",
 			Schema: map[string]*Schema{
+				"config_vars": {
+					Type: TypeMap,
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"config_vars.foo": "bar",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"config_vars": []interface{}{
+					map[string]interface{}{
+						"foo": "baz",
+					},
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"config_vars.foo": {
+						Old: "bar",
+						New: "baz",
+					},
+				},
+			},
+
+			Err: false,
+		},
+
+		{
+			Name: "Maps with StateFunc same",
+			Schema: map[string]*Schema{
+				"config_vars": {
+					Type: TypeMap,
+					Elem: &Schema{
+						Type: TypeString,
+						StateFunc: func(i interface{}) string {
+							return strings.ToUpper(i.(string))
+						},
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"config_vars.foo": "BAR",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"config_vars": []interface{}{
+					map[string]interface{}{
+						"foo": "bar",
+					},
+				},
+			},
+
+			Diff: nil,
+
+			Err: false,
+		},
+
+		{
+			Name: "Maps with StateFunc diff",
+			Schema: map[string]*Schema{
+				"config_vars": {
+					Type: TypeMap,
+					Elem: &Schema{
+						Type: TypeString,
+						StateFunc: func(i interface{}) string {
+							return strings.ToUpper(i.(string))
+						},
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"config_vars.foo": "bar",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"config_vars": []interface{}{
+					map[string]interface{}{
+						"foo": "bar",
+					},
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"config_vars.foo": {
+						Old: "bar",
+						New: "BAR",
+					},
+				},
+			},
+
+			Err: false,
+		},
+
+		{
+			Name: "Maps",
+			Schema: map[string]*Schema{
 				"vars": {
 					Type:     TypeMap,
 					Optional: true,

@@ -1365,10 +1365,19 @@ func (m schemaMap) diffMap(
 		return nil
 	}
 
+	var stateFunc *SchemaStateFunc
+	if schema.Elem != nil && ((schema.Elem).(*Schema)).StateFunc != nil {
+		stateFunc = &((schema.Elem).(*Schema)).StateFunc
+	}
+
 	// Now we compare, preferring values from the config map
 	for k, v := range configMap {
 		old, ok := stateMap[k]
 		delete(stateMap, k)
+
+		if stateFunc != nil {
+			v = (*stateFunc)(v)
+		}
 
 		if old == v && ok && !all {
 			continue
