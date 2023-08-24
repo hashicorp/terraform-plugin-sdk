@@ -21,6 +21,10 @@ The reality of cloud infrastructure is that it typically takes time to perform o
 
 Terraform tracks the state of provisioned resources in its state file, and compares the user-passed configuration against that state. When Terraform detects a discrepancy, it presents the user with the differences between the configuration and the state. Sometimes these scenarios require special handling, which is where [Customizing Differences](/terraform/plugin/sdkv2/resources/customizing-differences) can help.
 
+## Data Consistency Errors
+
+Terraform has data consistency rules for resources, which may not be easily discovered for resources using this SDK, but problematic for practitioners in their workflow or provider developers when the resource is being [migrated to terraform-plugin-framework](/terraform/plugin/framework/migrating). The [Data Consistency Errors](/terraform/plugin/sdkv2/resources/data-consistency-errors) page discusses the causes for these issues, how to discover them, and how to potentially resolve them.
+
 ## State Migrations
 
 Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor, while the [Terraform state](/terraform/language/state) stores mapping and metadata information for those remote objects.

@@ -26,6 +26,10 @@
         "title": "Customizing Differences",
         "path": "resources/customizing-differences"
       },
+      {
+        "title": "Data Consistency Errors",
+        "path": "resources/data-consistency-errors"
+      },
       { "title": "Import", "path": "resources/import" },
       {
         "title": "Retries and Customizable Timeouts",
