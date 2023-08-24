@@ -1,8 +1,0 @@
-kind: ENHANCEMENTS
-body: 'helper/schema: Added `Resource` type `EnableLegacyTypeSystemApplyErrors`
-  field, which will prevent Terraform from demoting data consistency errors
-  to warning logs during `ApplyResourceChange` (`Create`, `Update`, and `Delete`)
-  operations with the resource'
-time: 2023-08-08T11:19:40.137598-04:00
-custom:
-  Issue: "1227"

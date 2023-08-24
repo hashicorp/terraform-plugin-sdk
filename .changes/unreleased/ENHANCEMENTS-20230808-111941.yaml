@@ -1,7 +1,0 @@
-kind: ENHANCEMENTS
-body: 'helper/schema: Added `Resource` type `EnableLegacyTypeSystemPlanErrors`
-  field, which can be used to prevent Terraform from demoting data consistency
-  errors to warning logs during `PlanResourceChange` operations with the resource'
-time: 2023-08-08T11:19:41.137598-04:00
-custom:
-  Issue: "1227"
