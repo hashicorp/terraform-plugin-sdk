@@ -110,3 +110,140 @@ This occurs if the attribute schema definition is `Optional: true` without `Comp
 If the value is expected to never be set by configuration, the schema attribute `Optional: true` flag should be replaced with `Computed: true`.
 
 Otherwise, this may not be resolvable when the resource is implemented with `terraform-plugin-sdk`. Having `Optional: true` while also setting the attribute's `Computed: true` flag in the schema will also enable this SDK's behavior of keeping the prior state value if the configuration value is removed (set to null) during an update. That SDK behavior is unavoidable. This SDK will also raise an implementation error if both `Computed: true` and `Default` are set, since the value will never reset to the default value because of that behavior. If that behavior is not acceptable, this error is unavoidable until the resource is migrated to terraform-plugin-framework, which does not have implicit behaviors when enabling the `Computed: true` flag and instead provider developers are expected to decide whether the prior state preservation behavior should occur or not by using the `UseStateForUnknown` schema plan modifier.
+
+### Planned Value does not match Config Value
+
+If the resource is raising this type of error or warning log:
+
+```text
+TIMESTAMP [WARN]  Provider "TYPE" produced an invalid plan for ADDRESS, but we are tolerating it because it is using the legacy plugin SDK.
+    The following problems may be the cause of any confusing errors from downstream operations:
+      - .ATTRIBUTE: planned value cty.StringVal("VALUE") does not match config value cty.StringVal("value")
+```
+
+This occurs for attribute schema definitions that are `Optional: true` and `Computed: true`; where the planned value, returned by the provider, does not match the attribute's config value or prior state value. For example, value's for an attribute of type string must match byte-for-byte.
+
+An example root cause of this issue could be from API normalization, such as a JSON string being returned from an API and stored in state with differing whitespace then what was originally in config.
+
+#### SDKv2 Example
+
+Here is an example of an SDKv2 resource schema and terraform config that simulates this data consistency error:
+
+```go
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		// ...
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				StateFunc: func(word interface{}) string {
+                    // This simulates an API returning the 'word' attribute as all uppercase,
+                    // which is stored to state even if it doesn't match the config or prior value.
+					return strings.ToUpper(word.(string))
+				},
+			},
+		},
+	}
+}
+```
+
+```hcl
+resource "examplecloud_thing" "this" {
+  word = "value"
+}
+```
+
+A warning log will be produced and the resulting state after applying a new resource would look like:
+```json
+{
+  //...
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "examplecloud_thing",
+      "name": "this",
+      "instances": [
+        {
+          "attributes": {
+            // This is invalid! Config has this stored as "value"
+            "word": "VALUE"
+          },
+        }
+      ]
+    }
+  ],
+}
+```
+
+#### Migrating to Plugin Framework
+
+When a resource with this behavior and prior state is migrated to Plugin Framework, depending on the business logic, you could potentially see:
+
+- Resource drift in the plan; Terraform will always detect a change between the config and state value. If no [modification](/terraform/plugin/framework/resources/plan-modification) is implemented, you could see drift in the plan:
+```hcl
+resource "examplecloud_thing" "this" {
+  word = "value"
+}
+```
+```text
+examplecloud_thing.this: Refreshing state...
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # examplecloud_thing.this will be updated in-place
+  ~ resource "examplecloud_thing" "this" {
+      ~ word = "VALUE" -> "value"
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+```
+- If you mimic the original SDKv2 behavior of storing a different value from config/prior value into state in the `Update` method, you will see an error like below:
+```text
+examplecloud_thing.this: Modifying...
+╷
+│ Error: Provider produced inconsistent result after apply
+│ 
+│ When applying changes to examplecloud_thing.this, provider "provider[\"TYPE\"]" produced an unexpected
+│ new value: .word: was cty.StringVal("value"), but now cty.StringVal("VALUE").
+│ 
+│ This is a bug in the provider, which should be reported in the provider's own issue tracker.
+```
+
+#### Recommended Solution
+To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. The recommended way to implement this logic is by creating a [custom type](/terraform/plugin/framework/handling-data/types/custom) with [semantic equality logic](/terraform/plugin/framework/handling-data/types/custom#semantic-equality). A custom type can be shared across multiple resource attributes and will ensure that the semantic equality logic is invoked during the `Read`, `Create`, and `Update` methods respectively.
+
+For the above example, the semantic equality implementation below would resolve the resource drift and error:
+```go
+type CaseInsensitive struct {
+	basetypes.StringValue
+}
+
+// ... custom value type implementation
+
+// StringSemanticEquals returns true if the given string value is semantically equal to the current string value. (case-insensitive)
+func (v CaseInsensitive) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	newValue, ok := newValuable.(CaseInsensitive)
+	if !ok {
+		diags.AddError(
+			"Semantic Equality Check Error",
+			"An unexpected value type was received while performing semantic equality checks. "+
+				"Please report this to the provider developers.\n\n"+
+				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
+				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
+		)
+
+		return false, diags
+	}
+
+    return strings.EqualFold(newValue.ValueString(), v.ValueString()), diags
+}
+```
+
+More examples of custom type/value logic with semantic equality can be found in the [common custom type](/terraform/plugin/framework/handling-data/types/custom#common-custom-types) repositories.
