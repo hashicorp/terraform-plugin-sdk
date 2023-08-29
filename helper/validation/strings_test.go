@@ -293,12 +293,12 @@ func TestValidationStringInSlice(t *testing.T) {
 		{
 			val:         "VALIDVALUE",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got VALIDVALUE`),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \["ValidValue" "AnotherValidValue"\], got VALIDVALUE`),
 		},
 		{
 			val:         "InvalidValue",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got InvalidValue`),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \["ValidValue" "AnotherValidValue"\], got InvalidValue`),
 		},
 		{
 			val:         1,
