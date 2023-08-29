@@ -139,8 +139,8 @@ func thingResource() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				StateFunc: func(word interface{}) string {
-          // This simulates an API returning the 'word' attribute as all uppercase,
-          // which is stored to state even if it doesn't match the config or prior value.
+                    // This simulates an API returning the 'word' attribute as all uppercase,
+                    // which is stored to state even if it doesn't match the config or prior value.
 					return strings.ToUpper(word.(string))
 				},
 			},
