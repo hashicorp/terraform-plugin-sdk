@@ -139,8 +139,8 @@ func thingResource() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				StateFunc: func(word interface{}) string {
-                    // This simulates an API returning the 'word' attribute as all uppercase,
-                    // which is stored to state even if it doesn't match the config or prior value.
+          // This simulates an API returning the 'word' attribute as all uppercase,
+          // which is stored to state even if it doesn't match the config or prior value.
 					return strings.ToUpper(word.(string))
 				},
 			},
@@ -177,73 +177,33 @@ A warning log will be produced and the resulting state after applying a new reso
 }
 ```
 
-#### Migrating to Plugin Framework
+#### Recommended SDKv2 Solution
+To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. In the example above, the solution is to remove the usage of [`StateFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.StateFunc).
 
-When a resource with this behavior and prior state is migrated to Plugin Framework, depending on the business logic, you could potentially see:
+In use-cases where a value is normalized on return from the remote API, SDKv2 resource can implement [`DiffSuppressFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressFunc) to preserve the prior state value, in the case of inconsequential differences and [`DiffSuppressOnRefresh: true`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressOnRefresh) to ensure this logic preserves the prior value during refresh.
 
-- Resource drift in the plan; Terraform will always detect a change between the config and state value. If no [modification](/terraform/plugin/framework/resources/plan-modification) is implemented, you could see drift in the plan:
-```hcl
-resource "examplecloud_thing" "this" {
-  word = "value"
-}
-```
-```text
-examplecloud_thing.this: Refreshing state...
+Adding those functions to the above example would look like:
 
-Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
-  ~ update in-place
-
-Terraform will perform the following actions:
-
-  # examplecloud_thing.this will be updated in-place
-  ~ resource "examplecloud_thing" "this" {
-      ~ word = "VALUE" -> "value"
-    }
-
-Plan: 0 to add, 1 to change, 0 to destroy.
-```
-- If you mimic the original SDKv2 behavior of storing a different value from config/prior value into state in the `Update` method, you will see an error like below:
-```text
-examplecloud_thing.this: Modifying...
-╷
-│ Error: Provider produced inconsistent result after apply
-│ 
-│ When applying changes to examplecloud_thing.this, provider "provider[\"TYPE\"]" produced an unexpected
-│ new value: .word: was cty.StringVal("value"), but now cty.StringVal("VALUE").
-│ 
-│ This is a bug in the provider, which should be reported in the provider's own issue tracker.
-```
-
-#### Recommended Solution
-To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. The recommended way to implement this logic is by creating a [custom type](/terraform/plugin/framework/handling-data/types/custom) with [semantic equality logic](/terraform/plugin/framework/handling-data/types/custom#semantic-equality). A custom type can be shared across multiple resource attributes and will ensure that the semantic equality logic is invoked during the `Read`, `Create`, and `Update` methods respectively.
-
-For the above example, the semantic equality implementation below would resolve the resource drift and error:
 ```go
-type CaseInsensitive struct {
-	basetypes.StringValue
-}
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: thingResourceCreate,
+		ReadContext:   thingResourceRead,
+		UpdateContext: thingResourceUpdate,
+		DeleteContext: thingResourceDelete,
 
-// ... custom value type implementation
-
-// StringSemanticEquals returns true if the given string value is semantically equal to the current string value. (case-insensitive)
-func (v CaseInsensitive) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(CaseInsensitive)
-	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-
-		return false, diags
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, oldValue, newValue string, d *schema.ResourceData) bool {
+					return strings.EqualFold(oldValue, newValue)
+				},
+				DiffSuppressOnRefresh: true,
+			},
+		},
 	}
-
-    return strings.EqualFold(newValue.ValueString(), v.ValueString()), diags
 }
 ```
 
-More examples of custom type/value logic with semantic equality can be found in the [common custom type](/terraform/plugin/framework/handling-data/types/custom#common-custom-types) repositories.
