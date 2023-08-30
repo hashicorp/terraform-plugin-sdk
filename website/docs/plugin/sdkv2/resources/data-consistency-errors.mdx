@@ -160,7 +160,7 @@ A warning log will be produced and the resulting state after applying a new reso
 #### Recommended SDKv2 Solution
 To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. In the example above, the solution is to remove the usage of [`StateFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.StateFunc).
 
-In use-cases where a value is normalized on return from the remote API, SDKv2 resource can implement [`DiffSuppressFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressFunc) to preserve the prior state value, in the case of inconsequential differences, and [`DiffSuppressOnRefresh: true`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressOnRefresh) to ensure this logic preserves the prior value during refresh.
+In use-cases where a value is normalized on return from the remote API, SDKv2 resource can implement [`DiffSuppressFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressFunc) to preserve the prior state value in the case of inconsequential differences, and [`DiffSuppressOnRefresh: true`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressOnRefresh) to ensure this logic preserves the prior value during refresh.
 
 Adding those functions to the above example would look like:
 
