@@ -1,6 +1,6 @@
 kind: ENHANCEMENTS
-body: Add `SchemaValidateDiagFunc` variants of helper/validation `All` and `Any` as
-  `AllDiag` and `AnyDiag`.
+body: 'helper/validation: Added `AllDiag` and `AnyDiag`, which are
+  `SchemaValidateDiagFunc` variants of `All` and `Any`'
 time: 2023-02-22T00:10:27.474224+02:00
 custom:
   Issue: "1155"
