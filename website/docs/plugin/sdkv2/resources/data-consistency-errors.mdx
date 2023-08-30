@@ -110,3 +110,80 @@ This occurs if the attribute schema definition is `Optional: true` without `Comp
 If the value is expected to never be set by configuration, the schema attribute `Optional: true` flag should be replaced with `Computed: true`.
 
 Otherwise, this may not be resolvable when the resource is implemented with `terraform-plugin-sdk`. Having `Optional: true` while also setting the attribute's `Computed: true` flag in the schema will also enable this SDK's behavior of keeping the prior state value if the configuration value is removed (set to null) during an update. That SDK behavior is unavoidable. This SDK will also raise an implementation error if both `Computed: true` and `Default` are set, since the value will never reset to the default value because of that behavior. If that behavior is not acceptable, this error is unavoidable until the resource is migrated to terraform-plugin-framework, which does not have implicit behaviors when enabling the `Computed: true` flag and instead provider developers are expected to decide whether the prior state preservation behavior should occur or not by using the `UseStateForUnknown` schema plan modifier.
+
+### Planned Value does not match Config Value
+
+If the resource is raising this type of error or warning log:
+
+```text
+TIMESTAMP [WARN]  Provider "TYPE" produced an invalid plan for ADDRESS, but we are tolerating it because it is using the legacy plugin SDK.
+    The following problems may be the cause of any confusing errors from downstream operations:
+      - .ATTRIBUTE: planned value cty.StringVal("VALUE") does not match config value cty.StringVal("value")
+```
+
+This occurs for attribute schema definitions that are `Optional: true` and `Computed: true`; where the planned value, returned by the provider, does not match the attribute's config value or prior state value. For example, value's for an attribute of type string must match byte-for-byte.
+
+An example root cause of this issue could be from API normalization, such as a JSON string being returned from an API and stored in state with differing whitespace then what was originally in config.
+
+#### SDKv2 Example
+
+Here is an example of an SDKv2 resource schema and terraform config that simulates this data consistency error:
+
+```go
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		// ...
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				StateFunc: func(word interface{}) string {
+                    // This simulates an API returning the 'word' attribute as all uppercase,
+                    // which is stored to state even if it doesn't match the config or prior value.
+					return strings.ToUpper(word.(string))
+				},
+			},
+		},
+	}
+}
+```
+
+```hcl
+resource "examplecloud_thing" "this" {
+  word = "value"
+}
+```
+
+A warning log will be produced and the resulting state after applying a new resource will be `VALUE` instead of `value`.
+
+#### Recommended SDKv2 Solution
+To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. In the example above, the solution is to remove the usage of [`StateFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.StateFunc).
+
+In use-cases where a value is normalized on return from the remote API, SDKv2 resource can implement [`DiffSuppressFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressFunc) to preserve the prior state value in the case of inconsequential differences, and [`DiffSuppressOnRefresh: true`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressOnRefresh) to ensure this logic preserves the prior value during refresh.
+
+Adding those functions to the above example would look like:
+
+```go
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: thingResourceCreate,
+		ReadContext:   thingResourceRead,
+		UpdateContext: thingResourceUpdate,
+		DeleteContext: thingResourceDelete,
+
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, oldValue, newValue string, d *schema.ResourceData) bool {
+					return strings.EqualFold(oldValue, newValue)
+				},
+				DiffSuppressOnRefresh: true,
+			},
+		},
+	}
+}
+```
+
