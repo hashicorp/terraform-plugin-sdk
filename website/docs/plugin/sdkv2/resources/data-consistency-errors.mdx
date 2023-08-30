@@ -155,27 +155,7 @@ resource "examplecloud_thing" "this" {
 }
 ```
 
-A warning log will be produced and the resulting state after applying a new resource would look like:
-```json
-{
-  //...
-  "resources": [
-    {
-      "mode": "managed",
-      "type": "examplecloud_thing",
-      "name": "this",
-      "instances": [
-        {
-          "attributes": {
-            // This is invalid! Config has this stored as "value"
-            "word": "VALUE"
-          },
-        }
-      ]
-    }
-  ],
-}
-```
+A warning log will be produced and the resulting state after applying a new resource will be `VALUE` instead of `value`.
 
 #### Recommended SDKv2 Solution
 To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. In the example above, the solution is to remove the usage of [`StateFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.StateFunc).
