@@ -1,7 +1,0 @@
-kind: FEATURES
-body: 'helper/schema: Upgrade to protocol version 5.4, which can significantly reduce
-  memory usage with Terraform 1.6 and later when a configuration includes multiple
-  instances of the same provider'
-time: 2023-08-25T09:34:31.204603-04:00
-custom:
-  Issue: "1234"
