@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,6 +26,124 @@ import (
 
 // The GRPCProviderServer will directly implement the go protobuf server
 var _ tfprotov5.ProviderServer = (*GRPCProviderServer)(nil)
+
+func TestGRPCProviderServerGetMetadata(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		Provider *Provider
+		Expected *tfprotov5.GetMetadataResponse
+	}{
+		"datasources": {
+			Provider: &Provider{
+				DataSourcesMap: map[string]*Resource{
+					"test_datasource1": nil, // implementation not necessary
+					"test_datasource2": nil, // implementation not necessary
+				},
+			},
+			Expected: &tfprotov5.GetMetadataResponse{
+				DataSources: []tfprotov5.DataSourceMetadata{
+					{
+						TypeName: "test_datasource1",
+					},
+					{
+						TypeName: "test_datasource2",
+					},
+				},
+				Resources: []tfprotov5.ResourceMetadata{},
+				ServerCapabilities: &tfprotov5.ServerCapabilities{
+					GetProviderSchemaOptional: true,
+				},
+			},
+		},
+		"datasources and resources": {
+			Provider: &Provider{
+				DataSourcesMap: map[string]*Resource{
+					"test_datasource1": nil, // implementation not necessary
+					"test_datasource2": nil, // implementation not necessary
+				},
+				ResourcesMap: map[string]*Resource{
+					"test_resource1": nil, // implementation not necessary
+					"test_resource2": nil, // implementation not necessary
+				},
+			},
+			Expected: &tfprotov5.GetMetadataResponse{
+				DataSources: []tfprotov5.DataSourceMetadata{
+					{
+						TypeName: "test_datasource1",
+					},
+					{
+						TypeName: "test_datasource2",
+					},
+				},
+				Resources: []tfprotov5.ResourceMetadata{
+					{
+						TypeName: "test_resource1",
+					},
+					{
+						TypeName: "test_resource2",
+					},
+				},
+				ServerCapabilities: &tfprotov5.ServerCapabilities{
+					GetProviderSchemaOptional: true,
+				},
+			},
+		},
+		"resources": {
+			Provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource1": nil, // implementation not necessary
+					"test_resource2": nil, // implementation not necessary
+				},
+			},
+			Expected: &tfprotov5.GetMetadataResponse{
+				DataSources: []tfprotov5.DataSourceMetadata{},
+				Resources: []tfprotov5.ResourceMetadata{
+					{
+						TypeName: "test_resource1",
+					},
+					{
+						TypeName: "test_resource2",
+					},
+				},
+				ServerCapabilities: &tfprotov5.ServerCapabilities{
+					GetProviderSchemaOptional: true,
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			server := NewGRPCProviderServer(testCase.Provider)
+
+			testReq := &tfprotov5.GetMetadataRequest{}
+
+			resp, err := server.GetMetadata(context.Background(), testReq)
+
+			if err != nil {
+				t.Fatalf("unexpected gRPC error: %s", err)
+			}
+
+			// Prevent false positives with random map access in testing
+			sort.Slice(resp.DataSources, func(i int, j int) bool {
+				return resp.DataSources[i].TypeName < resp.DataSources[j].TypeName
+			})
+
+			sort.Slice(resp.Resources, func(i int, j int) bool {
+				return resp.Resources[i].TypeName < resp.Resources[j].TypeName
+			})
+
+			if diff := cmp.Diff(resp, testCase.Expected); diff != "" {
+				t.Errorf("unexpected response difference: %s", diff)
+			}
+		})
+	}
+}
 
 func TestUpgradeState_jsonState(t *testing.T) {
 	r := &Resource{
