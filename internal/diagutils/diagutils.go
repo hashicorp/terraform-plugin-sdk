@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 )
 
@@ -28,7 +27,7 @@ func (diags ErrorDiags) Errors() []error {
 }
 
 func (diags ErrorDiags) Error() string {
-	return multierror.ListFormatFunc(diags.Errors())
+	return errors.Join(diags.Errors()...).Error()
 }
 
 type WarningDiags diag.Diagnostics

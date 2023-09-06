@@ -6,7 +6,6 @@ package customdiff
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -14,13 +13,15 @@ import (
 
 func TestAll(t *testing.T) {
 	var aCalled, bCalled, cCalled bool
+	aErr := errors.New("A bad")
+	cErr := errors.New("C bad")
 
 	provider := testProvider(
 		map[string]*schema.Schema{},
 		All(
 			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				aCalled = true
-				return errors.New("A bad")
+				return aErr
 			},
 			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				bCalled = true
@@ -28,7 +29,7 @@ func TestAll(t *testing.T) {
 			},
 			func(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
 				cCalled = true
-				return errors.New("C bad")
+				return cErr
 			},
 		),
 	)
@@ -46,11 +47,11 @@ func TestAll(t *testing.T) {
 	if err == nil {
 		t.Fatal("Diff succeeded; want error")
 	}
-	if s, sub := err.Error(), "* A bad"; !strings.Contains(s, sub) {
-		t.Errorf("Missing substring %q in error message %q", sub, s)
+	if !errors.Is(err, aErr) {
+		t.Errorf("Missing substring %q in error message %q", aErr, err)
 	}
-	if s, sub := err.Error(), "* C bad"; !strings.Contains(s, sub) {
-		t.Errorf("Missing substring %q in error message %q", sub, s)
+	if !errors.Is(err, cErr) {
+		t.Errorf("Missing substring %q in error message %q", cErr, err)
 	}
 
 	if !aCalled {

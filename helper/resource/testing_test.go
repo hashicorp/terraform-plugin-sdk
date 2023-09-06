@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-multierror"
 	testinginterface "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -88,26 +87,27 @@ func TestParallelTest(t *testing.T) {
 }
 
 func TestComposeAggregateTestCheckFunc(t *testing.T) {
+	err1 := errors.New("Error 1")
 	check1 := func(s *terraform.State) error {
-		return errors.New("Error 1")
+		return err1
 	}
 
+	err2 := errors.New("Error 2")
 	check2 := func(s *terraform.State) error {
-		return errors.New("Error 2")
+		return err2
 	}
 
 	f := ComposeAggregateTestCheckFunc(check1, check2)
 	err := f(nil)
 	if err == nil {
-		t.Fatalf("Expected errors")
+		t.Fatal("expected error, got none")
 	}
 
-	multi := err.(*multierror.Error)
-	if !strings.Contains(multi.Errors[0].Error(), "Error 1") {
-		t.Fatalf("Expected Error 1, Got %s", multi.Errors[0])
+	if !errors.Is(err, err1) {
+		t.Errorf("expected %s, got: %s", err1, err)
 	}
-	if !strings.Contains(multi.Errors[1].Error(), "Error 2") {
-		t.Fatalf("Expected Error 2, Got %s", multi.Errors[1])
+	if !errors.Is(err, err2) {
+		t.Errorf("expected %s, got: %s", err2, err)
 	}
 }
 

@@ -12,8 +12,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
@@ -130,10 +128,10 @@ func (p *Provider) InternalValidate() error {
 		return errors.New("ConfigureFunc and ConfigureContextFunc must not both be set")
 	}
 
-	var validationErrors error
+	var validationErrors []error
 	sm := schemaMap(p.Schema)
 	if err := sm.InternalValidate(sm); err != nil {
-		validationErrors = multierror.Append(validationErrors, err)
+		validationErrors = append(validationErrors, err)
 	}
 
 	// Provider-specific checks
@@ -145,17 +143,17 @@ func (p *Provider) InternalValidate() error {
 
 	for k, r := range p.ResourcesMap {
 		if err := r.InternalValidate(nil, true); err != nil {
-			validationErrors = multierror.Append(validationErrors, fmt.Errorf("resource %s: %s", k, err))
+			validationErrors = append(validationErrors, fmt.Errorf("resource %s: %s", k, err))
 		}
 	}
 
 	for k, r := range p.DataSourcesMap {
 		if err := r.InternalValidate(nil, false); err != nil {
-			validationErrors = multierror.Append(validationErrors, fmt.Errorf("data source %s: %s", k, err))
+			validationErrors = append(validationErrors, fmt.Errorf("data source %s: %s", k, err))
 		}
 	}
 
-	return validationErrors
+	return errors.Join(validationErrors...)
 }
 
 func isReservedProviderFieldName(name string) bool {
