@@ -485,6 +485,7 @@ func (p *Provider) DataSources() []terraform.DataSource {
 // If TF_APPEND_USER_AGENT is set, its value will be appended to the returned
 // string.
 func (p *Provider) UserAgent(name, version string) string {
+	//nolint:staticcheck // best effort usage
 	ua := fmt.Sprintf("Terraform/%s (+https://www.terraform.io) Terraform-Plugin-SDK/%s", p.TerraformVersion, meta.SDKVersionString())
 	if name != "" {
 		ua += " " + name

@@ -980,6 +980,7 @@ func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
 		defer os.Unsetenv(uaEnvVar)
 	}
 
+	//nolint:staticcheck // best effort usage
 	expectedBase := "Terraform/4.5.6 (+https://www.terraform.io) Terraform-Plugin-SDK/" + meta.SDKVersionString()
 
 	testCases := []struct {
