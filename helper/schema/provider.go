@@ -279,6 +279,19 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		return diag.FromErr(err)
 	}
 
+	// Set the RawConfig directly on this diff so (ResourceData).GetRawConfig()
+	// is populated in provider defined Configure functions.
+	//
+	// This could theoretically be added in (schemaMap).Diff() itself, such as
+	// checking (s == nil && c != nil) early, however this is introduced as a
+	// targeted change for now to prevent unintended consequences without
+	// lengthy investigation into that potential solution.
+	//
+	// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1270
+	if c != nil && diff != nil {
+		diff.RawConfig = c.CtyValue
+	}
+
 	data, err := sm.Data(nil, diff)
 	if err != nil {
 		return diag.FromErr(err)

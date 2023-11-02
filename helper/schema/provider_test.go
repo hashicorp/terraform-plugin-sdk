@@ -106,12 +106,12 @@ func TestProviderConfigure(t *testing.T) {
 
 	cases := map[string]struct {
 		P             *Provider
-		Config        map[string]interface{}
+		Config        cty.Value
 		ExpectedDiags diag.Diagnostics
 	}{
 		"nil": {
 			P:      &Provider{},
-			Config: nil,
+			Config: cty.EmptyObjectVal,
 		},
 
 		"ConfigureFunc-no-diags": {
@@ -131,9 +131,9 @@ func TestProviderConfigure(t *testing.T) {
 					return nil, fmt.Errorf("nope")
 				},
 			},
-			Config: map[string]interface{}{
-				"foo": 42,
-			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NumberIntVal(42),
+			}),
 		},
 
 		"ConfigureContextFunc-no-diags": {
@@ -153,9 +153,9 @@ func TestProviderConfigure(t *testing.T) {
 					return nil, diag.Errorf("nope")
 				},
 			},
-			Config: map[string]interface{}{
-				"foo": 42,
-			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NumberIntVal(42),
+			}),
 		},
 
 		"ConfigureFunc-error": {
@@ -175,9 +175,9 @@ func TestProviderConfigure(t *testing.T) {
 					return nil, fmt.Errorf("nope")
 				},
 			},
-			Config: map[string]interface{}{
-				"foo": 52,
-			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NumberIntVal(52),
+			}),
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,
@@ -210,9 +210,9 @@ func TestProviderConfigure(t *testing.T) {
 					}
 				},
 			},
-			Config: map[string]interface{}{
-				"foo": 52,
-			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NumberIntVal(52),
+			}),
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,
@@ -245,9 +245,9 @@ func TestProviderConfigure(t *testing.T) {
 					}
 				},
 			},
-			Config: map[string]interface{}{
-				"foo": 52,
-			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NumberIntVal(52),
+			}),
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
@@ -256,6 +256,56 @@ func TestProviderConfigure(t *testing.T) {
 				},
 			},
 		},
+		"ConfigureFunc-GetRawConfig": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.NumberIntVal(123),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, fmt.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NumberIntVal(123),
+			}),
+		},
+		"ConfigureContextFunc-GetRawConfig": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.NumberIntVal(123),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NumberIntVal(123),
+			}),
+		},
 	}
 
 	for name, tc := range cases {
@@ -263,7 +313,25 @@ func TestProviderConfigure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			c := terraform.NewResourceConfigRaw(tc.Config)
+			c := terraform.NewResourceConfigShimmed(tc.Config, InternalMap(tc.P.Schema).CoreConfigSchema())
+
+			// CtyValue is the raw protocol configuration data from newer APIs.
+			//
+			// This field was only added as a targeted fix for passing raw
+			// protocol data through the existing
+			// (helper/schema.Provider).Configure() exported method and is only
+			// populated in that situation. The data could theoretically be set
+			// in the NewResourceConfigShimmed() function, however the
+			// consequences of doing this were not investigated at the time the
+			// fix was introduced.
+			//
+			// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1270
+			if !c.CtyValue.IsNull() {
+				panic("c.CtyValue = tc.Config is now unnecessary")
+			}
+
+			c.CtyValue = tc.Config
+
 			diags := tc.P.Configure(context.Background(), c)
 
 			if diff := cmp.Diff(tc.ExpectedDiags, diags); diff != "" {
