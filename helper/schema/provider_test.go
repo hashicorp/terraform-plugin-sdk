@@ -256,7 +256,581 @@ func TestProviderConfigure(t *testing.T) {
 				},
 			},
 		},
-		"ConfigureFunc-GetRawConfig": {
+		"ConfigureFunc-Get-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						return nil, fmt.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureContextFunc-Get-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						return nil, diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureFunc-Get-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						return nil, fmt.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureContextFunc-Get-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						return nil, diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureFunc-Get-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.Get("test").(string)
+					expected := "test-value"
+
+					if got != expected {
+						return nil, fmt.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureContextFunc-Get-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.Get("test").(string)
+					expected := "test-value"
+
+					if got != expected {
+						return nil, diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureFunc-GetOk-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureContextFunc-GetOk-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureFunc-GetOk-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureContextFunc-GetOk-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureFunc-GetOk-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOk("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureContextFunc-GetOk-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOk("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureFunc-GetOkExists-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOkExists("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureContextFunc-GetOkExists-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOkExists("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureFunc-GetOkExists-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOkExists("test")
+					expected := ""
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureContextFunc-GetOkExists-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOkExists("test")
+					expected := ""
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureFunc-GetOkExists-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got, ok := d.GetOkExists("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, fmt.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureContextFunc-GetOkExists-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got, ok := d.GetOkExists("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+					}
+
+					if got.(string) != expected {
+						return nil, diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal("test-value"),
+			}),
+		},
+		"ConfigureFunc-GetRawConfig-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.NullVal(cty.String),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, fmt.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureContextFunc-GetRawConfig-null": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.NullVal(cty.String),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.NullVal(cty.String),
+			}),
+		},
+		"ConfigureFunc-GetRawConfig-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureFunc: func(d *ResourceData) (interface{}, error) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.StringVal(""),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, fmt.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureContextFunc-GetRawConfig-zero-value": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (interface{}, diag.Diagnostics) {
+					got := d.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.StringVal(""),
+					})
+
+					if got.Equals(expected).False() {
+						return nil, diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+
+					return nil, nil
+				},
+			},
+			Config: cty.ObjectVal(map[string]cty.Value{
+				"test": cty.StringVal(""),
+			}),
+		},
+		"ConfigureFunc-GetRawConfig-value": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"test": {
@@ -281,7 +855,7 @@ func TestProviderConfigure(t *testing.T) {
 				"test": cty.NumberIntVal(123),
 			}),
 		},
-		"ConfigureContextFunc-GetRawConfig": {
+		"ConfigureContextFunc-GetRawConfig-value": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"test": {

@@ -297,6 +297,13 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		return diag.FromErr(err)
 	}
 
+	// If the ResourceData was created with a nil InstanceDiff, such as when all
+	// attributes are null or zero-value, modify the ResourceData to contain
+	// the original ResourceConfig to support GetOkExists() and GetRawConfig().
+	if data != nil && diff == nil {
+		data.config = c
+	}
+
 	if p.ConfigureFunc != nil {
 		meta, err := p.ConfigureFunc(data)
 		if err != nil {
