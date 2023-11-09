@@ -32,6 +32,9 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
+          # Default input is the SHA that initially triggered the workflow. As we created a new commit in the previous job,
+          # to ensure we get the latest commit we use the ref for checkout: 'refs/heads/<branch_name>'
+          ref: ${{ github.ref }}
           # Avoid persisting GITHUB_TOKEN credentials as they take priority over our service account PAT for `git push` operations
           # More details: https://github.com/actions/checkout/blob/b4626ce19ce1106186ddf9bb20e706842f11a7c3/adrs/0153-checkout-v2.md#persist-credentials
           persist-credentials: false
