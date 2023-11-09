@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: 'helper/schema: Ensured `(ResourceData).GetRawConfig()` data is populated for
+  `Provider.ConfigureFunc` and `Provider.ConfigureContextFunc`'
+time: 2023-11-02T06:36:50.137259-04:00
+custom:
+  Issue: "1270"

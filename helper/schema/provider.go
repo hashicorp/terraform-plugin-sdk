@@ -284,6 +284,14 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		return diag.FromErr(err)
 	}
 
+	// Modify the ResourceData to contain the original ResourceConfig to support
+	// GetOkExists() and GetRawConfig().
+	//
+	// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1270
+	if data != nil {
+		data.config = c
+	}
+
 	if p.ConfigureFunc != nil {
 		meta, err := p.ConfigureFunc(data)
 		if err != nil {
