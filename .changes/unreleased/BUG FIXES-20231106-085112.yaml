@@ -1,7 +1,0 @@
-kind: BUG FIXES
-body: 'helper/schema: Ensured `(ResourceData).GetOkExists()` second result is `true`
-  when configuration contains zero-value data in `Provider.ConfigureFunc` and
-  `Provider.ConfigureContextFunc`'
-time: 2023-11-06T08:51:12.814228-05:00
-custom:
-  Issue: "1270"

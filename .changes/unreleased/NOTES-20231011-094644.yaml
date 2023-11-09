@@ -1,7 +1,0 @@
-kind: NOTES
-body: 'meta: The `SDKVersion` variable, `SDKPrerelease` variable, and `SDKVersionString()`
-  function have been deprecated. Use the Go standard library `runtime/debug` package
-  build information instead.'
-time: 2023-10-11T09:46:44.606126-04:00
-custom:
-  Issue: "1257"

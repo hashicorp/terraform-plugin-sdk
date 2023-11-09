@@ -1,5 +1,0 @@
-kind: BUG FIXES
-body: 'meta: Fixed version in `SDKVersion` variable and `SDKVersionString()` function'
-time: 2023-10-11T09:45:50.333603-04:00
-custom:
-  Issue: "1257"
