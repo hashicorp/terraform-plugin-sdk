@@ -50,11 +50,11 @@ jobs:
           args: merge
       - name: Git push changelog
         run: |
-          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
-          git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+          git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ vars.TF_DEVEX_CI_COMMIT_EMAIL }}"
           git add .
           git commit -a -m "Update changelog"
-          git push "https://${{ env.CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
   meta-version:
     needs: changelog-version
@@ -74,11 +74,11 @@ jobs:
         run: sed -i "s/var SDKVersion =.*/var SDKVersion = \"${{ needs.changelog-version.outputs.version }}\"/" meta/meta.go
       - name: Git push meta
         run: |
-          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
-          git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+          git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ vars.TF_DEVEX_CI_COMMIT_EMAIL }}"
           git add meta/meta.go
           git commit -m "Update meta package SDKVersion"
-          git push "https://${{ env.CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
   release-tag:
     needs: changelog
@@ -97,11 +97,11 @@ jobs:
 
       - name: Git push release tag
         run: |
-          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
-          git config --global user.email "${{ env.CI_COMMIT_EMAIL }}"
+          git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ vars.TF_DEVEX_CI_COMMIT_EMAIL }}"
           
           git tag "${{ inputs.versionNumber }}"
-          git push "https://${{ env.CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "${{ inputs.versionNumber }}"
+          git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "${{ inputs.versionNumber }}"
 
   goreleaser:
     needs: [ changelog-version, changelog, release-tag ]
