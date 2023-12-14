@@ -2111,6 +2111,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 						TypeName: "test_datasource2",
 					},
 				},
+				Functions: []tfprotov5.FunctionMetadata{},
 				Resources: []tfprotov5.ResourceMetadata{},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
@@ -2137,6 +2138,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 						TypeName: "test_datasource2",
 					},
 				},
+				Functions: []tfprotov5.FunctionMetadata{},
 				Resources: []tfprotov5.ResourceMetadata{
 					{
 						TypeName: "test_resource1",
@@ -2159,6 +2161,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 			},
 			Expected: &tfprotov5.GetMetadataResponse{
 				DataSources: []tfprotov5.DataSourceMetadata{},
+				Functions:   []tfprotov5.FunctionMetadata{},
 				Resources: []tfprotov5.ResourceMetadata{
 					{
 						TypeName: "test_resource1",

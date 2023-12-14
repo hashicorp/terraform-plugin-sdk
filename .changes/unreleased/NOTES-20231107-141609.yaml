@@ -1,0 +1,8 @@
+kind: NOTES
+body: 'helper/schema: While this Go module will not receive support for
+  provider-defined functions, the provider server is updated to handle the new
+  operations, which will be required to prevent errors when updating
+  terraform-plugin-framework or terraform-plugin-mux in the future.'
+time: 2023-11-07T14:16:09.783296-05:00
+custom:
+  Issue: "1288"
