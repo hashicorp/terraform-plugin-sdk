@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.19.0
-	github.com/hashicorp/terraform-json v0.18.0
+	github.com/hashicorp/terraform-json v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.20.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/mitchellh/copystructure v1.2.0
