@@ -1,0 +1,8 @@
+kind: NOTES
+body: 'helper/schema: While this Go module will not receive support for moving
+  resource state across resource types, the provider server is updated to handle
+  the new operation, which will be required to prevent errors when updating
+  terraform-plugin-framework or terraform-plugin-mux in the future.'
+time: 2024-01-29T08:48:40.990566-05:00
+custom:
+  Issue: "1307"
