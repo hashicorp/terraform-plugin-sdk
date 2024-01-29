@@ -24,9 +24,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// The GRPCProviderServer will directly implement the go protobuf server
-var _ tfprotov5.ProviderServer = (*GRPCProviderServer)(nil)
-
 func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 	t.Parallel()
 
@@ -2204,6 +2201,74 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 
 			if diff := cmp.Diff(resp, testCase.Expected); diff != "" {
 				t.Errorf("unexpected response difference: %s", diff)
+			}
+		})
+	}
+}
+
+func TestGRPCProviderServerMoveResourceState(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		request  *tfprotov5.MoveResourceStateRequest
+		expected *tfprotov5.MoveResourceStateResponse
+	}{
+		"nil": {
+			server:   NewGRPCProviderServer(&Provider{}),
+			request:  nil,
+			expected: nil,
+		},
+		"request-TargetTypeName-missing": {
+			server: NewGRPCProviderServer(&Provider{}),
+			request: &tfprotov5.MoveResourceStateRequest{
+				TargetTypeName: "test_resource",
+			},
+			expected: &tfprotov5.MoveResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Unknown Resource Type",
+						Detail:   "The \"test_resource\" resource type is not supported by this provider.",
+					},
+				},
+			},
+		},
+		"request-TargetTypeName": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {},
+				},
+			}),
+			request: &tfprotov5.MoveResourceStateRequest{
+				TargetTypeName: "test_resource",
+			},
+			expected: &tfprotov5.MoveResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Move Resource State Not Supported",
+						Detail:   "The \"test_resource\" resource type does not support moving resource state across resource types.",
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			resp, err := testCase.server.MoveResourceState(context.Background(), testCase.request)
+
+			if testCase.request != nil && err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected); diff != "" {
+				t.Errorf("unexpected difference: %s", diff)
 			}
 		})
 	}
