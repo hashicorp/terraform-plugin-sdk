@@ -1,3 +1,9 @@
+## 2.32.0 (January 29, 2024)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for moving resource state across resource types, the provider server is updated to handle the new operation, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future. ([#1307](https://github.com/hashicorp/terraform-plugin-sdk/issues/1307))
+
 ## 2.31.0 (December 14, 2023)
 
 NOTES:
