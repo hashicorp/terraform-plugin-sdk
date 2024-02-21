@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package terraform
 
 import (
@@ -257,6 +260,38 @@ func TestResourceConfigEqual_computedKeyOrder(t *testing.T) {
 	rc.ComputedKeys = []string{"foo", "bar"}
 	rc2.ComputedKeys = []string{"bar", "foo"}
 
+	if !rc.Equal(rc2) {
+		t.Fatal("should be equal")
+	}
+}
+
+func TestResourceConfigEqual_CtyValue(t *testing.T) {
+	t.Parallel()
+
+	value := cty.ObjectVal(map[string]cty.Value{
+		"test": cty.UnknownVal(cty.String),
+	})
+	schema := &configschema.Block{
+		Attributes: map[string]*configschema.Attribute{
+			"test": {
+				Type:     cty.String,
+				Optional: true,
+			},
+		},
+	}
+
+	rc := NewResourceConfigShimmed(value, schema)
+	rc2 := NewResourceConfigShimmed(value, schema)
+
+	// Regardless of whether NewResourceConfigShimmed() was updated to set the
+	// CtyValue field, ensure that they differ manually as a major version
+	// compatibility check.
+	rc.CtyValue = value
+	rc2.CtyValue = cty.Value{}
+
+	// At least in v2, these should intentionally be equal even though the
+	// CtyValue fields differ.
+	// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1270
 	if !rc.Equal(rc2) {
 		t.Fatal("should be equal")
 	}

@@ -1,0 +1,189 @@
+---
+page_title: Resources - Data Consistency Errors
+description: Fixing data consistency errors caused by this SDK.
+---
+
+# Resources - Data Consistency Errors
+
+Resources written with `terraform-plugin-sdk` are by default allowed to perform unexpected data handling operations from Terraform's perspective. Terraform versions 0.12 and later have stricter [data consistency rules](https://github.com/hashicorp/terraform/blob/main/docs/resource-instance-change-lifecycle.md) than the design and implementation of this SDK, which predated those rules.
+
+Some of the resource data consistency rules include:
+
+- Resources should never set or change an attribute value without the schema `Computed` flag.
+- Resources should always set an attribute state value to the exact configuration value or prior state value, if not null.
+
+When Terraform encounters an unexpected data handling behavior from `terraform-plugin-sdk` resources during planning or applying operations, instead of immediately raising an error diagnostic to practitioners (or provider developers during acceptance testing), it will generate a warning log entry. These can be hard for provider developers to know about or discover as most environments are not running Terraform with logging enabled, let alone checking for warnings or errors in those logs.
+
+There are two challenges with these demoted errors:
+
+- If a problematic attribute value is referenced by another resource in the same Terraform configuration, Terraform will raise an error diagnostic for the downstream resource due to the unexpected value behavior caused by the upstream resource. This often will cause a confusing bug report in the downstream provider, which cannot be fixed there.
+- If the resource is being [migrated to terraform-plugin-framework](/terraform/plugin/framework/migrating), Terraform will always raise the errors, regardless if the attribute is referenced elsewhere. This makes any issues during the framework migration more difficult to triage, as it is unclear whether the resource behavior was previously wrong or if something went wrong when implementing the framework-based logic.
+
+While it is not completely possible to remove all data consistency errors with this SDK, this page provides instructions for [finding these errors](#finding-data-consistency-errors) and [potential steps for resolving these errors](#resolving-data-consistency-errors).
+
+## Finding Data Consistency Errors
+
+This section describes methods for finding data consistency errors. The [Resolving Data Consistency Errors](#resolving-data-consistency-errors) section describes how to potentially fix errors.
+
+### Checking For Warning Logs
+
+Enable [Terraform logging](/terraform/internals/debugging). When running Terraform commands, such as `terraform apply`, the `TF_LOG=TRACE` environment variable can be set, such as `TF_LOG=TRACE terraform apply`. When running [acceptance testing](/terraform/plugin/testing/acceptance-tests), the `TF_ACC_LOG` and `TF_ACC_LOG_PATH` [acceptance testing environment variables](/terraform/plugin/testing/acceptance-tests#environment-variables) must be set to save the Terraform log output from a test.
+
+If there are data consistency errors, Terraform will create warning logs.
+
+In this example, Terraform raised a data consistency warning log entry:
+
+```text
+TIMESTAMP [WARN]  Provider "TYPE" produced an invalid plan for ADDRESS, but we are tolerating it because it is using the legacy plugin SDK.
+    The following problems may be the cause of any confusing errors from downstream operations:
+      - .ATTRIBUTE: planned value cty.False for a non-computed attribute
+```
+
+### Enabling Resource Data Consistency Errors
+
+<Note>
+
+Always fully verify the resource with acceptance testing before a production release with these settings enabled. If unchecked, these settings can cause unavoidable errors for practitioners and prevent their Terraform workflows from successfully completing.
+
+</Note>
+
+Enable the `Resource` type `EnableApplyLegacyTypeSystemErrors` and `EnablePlanLegacyTypeSystemErrors` boolean fields and run all available [acceptance testing](/terraform/plugin/testing/acceptance-tests) for the resource. These settings will cause Terraform to raise data consistency errors instead of demoting those to warning logs for the resource.
+
+In this example, a resource has been enabled to raise data consistency errors instead of warning logs:
+
+```go
+schema.Resource{
+    // ... other fields as necessary ...
+    EnableApplyLegacyTypeSystemErrors: true,
+    EnablePlanLegacyTypeSystemErrors:  true,
+}
+```
+
+If there are unavoidable data consistency errors after reviewing the [Resolving Data Consistency Errors](#resolving-data-consistency-errors) section, disable only the setting(s) causing errors. This ensures that future changes to the resource are not introducing new data consistency issues.
+
+### Acceptance Testing All Values
+
+If the resource has unavoidable data consistency errors after reviewing the [Resolving Data Consistency Errors](#resolving-data-consistency-errors) section, a last resort option for checking one type of data consistency error is implementing [acceptance testing](/terraform/plugin/testing/acceptance-tests) that validates every configured attribute has the same exact value in state after being applied. The typical recommendation for state value checking in acceptance testing is only for `Computed: true` attributes, however since this SDK can bypass the Terraform data consistency rules, it is possible for state values to not match configuration values.
+
+In this example, an acceptance test performs the typically unnecessary state value check of a configured value:
+
+```go
+func TestThingResource(t *testing.T) {
+    resource.Test(t, resource.TestCase{
+        // ... other fields as necessary ...
+        Steps: []resource.TestStep{
+            {
+                // ... other fields as necessary ...
+                Config: `
+                resource "examplecloud_thing" "test" {
+                    configurable_attribute = "test-value"
+                }
+                `
+                Checks: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr("examplecloud_thing.test", "configurable_attribute", "test-value"),
+                ),
+            },
+            // ... potentially other steps as necessary ...
+        },
+    })
+}
+```
+
+The state value check will raise an error if there is an unexpected value difference, which is the same as if Terraform raised the error. Checking state values of configured values can be removed once the resource is [migrated to terraform-plugin-framework](/terraform/plugin/framework/migrating), as Terraform itself will raise any potential error.
+
+## Resolving Data Consistency Errors
+
+This section describes Terraform data consistency errors and resolution options.
+
+### Planned Value For a Non-Computed Attribute
+
+If the resource is raising this type of error or warning log:
+
+```text
+TIMESTAMP [WARN]  Provider "TYPE" produced an invalid plan for ADDRESS, but we are tolerating it because it is using the legacy plugin SDK.
+    The following problems may be the cause of any confusing errors from downstream operations:
+      - .ATTRIBUTE: planned value cty.False for a non-computed attribute
+```
+
+This occurs if the attribute schema definition is `Optional: true` without `Computed: true` set, especially in schemas with the `Default` field set. Terraform requires a provider to set the `Computed: true` flag in the schema if the provider may set the value in state different than the configuration.
+
+If the value is expected to never be set by configuration, the schema attribute `Optional: true` flag should be replaced with `Computed: true`.
+
+Otherwise, this may not be resolvable when the resource is implemented with `terraform-plugin-sdk`. Having `Optional: true` while also setting the attribute's `Computed: true` flag in the schema will also enable this SDK's behavior of keeping the prior state value if the configuration value is removed (set to null) during an update. That SDK behavior is unavoidable. This SDK will also raise an implementation error if both `Computed: true` and `Default` are set, since the value will never reset to the default value because of that behavior. If that behavior is not acceptable, this error is unavoidable until the resource is migrated to terraform-plugin-framework, which does not have implicit behaviors when enabling the `Computed: true` flag and instead provider developers are expected to decide whether the prior state preservation behavior should occur or not by using the `UseStateForUnknown` schema plan modifier.
+
+### Planned Value does not match Config Value
+
+If the resource is raising this type of error or warning log:
+
+```text
+TIMESTAMP [WARN]  Provider "TYPE" produced an invalid plan for ADDRESS, but we are tolerating it because it is using the legacy plugin SDK.
+    The following problems may be the cause of any confusing errors from downstream operations:
+      - .ATTRIBUTE: planned value cty.StringVal("VALUE") does not match config value cty.StringVal("value")
+```
+
+This occurs for attribute schema definitions that are `Optional: true` and `Computed: true`; where the planned value, returned by the provider, does not match the attribute's config value or prior state value. For example, value's for an attribute of type string must match byte-for-byte.
+
+An example root cause of this issue could be from API normalization, such as a JSON string being returned from an API and stored in state with differing whitespace then what was originally in config.
+
+#### SDKv2 Example
+
+Here is an example of an SDKv2 resource schema and terraform config that simulates this data consistency error:
+
+```go
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		// ...
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				StateFunc: func(word interface{}) string {
+                    // This simulates an API returning the 'word' attribute as all uppercase,
+                    // which is stored to state even if it doesn't match the config or prior value.
+					return strings.ToUpper(word.(string))
+				},
+			},
+		},
+	}
+}
+```
+
+```hcl
+resource "examplecloud_thing" "this" {
+  word = "value"
+}
+```
+
+A warning log will be produced and the resulting state after applying a new resource will be `VALUE` instead of `value`.
+
+#### Recommended SDKv2 Solution
+To solve this issue, the provider code must preserve the config value or prior state value when producing the new state. In the example above, the solution is to remove the usage of [`StateFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.StateFunc).
+
+In use-cases where a value is normalized on return from the remote API, SDKv2 resource can implement [`DiffSuppressFunc`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressFunc) to preserve the prior state value in the case of inconsequential differences, and [`DiffSuppressOnRefresh: true`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Schema.DiffSuppressOnRefresh) to ensure this logic preserves the prior value during refresh.
+
+Adding those functions to the above example would look like:
+
+```go
+func thingResource() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: thingResourceCreate,
+		ReadContext:   thingResourceRead,
+		UpdateContext: thingResourceUpdate,
+		DeleteContext: thingResourceDelete,
+
+		Schema: map[string]*schema.Schema{
+			"word": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, oldValue, newValue string, d *schema.ResourceData) bool {
+					return strings.EqualFold(oldValue, newValue)
+				},
+				DiffSuppressOnRefresh: true,
+			},
+		},
+	}
+}
+```
+

@@ -30,7 +30,7 @@ Upgrade topics:
 * [Louder `helper/schema.ResourceData.Set` Errors in Testing](#louder-helper-schema-resourcedata-set-errors-in-testing)
 * [More Consistent Usage of `github.com/mitchellh/go-testing-interface`](#more-consistent-usage-of-github-com-mitchellh-go-testing-interface)
 * [Corrected Results of `helper/acctest.RandIntRange`](#corrected-results-of-helper-acctest-randintrange)
-* [Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`](#clearer-handling-of-nil-for-helper-resource-nonretryableerror-and-helper-resource-retryableerror)
+* [Clearer Handling of `nil` for `helper/retry.RetryableError` and `helper/retry.RetryableError`](#clearer-handling-of-nil-for-helper-resource-nonretryableerror-and-helper-resource-retryableerror)
 * [More Robust Handling of `helper/schema.TypeSet` Hashes](#more-robust-handling-of-helper-schema-typeset-hashes)
 * [Stronger Validation for `helper/schema.Schema.Computed` Fields](#stronger-validation-for-helper-schema-schema-computed-fields)
 * [More Robust Validation of `helper/schema.TypeMap` `Elem`s](#more-robust-validation-of-helper-schema-typemap-elems)
@@ -287,13 +287,13 @@ integer between the arguments. It has been corrected to return an integer
 between the arguments. Any usage reliant on the old, buggy behavior should be
 updated.
 
-## Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`
+## Clearer Handling of `nil` for `helper/retry.RetryableError` and `helper/retry.RetryableError`
 
-Previously, passing a `nil` error to `helper/resource.RetryableError` and
-`helper/resource.NonRetryableError` could lead to subtle bugs and even crashes.
+Previously, passing a `nil` error to `helper/retry.RetryableError` and
+`helper/retry.RetryableError` could lead to subtle bugs and even crashes.
 It will now return an error. Providers should check that the error is not `nil`
-before calling `helper/resource.NonRetryableError` or
-`helper/resource.RetryableError`.
+before calling `helper/retry.RetryableError` or
+`helper/retry.RetryableError`.
 
 ## More Robust Handling of `helper/schema.TypeSet` Hashes
 
@@ -624,9 +624,9 @@ Terraform’s built-in error messaging indicate its removal.
 ## Removal of `helper/encryption` Package
 
 The `helper/encryption` package supports an [anti-pattern that is now
-discouraged](/terraform/plugin/sdkv2/best-practices/sensitive-state#don-39-t-encrypt-state),
+discouraged](/terraform/plugin/best-practices/sensitive-state#don-t-encrypt-state),
 so it has been removed. Providers relying on it should see the
-[documentation](/terraform/plugin/sdkv2/best-practices/sensitive-state)
+[documentation](/terraform/plugin/best-practices/sensitive-state)
 on that pattern and select an alternative approach.
 
 ## Removal of Discouraged Variables, Functions, Types, and Interfaces

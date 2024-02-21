@@ -26,6 +26,10 @@
         "title": "Customizing Differences",
         "path": "resources/customizing-differences"
       },
+      {
+        "title": "Data Consistency Errors",
+        "path": "resources/data-consistency-errors"
+      },
       { "title": "Import", "path": "resources/import" },
       {
         "title": "Retries and Customizable Timeouts",
@@ -114,36 +118,12 @@
     "routes": [
       { "title": "Overview", "path": "best-practices" },
       {
-        "title": "Naming",
-        "path": "best-practices/naming"
-      },
-      {
-        "title": "Depending on Providers",
-        "path": "best-practices/depending-on-providers"
-      },
-      {
         "title": "Deprecations, Removals, and Renames",
         "path": "best-practices/deprecations"
       },
       {
         "title": "Detecting Drift",
         "path": "best-practices/detecting-drift"
-      },
-      {
-        "title": "Handling Sensitive Data",
-        "path": "best-practices/sensitive-state"
-      },
-      {
-        "title": "Testing Patterns",
-        "path": "best-practices/testing"
-      },
-      {
-        "title": "Versioning and Changelog",
-        "path": "best-practices/versioning"
-      },
-      {
-        "title": "Writing Non-Go Providers",
-        "path": "best-practices/other-languages"
       }
     ]
   }

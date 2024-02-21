@@ -1,4 +1,7 @@
-package resource
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package retry
 
 import (
 	"context"

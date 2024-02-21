@@ -80,7 +80,7 @@ The items below are coding/testing styles that should generally be followed when
 
 - The `TestStep` including `ImportState` testing should not be performed solely in a separate acceptance test. This duplicates testing infrastructure/time and does not check that all resource configurations import into Terraform properly.
 - The `TestStep` including `ImportState` should be included in all applicable resource acceptance tests (except those that delete the resource in question, e.g. `_disappears` tests)
-- Import implementations should not change existing `Create` function `d.SetId()` calls. [Versioning best practices for Terraform Provider development](/terraform/plugin/sdkv2/best-practices/versioning#example-major-number-increments) notes that changing the resource ID is considered a breaking change for a major version upgrade as it makes the `id` attribute ambiguous between provider versions.
+- Import implementations should not change existing `Create` function `d.SetId()` calls. [Versioning best practices for Terraform Provider development](/terraform/plugin/best-practices/versioning#example-major-number-increments) notes that changing the resource ID is considered a breaking change for a major version upgrade as it makes the `id` attribute ambiguous between provider versions.
 - `ImportStateVerifyIgnore` should only be used where its not possible to `d.Set()` the attribute in the `Read` function (preferable) or `Importer` `State` function.
 
 ### Importer State Function

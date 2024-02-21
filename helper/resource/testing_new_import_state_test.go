@@ -1,8 +1,12 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package resource
 
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -189,6 +193,28 @@ func TestTest_TestStep_ImportStateVerifyIgnore(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"create_only"},
+			},
+		},
+	})
+}
+
+func TestTest_TestStep_ExpectError_ImportState(t *testing.T) {
+	t.Parallel()
+
+	Test(t, TestCase{
+		ExternalProviders: map[string]ExternalProvider{
+			"random": {
+				Source:            "registry.terraform.io/hashicorp/time",
+				VersionConstraint: "0.9.1",
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config:        `resource "time_static" "one" {}`,
+				ImportStateId: "invalid time string",
+				ResourceName:  "time_static.one",
+				ImportState:   true,
+				ExpectError:   regexp.MustCompile(`Error: Import time static error`),
 			},
 		},
 	})

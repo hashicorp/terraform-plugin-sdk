@@ -16,12 +16,12 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: 'go.mod'
       - run: go mod download
-      - uses: golangci/golangci-lint-action@08e2f20817b15149a52b5b3ebe7de50aff2ba8c5 # v3.4.0
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
         with:
           version: latest
   terraform-provider-corner:
@@ -30,12 +30,12 @@ jobs:
         working-directory: terraform-provider-corner
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           path: terraform-provider-corner
           repository: hashicorp/terraform-provider-corner
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: 'go.mod'
       - run: go mod edit -replace=github.com/hashicorp/terraform-plugin-sdk/v2=../
@@ -48,16 +48,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.19', '1.18' ]
+        go-version: [ '1.21', '1.20' ]
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: ${{ matrix.go-version }}
       - run: go mod download
       - run: go test -coverprofile=coverage.out ./...
       - run: go tool cover -html=coverage.out -o coverage.html
-      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: go-${{ matrix.go-version }}-coverage
           path: coverage.html

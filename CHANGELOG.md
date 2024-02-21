@@ -1,3 +1,83 @@
+## 2.32.0 (January 29, 2024)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for moving resource state across resource types, the provider server is updated to handle the new operation, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future. ([#1307](https://github.com/hashicorp/terraform-plugin-sdk/issues/1307))
+
+## 2.31.0 (December 14, 2023)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for provider-defined functions, the provider server is updated to handle the new operations, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future. ([#1288](https://github.com/hashicorp/terraform-plugin-sdk/issues/1288))
+
+## 2.30.0 (November 09, 2023)
+
+NOTES:
+
+* meta: The `SDKVersion` variable, `SDKPrerelease` variable, and `SDKVersionString()` function have been deprecated. Use the Go standard library `runtime/debug` package build information instead. ([#1257](https://github.com/hashicorp/terraform-plugin-sdk/issues/1257))
+
+BUG FIXES:
+
+* meta: Fixed version in `SDKVersion` variable and `SDKVersionString()` function ([#1257](https://github.com/hashicorp/terraform-plugin-sdk/issues/1257))
+* helper/schema: Ensured `(ResourceData).GetRawConfig()` data is populated for `Provider.ConfigureFunc` and `Provider.ConfigureContextFunc` ([#1270](https://github.com/hashicorp/terraform-plugin-sdk/issues/1270))
+* helper/schema: Ensured `(ResourceData).GetOkExists()` second result is `true` when configuration contains zero-value data in `Provider.ConfigureFunc` and `Provider.ConfigureContextFunc` ([#1270](https://github.com/hashicorp/terraform-plugin-sdk/issues/1270))
+
+## 2.29.0 (September 06, 2023)
+
+NOTES:
+
+* all: This Go module has been updated to Go 1.20 per the [Go support policy](https://go.dev/doc/devel/release#policy). It is recommended to review the [Go 1.20 release notes](https://go.dev/doc/go1.20) before upgrading. Any consumers building on earlier Go versions may experience errors. ([#1245](https://github.com/hashicorp/terraform-plugin-sdk/issues/1245))
+
+FEATURES:
+
+* helper/schema: Upgrade to protocol version 5.4, which can significantly reduce memory usage with Terraform 1.6 and later when a configuration includes multiple instances of the same provider ([#1234](https://github.com/hashicorp/terraform-plugin-sdk/issues/1234))
+
+ENHANCEMENTS:
+
+* helper/validation: Added `AllDiag` and `AnyDiag`, which are `SchemaValidateDiagFunc` variants of `All` and `Any` ([#1155](https://github.com/hashicorp/terraform-plugin-sdk/issues/1155))
+* helper/validation: Added quoting in `StringInSlice` error diagnostic output to prevent confusion with values that contain spaces ([#464](https://github.com/hashicorp/terraform-plugin-sdk/issues/464))
+
+## 2.28.0 (August 24, 2023)
+
+NOTES:
+
+* helper/schema: The `Resource` type `EnableApplyLegacyTypeSystemErrors` and `EnablePlanLegacyTypeSystemErrors` fields can be enabled to more easily discover resource data consistency errors which Terraform would normally demote to warning logs. Before enabling the flag in a production release for a resource, the resource should be exhaustively acceptance tested as there may be unrecoverable error situations for practitioners. It is recommended to first enable and test in environments where it is easy to clean up resources, potentially outside of Terraform. ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+
+ENHANCEMENTS:
+
+* helper/schema: Added `Resource` type `EnableLegacyTypeSystemApplyErrors` field, which will prevent Terraform from demoting data consistency errors to warning logs during `ApplyResourceChange` (`Create`, `Update`, and `Delete`) operations with the resource ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+* helper/schema: Added `Resource` type `EnableLegacyTypeSystemPlanErrors` field, which can be used to prevent Terraform from demoting data consistency errors to warning logs during `PlanResourceChange` operations with the resource ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+
+## 2.27.0 (June 28, 2023)
+
+NOTES:
+
+* helper/schema: Consumers directly referencing the `Resource` type `Schema` field should switch to the `SchemaMap` method to ensure new `SchemaFunc` field data is properly retrieved ([#1217](https://github.com/hashicorp/terraform-plugin-sdk/issues/1217))
+
+ENHANCEMENTS:
+
+* all: Improved SDK logging performance when messages would be skipped due to configured logging level ([#1202](https://github.com/hashicorp/terraform-plugin-sdk/issues/1202))
+* helper/schema: Added `Resource` type `SchemaFunc` field and `SchemaMap` method, which can reduce resident memory usage with large schemas ([#1217](https://github.com/hashicorp/terraform-plugin-sdk/issues/1217))
+
+## 2.26.1 (March 21, 2023)
+
+BUG FIXES:
+
+* helper/resource: Prevented build errors with type aliasing added in v2.26.0 ([#1176](https://github.com/hashicorp/terraform-plugin-sdk/issues/1176))
+
+## 2.26.0 (March 20, 2023)
+
+NOTES:
+
+* This Go module has been updated to Go 1.19 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1163](https://github.com/hashicorp/terraform-plugin-sdk/issues/1163))
+* helper/resource: Deprecated `PrefixedUniqueId()` and `UniqueId()`. Use the `helper/id` package instead. These deprecations are to assist in migrating to terraform-plugin-testing ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+* helper/resource: Deprecated `RetryContext()`, `StateChangeConf`, and associated `*Error` types. Use the `helper/retry` package instead. These deprecations are to assist in migrating to terraform-plugin-testing ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+
+ENHANCEMENTS:
+
+* helper/id: New `helper/id` package added. `resource.PrefixedUniqueId()` and `resource.UniqueId()` are deprecated, `helper/id` should be used instead. `helper/resource` now contains aliases to the migrated code ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+* helper/retry: New `helper/retry` package added. `resource.RetryContext()`, `resource.StateChangeConf`, and associated `*Error` types are deprecated, `helper/retry` should be used instead. `helper/resource now contains aliases to the migrated code ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+
 ## 2.25.0 (February 15, 2023)
 
 BUG FIXES:

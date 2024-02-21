@@ -1,5 +1,5 @@
 ---
-page_title: 'Plugin Development - Deprecations, Removals, and Renames Best Practices'
+page_title: 'Plugin Development - SDKv2 Deprecations, Removals, and Renames Best Practices'
 description: 'Recommendations for deprecations, removals, and renames.'
 ---
 
@@ -7,7 +7,7 @@ description: 'Recommendations for deprecations, removals, and renames.'
 
 Terraform is trusted for managing many facets of infrastructure across many organizations. Part of that trust is due to consistent versioning guidelines and setting expectations for various levels of upgrades. Ensuring backwards compatibility for all patch and minor releases, potentially in concert with any upcoming major changes, is recommended and supported by the Terraform development framework. This allows operators to iteratively update their Terraform configurations rather than require massive refactoring.
 
-This guide is designed to walk through various scenarios where existing Terraform functionality requires future removal, while maintaining backwards compatibility. Further information about the versioning terminology (e.g. `MAJOR`.`MINOR`.`PATCH`) in this guide can be found in [the versioning guidelines documentation](/terraform/plugin/sdkv2/best-practices/versioning).
+This guide is designed to walk through various scenarios where existing Terraform functionality requires future removal, while maintaining backwards compatibility. Further information about the versioning terminology (e.g. `MAJOR`.`MINOR`.`PATCH`) in this guide can be found in [the versioning guidelines documentation](/terraform/plugin/best-practices/versioning).
 
 ~> **NOTE:** Removals should only ever occur in `MAJOR` version upgrades.
 
@@ -682,7 +682,7 @@ The recommended process is as follows:
 1. Add `DeprecatedMessage` to the schema definition of the existing (now the "old") resource, noting to use the new resource in the message.
 1. Add `!> **WARNING:** This resource is deprecated and will be removed in the next major version` to the documentation of the existing (now the "old") resource, noting to use the new resource.
 1. Add the new resource to the provider `ResourcesMap`
-1. Follow the rest of the procedures in the [Provider Attribute Removal section](#provider-attribute-removal).
+1. Follow the rest of the procedures in the [Provider Data Source or Resource Removal section](#provider-data-source-or-resource-removal).
 
 ### Example Resource Renaming
 
@@ -708,7 +708,7 @@ func resourceExampleExistingWidget() *schema.Resource {
 }
 ```
 
-In order to support renaming `example_existing_widget` to `example_new_widget`, this sample can be written as the following to support both attributes simultaneously until the `existing_attribute` is removed:
+In order to support renaming `example_existing_widget` to `example_new_widget`, this sample can be written as the following to support both resources simultaneously until the `example_existing_widget` resource is removed:
 
 ```go
 func Provider() terraform.ResourceProvider {

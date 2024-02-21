@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package logging_test
 
 import (
@@ -198,7 +201,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 	ctx, loggerOutput := setupRootLogger()
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "tf_http_op_type")
-	ctx = tflog.MaskAllFieldValuesRegexes(ctx, regexp.MustCompile(`<html>.*</html>`))
+	ctx = tflog.MaskAllFieldValuesRegexes(ctx, regexp.MustCompile(`(?s)<html>.*</html>`))
 	ctx = tflog.MaskMessageStrings(ctx, "Request", "Response")
 
 	transport := logging.NewLoggingHTTPTransport(http.DefaultTransport)
