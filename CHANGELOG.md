@@ -1,3 +1,9 @@
+## 2.33.0 (February 23, 2024)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for provider defined functions, the provider server is updated to handle the new operation, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future ([#1316](https://github.com/hashicorp/terraform-plugin-sdk/issues/1316))
+
 ## 2.32.0 (January 29, 2024)
 
 NOTES:
