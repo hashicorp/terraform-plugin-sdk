@@ -2,6 +2,8 @@ module github.com/hashicorp/terraform-plugin-sdk/v2
 
 go 1.21
 
+toolchain go1.21.6
+
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
