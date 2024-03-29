@@ -1,9 +1,13 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package terraform
 
 import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -14,8 +18,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-cty/cty"
-	multierror "github.com/hashicorp/go-multierror"
-	uuid "github.com/hashicorp/go-uuid"
+	"github.com/hashicorp/go-uuid"
 	"github.com/mitchellh/copystructure"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
@@ -284,7 +287,7 @@ func (s *State) Validate() error {
 	s.Lock()
 	defer s.Unlock()
 
-	var result error
+	var result []error
 
 	// !!!! FOR DEVELOPERS !!!!
 	//
@@ -306,7 +309,7 @@ func (s *State) Validate() error {
 
 			key := strings.Join(ms.Path, ".")
 			if _, ok := found[key]; ok {
-				result = multierror.Append(result, fmt.Errorf(
+				result = append(result, fmt.Errorf(
 					strings.TrimSpace(stateValidateErrMultiModule), key))
 				continue
 			}
@@ -315,7 +318,7 @@ func (s *State) Validate() error {
 		}
 	}
 
-	return result
+	return errors.Join(result...)
 }
 
 // Remove removes the item in the state at the given address, returning
@@ -1145,7 +1148,6 @@ func parseResourceStateKey(k string) (*ResourceStateKey, error) {
 //
 // Extra is just extra data that a provider can return that we store
 // for later, but is not exposed in any way to the user.
-//
 type ResourceState struct {
 	// This is filled in and managed by Terraform, and is the resource
 	// type itself such as "mycloud_instance". If a resource provider sets
@@ -1224,26 +1226,6 @@ func (s *ResourceState) Equal(other *ResourceState) bool {
 
 	// States must be equal
 	return s.Primary.Equal(other.Primary)
-}
-
-// Taint marks a resource as tainted.
-func (s *ResourceState) Taint() {
-	s.Lock()
-	defer s.Unlock()
-
-	if s.Primary != nil {
-		s.Primary.Tainted = true
-	}
-}
-
-// Untaint unmarks a resource as tainted.
-func (s *ResourceState) Untaint() {
-	s.Lock()
-	defer s.Unlock()
-
-	if s.Primary != nil {
-		s.Primary.Tainted = false
-	}
 }
 
 func (s *ResourceState) init() {

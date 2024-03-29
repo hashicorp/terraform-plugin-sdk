@@ -36,7 +36,7 @@ func resourceExampleInstance() *schema.Resource {
 }
 ```
 
-In the above example we see the usage of the timeouts in the schema being configured for what is deemed the appropriate amount of time for the `Create` function. `Read`, `Update`, and `Delete` are also configurable as well as a `Default`. These configured timeouts can be fetched in the CRUD function logic using the [`(*schema.ResourceData).Timeout()` method](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#ResourceData.Timeout), such as `d.Timeout(schema.TimeoutCreate)`. Practitioners can override these timeout values with [resource timeouts configuration](/language/resources/syntax#operation-timeouts), such as:
+In the above example we see the usage of the timeouts in the schema being configured for what is deemed the appropriate amount of time for the `Create` function. `Read`, `Update`, and `Delete` are also configurable as well as a `Default`. These configured timeouts can be fetched in the CRUD function logic using the [`(*schema.ResourceData).Timeout()` method](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#ResourceData.Timeout), such as `d.Timeout(schema.TimeoutCreate)`. Practitioners can override these timeout values with [resource timeouts configuration](/terraform/language/resources/syntax#operation-timeouts), such as:
 
 ```terraform
 resource "example_thing" "example" {
@@ -76,12 +76,12 @@ If a CRUD function timeout is exceeded, the SDK will automatically return a `con
 The retry helper takes a timeout and a retry function.
 
 - The **timeout** value specifies the maximum time Terraform will invoke the retry function. You can retrieve the timeout from the `*schema.ResourceData` struct by passing the timeout key (`schema.TimeoutCreate`) to the `Timeout` method.
-- The **retry function** returns either a `resource.NonRetryableError` for unexpected errors/states or a `resource.RetryableError` for expected errrors/states. If the function returns a `resource.RetryableError`, it will re-run the function.
+- The **retry function**, which is available by importing `github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry`, returns either a `retry.NonRetryableError` for unexpected errors/states or a `retry.RetryableError` for expected errrors/states. If the function returns a `retry.RetryableError`, it will re-run the function.
 
-In the context of a `CREATE` function, once the backend responds with the desired state, invoke the `READ` function. If `READ` errors, return that error wrapped with `resource.NonRetryableError`. Otherwise, return `nil` (no error) from the retry function.
+In the context of a `CREATE` function, once the backend responds with the desired state, invoke the `READ` function. If `READ` errors, return that error wrapped with `retry.NonRetryableError`. Otherwise, return `nil` (no error) from the retry function.
 
 ```go
-func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleInstanceCreate(d *schema.ResourceData, meta any) error {
     name := d.Get("name").(string)
     client := meta.(*ExampleClient)
     resp, err := client.CreateInstance(name)
@@ -90,20 +90,20 @@ func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) err
         return fmt.Errorf("Error creating instance: %s", err)
     }
 
-    return resource.Retry(d.Timeout(schema.TimeoutCreate) - time.Minute, func() *resource.RetryError {
+    return retry.Retry(d.Timeout(schema.TimeoutCreate) - time.Minute, func() *retry.RetryError {
         resp, err := client.DescribeInstance(name)
 
         if err != nil {
-            return resource.NonRetryableError(fmt.Errorf("Error describing instance: %s", err))
+            return retry.NonRetryableError(fmt.Errorf("Error describing instance: %s", err))
         }
 
         if resp.Status != "CREATED" {
-            return resource.RetryableError(fmt.Errorf("Expected instance to be created but was in state %s", resp.Status))
+            return retry.RetryableError(fmt.Errorf("Expected instance to be created but was in state %s", resp.Status))
         }
 
         err = resourceExampleInstanceRead(d, meta)
         if err != nil {
-            return resource.NonRetryableError(err)
+            return retry.NonRetryableError(err)
         } else {
             return nil
         }
@@ -115,17 +115,17 @@ func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) err
 
 ## StateChangeConf
 
-`resource.Retry` is useful for simple scenarios, particularly when the API response is either success or failure, but sometimes handling an APIs latency or eventual consistency requires more fine tuning. `resource.Retry` is in fact a wrapper for a another helper: `resource.StateChangeConf`.
+`retry.Retry` is useful for simple scenarios, particularly when the API response is either success or failure, but sometimes handling an APIs latency or eventual consistency requires more fine tuning. `retry.Retry` is in fact a wrapper for a another helper: `retry.StateChangeConf`.
 
-Use `resource.StateChangeConf` when your resource has multiple states to progress though, you require fine grained control of retry and delay timing, or you want to ensure a minimum number of occurrences of a target state is reached (this is very common when dealing with eventually consistent APIs, where a response can reply back with an old state between calls before becoming consistent).
+Use `retry.StateChangeConf` when your resource has multiple states to progress though, you require fine grained control of retry and delay timing, or you want to ensure a minimum number of occurrences of a target state is reached (this is very common when dealing with eventually consistent APIs, where a response can reply back with an old state between calls before becoming consistent).
 
 ```go
-func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceExampleInstanceCreate(d *schema.ResourceData, meta any) error {
     name := d.Get("name").(string)
     client := meta.(*ExampleClient)
     resp, err := client.CreateInstance(name)
 
-    createStateConf := &resource.StateChangeConf{
+    createStateConf := &retry.StateChangeConf{
         Pending: []string{
             client.ExampleInstanceStateRequesting,
             client.ExampleInstanceStatePending,
@@ -135,7 +135,7 @@ func resourceExampleInstanceCreate(d *schema.ResourceData, meta interface{}) err
         Target: []string{
             client.ExampleInstanceStateCreateComplete,
         },
-        Refresh: func() (interface{}, string, error) {
+        Refresh: func() (any, string, error) {
             resp, err := client.DescribeInstance(name)
             if err != nil {
                 0, "", err

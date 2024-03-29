@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -160,7 +163,6 @@ func unsupportedTimeoutKeyError(key string) error {
 //
 // StateEncode encodes the timeout into the ResourceData's InstanceState for
 // saving to state
-//
 func (t *ResourceTimeout) DiffEncode(id *terraform.InstanceDiff) error {
 	return t.metaEncode(id)
 }

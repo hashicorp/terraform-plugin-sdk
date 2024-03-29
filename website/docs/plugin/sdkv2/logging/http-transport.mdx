@@ -1,0 +1,203 @@
+---
+page_title: Plugin Development - Logging HTTP Transport
+description: |-
+  SDKv2 provides a helper to send all the HTTP transactions to structured logging.
+---
+
+# HTTP Transport
+
+Terraform's public interface has included `helper/logging` [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since `v0.9.5`. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
+
+We do not recommend using this original helper because it is designed to log the entirety of each request and response. This includes any sensitive content that may be present in the message header or body, presenting security concerns.
+
+Instead, we recommend using the [terraform-plugin-log](/terraform/plugin/log) library to produce logs for your provider. This library does not present the same security concerns and provides [log filtering](/terraform/plugin/log/filtering) functionality. This page explains how to set up the new `RoundTripper()` helper to log HTTP Transactions with `terraform-plugin-log`. 
+
+# Setting Up Logging for HTTP Transactions
+
+The recommended logging helper for SDK is built on top of [terraform-plugin-log](/terraform/plugin/log). This lets you leverage the features from our structured logging framework without having to write an entire implementation of `http.RoundTripper`.
+
+There are two functions inside `helper/logging` that target a specific logging setup for your provider. Refer to [“Writing Log Output”](/terraform/plugin/log/writing) for details.
+
+* `NewLoggingHTTPTransport(transport http.RoundTripper)`: Use this method when you want logging against the `tflog` Provider root logger.
+* `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`: Use this method when you want logging against a `tflog` Provider [Subsystem logger](/terraform/plugin/log/writing#subsystems). The `subsystem` string you use with `NewSubsystemLoggingHTTPTransport()` must match the [pre-created subsystem logger name](/terraform/plugin/log/writing#create-subsystems).
+
+To set up HTTP transport, you must create the HTTP Client to use the new transport and then add logging configuration to the HTTP request context.
+
+### Creating the HTTP Client 
+
+After you create the transport , you must use it to set up the `http.Client` for the provider. The following example sets up the client in `schema.Provider` `ConfigureContextFunc`. The client is identical to the default Golang `http.Client`, except it uses the new logging transport.
+
+```go
+func New() (*schema.Provider, error) {
+    return &schema.Provider{
+        // omitting the rest of the schema definition
+
+        ConfigureContextFunc: func (ctx context.Context, rsc *schema.ResourceData) (any, diag.Diagnostics) {
+
+            // omitting provider-specific configuration logic
+
+            transport := logging.NewLoggingHTTPTransport(http.DefaultTransport)
+            client := http.Client{
+                Transport: transport,
+            }
+
+            return client, diag.Diagnostics{}
+        }
+    }
+}
+```
+
+## Adding Context to HTTP Requests
+
+All calls to the `tflog` package must contain an SDK provided `context.Context` that stores the logging implementation. Providers written with `terraform-plugin-sdk` must use context-aware functionality, such as the [`helper/schema.Resource` type `ReadContext` field](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema#Resource.ReadContext).
+
+The following example uses [`http.NewRequestWithContext()` function](https://pkg.go.dev/net/http#NewRequestWithContext) to create an HTTP request that includes the logging configuration from the `context.Context`. 
+
+```go
+// inside a context-aware Resource function
+req, err := http.NewRequestWithContext(ctx, "GET", "https://www.terraform.io", nil)
+if err != nil {
+	return fmt.Errorf("Failed to create a new request: %w", err)
+}
+
+res, err := client.Do(req)
+if err != nil {
+	return fmt.Errorf("Request failed: %w", err)
+}
+defer res.Body.Close()
+```
+
+Use the [`(http.Request).WithContext()` method](https://pkg.go.dev/net/http#Request.WithContext) to set the context for the `http.Request` if the request is generated separately from where the `context.Context` is available.
+
+## HTTP Transaction Log Format
+
+The logging transport produces two log entries for each HTTP transaction: one for the request and one for the response. 
+
+### Request Example
+
+The following example shows a log generated from an HTTP Request to [https://terraform.io](https://terraform.io/).
+
+```text
+2022-07-26T18:54:08.880+0100 [DEBUG] provider: Sending HTTP Request: Accept-Encoding=gzip Content-Length=0 \
+    Host=www.terraform.io User-Agent=Go-http-client/1.1 \
+    tf_http_op_type=request tf_http_req_method=GET \
+    tf_http_req_uri=/ tf_http_req_version=HTTP/1.1 tf_http_trans_id=7e80e48d-8f32-f527-1412-52a8c84359e7
+```
+
+The following example shows the same logs after you enable [logging in JSON format](/terraform/internals/debugging).
+
+```json
+{
+    "@level": "debug",
+    "@message": "Sending HTTP Request",
+    "@module": "provider",
+    "@timestamp": "2022-07-26T18:54:08.880+0100",
+
+    "Accept-Encoding": "gzip",
+    "Content-Length": "0",
+    "Host": "www.terraform.io",
+    "User-Agent": "Go-http-client/1.1",
+
+    "tf_http_op_type": "request",
+    "tf_http_req_body": "",
+    "tf_http_req_method": "GET",
+    "tf_http_req_uri": "/",
+    "tf_http_req_version": "HTTP/1.1",
+    "tf_http_trans_id": "7e80e48d-8f32-f527-1412-52a8c84359e7"
+}
+```
+
+### Response Example
+
+The following example shows logs from a [https://terraform.io](https://terraform.io/) HTTP response.
+
+```text
+2022-07-26T18:54:10.734+0100 [DEBUG] provider: Received HTTP Response: Age=9 \
+    Cache-Control="public, max-age=0, must-revalidate" Content-Type=text/html \
+    Date="Tue, 26 Jul 2022 13:16:46 GMT" Etag="... ABCDEFGH..." Server=Vercel \
+    Strict-Transport-Security="max-age=63072000" X-Frame-Options=SAMEORIGIN X-Matched-Path=/ \
+    X-Nextjs-Cache=HIT X-Powered-By=Next.js X-Vercel-Cache=STALE \
+    X-Vercel-Id=lhr1::iad1::lx2h8-99999999999999-fffffffffff \
+    tf_http_op_type=response tf_http_res_body="... LOTS OF HTML ..." tf_http_res_status_code=200 \
+    tf_http_res_status_reason="200 OK" tf_http_res_version=HTTP/2.0 \
+    tf_http_trans_id=7e80e48d-8f32-f527-1412-52a8c84359e7
+```
+
+the following example shows the same logs in JSON format.
+
+```json
+{
+    "@level": "debug",
+    "@message": "Received HTTP Response",
+    "@module": "provider",
+    "@timestamp": "2022-07-26T18:54:10.734+0100",
+
+    "Age": "9",
+    "Cache-Control": "public, max-age=0, must-revalidate",
+    "Content-Type": "text/html",
+    "Date": "Tue, 26 Jul 2022 13:16:46 GMT",
+    "Etag": "... ABCDEFGH...",
+    "Server": "Vercel",
+    "Strict-Transport-Security": "max-age=63072000",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-Matched-Path": "/",
+    "X-Nextjs-Cache": "HIT",
+    "X-Powered-By": "Next.js",
+    "X-Vercel-Cache": "STALE",
+    "X-Vercel-Id": "lhr1::iad1::lx2h8-99999999999999-fffffffffff",
+
+    "tf_http_op_type": "response",
+    "tf_http_res_body": "... LOTS OF HTML ...",
+    "tf_http_res_status_code": 200,
+    "tf_http_res_status_reason": "200 OK",
+    "tf_http_res_version": "HTTP/2.0",
+    "tf_http_trans_id": "7e80e48d-8f32-f527-1412-52a8c84359e7"
+}
+```
+
+### Log Information
+
+Each log contains the following information, which is represented as [fields](/terraform/plugin/log/writing#fields) in the JSON format.
+
+|             Log field name | Description                                                                                                                                                                          | Possible values                                                                                       |     Applies to     |
+|---------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|:------------------:|
+|          `tf_http_op_type` | Which HTTP operation log refers to                                                                                                                                                   | [`request`, `response`]                                                                               | Request / Response |
+|         `tf_http_trans_id` | Unique identifier used by Request and Response that belong to the same HTTP Transaction                                                                                              | A universally unique identifier ([UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)) | Request / Response |
+|         `tf_http_req_body` | Request body                                                                                                                                                                         |                                                                                                       |      Request       |
+|       `tf_http_req_method` | Request method                                                                                                                                                                       | A canonical [HTTP methods](https://developer.mozilla.org/en-US/docs/Web/HTTP/Method)                  |      Request       |
+|          `tf_http_req_uri` | Request URI                                                                                                                                                                          | Ex. `"/path"`                                                                                         |      Request       |
+|      `tf_http_req_version` | Request HTTP version                                                                                                                                                                 | Ex. `"HTTP/1.1"`                                                                                      |      Request       |
+|         `tf_http_res_body` | Response body                                                                                                                                                                        |                                                                                                       |      Response      |
+|  `tf_http_res_status_code` | Response status code                                                                                                                                                                 | A canonical [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)              |      Response      |
+| `tf_http_res_status_reason` | Response status reason                                                                                                                                                               | Canonical textual description of the corresponding `tf_http_res_status_code`                          |      Response      |
+|      `tf_http_res_version` | Response HTTP version                                                                                                                                                                | Ex. `"HTTP/2.0"`                                                                                      |      Response      |
+|             (Other fields) | Request / Response headers. One field per header. If the header contains a single value, the log field value is set to that value. Otherwise, the field value is a slice of strings. |                                                                                                       | Request / Response |
+
+## Filtering Sensitive Data
+
+To [filter logs](/terraform/plugin/log/filtering), you must configure the `context.Context` before before it is added to the `http.Request`.
+
+The following example masks all the header values of HTTP Requests containing an `Authorization` and `Proxy-Authorization` credentials.
+
+```go
+// inside a context-aware Resource function
+ctx := tflog.SubsystemMaskFieldValuesWithFieldKeys(ctx, "my-subsystem", "Authorization")
+ctx = tflog.SubsystemMaskFieldValuesWithFieldKeys(ctx, "my-subsystem", "Proxy-Authorization")
+
+req, err := http.NewRequestWithContext(ctx, "GET", "https://www.terraform.io", nil)
+if err != nil {
+	return fmt.Errorf("Failed to create a new request: %w", err)
+}
+
+res, err := client.Do(req)
+if err != nil {
+	return fmt.Errorf("Request failed: %w", err)
+}
+defer res.Body.Close()
+```
+
+# Links
+
+* [Plugin Development - Logging](/terraform/plugin/log) - Learn more about the logging framework 
+* [terraform-plugin-log - tflog](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log/tflog) - Read the Golang documentation for the logging framework
+* Read the Golang documentation for [`NewLoggingHTTPTransport()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging#NewLoggingHTTPTransport) and [`NewSubsystemLoggingHTTPTransport()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging#NewSubsystemLoggingHTTPTransport)

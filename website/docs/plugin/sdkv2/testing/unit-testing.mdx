@@ -7,6 +7,12 @@ description: |-
 
 # Unit Testing
 
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
+
 Testing plugin code in small, isolated units is distinct from Acceptance Tests,
 and does not require network connections. Unit tests are commonly used for
 testing helper methods that expand or flatten API responses into data structures
@@ -23,68 +29,80 @@ demonstrating a typical `flattener` type method that's commonly used to convert
 structures returned from APIs into data structures used by Terraform in saving
 to state. This example is truncated for brevity, but you can see the full test in the
 [aws/structure_test.go in the Terraform AWS Provider
-repository on GitHub](https://github.com/hashicorp/terraform-provider-aws/blob/f22ae122d8407672bd38951f80a2813b8b9af683/aws/structure_test.go#L930-L1027)
+repository on GitHub](https://github.com/hashicorp/terraform-provider-aws/blob/e6e7537b1cb7821908bc0f3e95421e4d5c8fcafd/internal/service/ec2/vpc_security_group_test.go#L799-L874)
 
 ```go
 func TestFlattenSecurityGroups(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		ownerId  *string
 		pairs    []*ec2.UserIdGroupPair
-		expected []*GroupIdentifier
+		expected []*tfec2.GroupIdentifier
 	}{
-		// simple, no user id included
+		// simple, no user id included (we ignore it mostly)
 		{
 			ownerId: aws.String("user1234"),
 			pairs: []*ec2.UserIdGroupPair{
-				&ec2.UserIdGroupPair{
+				{
 					GroupId: aws.String("sg-12345"),
 				},
 			},
-			expected: []*GroupIdentifier{
-				&GroupIdentifier{
+			expected: []*tfec2.GroupIdentifier{
+				{
 					GroupId: aws.String("sg-12345"),
 				},
 			},
 		},
-		// include the owner id, but keep it consitent with the same account. Tests
-		// EC2 classic situation
 		{
 			ownerId: aws.String("user1234"),
 			pairs: []*ec2.UserIdGroupPair{
-				&ec2.UserIdGroupPair{
+				{
 					GroupId: aws.String("sg-12345"),
 					UserId:  aws.String("user1234"),
 				},
 			},
-			expected: []*GroupIdentifier{
-				&GroupIdentifier{
+			expected: []*tfec2.GroupIdentifier{
+				{
 					GroupId: aws.String("sg-12345"),
 				},
 			},
 		},
-
-		// include the owner id, but from a different account. This is reflects
-		// EC2 Classic when referring to groups by name
 		{
 			ownerId: aws.String("user1234"),
 			pairs: []*ec2.UserIdGroupPair{
-				&ec2.UserIdGroupPair{
-					GroupId:   aws.String("sg-12345"),
-					GroupName: aws.String("somegroup"), // GroupName is only included in Classic
-					UserId:    aws.String("user4321"),
+				{
+					GroupId: aws.String("sg-12345"),
+					UserId:  aws.String("user4321"),
 				},
 			},
-			expected: []*GroupIdentifier{
-				&GroupIdentifier{
-					GroupId:   aws.String("sg-12345"),
-					GroupName: aws.String("user4321/somegroup"),
+			expected: []*tfec2.GroupIdentifier{
+				{
+					GroupId: aws.String("user4321/sg-12345"),
+				},
+			},
+		},
+
+		// include description
+		{
+			ownerId: aws.String("user1234"),
+			pairs: []*ec2.UserIdGroupPair{
+				{
+					GroupId:     aws.String("sg-12345"),
+					Description: aws.String("desc"),
+				},
+			},
+			expected: []*tfec2.GroupIdentifier{
+				{
+					GroupId:     aws.String("sg-12345"),
+					Description: aws.String("desc"),
 				},
 			},
 		},
 	}
 
 	for _, c := range cases {
-		out := flattenSecurityGroups(c.pairs, c.ownerId)
+		out := tfec2.FlattenSecurityGroups(c.pairs, c.ownerId)
 		if !reflect.DeepEqual(out, c.expected) {
 			t.Fatalf("Error matching output and expected: %#v vs %#v", out, c.expected)
 		}

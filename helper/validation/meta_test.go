@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package validation
 
 import (
@@ -68,6 +71,34 @@ func TestValidationAll(t *testing.T) {
 	})
 }
 
+func TestValidationAllDiag(t *testing.T) {
+	runDiagTestCases(t, []diagTestCase{
+		{
+			val: "valid",
+			f: AllDiag(
+				ToDiagFunc(StringLenBetween(5, 42)),
+				ToDiagFunc(StringMatch(regexp.MustCompile(`[a-zA-Z0-9]+`), "value must be alphanumeric")),
+			),
+		},
+		{
+			val: "foo",
+			f: AllDiag(
+				ToDiagFunc(StringLenBetween(5, 42)),
+				ToDiagFunc(StringMatch(regexp.MustCompile(`[a-zA-Z0-9]+`), "value must be alphanumeric")),
+			),
+			expectedDiagSummary: regexp.MustCompile(`expected length of [\w]+ to be in the range \(5 - 42\), got foo`),
+		},
+		{
+			val: "!!!!!",
+			f: AllDiag(
+				ToDiagFunc(StringLenBetween(5, 42)),
+				ToDiagFunc(StringMatch(regexp.MustCompile(`[a-zA-Z0-9]+`), "value must be alphanumeric")),
+			),
+			expectedDiagSummary: regexp.MustCompile("value must be alphanumeric"),
+		},
+	})
+}
+
 func TestValidationAny(t *testing.T) {
 	runTestCases(t, []testCase{
 		{
@@ -99,6 +130,41 @@ func TestValidationAny(t *testing.T) {
 				IntAtMost(5),
 			),
 			expectedErr: regexp.MustCompile(`expected [\w]+ to be at most \(5\), got 7`),
+		},
+	})
+}
+
+func TestValidationAnyDiag(t *testing.T) {
+	runDiagTestCases(t, []diagTestCase{
+		{
+			val: 43,
+			f: AnyDiag(
+				ToDiagFunc(IntAtLeast(42)),
+				ToDiagFunc(IntAtMost(5)),
+			),
+		},
+		{
+			val: 4,
+			f: AnyDiag(
+				ToDiagFunc(IntAtLeast(42)),
+				ToDiagFunc(IntAtMost(5)),
+			),
+		},
+		{
+			val: 7,
+			f: AnyDiag(
+				ToDiagFunc(IntAtLeast(42)),
+				ToDiagFunc(IntAtMost(5)),
+			),
+			expectedDiagSummary: regexp.MustCompile(`expected [\w]+ to be at least \(42\), got 7`),
+		},
+		{
+			val: 7,
+			f: AnyDiag(
+				ToDiagFunc(IntAtLeast(42)),
+				ToDiagFunc(IntAtMost(5)),
+			),
+			expectedDiagSummary: regexp.MustCompile(`expected [\w]+ to be at most \(5\), got 7`),
 		},
 	})
 }

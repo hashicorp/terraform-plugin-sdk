@@ -9,7 +9,6 @@ issues:
 linters:
   disable-all: true
   enable:
-    - deadcode
     - durationcheck
     - errcheck
     - exportloopref
@@ -24,5 +23,9 @@ linters:
     - tenv
     - unconvert
     - unparam
-    - varcheck
+    - unused
     - vet
+
+run:
+  # Prevent false positive timeouts in CI
+  timeout: 5m

@@ -7,6 +7,12 @@ description: |-
 
 # Acceptance Tests: TestCases
 
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
+
 Acceptance tests are expressed in terms of **Test Cases**, each using one or
 more Terraform configurations designed to create a set of resources under test,
 and then verify the actual infrastructure created. Terraform’s `resource`
@@ -89,7 +95,7 @@ currently running.
 
 `TestCase` offers several fields for developers to add to customize and validate
 each test, defined below. The source for `TestCase` can be viewed [here on
-godoc.org](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/helper/resource#TestCase)
+godoc.org](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestCase)
 
 ### IsUnitTest
 
@@ -268,7 +274,7 @@ two steps, to verify the resource can be created and subsequently updated,
 depending on the properties of the resource. In general, simply create/destroy
 tests will only need one step.
 
-`TestStep`s are covered in detail in [the next section, `TestSteps`](/plugin/sdkv2/testing/acceptance-tests/teststep).
+`TestStep`s are covered in detail in [the next section, `TestSteps`](/terraform/plugin/sdkv2/testing/acceptance-tests/teststep).
 
 **Example usage:**
 
@@ -309,6 +315,6 @@ to create these scenarios by iterating on Terraform configurations.
 
 [1]: https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource#TestCase
 
-[2]: /plugin/sdkv2/testing/acceptance-tests/teststep
+[2]: /terraform/plugin/sdkv2/testing/acceptance-tests/teststep
 
 [3]: https://pkg.go.dev/testing#T

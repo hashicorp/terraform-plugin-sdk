@@ -39,14 +39,14 @@ func resourceExampleResource() *schema.Resource {
 
 The Schema attribute `Type` defines what kind of values users can provide in
 their configuration for this element. Here we define the available schema types
-supported. See [Schema Behaviors](/plugin/sdkv2/schemas/schema-behaviors)
+supported. See [Schema Behaviors](/terraform/plugin/sdkv2/schemas/schema-behaviors)
 for more information on configuring element behaviors.
 
 ## Types
 
 The schema attribute `Type` determines what data is valid in configuring the
 element, as well as the type of data returned when used in an
-[expression](/configuration/expressions). Schemas attributes must
+[expression](/terraform/language/expressions). Schemas attributes must
 be one of the types defined below, and can be loosely categorized as either
 **Primitive** or **Aggregate** types:
 
@@ -54,7 +54,7 @@ be one of the types defined below, and can be loosely categorized as either
 
 Primitive types are simple values such as integers, booleans, and strings.
 Primitives are stored in the
-[state file](/language/state) as `"key": "value"`
+[state file](/terraform/language/state) as `"key": "value"`
 string pairs, where both `key` and `value` are string representations.
 
 **Aggregate types**
@@ -216,7 +216,7 @@ resource "example_resource" "ex" {
 
 ### TypeMap
 
-**Data structure:** [map](https://golang.org/doc/effective_go#maps): `map[string]interface{}`
+**Data structure:** [map](https://golang.org/doc/effective_go#maps): `map[string]any`
 
 **Example:** `key = value`
 
@@ -260,7 +260,7 @@ items in a map is denoted by the `%` index:
 
 ### TypeList
 
-**Data structure:** [Slice](https://golang.org/doc/effective_go#slices): `[]interface{}`
+**Data structure:** [Slice](https://golang.org/doc/effective_go#slices): `[]any`
 
 **Example:** `[]interface{"2", "3", "4"}`
 
@@ -405,5 +405,5 @@ of the attributes of the set.
 
 ## Next Steps
 
-Checkout [Schema Behaviors](/plugin/sdkv2/schemas/schema-behaviors) to learn
+Checkout [Schema Behaviors](/terraform/plugin/sdkv2/schemas/schema-behaviors) to learn
 how to customize each schema elements behavior.

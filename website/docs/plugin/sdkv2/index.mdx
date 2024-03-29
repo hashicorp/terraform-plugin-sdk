@@ -1,37 +1,27 @@
 ---
 page_title: 'Home - Plugin Development: SDKv2'
-description: Learn about version 2 of the Terraform Plugin SDK.
+description: Maintain plugins built on the legacy SDK.
 ---
 
 # Terraform Plugin SDKv2
 
-Terraform Plugin SDKv2 is an established way to develop Terraform Plugins on [protocol version 5](/plugin/how-terraform-works#protocol-version-5).
+Terraform Plugin SDKv2 is a way to maintain Terraform Plugins on [protocol version 5](/terraform/plugin/terraform-plugin-protocol#protocol-version-5).
 
-~> **Important**: [Which SDK Should I Use?](/plugin/which-sdk) explains the differences between Terraform Plugin SDKv2 and [Terraform Plugin Framework](/plugin/framework) to help you decide which option is right for your provider.
+We recommend using the [framework](/terraform/plugin/framework) to develop new provider functionality because it offers significant advantages as compared to the SDKv2. We also recommend migrating existing providers to the framework when possible. Refer to [Plugin Framework Benefits](/terraform/plugin/framework-benefits) for higher level details about how the framework makes provider development easier and [Plugin Framework Features](/terraform/plugin/framework/migrating/benefits) for a detailed functionality comparison between the SDKv2 and the framework.
 
-## Get Started
+## Maintain Existing Providers
 
-- Try the [Call APIs with Custom Providers](https://learn.hashicorp.com/collections/terraform/providers?utm_source=WEBSITE&utm_medium=WEB_IO&utm_offer=ARTICLE_PAGE&utm_content=DOCS) tutorials on HashiCorp Learn.
+- Try the [Call APIs with Custom Providers](/terraform/tutorials/providers) tutorials.
 - Clone the [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding) template repository on GitHub.
-
-## Key Concepts
-
-- [Schemas](/plugin/sdkv2/schemas) define available fields for provider, resource, or provisioner configuration block, and give Terraform metadata about those fields.
-- [Resources](/plugin/sdkv2/resources) are an abstraction that allow Terraform to manage infrastructure objects, such as a compute instance, an access policy, or disk. Providers act as a translation layer between Terraform and an API, offering one or more resources for practitioners to define in a configuration.
+- Review the SDKv2 documentation for key concepts such as [Schemas](/terraform/plugin/sdkv2/schemas) and [Resources](/terraform/plugin/sdkv2/resources). 
 
 ## Debug and Test
 
-- Learn how to [debug your provider](/plugin/sdkv2/debugging) using either logging calls or a debugging tool.
-- Learn how to [write successful acceptance and unit tests](/plugin/sdkv2/testing) for your provider.
+- Learn how to [debug your provider](/terraform/plugin/sdkv2/debugging) using either logging calls or a debugging tool.
+- Write [acceptance and unit tests](/terraform/plugin/sdkv2/testing) for your provider.
 
-## Combine or Translate
+## Migrate, Combine, or Translate
 
-* [Combine your provider](/plugin/mux/combining-protocol-version-5-providers) with other [protocol version 5](/plugin/how-terraform-works#protocol-version-5) providers.
-* [Translate your provider](/plugin/mux/translating-protocol-version-5-to-6) into a [protocol version 6](/plugin/how-terraform-works#protocol-version-6) provider to require Terraform 1.0 and later.
-
-## Migrate to Terraform Plugin Framework
-
-The [terraform-plugin-framework](/plugin/framework) is a new way to develop Terraform providers, offering improvements and new features from Terraform Plugin SDKv2. You can refactor individual resources and data sources over time with the following compatibility:
-
-* Terraform 0.12 and later: First, [translate your provider](/plugin/mux/translating-protocol-version-6-to-5) into a protocol version 5 provider. Then [combine your provider](/plugin/mux/combining-protocol-version-5-providers) with the translated provider. You will not be able to use [protocol version 6](/plugin/how-terraform-works#protocol-version-6) features.
-* Terraform 1.0 and later: First, [translate your provider](/plugin/mux/translating-protocol-version-5-to-6) into a protocol version 6 provider. Then [combine your provider](/plugin/mux/combining-protocol-version-6-providers) with the translated provider.
+- Use the [framework migration guide](/terraform/plugin/framework/migrating) to migrate existing providers from SDKv2 to the framework. You can use `terraform-plugin-mux` to migrate individual resources and data sources slowly over time.
+- [Combine your provider](/terraform/plugin/mux/combining-protocol-version-5-providers) with other [protocol version 5](/terraform/plugin/terraform-plugin-protocol#protocol-version-5) providers.
+- [Translate your provider](/terraform/plugin/mux/translating-protocol-version-5-to-6) into a [protocol version 6](/terraform/plugin/terraform-plugin-protocol#protocol-version-6) provider to require Terraform 1.0 and later or to combine with a framework provider and use protocol version 6 exclusive functionality such as nested attributes.

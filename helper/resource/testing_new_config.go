@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package resource
 
 import (
@@ -13,31 +16,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugintest.WorkingDir, step TestStep) error {
+func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugintest.WorkingDir, step TestStep, providers *providerFactories) error {
 	t.Helper()
 
-	if !step.Destroy {
-		var state *terraform.State
-		var err error
-		err = runProviderCommand(ctx, t, func() error {
-			state, err = getState(ctx, t, wd)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
-		if err != nil {
-			return err
-		}
-		if err := testStepTaint(ctx, state, step); err != nil {
-			return fmt.Errorf("Error when tainting resources: %s", err)
-		}
-	}
-
-	err := wd.SetConfig(ctx, step.Config)
+	err := wd.SetConfig(ctx, step.mergedConfig(ctx, c))
 	if err != nil {
 		return fmt.Errorf("Error setting config: %w", err)
 	}
@@ -46,10 +28,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 	// failing to do this will result in data sources not being updated
 	err = runProviderCommand(ctx, t, func() error {
 		return wd.Refresh(ctx)
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
+	}, wd, providers)
 	if err != nil {
 		return fmt.Errorf("Error running pre-apply refresh: %w", err)
 	}
@@ -66,10 +45,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 				return wd.CreateDestroyPlan(ctx)
 			}
 			return wd.CreatePlan(ctx)
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error running pre-apply plan: %w", err)
 		}
@@ -84,10 +60,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 				return err
 			}
 			return nil
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error retrieving pre-apply state: %w", err)
 		}
@@ -95,10 +68,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 		// Apply the diff, creating real resources
 		err = runProviderCommand(ctx, t, func() error {
 			return wd.Apply(ctx)
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			if step.Destroy {
 				return fmt.Errorf("Error running destroy: %w", err)
@@ -114,10 +84,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 				return err
 			}
 			return nil
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error retrieving state after apply: %w", err)
 		}
@@ -148,10 +115,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 			return wd.CreateDestroyPlan(ctx)
 		}
 		return wd.CreatePlan(ctx)
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
+	}, wd, providers)
 	if err != nil {
 		return fmt.Errorf("Error running post-apply plan: %w", err)
 	}
@@ -161,10 +125,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 		var err error
 		plan, err = wd.SavedPlan(ctx)
 		return err
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
+	}, wd, providers)
 	if err != nil {
 		return fmt.Errorf("Error retrieving post-apply plan: %w", err)
 	}
@@ -175,10 +136,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 			var err error
 			stdout, err = wd.SavedPlanRawStdout(ctx)
 			return err
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error retrieving formatted plan output: %w", err)
 		}
@@ -189,10 +147,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 	if !step.Destroy || (step.Destroy && !step.PreventPostDestroyRefresh) {
 		err := runProviderCommand(ctx, t, func() error {
 			return wd.Refresh(ctx)
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error running post-apply refresh: %w", err)
 		}
@@ -204,10 +159,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 			return wd.CreateDestroyPlan(ctx)
 		}
 		return wd.CreatePlan(ctx)
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
+	}, wd, providers)
 	if err != nil {
 		return fmt.Errorf("Error running second post-apply plan: %w", err)
 	}
@@ -216,10 +168,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 		var err error
 		plan, err = wd.SavedPlan(ctx)
 		return err
-	}, wd, providerFactories{
-		legacy:  c.ProviderFactories,
-		protov5: c.ProtoV5ProviderFactories,
-		protov6: c.ProtoV6ProviderFactories})
+	}, wd, providers)
 	if err != nil {
 		return fmt.Errorf("Error retrieving second post-apply plan: %w", err)
 	}
@@ -231,10 +180,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 			var err error
 			stdout, err = wd.SavedPlanRawStdout(ctx)
 			return err
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 		if err != nil {
 			return fmt.Errorf("Error retrieving formatted second plan output: %w", err)
 		}
@@ -257,10 +203,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 				return err
 			}
 			return nil
-		}, wd, providerFactories{
-			legacy:  c.ProviderFactories,
-			protov5: c.ProtoV5ProviderFactories,
-			protov6: c.ProtoV6ProviderFactories})
+		}, wd, providers)
 
 		if err != nil {
 			return err
@@ -290,7 +233,7 @@ func testStepNewConfig(ctx context.Context, t testing.T, c TestCase, wd *plugint
 		// this fails. If refresh isn't read-only, then this will have
 		// caught a different bug.
 		if idRefreshCheck != nil {
-			if err := testIDRefresh(ctx, t, c, wd, step, idRefreshCheck); err != nil {
+			if err := testIDRefresh(ctx, t, c, wd, step, idRefreshCheck, providers); err != nil {
 				return fmt.Errorf(
 					"[ERROR] Test: ID-only test failed: %s", err)
 			}

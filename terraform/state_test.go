@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package terraform
 
 import (
@@ -6,8 +9,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 )
@@ -108,8 +110,8 @@ func TestStateAddModule(t *testing.T) {
 			actual = append(actual, m.Path)
 		}
 
-		if !reflect.DeepEqual(actual, tc.Out) {
-			t.Fatalf("wrong result\ninput: %sgot:   %#v\nwant:  %#v", spew.Sdump(tc.In), actual, tc.Out)
+		if diff := cmp.Diff(tc.Out, actual); diff != "" {
+			t.Fatalf("unexpected difference: %s", diff)
 		}
 	}
 }
@@ -903,95 +905,6 @@ func TestResourceStateEqual(t *testing.T) {
 		}
 		if tc.Two.Equal(tc.One) != tc.Result {
 			t.Fatalf("Bad: %d\n\n%s\n\n%s", i, tc.One.String(), tc.Two.String())
-		}
-	}
-}
-
-func TestResourceStateTaint(t *testing.T) {
-	cases := map[string]struct {
-		Input  *ResourceState
-		Output *ResourceState
-	}{
-		"no primary": {
-			&ResourceState{},
-			&ResourceState{},
-		},
-
-		"primary, not tainted": {
-			&ResourceState{
-				Primary: &InstanceState{ID: "foo"},
-			},
-			&ResourceState{
-				Primary: &InstanceState{
-					ID:      "foo",
-					Tainted: true,
-				},
-			},
-		},
-
-		"primary, tainted": {
-			&ResourceState{
-				Primary: &InstanceState{
-					ID:      "foo",
-					Tainted: true,
-				},
-			},
-			&ResourceState{
-				Primary: &InstanceState{
-					ID:      "foo",
-					Tainted: true,
-				},
-			},
-		},
-	}
-
-	for k, tc := range cases {
-		tc.Input.Taint()
-		if !reflect.DeepEqual(tc.Input, tc.Output) {
-			t.Fatalf(
-				"Failure: %s\n\nExpected: %#v\n\nGot: %#v",
-				k, tc.Output, tc.Input)
-		}
-	}
-}
-
-func TestResourceStateUntaint(t *testing.T) {
-	cases := map[string]struct {
-		Input          *ResourceState
-		ExpectedOutput *ResourceState
-	}{
-		"no primary, err": {
-			Input:          &ResourceState{},
-			ExpectedOutput: &ResourceState{},
-		},
-
-		"primary, not tainted": {
-			Input: &ResourceState{
-				Primary: &InstanceState{ID: "foo"},
-			},
-			ExpectedOutput: &ResourceState{
-				Primary: &InstanceState{ID: "foo"},
-			},
-		},
-		"primary, tainted": {
-			Input: &ResourceState{
-				Primary: &InstanceState{
-					ID:      "foo",
-					Tainted: true,
-				},
-			},
-			ExpectedOutput: &ResourceState{
-				Primary: &InstanceState{ID: "foo"},
-			},
-		},
-	}
-
-	for k, tc := range cases {
-		tc.Input.Untaint()
-		if !reflect.DeepEqual(tc.Input, tc.ExpectedOutput) {
-			t.Fatalf(
-				"Failure: %s\n\nExpected: %#v\n\nGot: %#v",
-				k, tc.ExpectedOutput, tc.Input)
 		}
 	}
 }

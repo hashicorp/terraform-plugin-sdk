@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Prevented regression since 2.13.0 with the removal of environment variables, including `TF_VAR_*`, when calling Terraform CLI commands
-```

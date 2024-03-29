@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -7,7 +10,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -654,8 +657,8 @@ func TestSetNew(t *testing.T) {
 					t.Fatalf("bad: %s", err)
 				}
 			}
-			if !reflect.DeepEqual(tc.Expected, tc.Diff) {
-				t.Fatalf("Expected %s, got %s", spew.Sdump(tc.Expected), spew.Sdump(tc.Diff))
+			if diff := cmp.Diff(tc.Expected, tc.Diff); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
 			}
 		})
 	}
@@ -681,8 +684,8 @@ func TestSetNewComputed(t *testing.T) {
 					t.Fatalf("bad: %s", err)
 				}
 			}
-			if !reflect.DeepEqual(tc.Expected, tc.Diff) {
-				t.Fatalf("Expected %s, got %s", spew.Sdump(tc.Expected), spew.Sdump(tc.Diff))
+			if diff := cmp.Diff(tc.Expected, tc.Diff); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
 			}
 		})
 	}
@@ -950,8 +953,8 @@ func TestForceNew(t *testing.T) {
 					t.Fatalf("bad: %s", err)
 				}
 			}
-			if !reflect.DeepEqual(tc.Expected, tc.Diff) {
-				t.Fatalf("Expected %s, got %s", spew.Sdump(tc.Expected), spew.Sdump(tc.Diff))
+			if diff := cmp.Diff(tc.Expected, tc.Diff); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
 			}
 		})
 	}
@@ -1199,8 +1202,8 @@ func TestClear(t *testing.T) {
 					t.Fatalf("bad: %s", err)
 				}
 			}
-			if !reflect.DeepEqual(tc.Expected, tc.Diff) {
-				t.Fatalf("Expected %s, got %s", spew.Sdump(tc.Expected), spew.Sdump(tc.Diff))
+			if diff := cmp.Diff(tc.Expected, tc.Diff); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
 			}
 		})
 	}
@@ -1444,8 +1447,8 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 
 			sort.Strings(keys)
 
-			if !reflect.DeepEqual(tc.ExpectedKeys, keys) {
-				t.Fatalf("Expected %s, got %s", spew.Sdump(tc.ExpectedKeys), spew.Sdump(keys))
+			if diff := cmp.Diff(tc.ExpectedKeys, keys); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
 			}
 		})
 	}

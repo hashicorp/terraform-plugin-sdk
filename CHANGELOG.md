@@ -1,3 +1,185 @@
+## 2.33.0 (February 23, 2024)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for provider defined functions, the provider server is updated to handle the new operation, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future ([#1316](https://github.com/hashicorp/terraform-plugin-sdk/issues/1316))
+
+## 2.32.0 (January 29, 2024)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for moving resource state across resource types, the provider server is updated to handle the new operation, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future. ([#1307](https://github.com/hashicorp/terraform-plugin-sdk/issues/1307))
+
+## 2.31.0 (December 14, 2023)
+
+NOTES:
+
+* helper/schema: While this Go module will not receive support for provider-defined functions, the provider server is updated to handle the new operations, which will be required to prevent errors when updating terraform-plugin-framework or terraform-plugin-mux in the future. ([#1288](https://github.com/hashicorp/terraform-plugin-sdk/issues/1288))
+
+## 2.30.0 (November 09, 2023)
+
+NOTES:
+
+* meta: The `SDKVersion` variable, `SDKPrerelease` variable, and `SDKVersionString()` function have been deprecated. Use the Go standard library `runtime/debug` package build information instead. ([#1257](https://github.com/hashicorp/terraform-plugin-sdk/issues/1257))
+
+BUG FIXES:
+
+* meta: Fixed version in `SDKVersion` variable and `SDKVersionString()` function ([#1257](https://github.com/hashicorp/terraform-plugin-sdk/issues/1257))
+* helper/schema: Ensured `(ResourceData).GetRawConfig()` data is populated for `Provider.ConfigureFunc` and `Provider.ConfigureContextFunc` ([#1270](https://github.com/hashicorp/terraform-plugin-sdk/issues/1270))
+* helper/schema: Ensured `(ResourceData).GetOkExists()` second result is `true` when configuration contains zero-value data in `Provider.ConfigureFunc` and `Provider.ConfigureContextFunc` ([#1270](https://github.com/hashicorp/terraform-plugin-sdk/issues/1270))
+
+## 2.29.0 (September 06, 2023)
+
+NOTES:
+
+* all: This Go module has been updated to Go 1.20 per the [Go support policy](https://go.dev/doc/devel/release#policy). It is recommended to review the [Go 1.20 release notes](https://go.dev/doc/go1.20) before upgrading. Any consumers building on earlier Go versions may experience errors. ([#1245](https://github.com/hashicorp/terraform-plugin-sdk/issues/1245))
+
+FEATURES:
+
+* helper/schema: Upgrade to protocol version 5.4, which can significantly reduce memory usage with Terraform 1.6 and later when a configuration includes multiple instances of the same provider ([#1234](https://github.com/hashicorp/terraform-plugin-sdk/issues/1234))
+
+ENHANCEMENTS:
+
+* helper/validation: Added `AllDiag` and `AnyDiag`, which are `SchemaValidateDiagFunc` variants of `All` and `Any` ([#1155](https://github.com/hashicorp/terraform-plugin-sdk/issues/1155))
+* helper/validation: Added quoting in `StringInSlice` error diagnostic output to prevent confusion with values that contain spaces ([#464](https://github.com/hashicorp/terraform-plugin-sdk/issues/464))
+
+## 2.28.0 (August 24, 2023)
+
+NOTES:
+
+* helper/schema: The `Resource` type `EnableApplyLegacyTypeSystemErrors` and `EnablePlanLegacyTypeSystemErrors` fields can be enabled to more easily discover resource data consistency errors which Terraform would normally demote to warning logs. Before enabling the flag in a production release for a resource, the resource should be exhaustively acceptance tested as there may be unrecoverable error situations for practitioners. It is recommended to first enable and test in environments where it is easy to clean up resources, potentially outside of Terraform. ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+
+ENHANCEMENTS:
+
+* helper/schema: Added `Resource` type `EnableLegacyTypeSystemApplyErrors` field, which will prevent Terraform from demoting data consistency errors to warning logs during `ApplyResourceChange` (`Create`, `Update`, and `Delete`) operations with the resource ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+* helper/schema: Added `Resource` type `EnableLegacyTypeSystemPlanErrors` field, which can be used to prevent Terraform from demoting data consistency errors to warning logs during `PlanResourceChange` operations with the resource ([#1227](https://github.com/hashicorp/terraform-plugin-sdk/issues/1227))
+
+## 2.27.0 (June 28, 2023)
+
+NOTES:
+
+* helper/schema: Consumers directly referencing the `Resource` type `Schema` field should switch to the `SchemaMap` method to ensure new `SchemaFunc` field data is properly retrieved ([#1217](https://github.com/hashicorp/terraform-plugin-sdk/issues/1217))
+
+ENHANCEMENTS:
+
+* all: Improved SDK logging performance when messages would be skipped due to configured logging level ([#1202](https://github.com/hashicorp/terraform-plugin-sdk/issues/1202))
+* helper/schema: Added `Resource` type `SchemaFunc` field and `SchemaMap` method, which can reduce resident memory usage with large schemas ([#1217](https://github.com/hashicorp/terraform-plugin-sdk/issues/1217))
+
+## 2.26.1 (March 21, 2023)
+
+BUG FIXES:
+
+* helper/resource: Prevented build errors with type aliasing added in v2.26.0 ([#1176](https://github.com/hashicorp/terraform-plugin-sdk/issues/1176))
+
+## 2.26.0 (March 20, 2023)
+
+NOTES:
+
+* This Go module has been updated to Go 1.19 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1163](https://github.com/hashicorp/terraform-plugin-sdk/issues/1163))
+* helper/resource: Deprecated `PrefixedUniqueId()` and `UniqueId()`. Use the `helper/id` package instead. These deprecations are to assist in migrating to terraform-plugin-testing ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+* helper/resource: Deprecated `RetryContext()`, `StateChangeConf`, and associated `*Error` types. Use the `helper/retry` package instead. These deprecations are to assist in migrating to terraform-plugin-testing ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+
+ENHANCEMENTS:
+
+* helper/id: New `helper/id` package added. `resource.PrefixedUniqueId()` and `resource.UniqueId()` are deprecated, `helper/id` should be used instead. `helper/resource` now contains aliases to the migrated code ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+* helper/retry: New `helper/retry` package added. `resource.RetryContext()`, `resource.StateChangeConf`, and associated `*Error` types are deprecated, `helper/retry` should be used instead. `helper/resource now contains aliases to the migrated code ([#1167](https://github.com/hashicorp/terraform-plugin-sdk/issues/1167))
+
+## 2.25.0 (February 15, 2023)
+
+BUG FIXES:
+
+* helper/schema: Allow diagnostic messages with incorrect UTF-8 encoding to pass through with the invalid sequences replaced with the Unicode Replacement Character. This avoids returning the unhelpful message "string field contains invalid UTF-8" in that case. ([#1111](https://github.com/hashicorp/terraform-plugin-sdk/issues/1111))
+* helper/schema: Prevented unexpected difference for timeouts on first plan after import ([#1146](https://github.com/hashicorp/terraform-plugin-sdk/issues/1146))
+
+# 2.24.1 (November 14, 2022)
+
+BUG FIXES:
+
+* helper/resource: Fixed `TestStep` type `ImportStateCheck` field so that it only matches against resources following a change in behaviour in Terraform 1.3 that imports both resources and data sources into state ([#1089](https://github.com/hashicorp/terraform-plugin-sdk/issues/1089))
+* helper/resource: Prevented go-plugin goroutine leak per Terraform command ([#1095](https://github.com/hashicorp/terraform-plugin-sdk/issues/1095))
+* helper/resource: Prevented goroutine leak per Terraform command when testing terraform-plugin-sdk based providers via `Providers` or `ProviderFactories` ([#1091](https://github.com/hashicorp/terraform-plugin-sdk/issues/1091))
+* helper/resource: Prevented provider configuration already given error when `TestStep` type `Config` field already contained provider configuration block ([#1092](https://github.com/hashicorp/terraform-plugin-sdk/issues/1092))
+
+# 2.24.0 (October 13, 2022)
+
+ENHANCEMENTS:
+* helper/resource: Added `TestStep` type `RefreshState` field, which enables a step that refreshes state without an explicit apply or configuration changes ([#1070](https://github.com/hashicorp/terraform-plugin-sdk/issues/1070))
+
+BUG FIXES:
+* helper/resource: Fixed `TestStep` type `ImportStateVerify` field so that it only matches against resources following a change in behaviour in Terraform 1.3 that imports both resources and their dependent data sources ([#1077](https://github.com/hashicorp/terraform-plugin-sdk/issues/1077))
+
+# 2.23.0 (September 15, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Added Terraform configuration to `TRACE` logging ([#1059](https://github.com/hashicorp/terraform-plugin-sdk/issues/1059))
+* helper/resource: Added `terraform plan` output to `TRACE` logging ([#1058](https://github.com/hashicorp/terraform-plugin-sdk/issues/1058))
+
+BUG FIXES:
+
+* helper/resource: Prevented `Inconsistent dependency lock file` errors when using `ExternalProviders` outside the `hashicorp` namespace ([#1057](https://github.com/hashicorp/terraform-plugin-sdk/issues/1057))
+
+# 2.22.0 (September 8, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Add ImportStatePersist to optionally persist state generated during import ([#1052](https://github.com/hashicorp/terraform-plugin-sdk/issues/1052))
+
+BUG FIXES:
+
+* helper/schema: Delayed deprecated attribute warnings for unknown values, which may be null ([#1047](https://github.com/hashicorp/terraform-plugin-sdk/issues/1047))
+* helper/schema: Included path information in list size diagnostics for cases where Terraform does not include the configuration source ([#826](https://github.com/hashicorp/terraform-plugin-sdk/issues/826))
+
+# 2.21.0 (August 15, 2022)
+
+NOTES:
+* This Go module has been updated to Go 1.18 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1027](https://github.com/hashicorp/terraform-plugin-sdk/issues/1027))
+
+BUG FIXES:
+* helper/resource: Fixed `TestStep` type `Taint` field usage to properly recreate resources ([#1031](https://github.com/hashicorp/terraform-plugin-sdk/issues/1031))
+* helper/schema: Ensured `RawConfig`, `RawPlan`, and `RawState` are correctly copied during planning with recreation ([#1024](https://github.com/hashicorp/terraform-plugin-sdk/issues/1024))
+
+# 2.20.0 (July 28, 2022)
+
+NOTES:
+
+* helper/logging: Existing `NewTransport()` is now deprecated in favour of using the new `NewLoggingHTTPTransport()` or `NewSubsystemLoggingHTTPTransport()` ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
+FEATURES:
+
+* helper/logging: New `NewLoggingHTTPTransport()` and `NewSubsystemLoggingHTTPTransport()` functions, providing `http.RoundTripper` Transport implementations that log request/response using [terraform-plugin-log](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log) ([#546](https://github.com/hashicorp/terraform-plugin-sdk/issues/546)) ([#1006](https://github.com/hashicorp/terraform-plugin-sdk/issues/1006))
+
+# 2.19.0 (July 15, 2022)
+
+NOTES:
+
+* The underlying `terraform-plugin-log` dependency has been updated to v0.6.0, which includes log filtering support and breaking changes of `With()` to `SetField()` function names. Any provider logging which calls those functions may require updates. ([#1003](https://github.com/hashicorp/terraform-plugin-sdk/issues/1003))
+
+# 2.18.0 (July 5, 2022)
+
+ENHANCEMENTS:
+
+* helper/resource: Added `TF_ACC_LOG`, `TF_LOG_CORE`, and `TF_LOG_PROVIDER` environment variable handling for Terraform versions 0.15 and later ([#993](https://github.com/hashicorp/terraform-plugin-sdk/issues/993))
+* helper/schema: Added sdk.proto logger request duration and response diagnostics logging ([#996](https://github.com/hashicorp/terraform-plugin-sdk/issues/996))
+
+BUG FIXES:
+
+* helper/resource: Ensured errors are always logged. ([#983](https://github.com/hashicorp/terraform-plugin-sdk/issues/983))
+
+# 2.17.0 (May 31, 2022)
+
+NOTES:
+
+* helper/resource: Provider references or external installation can now be handled at either the `TestCase` or `TestStep` level. Using the `TestStep` handling, advanced use cases are now enabled such as state upgrade acceptance testing. ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
+ENHANCEMENTS:
+
+* helper/resource: Added `TestStep` type `ExternalProviders`, `ProtoV5ProviderFactories`, `ProtoV6ProviderFactories`, and `ProviderFactories` fields ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
+BUG FIXES:
+
+* helper/resource: Removed extraneous `terraform state show` command when not using the `TestStep` type `Taint` field ([#972](https://github.com/hashicorp/terraform-plugin-sdk/issues/972))
+
 # 2.16.0 (May 10, 2022)
 
 ENHANCEMENTS:

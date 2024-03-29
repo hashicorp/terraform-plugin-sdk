@@ -16,7 +16,7 @@ The _provider protocol_ is the physical mechanism by which Terraform Core
 launches a provider executable and directs it to take actions. Provider
 developers do not generally interact with the protocol directly, but rather
 implement against the Terraform SDK (as described elsewhere in
-[the _Extend_ section](/plugin)) which in turn implements the provider side of
+[the _Extend_ section](/terraform/plugin)) which in turn implements the provider side of
 the protocol itself.
 
 As a result, most of the work to support Terraform 0.12 comes just from
@@ -43,7 +43,7 @@ to the latest Terraform SDK involves upgrading all of the dependencies on
 Go packages with the prefix `github.com/hashicorp/terraform/` to a version
 with support for the new provider protocol.
 
-~> **NOTE:** The SDK is now its own Go module. Existing providers should upgrade to at least v0.12.7 before [switching to the standalone SDK](/plugin/sdkv2/guides/v1-upgrade-guide). This is to isolate issues between Terraform SDK v0.11 and v0.12, and the standalone SDK. New providers should vendor the standalone SDK from the start.
+~> **NOTE:** The SDK is now its own Go module. Existing providers should upgrade to at least v0.12.7 before [switching to the standalone SDK](/terraform/plugin/sdkv2/guides/v1-upgrade-guide). This is to isolate issues between Terraform SDK v0.11 and v0.12, and the standalone SDK. New providers should vendor the standalone SDK from the start.
 
 Terraform Core is now using
 [Go Modules](https://github.com/golang/go/wiki/Modules) for dependency
@@ -76,7 +76,7 @@ if you see unexpected new test failures after upgrading.
 ## Configuration Syntax Changes
 
 If your provider follows
-[the usual test patterns](/plugin/sdkv2/testing/acceptance-tests/testcase)
+[the usual test patterns](/terraform/plugin/sdkv2/testing/acceptance-tests/testcase)
 then there will be configuration snippets in your tests that will, after
 upgrading the SDK, be parsed using the new configuration language engine from
 Terraform 0.12. Although the new syntax is broadly compatible, there are some
@@ -87,11 +87,11 @@ If you see new configuration-related errors in your tests after upgrading, you
 may need to update the configuration snippets in similar ways to how an
 end-user might update their own configurations for compatibility. There are
 lots of details on the common situations in
-[the v0.12 upgrade guide](/language/upgrade-guides/0-12).
+[the v0.12 upgrade guide](/terraform/language/v1.1.x/upgrade-guides/0-12).
 
 If you see an error you're not sure how to resolve, it may help to copy the
 configuration snippet into a separate `.tf` file in a new directory and use
-[the `terraform 0.12upgrade` command](/cli/commands/0.12upgrade)
+[the `terraform 0.12upgrade` command](/terraform/cli/commands/0.12upgrade)
 to see what changes Terraform itself proposes.
 
 One particular situation that we've seen crop up a lot in provider upgrades
@@ -212,7 +212,7 @@ that `null_resource.example.triggers["foo"]` was interpolated into, rather than
 the resource that caused the problem: `null_resource.example`.
 
 If you see either of these errors, the remedy is the same: implement
-[`CustomizeDiff`](/plugin/sdkv2/resources/customizing-differences)
+[`CustomizeDiff`](/terraform/plugin/sdkv2/resources/customizing-differences)
 for the resource type that is causing the problem, and write logic to more
 accurately predict the outcome of any changes to `Computed` attributes.
 If you can predict the exact new value then that is preferable, but if you
@@ -225,7 +225,7 @@ each time certain other attributes are updated, you can use
 to reflect that in the plan:
 
 ```go
-    CustomizeDiff: customdiff.ComputedIf("version", func(d *schema.ResourceDiff, meta interface{}) bool {
+    CustomizeDiff: customdiff.ComputedIf("version", func(d *schema.ResourceDiff, meta any) bool {
         return d.HasChange("content") || d.HasChange("content_type")
     })
 ```
@@ -252,7 +252,7 @@ Terraform v0.12 does not support using `Computed` with a collection of
 sub-resources, but to avoid breaking existing uses of that mechanism for the
 reason described above, we introduced a compromise which you can read more
 about from the end-user perspective in
-[Attributes as Blocks](/language/attr-as-blocks).
+[Attributes as Blocks](/terraform/language/attr-as-blocks).
 
 If you have an existing `Computed` attribute that has `Elem: *schema.Resource`
 and which expects to treat explicit assignment of an empty list differently

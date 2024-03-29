@@ -13,13 +13,10 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - id: go-version
-        # Reference: https://github.com/actions/setup-go/issues/23
-        run: echo "::set-output name=version::$(cat ./.go-version)"
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ${{ steps.go-version.outputs.version }}
-      - uses: goreleaser/goreleaser-action@v2
+          go-version-file: 'go.mod'
+      - uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
         with:
           args: check

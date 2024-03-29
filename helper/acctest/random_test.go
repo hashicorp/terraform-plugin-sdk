@@ -1,8 +1,15 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package acctest
 
 import (
+	"crypto/rsa"
+	"net/netip"
 	"regexp"
 	"testing"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func TestRandIntRange(t *testing.T) {
@@ -44,7 +51,7 @@ func TestRandIpAddress(t *testing.T) {
 		},
 		{
 			s:           "abcdefg",
-			expectedErr: "invalid CIDR address: abcdefg",
+			expectedErr: "netip.ParsePrefix(\"abcdefg\"): no '/'",
 		},
 	}
 
@@ -58,8 +65,72 @@ func TestRandIpAddress(t *testing.T) {
 			if msg != tc.expectedErr {
 				t.Fatalf("expected test case %d to fail with %q but got %q", i, tc.expectedErr, msg)
 			}
-		} else if !tc.expected.MatchString(v) {
-			t.Fatalf("expected test case %d to return %q but got %q", i, tc.expected, v)
+
+			return
 		}
+
+		if !tc.expected.MatchString(v) {
+			t.Errorf("expected test case %d to return %q but got %q", i, tc.expected, v)
+		}
+
+		if !netip.MustParsePrefix(tc.s).Contains(netip.MustParseAddr(v)) {
+			t.Errorf("unexpected IP (%s) for prefix (%s)", v, tc.s)
+		}
+	}
+}
+
+func TestRandSSHKeyPair(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		comment string
+	}{
+		"comment": {
+			comment: "test comment",
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			gotPublicKey, gotPrivateKey, err := RandSSHKeyPair(testCase.comment)
+
+			if err != nil {
+				t.Fatalf("error generating SSH keypair: %s", err)
+			}
+
+			// Ensure public key is parsable and OpenSSH authorized keys
+			// format.
+			_, gotComment, _, _, err := ssh.ParseAuthorizedKey([]byte(gotPublicKey))
+
+			if err != nil {
+				t.Errorf("error parsing SSH public key: %s", err)
+			}
+
+			if gotComment != testCase.comment {
+				t.Errorf("expected %q public key comment, got: %s", testCase.comment, gotComment)
+			}
+
+			// Ensure private key is parsable, has no passphrase, RSA, and
+			// is 1024 bits for SDK version compatibility.
+			gotPrivateKeyIface, err := ssh.ParseRawPrivateKey([]byte(gotPrivateKey))
+
+			if err != nil {
+				t.Errorf("error parsing SSH private key: %s", err)
+			}
+
+			rsaPrivateKey, ok := gotPrivateKeyIface.(*rsa.PrivateKey)
+
+			if !ok {
+				t.Fatalf("expected *rsa.PrivateKey SSH private key, got: %T", gotPrivateKeyIface)
+			}
+
+			if rsaPrivateKey.N.BitLen() != 1024 {
+				t.Errorf("expected 1024 bit SSH private key, got: %d", rsaPrivateKey.N.BitLen())
+			}
+		})
 	}
 }

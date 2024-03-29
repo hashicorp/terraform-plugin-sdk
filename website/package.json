@@ -2,10 +2,12 @@
   "name": "terraform-plugin-sdk-docs-preview",
   "private": "true",
   "scripts": {
-    "build": "./scripts/website-build.sh"
+    "build": "./scripts/website-build.sh",
+    "content-check": "hc-content --config base-docs"
   },
   "devDependencies": {
-    "next": "^12.1.0"
+    "@hashicorp/platform-content-conformance": "^0.0.8",
+    "next": "^13.5.4"
   },
   "engines": {
     "npm": ">=7.0.0"

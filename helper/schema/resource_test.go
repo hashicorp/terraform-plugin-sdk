@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -1076,6 +1079,51 @@ func TestResourceInternalValidate(t *testing.T) {
 			},
 			true,
 			true,
+		},
+		27: { // Non-Writable SchemaFunc and Schema should not both be set
+			In: &Resource{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"test": {
+							Type:     TypeString,
+							Required: true,
+						},
+					}
+				},
+				Read: Noop,
+			},
+			Writable: false,
+			Err:      true,
+		},
+		28: { // Writable SchemaFunc and Schema should not both be set
+			In: &Resource{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"test": {
+							Type:     TypeString,
+							Required: true,
+						},
+					}
+				},
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
+			},
+			Writable: true,
+			Err:      true,
 		},
 	}
 

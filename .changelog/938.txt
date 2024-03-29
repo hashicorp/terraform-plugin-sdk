@@ -1,3 +1,0 @@
-```release-note:bug
-helper/resource: Ensured Terraform CLI logs are written to `TF_LOG_PATH_MASK` environment variable value when both `TF_ACC_LOG_PATH` and `TF_LOG_PATH_MASK` are set
-```

@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Added error logging before failing tests, so errors are visible in test output and any separate log file
-```

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package resource
 
 import (
@@ -10,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-multierror"
 	testinginterface "github.com/mitchellh/go-testing-interface"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -23,68 +25,89 @@ func init() {
 	}
 }
 
+// testExpectTFatal provides a wrapper for logic which should call
+// (*testing.T).Fatal() or (*testing.T).Fatalf().
+//
+// Since we do not want the wrapping test to fail when an expected test error
+// occurs, it is required that the testLogic passed in uses
+// github.com/mitchellh/go-testing-interface.RuntimeT instead of the real
+// *testing.T.
+//
+// If Fatal() or Fatalf() is not called in the logic, the real (*testing.T).Fatal() will
+// be called to fail the test.
+func testExpectTFatal(t *testing.T, testLogic func()) {
+	t.Helper()
+
+	var recoverIface interface{}
+
+	func() {
+		defer func() {
+			recoverIface = recover()
+		}()
+
+		testLogic()
+	}()
+
+	if recoverIface == nil {
+		t.Fatalf("expected t.Fatal(), got none")
+	}
+
+	recoverStr, ok := recoverIface.(string)
+
+	if !ok {
+		t.Fatalf("expected string from recover(), got: %v (%T)", recoverIface, recoverIface)
+	}
+
+	// this string is hardcoded in github.com/mitchellh/go-testing-interface
+	if !strings.HasPrefix(recoverStr, "testing.T failed, see logs for output") {
+		t.Fatalf("expected t.Fatal(), got: %s", recoverStr)
+	}
+}
+
 func TestParallelTest(t *testing.T) {
 	mt := new(mockT)
 
-	ParallelTest(mt, TestCase{IsUnitTest: true})
+	ParallelTest(mt, TestCase{
+		IsUnitTest: true,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"test": func() (*schema.Provider, error) { //nolint:unparam // required signature
+				return nil, nil
+			},
+		},
+		Steps: []TestStep{
+			{
+				Config: "# not empty",
+			},
+		},
+	})
 
 	if !mt.ParallelCalled {
 		t.Fatal("Parallel() not called")
 	}
 }
 
-func TestTest_factoryError(t *testing.T) {
-	resourceFactoryError := fmt.Errorf("resource factory error")
-
-	factory := func() (*schema.Provider, error) { //nolint:unparam // required signature
-		return nil, resourceFactoryError
-	}
-	mt := new(mockT)
-	recovered := false
-
-	func() {
-		defer func() {
-			r := recover()
-			// this string is hardcoded in github.com/mitchellh/go-testing-interface
-			if s, ok := r.(string); !ok || !strings.HasPrefix(s, "testing.T failed, see logs for output") {
-				panic(r)
-			}
-			recovered = true
-		}()
-		Test(mt, TestCase{
-			ProviderFactories: map[string]func() (*schema.Provider, error){
-				"test": factory,
-			},
-			IsUnitTest: true,
-		})
-	}()
-
-	if !recovered {
-		t.Fatalf("test should've failed fatally")
-	}
-}
-
 func TestComposeAggregateTestCheckFunc(t *testing.T) {
+	err1 := errors.New("Error 1")
 	check1 := func(s *terraform.State) error {
-		return errors.New("Error 1")
+		return err1
 	}
 
+	err2 := errors.New("Error 2")
 	check2 := func(s *terraform.State) error {
-		return errors.New("Error 2")
+		return err2
 	}
 
 	f := ComposeAggregateTestCheckFunc(check1, check2)
 	err := f(nil)
 	if err == nil {
-		t.Fatalf("Expected errors")
+		t.Fatal("expected error, got none")
 	}
 
-	multi := err.(*multierror.Error)
-	if !strings.Contains(multi.Errors[0].Error(), "Error 1") {
-		t.Fatalf("Expected Error 1, Got %s", multi.Errors[0])
+	if !errors.Is(err, err1) {
+		t.Errorf("expected %s, got: %s", err1, err)
 	}
-	if !strings.Contains(multi.Errors[1].Error(), "Error 2") {
-		t.Fatalf("Expected Error 2, Got %s", multi.Errors[1])
+	if !errors.Is(err, err2) {
+		t.Errorf("expected %s, got: %s", err2, err)
 	}
 }
 

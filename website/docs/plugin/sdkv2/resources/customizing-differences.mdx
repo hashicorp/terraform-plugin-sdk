@@ -39,7 +39,7 @@ func resourceExampleInstance() *schema.Resource {
             },
         },
         CustomizeDiff: customdiff.All(
-            customdiff.ValidateChange("size", func (old, new, meta interface{}) error {
+            customdiff.ValidateChange("size", func (ctx context.Context, old, new, meta any) error {
                 // If we are increasing "size" then the new value must be
                 // a multiple of the old value.
                 if new.(int) <= old.(int) {
@@ -50,7 +50,7 @@ func resourceExampleInstance() *schema.Resource {
                 }
                 return nil
             }),
-            customdiff.ForceNewIfChange("size", func (old, new, meta interface{}) bool {
+            customdiff.ForceNewIfChange("size", func (ctx context.Context, old, new, meta any) bool {
                 // "size" can only increase in-place, so we must create a new resource
                 // if it is decreased.
                 return new.(int) < old.(int)

@@ -6,7 +6,6 @@ on:
     paths:
       - .github/workflows/ci-go.yml
       - .golangci.yml
-      - .go-version
       - go.mod
       - '**.go'
 
@@ -17,35 +16,28 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - id: go-version
-        # Reference: https://github.com/actions/setup-go/issues/23
-        run: echo "::set-output name=version::$(cat ./.go-version)"
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ${{ steps.go-version.outputs.version }}
+          go-version-file: 'go.mod'
       - run: go mod download
-      - uses: golangci/golangci-lint-action@v3.2.0
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
         with:
-          skip-go-installation: true
+          version: latest
   terraform-provider-corner:
     defaults:
       run:
         working-directory: terraform-provider-corner
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           path: terraform-provider-corner
           repository: hashicorp/terraform-provider-corner
-      - id: go-version
-        # Reference: https://github.com/actions/setup-go/issues/23
-        run: echo "::set-output name=version::$(cat ./.go-version)"
-        working-directory: .
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: ${{ steps.go-version.outputs.version }}
+          go-version-file: 'go.mod'
       - run: go mod edit -replace=github.com/hashicorp/terraform-plugin-sdk/v2=../
       - run: go mod tidy
       - run: go test -v ./...
@@ -56,16 +48,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.18', '1.17' ]
+        go-version: [ '1.21', '1.20' ]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: ${{ matrix.go-version }}
       - run: go mod download
       - run: go test -coverprofile=coverage.out ./...
       - run: go tool cover -html=coverage.out -o coverage.html
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: go-${{ matrix.go-version }}-coverage
           path: coverage.html

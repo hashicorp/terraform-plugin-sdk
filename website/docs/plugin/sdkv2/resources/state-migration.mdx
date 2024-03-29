@@ -5,7 +5,7 @@ description: Migrating state values within resources.
 
 # Resources - State Migration
 
-Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor while the [Terraform state](/language/state) stores mapping and metadata information for those remote objects. There are several reasons why a resource implementation needs to change: backend APIs Terraform interacts with will change overtime, or the current implementation might be incorrect or unmaintainable. Some of these changes may not be backward compatible and a migration is needed for resources provisioned in the wild with old schema configurations.
+Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor while the [Terraform state](/terraform/language/state) stores mapping and metadata information for those remote objects. There are several reasons why a resource implementation needs to change: backend APIs Terraform interacts with will change overtime, or the current implementation might be incorrect or unmaintainable. Some of these changes may not be backward compatible and a migration is needed for resources provisioned in the wild with old schema configurations.
 
 The mechanism that is used for state migrations changed between v0.11 and v0.12 of the SDK bundled with Terraform core. Be sure to choose the method that matches your Terraform dependency.
 
@@ -76,7 +76,7 @@ func resourceExampleInstance() *schema.Resource {
             "name": {
                 Type:     schema.TypeString,
                 Required: true,
-                ValidateFunc: func(v interface{}, k string) (warns []string, errs []error) {
+                ValidateFunc: func(v any, k string) (warns []string, errs []error) {
                     if !strings.HasSuffix(v.(string), ".") {
                         errs = append(errs, fmt.Errorf("%q must end with a period '.'", k))
                     }
@@ -106,8 +106,8 @@ func resourceExampleInstanceResourceV0() *schema.Resource {
     }
 }
 
-func resourceExampleInstanceStateUpgradeV0(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-    rawState["name"] = rawState["name"] + "."
+func resourceExampleInstanceStateUpgradeV0(ctx context.Context, rawState map[string]any, meta any) (map[string]any, error) {
+    rawState["name"] = rawState["name"].(string) + "."
 
     return rawState, nil
 }
@@ -116,15 +116,15 @@ func resourceExampleInstanceStateUpgradeV0(rawState map[string]interface{}, meta
 To unit test this migration, the following can be written:
 
 ```go
-func testResourceExampleInstanceStateDataV0() map[string]interface{} {
-    return map[string]interface{}{
+func testResourceExampleInstanceStateDataV0() map[string]any {
+    return map[string]any{
         "name": "test",
     }
 }
 
-func testResourceExampleInstanceStateDataV1() map[string]interface{} {
+func testResourceExampleInstanceStateDataV1() map[string]any {
     v0 := testResourceExampleInstanceStateDataV0()
-    return map[string]interface{}{
+    return map[string]any{
         "name": v0["name"] + ".",
     }
 }
@@ -193,7 +193,7 @@ func resourceExampleInstance() *schema.Resource {
             "name": {
                 Type:     schema.TypeString,
                 Required: true,
-                ValidateFunc: func(v interface{}, k string) (warns []string, errs []error) {
+                ValidateFunc: func(v any, k string) (warns []string, errs []error) {
                     if !strings.HasSuffix(v.(string), ".") {
                         errs = append(errs, fmt.Errorf("%q must end with a period '.'", k))
                     }
@@ -210,7 +210,7 @@ func resourceExampleInstance() *schema.Resource {
 To trigger the migration we set the `SchemaVersion` to `1`. When Terraform saves state it also sets the `SchemaVersion` at the time, that way when differences are calculated, if the saved `SchemaVersion` is less than what the Resource is currently set to, the state is run through the `MigrateState` function.
 
 ```go
-func resourceExampleInstanceMigrateState(v int, inst *terraform.InstanceState, meta interface{}) (*terraform.InstanceState, error) {
+func resourceExampleInstanceMigrateState(v int, inst *terraform.InstanceState, meta any) (*terraform.InstanceState, error) {
     switch v {
     case 0:
         log.Println("[INFO] Found Example Instance State v0; migrating to v1")
@@ -239,7 +239,7 @@ func migrateExampleInstanceStateV0toV1(inst *terraform.InstanceState) (*terrafor
 Although not required, it's a good idea to break the migration function up into version jumps. As the provider developer you will have to account for migrations that are larger than one version upgrade, using the switch/case pattern above will allow you to create codepaths for states coming from all the versions of state in the wild. Please be careful to allow all legacy versions to migrate to the latest schema. Consider the code now where the `name` attribute has moved to an attribute called `fqdn`.
 
 ```go
-func resourceExampleInstanceMigrateState(v int, inst *terraform.InstanceState, meta interface{}) (*terraform.InstanceState, error) {
+func resourceExampleInstanceMigrateState(v int, inst *terraform.InstanceState, meta any) (*terraform.InstanceState, error) {
     var err error
     switch v {
     case 0:
@@ -271,4 +271,4 @@ func migrateExampleInstanceStateV1toV2(inst *terraform.InstanceState) (*terrafor
 }
 ```
 
-The fallthrough allows a very old state to move from 0 to 1 and now to 2. Sometimes state migrations are more complicated, and requires making API calls, to allow this the configured `meta interface{}` is also passed to the `MigrateState` function.
+The fallthrough allows a very old state to move from 0 to 1 and now to 2. Sometimes state migrations are more complicated, and requires making API calls, to allow this the configured `meta any` is also passed to the `MigrateState` function.
