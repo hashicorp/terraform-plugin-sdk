@@ -300,6 +300,10 @@ func testAccCheckExampleWidgetExists(resourceName string, widget *example.Widget
 }
 ```
 
+## Caveats
+
+[`for_each`](/terraform/language/meta-arguments/for_each) syntax is not supported in the `Config` field.
+
 ## Next Steps
 
 Acceptance Testing is an essential approach to validating the implementation of a Terraform Provider. Using actual APIs to provision resources for testing can leave behind real infrastructure that costs money between tests. The reasons for these leaks can vary, regardless Terraform provides a mechanism known as [Sweepers](/terraform/plugin/sdkv2/testing/acceptance-tests/sweepers) to help keep the testing account clean.
