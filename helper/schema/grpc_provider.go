@@ -6,6 +6,7 @@ package schema
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -632,6 +633,26 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
+	if s.provider.providerDeferral != nil {
+		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
+		// a deferral response for older Terraform versions that don't support it.
+		if req.DeferralAllowed {
+			// TODO: Is this okay to set to CurrentState?
+			resp.NewState = req.CurrentState
+			resp.Deferred = &tfprotov5.Deferred{
+				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			}
+			return resp, nil
+		}
+
+		resp.Diagnostics = convert.AppendProtoDiag(
+			ctx,
+			resp.Diagnostics,
+			errors.New("provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
+		)
+		return resp, nil
+	}
+
 	stateVal, err := msgpack.Unmarshal(req.CurrentState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -729,6 +750,27 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if !res.EnableLegacyTypeSystemPlanErrors {
 		//nolint:staticcheck // explicitly for this SDK
 		resp.UnsafeToUseLegacyTypeSystem = true
+	}
+
+	if s.provider.providerDeferral != nil {
+		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
+		// a deferral response for older Terraform versions that don't support it.
+		if req.DeferralAllowed {
+			// TODO: Is this okay to use as planned state?
+			resp.PlannedState = req.ProposedNewState
+			resp.PlannedPrivate = req.PriorPrivate
+			resp.Deferred = &tfprotov5.Deferred{
+				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			}
+			return resp, nil
+		}
+
+		resp.Diagnostics = convert.AppendProtoDiag(
+			ctx,
+			resp.Diagnostics,
+			errors.New("provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
+		)
+		return resp, nil
 	}
 
 	priorStateVal, err := msgpack.Unmarshal(req.PriorState.MsgPack, schemaBlock.ImpliedType())
@@ -1145,6 +1187,25 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		Type: req.TypeName,
 	}
 
+	if s.provider.providerDeferral != nil {
+		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
+		// a deferral response for older Terraform versions that don't support it.
+		if req.DeferralAllowed {
+			// TODO: Set resp.ImportedResources?
+			resp.Deferred = &tfprotov5.Deferred{
+				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			}
+			return resp, nil
+		}
+
+		resp.Diagnostics = convert.AppendProtoDiag(
+			ctx,
+			resp.Diagnostics,
+			errors.New("provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
+		)
+		return resp, nil
+	}
+
 	newInstanceStates, err := s.provider.ImportState(ctx, info, req.ID)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1253,6 +1314,36 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	resp := &tfprotov5.ReadDataSourceResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
+
+	if s.provider.providerDeferral != nil {
+		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
+		// a deferral response for older Terraform versions that don't support it.
+		if req.DeferralAllowed {
+			// TODO: Is this the correct way to return all unknowns?
+			// TODO: Should we pass back config values as known? (core isn't using it right now, but will eventually be displayed)
+			unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
+			unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+				return resp, nil
+			}
+			resp.State = &tfprotov5.DynamicValue{
+				MsgPack: unknownStateMp,
+			}
+
+			resp.Deferred = &tfprotov5.Deferred{
+				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			}
+			return resp, nil
+		}
+
+		resp.Diagnostics = convert.AppendProtoDiag(
+			ctx,
+			resp.Diagnostics,
+			errors.New("provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
+		)
+		return resp, nil
+	}
 
 	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {

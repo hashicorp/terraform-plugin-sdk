@@ -92,12 +92,60 @@ type Provider struct {
 	// cancellation signal. This function can yield Diagnostics.
 	ConfigureContextFunc ConfigureContextFunc
 
+	// ConfigureProvider is a function for configuring the provider that
+	// supports additional features, such as returning a deferral response.
+	//
+	// Providers that require these additional features should use this function
+	// as a replacement for ConfigureContextFunc.
+	//
+	// This function receives a context.Context that will cancel when
+	// Terraform sends a cancellation signal.
+	ConfigureProvider func(context.Context, ConfigureRequest, *ConfigureResponse)
+
 	// configured is enabled after a Configure() call
 	configured bool
 
 	meta interface{}
 
 	TerraformVersion string
+
+	// providerDeferral is a global deferral response that will be used for all
+	// resources and data sources associated to this provider server.
+	providerDeferral *DeferralResponse
+}
+
+type ConfigureRequest struct {
+	// DeferralAllowed indicates whether the Terraform client initiating
+	// the read request allows a deferral response.
+	//
+	// If true: `(schema.ConfigureResponse).DeferralResponse` can be
+	// set.
+	//
+	// If false: `(schema.ConfigureResponse).DeferralResponse`
+	// will return an error diagnostic if set.
+	DeferralAllowed bool
+
+	// ResourceData is used to query and set the attributes of a resource.
+	ResourceData *ResourceData
+}
+
+type ConfigureResponse struct {
+	// Meta is stored and passed into the subsequent resources as the meta
+	// parameter. This return value is usually used to pass along a
+	// configured API client, a configuration structure, etc.
+	Meta interface{}
+
+	// Diagnostics report errors or warnings related to configuring the
+	// provider. An empty slice indicates success, with no warnings or
+	// errors generated.
+	Diagnostics diag.Diagnostics
+
+	// DeferralResponse indicates that Terraform should automatically defer
+	// all resources and data sources for this provider.
+	//
+	// This field can only be set if
+	// `(schema.ConfigureRequest).DeferralAllowed` is true.
+	DeferralResponse *DeferralResponse
 }
 
 // ConfigureFunc is the function used to configure a Provider.
@@ -262,7 +310,7 @@ func (p *Provider) ValidateResource(
 // This won't be called at all if no provider configuration is given.
 func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) diag.Diagnostics {
 	// No configuration
-	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil {
+	if p.ConfigureFunc == nil && p.ConfigureContextFunc == nil && p.ConfigureProvider == nil {
 		return nil
 	}
 
@@ -311,6 +359,25 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		}
 
 		p.meta = meta
+	}
+
+	if p.ConfigureProvider != nil {
+		req := ConfigureRequest{
+			// TODO: Populate from the protocol when available
+			DeferralAllowed: true,
+			ResourceData:    data,
+		}
+		resp := ConfigureResponse{}
+
+		p.ConfigureProvider(ctx, req, &resp)
+
+		diags = append(diags, resp.Diagnostics...)
+		if diags.HasError() {
+			return diags
+		}
+
+		p.meta = resp.Meta
+		p.providerDeferral = resp.DeferralResponse
 	}
 
 	p.configured = true
