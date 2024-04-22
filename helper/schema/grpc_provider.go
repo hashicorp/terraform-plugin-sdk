@@ -634,22 +634,22 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
 	if s.provider.providerDeferral != nil {
-		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
-		// a deferral response for older Terraform versions that don't support it.
-		if req.DeferralAllowed {
-			// TODO: Is this okay to set to CurrentState?
-			resp.NewState = req.CurrentState
-			resp.Deferred = &tfprotov5.Deferred{
-				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
-			}
+		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
+		// incorrectly return a deferral response when Terraform doesn't support it.
+		if !req.DeferralAllowed {
+			resp.Diagnostics = convert.AppendProtoDiag(
+				ctx,
+				resp.Diagnostics,
+				errors.New("Provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
+			)
 			return resp, nil
 		}
 
-		resp.Diagnostics = convert.AppendProtoDiag(
-			ctx,
-			resp.Diagnostics,
-			errors.New("provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
-		)
+		// TODO: Is this okay to set to CurrentState?
+		resp.NewState = req.CurrentState
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+		}
 		return resp, nil
 	}
 
@@ -752,24 +752,25 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.UnsafeToUseLegacyTypeSystem = true
 	}
 
-	if s.provider.providerDeferral != nil {
-		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
-		// a deferral response for older Terraform versions that don't support it.
-		if req.DeferralAllowed {
-			// TODO: Is this okay to use as planned state?
-			resp.PlannedState = req.ProposedNewState
-			resp.PlannedPrivate = req.PriorPrivate
-			resp.Deferred = &tfprotov5.Deferred{
-				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
-			}
-			return resp, nil
-		}
-
+	// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
+	// incorrectly return a deferral response when Terraform doesn't support it.
+	if s.provider.providerDeferral != nil && !req.DeferralAllowed {
 		resp.Diagnostics = convert.AppendProtoDiag(
 			ctx,
 			resp.Diagnostics,
-			errors.New("provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
+			errors.New("Provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
 		)
+		return resp, nil
+	}
+
+	// Automatic deferral is present and the resource hasn't opted-in to CustomizeDiff being called, return early.
+	if s.provider.providerDeferral != nil && !res.ResourceBehavior.ProviderDeferral.EnableCustomizeDiff {
+		// TODO: Is this okay to use as planned state?
+		resp.PlannedState = req.ProposedNewState
+		resp.PlannedPrivate = req.PriorPrivate
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+		}
 		return resp, nil
 	}
 
@@ -993,6 +994,13 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.RequiresReplace = append(resp.RequiresReplace, pathToAttributePath(p))
 	}
 
+	// Automatic deferral is present, add the deferral response alongside the provider-modified plan
+	if s.provider.providerDeferral != nil {
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+		}
+	}
+
 	return resp, nil
 }
 
@@ -1188,21 +1196,21 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 	}
 
 	if s.provider.providerDeferral != nil {
-		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
-		// a deferral response for older Terraform versions that don't support it.
-		if req.DeferralAllowed {
-			// TODO: Set resp.ImportedResources?
-			resp.Deferred = &tfprotov5.Deferred{
-				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
-			}
+		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
+		// incorrectly return a deferral response when Terraform doesn't support it.
+		if !req.DeferralAllowed {
+			resp.Diagnostics = convert.AppendProtoDiag(
+				ctx,
+				resp.Diagnostics,
+				errors.New("Provider attempted to return a deferral response for ImportResourceState, but the Terraform client doesn't support it."),
+			)
 			return resp, nil
 		}
 
-		resp.Diagnostics = convert.AppendProtoDiag(
-			ctx,
-			resp.Diagnostics,
-			errors.New("provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
-		)
+		// TODO: Set resp.ImportedResources? Currently sending back an empty slice by default
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+		}
 		return resp, nil
 	}
 
@@ -1316,32 +1324,32 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
 
 	if s.provider.providerDeferral != nil {
-		// TODO: This is currently hardcoded, so provider developers can't protect themselves from accidently returning
-		// a deferral response for older Terraform versions that don't support it.
-		if req.DeferralAllowed {
-			// TODO: Is this the correct way to return all unknowns?
-			// TODO: Should we pass back config values as known? (core isn't using it right now, but will eventually be displayed)
-			unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
-			unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
-			if err != nil {
-				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
-				return resp, nil
-			}
-			resp.State = &tfprotov5.DynamicValue{
-				MsgPack: unknownStateMp,
-			}
-
-			resp.Deferred = &tfprotov5.Deferred{
-				Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
-			}
+		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
+		// incorrectly return a deferral response when Terraform doesn't support it.
+		if !req.DeferralAllowed {
+			resp.Diagnostics = convert.AppendProtoDiag(
+				ctx,
+				resp.Diagnostics,
+				errors.New("Provider attempted to return a deferral response for ReadDataSource, but the Terraform client doesn't support it."),
+			)
 			return resp, nil
 		}
 
-		resp.Diagnostics = convert.AppendProtoDiag(
-			ctx,
-			resp.Diagnostics,
-			errors.New("provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
-		)
+		// TODO: Is this the correct way to return all unknowns?
+		// TODO: Should we pass back config values as known? (core isn't using it right now, but will eventually be displayed)
+		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
+		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		resp.State = &tfprotov5.DynamicValue{
+			MsgPack: unknownStateMp,
+		}
+
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+		}
 		return resp, nil
 	}
 
