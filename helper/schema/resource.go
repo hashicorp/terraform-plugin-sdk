@@ -657,11 +657,11 @@ type ResourceBehavior struct {
 // ProviderDeferral enables provider-defined logic to be executed
 // in the case of automatic deferral from provider configure.
 type ProviderDeferralBehavior struct {
-	// When EnableCustomizeDiff is true, the SDK will execute CustomizeDiff
-	// if ConfigureProvider returns a deferral response. The SDK will
-	// then automatically return a deferral response along with the
-	// modified plan.
-	EnableCustomizeDiff bool
+	// When EnablePlanModification is true, the SDK will execute provider-defined logic
+	// during plan (CustomizeDiff, Default, DiffSupressFunc, etc.) if ConfigureProvider
+	// returns a deferral response. The SDK will then automatically return a deferral response
+	// along with the modified plan.
+	EnablePlanModification bool
 }
 
 // SchemaMap returns the schema information for this Resource whether it is

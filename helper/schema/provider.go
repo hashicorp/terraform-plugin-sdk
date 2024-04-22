@@ -100,7 +100,7 @@ type Provider struct {
 	//
 	// This function receives a context.Context that will cancel when
 	// Terraform sends a cancellation signal.
-	ConfigureProvider func(context.Context, ConfigureRequest, *ConfigureResponse)
+	ConfigureProvider func(context.Context, ConfigureProviderRequest, *ConfigureProviderResponse)
 
 	// configured is enabled after a Configure() call
 	configured bool
@@ -114,14 +114,14 @@ type Provider struct {
 	providerDeferral *DeferralResponse
 }
 
-type ConfigureRequest struct {
+type ConfigureProviderRequest struct {
 	// DeferralAllowed indicates whether the Terraform client initiating
 	// the read request allows a deferral response.
 	//
-	// If true: `(schema.ConfigureResponse).DeferralResponse` can be
+	// If true: `(schema.ConfigureProviderResponse).DeferralResponse` can be
 	// set.
 	//
-	// If false: `(schema.ConfigureResponse).DeferralResponse`
+	// If false: `(schema.ConfigureProviderResponse).DeferralResponse`
 	// will return an error diagnostic if set.
 	DeferralAllowed bool
 
@@ -129,7 +129,7 @@ type ConfigureRequest struct {
 	ResourceData *ResourceData
 }
 
-type ConfigureResponse struct {
+type ConfigureProviderResponse struct {
 	// Meta is stored and passed into the subsequent resources as the meta
 	// parameter. This return value is usually used to pass along a
 	// configured API client, a configuration structure, etc.
@@ -144,7 +144,7 @@ type ConfigureResponse struct {
 	// all resources and data sources for this provider.
 	//
 	// This field can only be set if
-	// `(schema.ConfigureRequest).DeferralAllowed` is true.
+	// `(schema.ConfigureProviderRequest).DeferralAllowed` is true.
 	DeferralResponse *DeferralResponse
 }
 
@@ -362,12 +362,12 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 	}
 
 	if p.ConfigureProvider != nil {
-		req := ConfigureRequest{
+		req := ConfigureProviderRequest{
 			// TODO: Populate from the protocol when available
 			DeferralAllowed: true,
 			ResourceData:    data,
 		}
-		resp := ConfigureResponse{}
+		resp := ConfigureProviderResponse{}
 
 		p.ConfigureProvider(ctx, req, &resp)
 
@@ -375,6 +375,8 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		if diags.HasError() {
 			return diags
 		}
+
+		// TODO: Add logic to return a diagnostic if DeferralAllowed == false and a deferral is returned
 
 		p.meta = resp.Meta
 		p.providerDeferral = resp.DeferralResponse
