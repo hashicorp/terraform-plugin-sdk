@@ -1206,10 +1206,48 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
-		// TODO: Set resp.ImportedResources? Currently sending back an empty slice by default
+		// The logic for ensuring the resource type is supported by this provider is inside of (provider).ImportState
+		// We need to check to ensure the resource type is supported before using the schema
+		_, ok := s.provider.ResourcesMap[req.TypeName]
+		if !ok {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+			return resp, nil
+		}
+
+		// TODO: We need to make a decision on how we want to handle this scenario. If a deferral is happening for an import
+		// because of PROVIDER_CONFIG_UNKNOWN, the returned import object will still be in the rendered output in the plan
+		// (when using new import blocks)
+		//
+		// We can:
+		// - Send back an unknown value (preferred by core because it semantically makes sense)
+		// - Send back a null value (matches the general behavior of import today, i.e. fill what you can, rest are null)
+		//
+		// Regardless of what we send back, Core will send nulls to future "ApplyResourceChange" RPC calls to keep compatibility
+		// since "Update" methods of providers are not meant to receive Unknown values.
+		//
+		// The current approach below sends back an unknown value
+		//
+		schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
+		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.ImportedResources = []*tfprotov5.ImportedResource{
+			{
+				TypeName: req.TypeName,
+				State: &tfprotov5.DynamicValue{
+					MsgPack: unknownStateMp,
+				},
+			},
+		}
+
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
 		}
+
 		return resp, nil
 	}
 

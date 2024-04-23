@@ -5020,6 +5020,279 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 	}
 }
 
+func TestImportResourceState(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.ImportResourceStateRequest
+		expected *tfprotov5.ImportResourceStateResponse
+	}{
+		"basic-import": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								err := d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"id":          cty.StringVal("imported-id"),
+									"test_string": cty.StringVal("new-imported-val"),
+								}),
+							),
+						},
+						Private: []byte(`{"schema_version":"1"}`),
+					},
+				},
+			},
+		},
+		"resource-doesnt-exist": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								t.Fatal("Test failed, import shouldn't be called")
+
+								return nil, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "fake-resource",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "unknown resource type: fake-resource",
+					},
+				},
+			},
+		},
+		"deferral-resource-doesnt-exist": {
+			server: NewGRPCProviderServer(&Provider{
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								t.Fatal("Test failed, import shouldn't be called")
+
+								return nil, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName:        "fake-resource",
+				ID:              "imported-id",
+				DeferralAllowed: true,
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "unknown resource type: fake-resource",
+					},
+				},
+			},
+		},
+		"deferral-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferral will skip import function and return an unknown value
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								t.Fatal("Test failed, import shouldn't be called when automatic deferral is present")
+
+								return nil, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName:        "test",
+				ID:              "imported-id",
+				DeferralAllowed: true,
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.UnknownVal(
+									cty.Object(map[string]cty.Type{
+										"id":          cty.String,
+										"test_string": cty.String,
+									}),
+								),
+							),
+						},
+					},
+				},
+			},
+		},
+		"deferral-not-allowed-diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								t.Fatal("Test failed, import shouldn't be called when automatic deferral is present")
+
+								return nil, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+				// Deferral will cause a diagnostic to be returned
+				DeferralAllowed: false,
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Provider attempted to return a deferral response for ImportResourceState, but the Terraform client doesn't support it.",
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := testCase.server.ImportResourceState(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && len(resp.ImportedResources) > 0 {
+					t.Logf("resp.ImportedResources[0].State.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.ImportedResources[0].State.MsgPack))
+				}
+
+				if testCase.expected != nil && len(testCase.expected.ImportedResources) > 0 {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.ImportedResources[0].State.MsgPack))
+				}
+
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 // Timeouts should never be present in imported resources.
 // Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1145
 func TestImportResourceState_Timeouts_None(t *testing.T) {
