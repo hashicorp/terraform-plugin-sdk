@@ -4030,10 +4030,8 @@ func TestReadResource(t *testing.T) {
 		"deferral-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferral will skip read function and return current state
-				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
-					}
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -4100,10 +4098,8 @@ func TestReadResource(t *testing.T) {
 		},
 		"deferral-not-allowed-diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
-				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
-					}
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -4131,7 +4127,7 @@ func TestReadResource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadResourceRequest{
-				// Will cause a diagnostic to be returned
+				// Deferral will cause a diagnostic to be returned
 				DeferralAllowed: false,
 				TypeName:        "test",
 				CurrentState: &tfprotov5.DynamicValue{
@@ -4165,21 +4161,6 @@ func TestReadResource(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
-			// Configure provider will setup automatic deferral if present
-			_, err := testCase.server.ConfigureProvider(context.Background(), &tfprotov5.ConfigureProviderRequest{
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.EmptyObject,
-						cty.EmptyObjectVal,
-					),
-				},
-				// TODO: Add deferral allowed here
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			resp, err := testCase.server.ReadResource(context.Background(), testCase.req)
 
 			if err != nil {
@@ -5354,10 +5335,8 @@ func TestReadDataSource(t *testing.T) {
 		"deferral-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferral will skip read function and return an unknown value
-				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
-					}
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
 				},
 				DataSourcesMap: map[string]*Resource{
 					"test": {
@@ -5422,10 +5401,8 @@ func TestReadDataSource(t *testing.T) {
 		},
 		"deferral-not-allowed-diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
-				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
-					}
+				providerDeferral: &DeferralResponse{
+					Reason: DeferralReasonProviderConfigUnknown,
 				},
 				DataSourcesMap: map[string]*Resource{
 					"test": {
@@ -5449,7 +5426,7 @@ func TestReadDataSource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadDataSourceRequest{
-				// Will cause a diagnostic to be returned
+				// Deferral will cause a diagnostic to be returned
 				DeferralAllowed: false,
 				TypeName:        "test",
 				Config: &tfprotov5.DynamicValue{
@@ -5483,21 +5460,6 @@ func TestReadDataSource(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
-			// Configure provider will setup automatic deferral if present
-			_, err := testCase.server.ConfigureProvider(context.Background(), &tfprotov5.ConfigureProviderRequest{
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.EmptyObject,
-						cty.EmptyObjectVal,
-					),
-				},
-				// TODO: Add deferral allowed here
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			resp, err := testCase.server.ReadDataSource(context.Background(), testCase.req)
 
 			if err != nil {
