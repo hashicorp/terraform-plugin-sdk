@@ -762,9 +762,9 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		return resp, nil
 	}
 
-	// Automatic deferral is present and the resource hasn't opted-in to CustomizeDiff being called, return early.
+	// Automatic deferral is present and the resource hasn't opted-in to CustomizeDiff being called, return early
+	// with proposed new state as a best effort for PlannedState.
 	if s.provider.providerDeferral != nil && !res.ResourceBehavior.ProviderDeferral.EnablePlanModification {
-		// TODO: Is this okay to use as planned state?
 		resp.PlannedState = req.ProposedNewState
 		resp.PlannedPrivate = req.PriorPrivate
 		resp.Deferred = &tfprotov5.Deferred{
