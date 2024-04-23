@@ -3949,6 +3949,259 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 	}
 }
 
+func TestReadResource(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.ReadResourceRequest
+		expected *tfprotov5.ReadResourceResponse
+	}{
+		"read-resource": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test_bool", true)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							err = d.Set("test_string", "new-state-val")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(true),
+							"test_string": cty.StringVal("new-state-val"),
+						}),
+					),
+				},
+			},
+		},
+		"deferral-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferral will skip read function and return current state
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				DeferralAllowed: true,
+				TypeName:        "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+			},
+		},
+		"deferral-not-allowed-diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				// Will cause a diagnostic to be returned
+				DeferralAllowed: false,
+				TypeName:        "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it.",
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			// Configure provider will setup automatic deferral if present
+			_, err := testCase.server.ConfigureProvider(context.Background(), &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.EmptyObject,
+						cty.EmptyObjectVal,
+					),
+				},
+				// TODO: Add deferral allowed here
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			resp, err := testCase.server.ReadResource(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && resp.NewState != nil {
+					t.Logf("resp.NewState.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.NewState.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.NewState != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.NewState.MsgPack))
+				}
+
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestPlanResourceChange(t *testing.T) {
 	t.Parallel()
 

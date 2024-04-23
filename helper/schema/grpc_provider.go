@@ -645,7 +645,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 
-		// TODO: Is this okay to set to CurrentState?
 		resp.NewState = req.CurrentState
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
