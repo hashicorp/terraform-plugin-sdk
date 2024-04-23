@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/go-cty/cty/msgpack"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -4206,32 +4207,156 @@ func TestPlanResourceChange(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
-		TestResource                   *Resource
-		ExpectedUnsafeLegacyTypeSystem bool
+		server   *GRPCProviderServer
+		req      *tfprotov5.PlanResourceChangeRequest
+		expected *tfprotov5.PlanResourceChangeResponse
 	}{
-		"basic": {
-			TestResource: &Resource{
-				SchemaVersion: 4,
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:     TypeInt,
-						Optional: true,
+		"basic-plan": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
 					},
 				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
 			},
-			ExpectedUnsafeLegacyTypeSystem: true,
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+			},
 		},
-		"EnableLegacyTypeSystemPlanErrors": {
-			TestResource: &Resource{
-				EnableLegacyTypeSystemPlanErrors: true,
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:     TypeInt,
-						Optional: true,
+		"basic-plan-EnableLegacyTypeSystemPlanErrors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						// Will set UnsafeToUseLegacyTypeSystem to false
+						EnableLegacyTypeSystemPlanErrors: true,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
 					},
 				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
 			},
-			ExpectedUnsafeLegacyTypeSystem: false,
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: false,
+			},
 		},
 	}
 
@@ -4241,73 +4366,23 @@ func TestPlanResourceChange(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			server := NewGRPCProviderServer(&Provider{
-				ResourcesMap: map[string]*Resource{
-					"test": testCase.TestResource,
-				},
-			})
-
-			schema := testCase.TestResource.CoreConfigSchema()
-			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			resp, err := testCase.server.PlanResourceChange(context.Background(), testCase.req)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// A propsed state with only the ID unknown will produce a nil diff, and
-			// should return the propsed state value.
-			proposedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
-			}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			proposedState, err := msgpack.Marshal(proposedVal, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
 
-			config, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-				"id": cty.NullVal(cty.String),
-			}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			configBytes, err := msgpack.Marshal(config, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
+				if resp != nil && resp.PlannedState != nil {
+					t.Logf("resp.PlannedState.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.PlannedState.MsgPack))
+				}
 
-			testReq := &tfprotov5.PlanResourceChangeRequest{
-				TypeName: "test",
-				PriorState: &tfprotov5.DynamicValue{
-					MsgPack: priorState,
-				},
-				ProposedNewState: &tfprotov5.DynamicValue{
-					MsgPack: proposedState,
-				},
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: configBytes,
-				},
-			}
+				if testCase.expected != nil && testCase.expected.PlannedState != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.PlannedState.MsgPack))
+				}
 
-			resp, err := server.PlanResourceChange(context.Background(), testReq)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			plannedStateVal, err := msgpack.Unmarshal(resp.PlannedState.MsgPack, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !cmp.Equal(proposedVal, plannedStateVal, valueComparer) {
-				t.Fatal(cmp.Diff(proposedVal, plannedStateVal, valueComparer))
-			}
-
-			//nolint:staticcheck // explicitly for this SDK
-			if testCase.ExpectedUnsafeLegacyTypeSystem != resp.UnsafeToUseLegacyTypeSystem {
-				//nolint:staticcheck // explicitly for this SDK
-				t.Fatalf("expected UnsafeLegacyTypeSystem %t, got: %t", testCase.ExpectedUnsafeLegacyTypeSystem, resp.UnsafeToUseLegacyTypeSystem)
+				t.Error(diff)
 			}
 		})
 	}
