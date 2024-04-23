@@ -1335,18 +1335,17 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 			return resp, nil
 		}
 
-		// TODO: Is this the correct way to return all unknowns?
-		// TODO: Should we pass back config values as known? (core isn't using it right now, but will eventually be displayed)
+		// Send an unknown value for the data source
 		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
 		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
+
 		resp.State = &tfprotov5.DynamicValue{
 			MsgPack: unknownStateMp,
 		}
-
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
 		}

@@ -5023,6 +5023,131 @@ func TestReadDataSource(t *testing.T) {
 				},
 			},
 		},
+		"deferral-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferral will skip read function and return an unknown value
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				DataSourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"test": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadDataSourceRequest{
+				DeferralAllowed: true,
+				TypeName:        "test",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":        cty.String,
+							"test":      cty.String,
+							"test_bool": cty.Bool,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":        cty.NullVal(cty.String),
+							"test":      cty.StringVal("test-string"),
+							"test_bool": cty.NullVal(cty.Bool),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadDataSourceResponse{
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":        cty.String,
+							"test":      cty.String,
+							"test_bool": cty.Bool,
+						}),
+						cty.UnknownVal(
+							cty.Object(map[string]cty.Type{
+								"id":        cty.String,
+								"test":      cty.String,
+								"test_bool": cty.Bool,
+							}),
+						),
+					),
+				},
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+			},
+		},
+		"deferral-not-allowed-diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				DataSourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"test": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadDataSourceRequest{
+				// Will cause a diagnostic to be returned
+				DeferralAllowed: false,
+				TypeName:        "test",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":        cty.String,
+							"test":      cty.String,
+							"test_bool": cty.Bool,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":        cty.NullVal(cty.String),
+							"test":      cty.StringVal("test-string"),
+							"test_bool": cty.NullVal(cty.Bool),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadDataSourceResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Provider attempted to return a deferral response for ReadDataSource, but the Terraform client doesn't support it.",
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -5030,6 +5155,20 @@ func TestReadDataSource(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
+			// Configure provider will setup automatic deferral if present
+			_, err := testCase.server.ConfigureProvider(context.Background(), &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.EmptyObject,
+						cty.EmptyObjectVal,
+					),
+				},
+				// TODO: Add deferral allowed here
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			resp, err := testCase.server.ReadDataSource(context.Background(), testCase.req)
 
