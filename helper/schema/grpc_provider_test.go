@@ -3167,6 +3167,9 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -3183,7 +3186,81 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				Reason: DeferralReasonProviderConfigUnknown,
 			},
 		},
-		// TODO: Add tests for diagnostics when a deferral is incorrectly returned
+		"ConfigureProvider-DeferralResponse-ClientCapabilities-Unset-Diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				// No ClientCapabilities set, Deferral will cause a diagnostic to be returned
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Provider attempted to configure a deferral response for all resources and data sources during ConfigureProvider, but the Terraform client doesn't support it.",
+					},
+				},
+			},
+		},
+		"ConfigureProvider-DeferralResponse-Not-Allowed-Diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.DeferralResponse = &DeferralResponse{
+						Reason: DeferralReasonProviderConfigUnknown,
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					// Deferral will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Provider attempted to configure a deferral response for all resources and data sources during ConfigureProvider, but the Terraform client doesn't support it.",
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -3206,8 +3283,10 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				t.Fatalf("unexpected difference: %s", diff)
 			}
 
-			if diff := cmp.Diff(testCase.server.provider.providerDeferral, testCase.expectedProviderDeferral); diff != "" {
-				t.Fatalf("unexpected difference: %s", diff)
+			if len(resp.Diagnostics) == 0 {
+				if diff := cmp.Diff(testCase.server.provider.providerDeferral, testCase.expectedProviderDeferral); diff != "" {
+					t.Fatalf("unexpected difference: %s", diff)
+				}
 			}
 		})
 	}
@@ -4059,8 +4138,10 @@ func TestReadResource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadResourceRequest{
-				DeferralAllowed: true,
-				TypeName:        "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
+				TypeName: "test",
 				CurrentState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4127,9 +4208,11 @@ func TestReadResource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadResourceRequest{
-				// Deferral will cause a diagnostic to be returned
-				DeferralAllowed: false,
-				TypeName:        "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					// Deferral will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
+				TypeName: "test",
 				CurrentState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4367,8 +4450,10 @@ func TestPlanResourceChange(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
-				TypeName:        "test",
-				DeferralAllowed: true,
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
 				PriorState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4453,8 +4538,10 @@ func TestPlanResourceChange(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
-				TypeName:        "test",
-				DeferralAllowed: true,
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
 				PriorState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4537,8 +4624,10 @@ func TestPlanResourceChange(t *testing.T) {
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
 				TypeName: "test",
-				// Deferral will cause a diagnostic to be returned
-				DeferralAllowed: false,
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					// Deferral will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
 				PriorState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -5148,9 +5237,11 @@ func TestImportResourceState(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ImportResourceStateRequest{
-				TypeName:        "fake-resource",
-				ID:              "imported-id",
-				DeferralAllowed: true,
+				TypeName: "fake-resource",
+				ID:       "imported-id",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
 			},
 			expected: &tfprotov5.ImportResourceStateResponse{
 				Diagnostics: []*tfprotov5.Diagnostic{
@@ -5191,9 +5282,11 @@ func TestImportResourceState(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ImportResourceStateRequest{
-				TypeName:        "test",
-				ID:              "imported-id",
-				DeferralAllowed: true,
+				TypeName: "test",
+				ID:       "imported-id",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
 			},
 			expected: &tfprotov5.ImportResourceStateResponse{
 				Deferred: &tfprotov5.Deferred{
@@ -5251,8 +5344,10 @@ func TestImportResourceState(t *testing.T) {
 			req: &tfprotov5.ImportResourceStateRequest{
 				TypeName: "test",
 				ID:       "imported-id",
-				// Deferral will cause a diagnostic to be returned
-				DeferralAllowed: false,
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					// Deferral will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
 			},
 			expected: &tfprotov5.ImportResourceStateResponse{
 				Diagnostics: []*tfprotov5.Diagnostic{
@@ -5880,8 +5975,10 @@ func TestReadDataSource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadDataSourceRequest{
-				DeferralAllowed: true,
-				TypeName:        "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					DeferralAllowed: true,
+				},
+				TypeName: "test",
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -5946,9 +6043,11 @@ func TestReadDataSource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadDataSourceRequest{
-				// Deferral will cause a diagnostic to be returned
-				DeferralAllowed: false,
-				TypeName:        "test",
+				ClientCapabilities: &tfprotov5.ClientCapabilities{
+					// Deferral will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
+				TypeName: "test",
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{

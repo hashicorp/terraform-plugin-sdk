@@ -109,6 +109,10 @@ type Provider struct {
 
 	TerraformVersion string
 
+	// deferralAllowed is populated by the ConfigureProvider RPC request, however
+	// it should only be used during provider configuration.
+	deferralAllowed bool
+
 	// providerDeferral is a global deferral response that will be used for all
 	// resources and data sources associated to this provider server.
 	providerDeferral *DeferralResponse
@@ -363,8 +367,7 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 
 	if p.ConfigureProvider != nil {
 		req := ConfigureProviderRequest{
-			// TODO: Populate from the protocol when available
-			DeferralAllowed: true,
+			DeferralAllowed: p.deferralAllowed,
 			ResourceData:    data,
 		}
 		resp := ConfigureProviderResponse{}
@@ -375,8 +378,6 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		if diags.HasError() {
 			return diags
 		}
-
-		// TODO: Add logic to return a diagnostic if DeferralAllowed == false and a deferral is returned
 
 		p.meta = resp.Meta
 		p.providerDeferral = resp.DeferralResponse
