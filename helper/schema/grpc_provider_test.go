@@ -3167,7 +3167,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ConfigureProviderClientCapabilities{
 					DeferralAllowed: true,
 				},
 				Config: &tfprotov5.DynamicValue{
@@ -3237,7 +3237,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ConfigureProviderClientCapabilities{
 					// Deferral will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},
@@ -4138,7 +4138,7 @@ func TestReadResource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadResourceRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ReadResourceClientCapabilities{
 					DeferralAllowed: true,
 				},
 				TypeName: "test",
@@ -4208,7 +4208,7 @@ func TestReadResource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadResourceRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ReadResourceClientCapabilities{
 					// Deferral will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},
@@ -4451,7 +4451,7 @@ func TestPlanResourceChange(t *testing.T) {
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
 				TypeName: "test",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
 					DeferralAllowed: true,
 				},
 				PriorState: &tfprotov5.DynamicValue{
@@ -4539,7 +4539,7 @@ func TestPlanResourceChange(t *testing.T) {
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
 				TypeName: "test",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
 					DeferralAllowed: true,
 				},
 				PriorState: &tfprotov5.DynamicValue{
@@ -4624,7 +4624,7 @@ func TestPlanResourceChange(t *testing.T) {
 			}),
 			req: &tfprotov5.PlanResourceChangeRequest{
 				TypeName: "test",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
 					// Deferral will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},
@@ -5239,7 +5239,7 @@ func TestImportResourceState(t *testing.T) {
 			req: &tfprotov5.ImportResourceStateRequest{
 				TypeName: "fake-resource",
 				ID:       "imported-id",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
 					DeferralAllowed: true,
 				},
 			},
@@ -5284,7 +5284,7 @@ func TestImportResourceState(t *testing.T) {
 			req: &tfprotov5.ImportResourceStateRequest{
 				TypeName: "test",
 				ID:       "imported-id",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
 					DeferralAllowed: true,
 				},
 			},
@@ -5344,7 +5344,7 @@ func TestImportResourceState(t *testing.T) {
 			req: &tfprotov5.ImportResourceStateRequest{
 				TypeName: "test",
 				ID:       "imported-id",
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
 					// Deferral will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},
@@ -5975,7 +5975,7 @@ func TestReadDataSource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadDataSourceRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ReadDataSourceClientCapabilities{
 					DeferralAllowed: true,
 				},
 				TypeName: "test",
@@ -6043,7 +6043,7 @@ func TestReadDataSource(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ReadDataSourceRequest{
-				ClientCapabilities: &tfprotov5.ClientCapabilities{
+				ClientCapabilities: &tfprotov5.ReadDataSourceClientCapabilities{
 					// Deferral will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},

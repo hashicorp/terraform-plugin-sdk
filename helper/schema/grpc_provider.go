@@ -611,7 +611,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	// NOTE: This is a hack to pass the deferral_allowed field from the Terraform client to the
 	// underlying (provider).Configure function, which cannot be changed because the function
 	// signature is public. (╯°□°)╯︵ ┻━┻
-	s.provider.deferralAllowed = deferralAllowed(req.ClientCapabilities)
+	s.provider.deferralAllowed = configureDeferralAllowed(req.ClientCapabilities)
 
 	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := s.provider.Configure(ctxHack, config)
@@ -620,7 +620,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 
 	// Check if an automatic deferral response was incorrectly set on the provider. This would cause an error during later RPCs.
-	if s.provider.providerDeferral != nil && !deferralAllowed(req.ClientCapabilities) {
+	if s.provider.providerDeferral != nil && !configureDeferralAllowed(req.ClientCapabilities) {
 		resp.Diagnostics = convert.AppendProtoDiag(
 			ctx,
 			resp.Diagnostics,
@@ -650,7 +650,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	if s.provider.providerDeferral != nil {
 		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
 		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !deferralAllowed(req.ClientCapabilities) {
+		if !readResourceDeferralAllowed(req.ClientCapabilities) {
 			resp.Diagnostics = convert.AppendProtoDiag(
 				ctx,
 				resp.Diagnostics,
@@ -767,7 +767,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 	// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
 	// incorrectly return a deferral response when Terraform doesn't support it.
-	if s.provider.providerDeferral != nil && !deferralAllowed(req.ClientCapabilities) {
+	if s.provider.providerDeferral != nil && !planDeferralAllowed(req.ClientCapabilities) {
 		resp.Diagnostics = convert.AppendProtoDiag(
 			ctx,
 			resp.Diagnostics,
@@ -1211,7 +1211,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 	if s.provider.providerDeferral != nil {
 		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
 		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !deferralAllowed(req.ClientCapabilities) {
+		if !importDeferralAllowed(req.ClientCapabilities) {
 			resp.Diagnostics = convert.AppendProtoDiag(
 				ctx,
 				resp.Diagnostics,
@@ -1377,7 +1377,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	if s.provider.providerDeferral != nil {
 		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
 		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !deferralAllowed(req.ClientCapabilities) {
+		if !readDataSourceDeferralAllowed(req.ClientCapabilities) {
 			resp.Diagnostics = convert.AppendProtoDiag(
 				ctx,
 				resp.Diagnostics,
@@ -1824,10 +1824,54 @@ func validateConfigNulls(ctx context.Context, v cty.Value, path cty.Path) []*tfp
 	return diags
 }
 
-// Helper function that checks a ClientCapabilities struct to determine if a deferral response can be
-// returned to the Terraform client. If no ClientCapabilities have been passed from the client, then false
+// Helper function that check a ConfigureProviderClientCapabilities struct to determine if a deferral response can be
+// returned to the Terraform client. If no ConfigureProviderClientCapabilities have been passed from the client, then false
 // is returned.
-func deferralAllowed(in *tfprotov5.ClientCapabilities) bool {
+func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities) bool {
+	if in == nil {
+		return false
+	}
+
+	return in.DeferralAllowed
+}
+
+// Helper function that check a ReadDataSourceClientCapabilities struct to determine if a deferral response can be
+// returned to the Terraform client. If no ReadDataSourceClientCapabilities have been passed from the client, then false
+// is returned.
+func readDataSourceDeferralAllowed(in *tfprotov5.ReadDataSourceClientCapabilities) bool {
+	if in == nil {
+		return false
+	}
+
+	return in.DeferralAllowed
+}
+
+// Helper function that check a ReadResourceClientCapabilities struct to determine if a deferral response can be
+// returned to the Terraform client. If no ReadResourceClientCapabilities have been passed from the client, then false
+// is returned.
+func readResourceDeferralAllowed(in *tfprotov5.ReadResourceClientCapabilities) bool {
+	if in == nil {
+		return false
+	}
+
+	return in.DeferralAllowed
+}
+
+// Helper function that check a ImportResourceStateClientCapabilities struct to determine if a deferral response can be
+// returned to the Terraform client. If no ImportResourceStateClientCapabilities have been passed from the client, then false
+// is returned.
+func importDeferralAllowed(in *tfprotov5.ImportResourceStateClientCapabilities) bool {
+	if in == nil {
+		return false
+	}
+
+	return in.DeferralAllowed
+}
+
+// Helper function that check a PlanResourceChangeClientCapabilities struct to determine if a deferral response can be
+// returned to the Terraform client. If no PlanResourceChangeClientCapabilities have been passed from the client, then false
+// is returned.
+func planDeferralAllowed(in *tfprotov5.PlanResourceChangeClientCapabilities) bool {
 	if in == nil {
 		return false
 	}
