@@ -109,8 +109,11 @@ type Provider struct {
 
 	TerraformVersion string
 
-	// deferralAllowed is populated by the ConfigureProvider RPC request, however
-	// it should only be used during provider configuration.
+	// deferralAllowed is populated by the ConfigureProvider RPC request and
+	// should only be used during provider configuration.
+	//
+	// MAINTAINER NOTE: Other RPCs that need to check if deferrals are allowed
+	// should use the relevant RPC request field in ClientCapabilities.
 	deferralAllowed bool
 
 	// providerDeferred is a global deferred response that will be returned automatically
@@ -119,11 +122,13 @@ type Provider struct {
 }
 
 type ConfigureProviderRequest struct {
-	// DeferralAllowed indicates whether the Terraform client initiating
-	// the read request allows a deferred response.
+	// DeferralAllowed indicates whether the Terraform request configuring
+	// the provider allows a deferred response. This field should be used to determine
+	// if `(schema.ConfigureProviderResponse).DeferredResponse` can be set.
 	//
 	// If true: `(schema.ConfigureProviderResponse).DeferredResponse` can be
-	// set.
+	// set to automatically defer all resources and data sources associated
+	// with this provider.
 	//
 	// If false: `(schema.ConfigureProviderResponse).DeferredResponse`
 	// will return an error diagnostic if set.
