@@ -93,7 +93,7 @@ type Provider struct {
 	ConfigureContextFunc ConfigureContextFunc
 
 	// ConfigureProvider is a function for configuring the provider that
-	// supports additional features, such as returning a deferral response.
+	// supports additional features, such as returning a deferred response.
 	//
 	// Providers that require these additional features should use this function
 	// as a replacement for ConfigureContextFunc.
@@ -113,19 +113,19 @@ type Provider struct {
 	// it should only be used during provider configuration.
 	deferralAllowed bool
 
-	// providerDeferral is a global deferral response that will be used for all
-	// resources and data sources associated to this provider server.
-	providerDeferral *DeferralResponse
+	// providerDeferred is a global deferred response that will be returned automatically
+	// for all resources and data sources associated to this provider server.
+	providerDeferred *DeferredResponse
 }
 
 type ConfigureProviderRequest struct {
 	// DeferralAllowed indicates whether the Terraform client initiating
-	// the read request allows a deferral response.
+	// the read request allows a deferred response.
 	//
-	// If true: `(schema.ConfigureProviderResponse).DeferralResponse` can be
+	// If true: `(schema.ConfigureProviderResponse).DeferredResponse` can be
 	// set.
 	//
-	// If false: `(schema.ConfigureProviderResponse).DeferralResponse`
+	// If false: `(schema.ConfigureProviderResponse).DeferredResponse`
 	// will return an error diagnostic if set.
 	DeferralAllowed bool
 
@@ -144,12 +144,12 @@ type ConfigureProviderResponse struct {
 	// errors generated.
 	Diagnostics diag.Diagnostics
 
-	// DeferralResponse indicates that Terraform should automatically defer
+	// DeferredResponse indicates that Terraform should automatically defer
 	// all resources and data sources for this provider.
 	//
 	// This field can only be set if
 	// `(schema.ConfigureProviderRequest).DeferralAllowed` is true.
-	DeferralResponse *DeferralResponse
+	DeferredResponse *DeferredResponse
 }
 
 // ConfigureFunc is the function used to configure a Provider.
@@ -380,7 +380,7 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		}
 
 		p.meta = resp.Meta
-		p.providerDeferral = resp.DeferralResponse
+		p.providerDeferred = resp.DeferredResponse
 	}
 
 	p.configured = true

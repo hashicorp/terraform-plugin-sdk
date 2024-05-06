@@ -649,17 +649,17 @@ type Resource struct {
 // ResourceBehavior controls SDK-specific logic when interacting
 // with a resource.
 type ResourceBehavior struct {
-	// ProviderDeferral enables provider-defined logic to be executed
-	// in the case of automatic deferral from (Provider).ConfigureProvider.
-	ProviderDeferral ProviderDeferralBehavior
+	// ProviderDeferred enables provider-defined logic to be executed
+	// in the case of a deferred response from (Provider).ConfigureProvider.
+	ProviderDeferred ProviderDeferredBehavior
 }
 
-// ProviderDeferral enables provider-defined logic to be executed
-// in the case of automatic deferral from provider configure.
-type ProviderDeferralBehavior struct {
+// ProviderDeferredBehavior enables provider-defined logic to be executed
+// in the case of a deferred response from provider configuration.
+type ProviderDeferredBehavior struct {
 	// When EnablePlanModification is true, the SDK will execute provider-defined logic
 	// during plan (CustomizeDiff, Default, DiffSupressFunc, etc.) if ConfigureProvider
-	// returns a deferral response. The SDK will then automatically return a deferral response
+	// returns a deferred response. The SDK will then automatically return a deferred response
 	// along with the modified plan.
 	EnablePlanModification bool
 }

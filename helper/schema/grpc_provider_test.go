@@ -36,7 +36,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 		server                   *GRPCProviderServer
 		req                      *tfprotov5.ConfigureProviderRequest
 		expected                 *tfprotov5.ConfigureProviderResponse
-		expectedProviderDeferral *DeferralResponse
+		expectedProviderDeferred *DeferredResponse
 		expectedMeta             any
 	}{
 		"no-Configure-or-Schema": {
@@ -3152,11 +3152,11 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				Attr: "hello world!",
 			},
 		},
-		"ConfigureProvider-DeferralResponse-Allowed": {
+		"ConfigureProvider-DeferredResponse-Allowed": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
+					resp.DeferredResponse = &DeferredResponse{
+						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
 				Schema: map[string]*Schema{
@@ -3182,15 +3182,15 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
-			expectedProviderDeferral: &DeferralResponse{
-				Reason: DeferralReasonProviderConfigUnknown,
+			expectedProviderDeferred: &DeferredResponse{
+				Reason: DeferredReasonProviderConfigUnknown,
 			},
 		},
-		"ConfigureProvider-DeferralResponse-ClientCapabilities-Unset-Diagnostic": {
+		"ConfigureProvider-DeferredResponse-ClientCapabilities-Unset-Diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
+					resp.DeferredResponse = &DeferredResponse{
+						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
 				Schema: map[string]*Schema{
@@ -3201,7 +3201,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
-				// No ClientCapabilities set, Deferral will cause a diagnostic to be returned
+				// No ClientCapabilities set, deferred response will cause a diagnostic to be returned
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -3217,16 +3217,18 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to configure a deferral response for all resources and data sources during ConfigureProvider, but the Terraform client doesn't support it.",
+						Summary:  "Invalid Deferred Provider Response",
+						Detail: "Provider configured a deferred response for all resources and data sources during ConfigureProvider " +
+							"but the Terraform request did not indicate support for deferred actions.",
 					},
 				},
 			},
 		},
-		"ConfigureProvider-DeferralResponse-Not-Allowed-Diagnostic": {
+		"ConfigureProvider-DeferredResponse-Not-Allowed-Diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferralResponse = &DeferralResponse{
-						Reason: DeferralReasonProviderConfigUnknown,
+					resp.DeferredResponse = &DeferredResponse{
+						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
 				Schema: map[string]*Schema{
@@ -3238,7 +3240,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
 				ClientCapabilities: &tfprotov5.ConfigureProviderClientCapabilities{
-					// Deferral will cause a diagnostic to be returned
+					// Deferred response will cause a diagnostic to be returned
 					DeferralAllowed: false,
 				},
 				Config: &tfprotov5.DynamicValue{
@@ -3256,7 +3258,9 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to configure a deferral response for all resources and data sources during ConfigureProvider, but the Terraform client doesn't support it.",
+						Summary:  "Invalid Deferred Provider Response",
+						Detail: "Provider configured a deferred response for all resources and data sources during ConfigureProvider " +
+							"but the Terraform request did not indicate support for deferred actions.",
 					},
 				},
 			},
@@ -3284,7 +3288,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			}
 
 			if len(resp.Diagnostics) == 0 {
-				if diff := cmp.Diff(testCase.server.provider.providerDeferral, testCase.expectedProviderDeferral); diff != "" {
+				if diff := cmp.Diff(testCase.server.provider.providerDeferred, testCase.expectedProviderDeferred); diff != "" {
 					t.Fatalf("unexpected difference: %s", diff)
 				}
 			}
@@ -4106,11 +4110,11 @@ func TestReadResource(t *testing.T) {
 				},
 			},
 		},
-		"deferral-unknown-val": {
+		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
-				// Deferral will skip read function and return current state
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				// Deferred response will skip read function and return current state
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -4130,7 +4134,7 @@ func TestReadResource(t *testing.T) {
 							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+							t.Fatal("Test failed, read shouldn't be called when provider deferred response is present")
 
 							return nil
 						},
@@ -4174,66 +4178,6 @@ func TestReadResource(t *testing.T) {
 				},
 				Deferred: &tfprotov5.Deferred{
 					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
-				},
-			},
-		},
-		"deferral-not-allowed-diagnostic": {
-			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
-				},
-				ResourcesMap: map[string]*Resource{
-					"test": {
-						SchemaVersion: 1,
-						Schema: map[string]*Schema{
-							"id": {
-								Type:     TypeString,
-								Required: true,
-							},
-							"test_bool": {
-								Type:     TypeBool,
-								Computed: true,
-							},
-							"test_string": {
-								Type:     TypeString,
-								Computed: true,
-							},
-						},
-						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
-
-							return nil
-						},
-					},
-				},
-			}),
-			req: &tfprotov5.ReadResourceRequest{
-				ClientCapabilities: &tfprotov5.ReadResourceClientCapabilities{
-					// Deferral will cause a diagnostic to be returned
-					DeferralAllowed: false,
-				},
-				TypeName: "test",
-				CurrentState: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"id":          cty.String,
-							"test_bool":   cty.Bool,
-							"test_string": cty.String,
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"id":          cty.StringVal("test-id"),
-							"test_bool":   cty.BoolVal(false),
-							"test_string": cty.StringVal("prior-state-val"),
-						}),
-					),
-				},
-			},
-			expected: &tfprotov5.ReadResourceResponse{
-				Diagnostics: []*tfprotov5.Diagnostic{
-					{
-						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it.",
-					},
 				},
 			},
 		},
@@ -4422,15 +4366,15 @@ func TestPlanResourceChange(t *testing.T) {
 				UnsafeToUseLegacyTypeSystem: false,
 			},
 		},
-		"deferral-with-provider-plan-modification": {
+		"deferred-with-provider-plan-modification": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
 						ResourceBehavior: ResourceBehavior{
-							ProviderDeferral: ProviderDeferralBehavior{
+							ProviderDeferred: ProviderDeferredBehavior{
 								// Will ensure that CustomizeDiff is called
 								EnablePlanModification: true,
 							},
@@ -4514,10 +4458,10 @@ func TestPlanResourceChange(t *testing.T) {
 				UnsafeToUseLegacyTypeSystem: true,
 			},
 		},
-		"deferral-skip-plan-modification": {
+		"deferred-skip-plan-modification": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -4583,7 +4527,7 @@ func TestPlanResourceChange(t *testing.T) {
 				Deferred: &tfprotov5.Deferred{
 					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
 				},
-				// Returns proposed new state with deferral
+				// Returns proposed new state with deferred response
 				PlannedState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4595,82 +4539,6 @@ func TestPlanResourceChange(t *testing.T) {
 							"foo": cty.StringVal("from-config!"),
 						}),
 					),
-				},
-				UnsafeToUseLegacyTypeSystem: true,
-			},
-		},
-		"deferral-not-allowed-diagnostic": {
-			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
-				},
-				ResourcesMap: map[string]*Resource{
-					"test": {
-						SchemaVersion: 4,
-						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
-							t.Fatal("Test failed, CustomizeDiff shouldn't be called")
-
-							return nil
-						},
-						Schema: map[string]*Schema{
-							"foo": {
-								Type:     TypeString,
-								Optional: true,
-								Computed: true,
-							},
-						},
-					},
-				},
-			}),
-			req: &tfprotov5.PlanResourceChangeRequest{
-				TypeName: "test",
-				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
-					// Deferral will cause a diagnostic to be returned
-					DeferralAllowed: false,
-				},
-				PriorState: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"foo": cty.String,
-						}),
-						cty.NullVal(
-							cty.Object(map[string]cty.Type{
-								"foo": cty.String,
-							}),
-						),
-					),
-				},
-				ProposedNewState: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"id":  cty.String,
-							"foo": cty.String,
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"id":  cty.UnknownVal(cty.String),
-							"foo": cty.UnknownVal(cty.String),
-						}),
-					),
-				},
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"id":  cty.String,
-							"foo": cty.String,
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"id":  cty.NullVal(cty.String),
-							"foo": cty.NullVal(cty.String),
-						}),
-					),
-				},
-			},
-			expected: &tfprotov5.PlanResourceChangeResponse{
-				Diagnostics: []*tfprotov5.Diagnostic{
-					{
-						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it.",
-					},
 				},
 				UnsafeToUseLegacyTypeSystem: true,
 			},
@@ -5208,10 +5076,10 @@ func TestImportResourceState(t *testing.T) {
 				},
 			},
 		},
-		"deferral-resource-doesnt-exist": {
+		"deferred-response-resource-doesnt-exist": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -5252,11 +5120,11 @@ func TestImportResourceState(t *testing.T) {
 				},
 			},
 		},
-		"deferral-unknown-val": {
+		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
-				// Deferral will skip import function and return an unknown value
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				// Deferred response will skip import function and return an unknown value
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
 					"test": {
@@ -5273,7 +5141,7 @@ func TestImportResourceState(t *testing.T) {
 						},
 						Importer: &ResourceImporter{
 							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-								t.Fatal("Test failed, import shouldn't be called when automatic deferral is present")
+								t.Fatal("Test failed, import shouldn't be called when deferred response is present")
 
 								return nil, nil
 							},
@@ -5309,51 +5177,6 @@ func TestImportResourceState(t *testing.T) {
 								),
 							),
 						},
-					},
-				},
-			},
-		},
-		"deferral-not-allowed-diagnostic": {
-			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
-				},
-				ResourcesMap: map[string]*Resource{
-					"test": {
-						SchemaVersion: 1,
-						Schema: map[string]*Schema{
-							"id": {
-								Type:     TypeString,
-								Required: true,
-							},
-							"test_string": {
-								Type:     TypeString,
-								Computed: true,
-							},
-						},
-						Importer: &ResourceImporter{
-							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-								t.Fatal("Test failed, import shouldn't be called when automatic deferral is present")
-
-								return nil, nil
-							},
-						},
-					},
-				},
-			}),
-			req: &tfprotov5.ImportResourceStateRequest{
-				TypeName: "test",
-				ID:       "imported-id",
-				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
-					// Deferral will cause a diagnostic to be returned
-					DeferralAllowed: false,
-				},
-			},
-			expected: &tfprotov5.ImportResourceStateResponse{
-				Diagnostics: []*tfprotov5.Diagnostic{
-					{
-						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to return a deferral response for ImportResourceState, but the Terraform client doesn't support it.",
 					},
 				},
 			},
@@ -5947,11 +5770,11 @@ func TestReadDataSource(t *testing.T) {
 				},
 			},
 		},
-		"deferral-unknown-val": {
+		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
-				// Deferral will skip read function and return an unknown value
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
+				// Deferred response will skip read function and return an unknown value
+				providerDeferred: &DeferredResponse{
+					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				DataSourcesMap: map[string]*Resource{
 					"test": {
@@ -5967,7 +5790,7 @@ func TestReadDataSource(t *testing.T) {
 							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
+							t.Fatal("Test failed, read shouldn't be called when provider deferred response is present")
 
 							return nil
 						},
@@ -6013,62 +5836,6 @@ func TestReadDataSource(t *testing.T) {
 				},
 				Deferred: &tfprotov5.Deferred{
 					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
-				},
-			},
-		},
-		"deferral-not-allowed-diagnostic": {
-			server: NewGRPCProviderServer(&Provider{
-				providerDeferral: &DeferralResponse{
-					Reason: DeferralReasonProviderConfigUnknown,
-				},
-				DataSourcesMap: map[string]*Resource{
-					"test": {
-						SchemaVersion: 1,
-						Schema: map[string]*Schema{
-							"test": {
-								Type:     TypeString,
-								Required: true,
-							},
-							"test_bool": {
-								Type:     TypeBool,
-								Computed: true,
-							},
-						},
-						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when automatic deferral is present")
-
-							return nil
-						},
-					},
-				},
-			}),
-			req: &tfprotov5.ReadDataSourceRequest{
-				ClientCapabilities: &tfprotov5.ReadDataSourceClientCapabilities{
-					// Deferral will cause a diagnostic to be returned
-					DeferralAllowed: false,
-				},
-				TypeName: "test",
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"id":        cty.String,
-							"test":      cty.String,
-							"test_bool": cty.Bool,
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"id":        cty.NullVal(cty.String),
-							"test":      cty.StringVal("test-string"),
-							"test_bool": cty.NullVal(cty.Bool),
-						}),
-					),
-				},
-			},
-			expected: &tfprotov5.ReadDataSourceResponse{
-				Diagnostics: []*tfprotov5.Diagnostic{
-					{
-						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Provider attempted to return a deferral response for ReadDataSource, but the Terraform client doesn't support it.",
-					},
 				},
 			},
 		},

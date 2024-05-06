@@ -6,7 +6,6 @@ package schema
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -619,13 +618,14 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 
-	// Check if an automatic deferral response was incorrectly set on the provider. This would cause an error during later RPCs.
-	if s.provider.providerDeferral != nil && !configureDeferralAllowed(req.ClientCapabilities) {
-		resp.Diagnostics = convert.AppendProtoDiag(
-			ctx,
-			resp.Diagnostics,
-			errors.New("Provider attempted to configure a deferral response for all resources and data sources during ConfigureProvider, but the Terraform client doesn't support it."),
-		)
+	// Check if a deferred response was incorrectly set on the provider. This would cause an error during later RPCs.
+	if s.provider.providerDeferred != nil && !configureDeferralAllowed(req.ClientCapabilities) {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov5.Diagnostic{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Invalid Deferred Provider Response",
+			Detail: "Provider configured a deferred response for all resources and data sources during ConfigureProvider " +
+				"but the Terraform request did not indicate support for deferred actions.",
+		})
 	}
 
 	return resp, nil
@@ -647,21 +647,10 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	if s.provider.providerDeferral != nil {
-		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
-		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !readResourceDeferralAllowed(req.ClientCapabilities) {
-			resp.Diagnostics = convert.AppendProtoDiag(
-				ctx,
-				resp.Diagnostics,
-				errors.New("Provider attempted to return a deferral response for ReadResource, but the Terraform client doesn't support it."),
-			)
-			return resp, nil
-		}
-
+	if s.provider.providerDeferred != nil {
 		resp.NewState = req.CurrentState
 		resp.Deferred = &tfprotov5.Deferred{
-			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
 		return resp, nil
 	}
@@ -765,24 +754,13 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.UnsafeToUseLegacyTypeSystem = true
 	}
 
-	// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
-	// incorrectly return a deferral response when Terraform doesn't support it.
-	if s.provider.providerDeferral != nil && !planDeferralAllowed(req.ClientCapabilities) {
-		resp.Diagnostics = convert.AppendProtoDiag(
-			ctx,
-			resp.Diagnostics,
-			errors.New("Provider attempted to return a deferral response for PlanResourceChange, but the Terraform client doesn't support it."),
-		)
-		return resp, nil
-	}
-
-	// Automatic deferral is present and the resource hasn't opted-in to CustomizeDiff being called, return early
+	// Provider deferred response is present and the resource hasn't opted-in to CustomizeDiff being called, return early
 	// with proposed new state as a best effort for PlannedState.
-	if s.provider.providerDeferral != nil && !res.ResourceBehavior.ProviderDeferral.EnablePlanModification {
+	if s.provider.providerDeferred != nil && !res.ResourceBehavior.ProviderDeferred.EnablePlanModification {
 		resp.PlannedState = req.ProposedNewState
 		resp.PlannedPrivate = req.PriorPrivate
 		resp.Deferred = &tfprotov5.Deferred{
-			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
 		return resp, nil
 	}
@@ -1007,10 +985,10 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.RequiresReplace = append(resp.RequiresReplace, pathToAttributePath(p))
 	}
 
-	// Automatic deferral is present, add the deferral response alongside the provider-modified plan
-	if s.provider.providerDeferral != nil {
+	// Provider deferred response is present, add the deferred response alongside the provider-modified plan
+	if s.provider.providerDeferred != nil {
 		resp.Deferred = &tfprotov5.Deferred{
-			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
 	}
 
@@ -1208,18 +1186,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		Type: req.TypeName,
 	}
 
-	if s.provider.providerDeferral != nil {
-		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
-		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !importDeferralAllowed(req.ClientCapabilities) {
-			resp.Diagnostics = convert.AppendProtoDiag(
-				ctx,
-				resp.Diagnostics,
-				errors.New("Provider attempted to return a deferral response for ImportResourceState, but the Terraform client doesn't support it."),
-			)
-			return resp, nil
-		}
-
+	if s.provider.providerDeferred != nil {
 		// The logic for ensuring the resource type is supported by this provider is inside of (provider).ImportState
 		// We need to check to ensure the resource type is supported before using the schema
 		_, ok := s.provider.ResourcesMap[req.TypeName]
@@ -1259,7 +1226,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		}
 
 		resp.Deferred = &tfprotov5.Deferred{
-			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
 
 		return resp, nil
@@ -1374,18 +1341,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
 
-	if s.provider.providerDeferral != nil {
-		// This scenario should be prevented by ConfigureProvider, but we check here to ensure we don't
-		// incorrectly return a deferral response when Terraform doesn't support it.
-		if !readDataSourceDeferralAllowed(req.ClientCapabilities) {
-			resp.Diagnostics = convert.AppendProtoDiag(
-				ctx,
-				resp.Diagnostics,
-				errors.New("Provider attempted to return a deferral response for ReadDataSource, but the Terraform client doesn't support it."),
-			)
-			return resp, nil
-		}
-
+	if s.provider.providerDeferred != nil {
 		// Send an unknown value for the data source
 		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
 		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
@@ -1398,7 +1354,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 			MsgPack: unknownStateMp,
 		}
 		resp.Deferred = &tfprotov5.Deferred{
-			Reason: tfprotov5.DeferredReason(s.provider.providerDeferral.Reason),
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
 		return resp, nil
 	}
@@ -1824,54 +1780,10 @@ func validateConfigNulls(ctx context.Context, v cty.Value, path cty.Path) []*tfp
 	return diags
 }
 
-// Helper function that check a ConfigureProviderClientCapabilities struct to determine if a deferral response can be
+// Helper function that check a ConfigureProviderClientCapabilities struct to determine if a deferred response can be
 // returned to the Terraform client. If no ConfigureProviderClientCapabilities have been passed from the client, then false
 // is returned.
 func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities) bool {
-	if in == nil {
-		return false
-	}
-
-	return in.DeferralAllowed
-}
-
-// Helper function that check a ReadDataSourceClientCapabilities struct to determine if a deferral response can be
-// returned to the Terraform client. If no ReadDataSourceClientCapabilities have been passed from the client, then false
-// is returned.
-func readDataSourceDeferralAllowed(in *tfprotov5.ReadDataSourceClientCapabilities) bool {
-	if in == nil {
-		return false
-	}
-
-	return in.DeferralAllowed
-}
-
-// Helper function that check a ReadResourceClientCapabilities struct to determine if a deferral response can be
-// returned to the Terraform client. If no ReadResourceClientCapabilities have been passed from the client, then false
-// is returned.
-func readResourceDeferralAllowed(in *tfprotov5.ReadResourceClientCapabilities) bool {
-	if in == nil {
-		return false
-	}
-
-	return in.DeferralAllowed
-}
-
-// Helper function that check a ImportResourceStateClientCapabilities struct to determine if a deferral response can be
-// returned to the Terraform client. If no ImportResourceStateClientCapabilities have been passed from the client, then false
-// is returned.
-func importDeferralAllowed(in *tfprotov5.ImportResourceStateClientCapabilities) bool {
-	if in == nil {
-		return false
-	}
-
-	return in.DeferralAllowed
-}
-
-// Helper function that check a PlanResourceChangeClientCapabilities struct to determine if a deferral response can be
-// returned to the Terraform client. If no PlanResourceChangeClientCapabilities have been passed from the client, then false
-// is returned.
-func planDeferralAllowed(in *tfprotov5.PlanResourceChangeClientCapabilities) bool {
 	if in == nil {
 		return false
 	}
