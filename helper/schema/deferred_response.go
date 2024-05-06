@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 // MAINTAINER NOTE: Only PROVIDER_CONFIG_UNKNOWN (enum value 2 in the plugin-protocol) is relevant
