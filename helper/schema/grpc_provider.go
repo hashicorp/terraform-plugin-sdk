@@ -624,8 +624,8 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov5.Diagnostic{
 				Severity: tfprotov5.DiagnosticSeverityError,
 				Summary:  "Invalid Deferred Provider Response",
-				Detail: "Provider configured a deferred response for all resources and data sources during ConfigureProvider " +
-					"but the Terraform request did not indicate support for deferred actions.",
+				Detail: "Provider configured a deferred response for all resources and data sources but the Terraform request " +
+					"did not indicate support for deferred actions. This is an issue with the provider and should be reported to the provider developers.",
 			})
 		} else {
 			logging.HelperSchemaDebug(
