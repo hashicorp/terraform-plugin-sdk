@@ -1,0 +1,6 @@
+kind: FEATURES
+body: 'helper/schema: Added `(Resource).ResourceBehavior` to allow additional control
+  over deferred action behavior during plan modification.'
+time: 2024-05-06T15:21:35.304825-04:00
+custom:
+  Issue: "1335"
