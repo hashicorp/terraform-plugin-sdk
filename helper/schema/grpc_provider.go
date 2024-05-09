@@ -620,7 +620,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 
 	if s.provider.providerDeferred != nil {
 		// Check if a deferred response was incorrectly set on the provider. This would cause an error during later RPCs.
-		if !configureDeferralAllowed(req.ClientCapabilities) {
+		if !s.provider.deferralAllowed {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov5.Diagnostic{
 				Severity: tfprotov5.DiagnosticSeverityError,
 				Summary:  "Invalid Deferred Provider Response",
