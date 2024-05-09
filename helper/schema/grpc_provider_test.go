@@ -4134,9 +4134,7 @@ func TestReadResource(t *testing.T) {
 							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when provider deferred response is present")
-
-							return nil
+							return diag.Errorf("Test assertion failed: read shouldn't be called when provider deferred response is present")
 						},
 					},
 				},
@@ -4467,9 +4465,7 @@ func TestPlanResourceChange(t *testing.T) {
 					"test": {
 						SchemaVersion: 4,
 						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
-							t.Fatal("Test failed, CustomizeDiff shouldn't be called")
-
-							return nil
+							return errors.New("Test assertion failed: CustomizeDiff shouldn't be called")
 						},
 						Schema: map[string]*Schema{
 							"foo": {
@@ -5055,9 +5051,7 @@ func TestImportResourceState(t *testing.T) {
 						},
 						Importer: &ResourceImporter{
 							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-								t.Fatal("Test failed, import shouldn't be called")
-
-								return nil, nil
+								return nil, errors.New("Test assertion failed: import shouldn't be called")
 							},
 						},
 					},
@@ -5096,9 +5090,7 @@ func TestImportResourceState(t *testing.T) {
 						},
 						Importer: &ResourceImporter{
 							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-								t.Fatal("Test failed, import shouldn't be called")
-
-								return nil, nil
+								return nil, errors.New("Test assertion failed: import shouldn't be called")
 							},
 						},
 					},
@@ -5141,9 +5133,7 @@ func TestImportResourceState(t *testing.T) {
 						},
 						Importer: &ResourceImporter{
 							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
-								t.Fatal("Test failed, import shouldn't be called when deferred response is present")
-
-								return nil, nil
+								return nil, errors.New("Test assertion failed: import shouldn't be called when deferred response is present")
 							},
 						},
 					},
@@ -5790,9 +5780,7 @@ func TestReadDataSource(t *testing.T) {
 							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
-							t.Fatal("Test failed, read shouldn't be called when provider deferred response is present")
-
-							return nil
+							return diag.Errorf("Test assertion failed: read shouldn't be called when provider deferred response is present")
 						},
 					},
 				},
