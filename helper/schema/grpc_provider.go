@@ -632,7 +632,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 				ctx,
 				"Provider has configured a deferred response, all associated resources and data sources will automatically return a deferred response.",
 				map[string]interface{}{
-					"deferred_reason": s.provider.providerDeferred.Reason.String(),
+					logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 				},
 			)
 		}
@@ -662,7 +662,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			ctx,
 			"Provider has deferred response configured, automatically returning deferred response.",
 			map[string]interface{}{
-				"deferred_reason": s.provider.providerDeferred.Reason.String(),
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 			},
 		)
 
@@ -779,7 +779,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 			ctx,
 			"Provider has deferred response configured, automatically returning deferred response.",
 			map[string]interface{}{
-				"deferred_reason": s.provider.providerDeferred.Reason.String(),
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 			},
 		)
 
@@ -1017,7 +1017,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 			ctx,
 			"Provider has deferred response configured, returning deferred response with modified plan.",
 			map[string]interface{}{
-				"deferred_reason": s.provider.providerDeferred.Reason.String(),
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 			},
 		)
 
@@ -1225,7 +1225,7 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			ctx,
 			"Provider has deferred response configured, automatically returning deferred response.",
 			map[string]interface{}{
-				"deferred_reason": s.provider.providerDeferred.Reason.String(),
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 			},
 		)
 
@@ -1376,7 +1376,7 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 			ctx,
 			"Provider has deferred response configured, automatically returning deferred response.",
 			map[string]interface{}{
-				"deferred_reason": s.provider.providerDeferred.Reason.String(),
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
 			},
 		)
 
