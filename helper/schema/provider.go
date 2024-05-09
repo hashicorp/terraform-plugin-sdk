@@ -132,6 +132,9 @@ type ConfigureProviderRequest struct {
 	//
 	// If false: `(schema.ConfigureProviderResponse).DeferredResponse`
 	// will return an error diagnostic if set.
+	//
+	// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
+	// to change or break without warning. It is not protected by version compatibility guarantees.
 	DeferralAllowed bool
 
 	// ResourceData is used to query and set the attributes of a resource.
@@ -154,6 +157,9 @@ type ConfigureProviderResponse struct {
 	//
 	// This field can only be set if
 	// `(schema.ConfigureProviderRequest).DeferralAllowed` is true.
+	//
+	// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
+	// to change or break without warning. It is not protected by version compatibility guarantees.
 	DeferredResponse *DeferredResponse
 }
 

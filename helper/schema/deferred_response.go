@@ -20,12 +20,18 @@ const (
 // to be applied yet and should be skipped (deferred). After completing an apply that has deferred actions,
 // the practitioner can then execute additional plan and apply “rounds” to eventually reach convergence
 // where there are no remaining deferred actions.
+//
+// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
+// to change or break without warning. It is not protected by version compatibility guarantees.
 type DeferredResponse struct {
 	// Reason represents the deferred reason.
 	Reason DeferredReason
 }
 
 // DeferredReason represents different reasons for deferring a change.
+//
+// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
+// to change or break without warning. It is not protected by version compatibility guarantees.
 type DeferredReason int32
 
 func (d DeferredReason) String() string {
