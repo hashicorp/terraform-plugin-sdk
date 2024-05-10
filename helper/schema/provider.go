@@ -118,19 +118,19 @@ type Provider struct {
 
 	// providerDeferred is a global deferred response that will be returned automatically
 	// for all resources and data sources associated to this provider server.
-	providerDeferred *DeferredResponse
+	providerDeferred *Deferred
 }
 
 type ConfigureProviderRequest struct {
 	// DeferralAllowed indicates whether the Terraform request configuring
 	// the provider allows a deferred response. This field should be used to determine
-	// if `(schema.ConfigureProviderResponse).DeferredResponse` can be set.
+	// if `(schema.ConfigureProviderResponse).Deferred` can be set.
 	//
-	// If true: `(schema.ConfigureProviderResponse).DeferredResponse` can be
+	// If true: `(schema.ConfigureProviderResponse).Deferred` can be
 	// set to automatically defer all resources and data sources associated
 	// with this provider.
 	//
-	// If false: `(schema.ConfigureProviderResponse).DeferredResponse`
+	// If false: `(schema.ConfigureProviderResponse).Deferred`
 	// will return an error diagnostic if set.
 	//
 	// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
@@ -152,7 +152,7 @@ type ConfigureProviderResponse struct {
 	// errors generated.
 	Diagnostics diag.Diagnostics
 
-	// DeferredResponse indicates that Terraform should automatically defer
+	// Deferred indicates that Terraform should automatically defer
 	// all resources and data sources for this provider.
 	//
 	// This field can only be set if
@@ -160,7 +160,7 @@ type ConfigureProviderResponse struct {
 	//
 	// NOTE: This functionality is related to deferred action support, which is currently experimental and is subject
 	// to change or break without warning. It is not protected by version compatibility guarantees.
-	DeferredResponse *DeferredResponse
+	Deferred *Deferred
 }
 
 // ConfigureFunc is the function used to configure a Provider.
@@ -391,7 +391,7 @@ func (p *Provider) Configure(ctx context.Context, c *terraform.ResourceConfig) d
 		}
 
 		p.meta = resp.Meta
-		p.providerDeferred = resp.DeferredResponse
+		p.providerDeferred = resp.Deferred
 	}
 
 	p.configured = true

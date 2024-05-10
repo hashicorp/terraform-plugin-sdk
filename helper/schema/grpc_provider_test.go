@@ -36,7 +36,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 		server                   *GRPCProviderServer
 		req                      *tfprotov5.ConfigureProviderRequest
 		expected                 *tfprotov5.ConfigureProviderResponse
-		expectedProviderDeferred *DeferredResponse
+		expectedProviderDeferred *Deferred
 		expectedMeta             any
 	}{
 		"no-Configure-or-Schema": {
@@ -3152,10 +3152,10 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				Attr: "hello world!",
 			},
 		},
-		"ConfigureProvider-DeferredResponse-Allowed": {
+		"ConfigureProvider-Deferred-Allowed": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferredResponse = &DeferredResponse{
+					resp.Deferred = &Deferred{
 						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
@@ -3182,14 +3182,14 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
-			expectedProviderDeferred: &DeferredResponse{
+			expectedProviderDeferred: &Deferred{
 				Reason: DeferredReasonProviderConfigUnknown,
 			},
 		},
-		"ConfigureProvider-DeferredResponse-ClientCapabilities-Unset-Diagnostic": {
+		"ConfigureProvider-Deferred-ClientCapabilities-Unset-Diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferredResponse = &DeferredResponse{
+					resp.Deferred = &Deferred{
 						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
@@ -3224,10 +3224,10 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			},
 		},
-		"ConfigureProvider-DeferredResponse-Not-Allowed-Diagnostic": {
+		"ConfigureProvider-Deferred-Not-Allowed-Diagnostic": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
-					resp.DeferredResponse = &DeferredResponse{
+					resp.Deferred = &Deferred{
 						Reason: DeferredReasonProviderConfigUnknown,
 					}
 				},
@@ -4113,7 +4113,7 @@ func TestReadResource(t *testing.T) {
 		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferred response will skip read function and return current state
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
@@ -4366,7 +4366,7 @@ func TestPlanResourceChange(t *testing.T) {
 		},
 		"deferred-with-provider-plan-modification": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
@@ -4458,7 +4458,7 @@ func TestPlanResourceChange(t *testing.T) {
 		},
 		"deferred-skip-plan-modification": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
@@ -5072,7 +5072,7 @@ func TestImportResourceState(t *testing.T) {
 		},
 		"deferred-response-resource-doesnt-exist": {
 			server: NewGRPCProviderServer(&Provider{
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
@@ -5115,7 +5115,7 @@ func TestImportResourceState(t *testing.T) {
 		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferred response will skip import function and return an unknown value
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				ResourcesMap: map[string]*Resource{
@@ -5763,7 +5763,7 @@ func TestReadDataSource(t *testing.T) {
 		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferred response will skip read function and return an unknown value
-				providerDeferred: &DeferredResponse{
+				providerDeferred: &Deferred{
 					Reason: DeferredReasonProviderConfigUnknown,
 				},
 				DataSourcesMap: map[string]*Resource{
