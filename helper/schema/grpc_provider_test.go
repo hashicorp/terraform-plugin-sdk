@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/go-cty/cty/msgpack"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -27,15 +28,20 @@ import (
 func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 	t.Parallel()
 
+	type FakeMetaStruct struct {
+		Attr string
+	}
+
 	testCases := map[string]struct {
-		server       *GRPCProviderServer
-		req          *tfprotov5.ConfigureProviderRequest
-		expected     *tfprotov5.ConfigureProviderResponse
-		expectedMeta any
+		server                   *GRPCProviderServer
+		req                      *tfprotov5.ConfigureProviderRequest
+		expected                 *tfprotov5.ConfigureProviderResponse
+		expectedProviderDeferred *Deferred
+		expectedMeta             any
 	}{
 		"no-Configure-or-Schema": {
 			server: NewGRPCProviderServer(&Provider{
-				// ConfigureFunc, ConfigureContextFunc, and Schema intentionally
+				// ConfigureFunc, ConfigureContextFunc, ConfigureProvider, and Schema intentionally
 				// omitted.
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -56,7 +62,7 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 		},
 		"Schema-no-Configure": {
 			server: NewGRPCProviderServer(&Provider{
-				// ConfigureFunc and ConfigureContextFunc intentionally omitted.
+				// ConfigureFunc, ConfigureContextFunc, and ConfigureProvider intentionally omitted.
 				Schema: map[string]*Schema{
 					"test": {
 						Optional: true,
@@ -146,10 +152,84 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 				},
 			},
 		},
+		"ConfigureProvider-error": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Diagnostics = diag.Errorf("test error")
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "test error",
+						Detail:   "",
+					},
+				},
+			},
+		},
 		"ConfigureContextFunc-warning": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (any, diag.Diagnostics) {
 					return nil, diag.Diagnostics{
+						{
+							Severity: diag.Warning,
+							Summary:  "test warning summary",
+							Detail:   "test warning detail",
+						},
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityWarning,
+						Summary:  "test warning summary",
+						Detail:   "test warning detail",
+					},
+				},
+			},
+		},
+		"ConfigureProvider-warning": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Diagnostics = diag.Diagnostics{
 						{
 							Severity: diag.Warning,
 							Summary:  "test warning summary",
@@ -252,6 +332,37 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-Get-null": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-Get-null-other-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -330,6 +441,43 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-Get-null-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-Get-zero-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -380,6 +528,37 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-Get-zero-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -474,6 +653,43 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-Get-zero-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := ""
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected Get difference: expected: %s, got: %s", expected, got)
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-Get-value": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureFunc: func(d *ResourceData) (any, error) {
@@ -518,6 +734,37 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-Get-value": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := "test-value"
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected difference: expected: %s, got: %s", expected, got)
+					}
 				},
 				Schema: map[string]*Schema{
 					"test": {
@@ -590,6 +837,43 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+				Schema: map[string]*Schema{
+					"other": {
+						Optional: true,
+						Type:     TypeString,
+					},
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-Get-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.Get("test").(string)
+					expected := "test-value"
+
+					if got != expected {
+						resp.Diagnostics = diag.Errorf("unexpected difference: expected: %s, got: %s", expected, got)
+					}
 				},
 				Schema: map[string]*Schema{
 					"other": {
@@ -694,6 +978,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOk-null": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOk-null-other-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -782,6 +1104,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOk-null-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOk-zero-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -842,6 +1208,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetOk-zero-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -946,6 +1350,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOk-zero-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOk-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1006,6 +1454,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetOk-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1110,6 +1596,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOk-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOk("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOk difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOkExists-null": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1170,6 +1700,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetOkExists-null": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1274,6 +1842,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOkExists-null-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := ""
+					expectedOk := false
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOkExists-zero-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1334,6 +1946,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetOkExists-zero-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := ""
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1438,6 +2088,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOkExists-zero-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := ""
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetOkExists-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1498,6 +2192,44 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetOkExists-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1602,6 +2334,50 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetOkExists-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got, ok := req.ResourceData.GetOkExists("test")
+					expected := "test-value"
+					expectedOk := true
+
+					if ok != expectedOk {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %t, got: %t", expectedOk, ok)
+						return
+					}
+
+					if got.(string) != expected {
+						resp.Diagnostics = diag.Errorf("unexpected GetOkExists difference: expected: %s, got: %s", expected, got)
+						return
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetRawConfig-null": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1656,6 +2432,39 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetRawConfig-null": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.NullVal(cty.String),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1756,6 +2565,46 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetRawConfig-null-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"other": cty.StringVal("other-value"),
+						"test":  cty.NullVal(cty.String),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetRawConfig-zero-value": {
 			server: NewGRPCProviderServer(&Provider{
 				Schema: map[string]*Schema{
@@ -1810,6 +2659,39 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetRawConfig-zero-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.StringVal(""),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
 				},
 			}),
 			req: &tfprotov5.ConfigureProviderRequest{
@@ -1910,6 +2792,46 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetRawConfig-zero-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				Schema: map[string]*Schema{
+					"other": {
+						Type:     TypeString,
+						Optional: true,
+					},
+					"test": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"other": cty.StringVal("other-value"),
+						"test":  cty.StringVal(""),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected GetRawConfig difference: expected: %s, got: %s", expected, got)
+					}
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
 		"ConfigureFunc-GetRawConfig-value": {
 			server: NewGRPCProviderServer(&Provider{
 				ConfigureFunc: func(d *ResourceData) (any, error) {
@@ -1958,6 +2880,39 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 					}
 
 					return nil, nil
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureProvider-GetRawConfig-value": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"test": cty.StringVal("test-value"),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected difference: expected: %s, got: %s", expected, got)
+					}
 				},
 				Schema: map[string]*Schema{
 					"test": {
@@ -2064,6 +3019,252 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			},
 			expected: &tfprotov5.ConfigureProviderResponse{},
 		},
+		"ConfigureProvider-GetRawConfig-value-other-value": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					got := req.ResourceData.GetRawConfig()
+					expected := cty.ObjectVal(map[string]cty.Value{
+						"other": cty.StringVal("other-value"),
+						"test":  cty.StringVal("test-value"),
+					})
+
+					if got.Equals(expected).False() {
+						resp.Diagnostics = diag.Errorf("unexpected difference: expected: %s, got: %s", expected, got)
+					}
+				},
+				Schema: map[string]*Schema{
+					"other": {
+						Optional: true,
+						Type:     TypeString,
+					},
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"other": cty.String,
+							"test":  cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"other": cty.StringVal("other-value"),
+							"test":  cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+		},
+		"ConfigureFunc-Meta": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureFunc: func(d *ResourceData) (any, error) {
+					return &FakeMetaStruct{
+						Attr: "hello world!",
+					}, nil
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+			expectedMeta: &FakeMetaStruct{
+				Attr: "hello world!",
+			},
+		},
+		"ConfigureContextFunc-Meta": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureContextFunc: func(ctx context.Context, d *ResourceData) (any, diag.Diagnostics) {
+					return &FakeMetaStruct{
+						Attr: "hello world!",
+					}, nil
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+			expectedMeta: &FakeMetaStruct{
+				Attr: "hello world!",
+			},
+		},
+		"ConfigureProvider-Meta": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Meta = &FakeMetaStruct{
+						Attr: "hello world!",
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+			expectedMeta: &FakeMetaStruct{
+				Attr: "hello world!",
+			},
+		},
+		"ConfigureProvider-Deferred-Allowed": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Deferred = &Deferred{
+						Reason: DeferredReasonProviderConfigUnknown,
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				ClientCapabilities: &tfprotov5.ConfigureProviderClientCapabilities{
+					DeferralAllowed: true,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{},
+			expectedProviderDeferred: &Deferred{
+				Reason: DeferredReasonProviderConfigUnknown,
+			},
+		},
+		"ConfigureProvider-Deferred-ClientCapabilities-Unset-Diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Deferred = &Deferred{
+						Reason: DeferredReasonProviderConfigUnknown,
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				// No ClientCapabilities set, deferred response will cause a diagnostic to be returned
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Invalid Deferred Provider Response",
+						Detail: "Provider configured a deferred response for all resources and data sources but the Terraform request " +
+							"did not indicate support for deferred actions. This is an issue with the provider and should be reported to the provider developers.",
+					},
+				},
+			},
+		},
+		"ConfigureProvider-Deferred-Not-Allowed-Diagnostic": {
+			server: NewGRPCProviderServer(&Provider{
+				ConfigureProvider: func(ctx context.Context, req ConfigureProviderRequest, resp *ConfigureProviderResponse) {
+					resp.Deferred = &Deferred{
+						Reason: DeferredReasonProviderConfigUnknown,
+					}
+				},
+				Schema: map[string]*Schema{
+					"test": {
+						Optional: true,
+						Type:     TypeString,
+					},
+				},
+			}),
+			req: &tfprotov5.ConfigureProviderRequest{
+				ClientCapabilities: &tfprotov5.ConfigureProviderClientCapabilities{
+					// Deferred response will cause a diagnostic to be returned
+					DeferralAllowed: false,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("test-value"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ConfigureProviderResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Invalid Deferred Provider Response",
+						Detail: "Provider configured a deferred response for all resources and data sources but the Terraform request " +
+							"did not indicate support for deferred actions. This is an issue with the provider and should be reported to the provider developers.",
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -2079,7 +3280,17 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(resp, testCase.expected); diff != "" {
-				t.Errorf("unexpected difference: %s", diff)
+				t.Fatalf("unexpected difference: %s", diff)
+			}
+
+			if diff := cmp.Diff(testCase.server.provider.Meta(), testCase.expectedMeta); diff != "" {
+				t.Fatalf("unexpected difference: %s", diff)
+			}
+
+			if len(resp.Diagnostics) == 0 {
+				if diff := cmp.Diff(testCase.server.provider.providerDeferred, testCase.expectedProviderDeferred); diff != "" {
+					t.Fatalf("unexpected difference: %s", diff)
+				}
 			}
 		})
 	}
@@ -2822,36 +4033,511 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 	}
 }
 
+func TestReadResource(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.ReadResourceRequest
+		expected *tfprotov5.ReadResourceResponse
+	}{
+		"read-resource": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test_bool", true)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							err = d.Set("test_string", "new-state-val")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(true),
+							"test_string": cty.StringVal("new-state-val"),
+						}),
+					),
+				},
+			},
+		},
+		"deferred-response-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferred response will skip read function and return current state
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							return diag.Errorf("Test assertion failed: read shouldn't be called when provider deferred response is present")
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				ClientCapabilities: &tfprotov5.ReadResourceClientCapabilities{
+					DeferralAllowed: true,
+				},
+				TypeName: "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+						}),
+					),
+				},
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := testCase.server.ReadResource(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && resp.NewState != nil {
+					t.Logf("resp.NewState.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.NewState.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.NewState != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.NewState.MsgPack))
+				}
+
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestPlanResourceChange(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
-		TestResource                   *Resource
-		ExpectedUnsafeLegacyTypeSystem bool
+		server   *GRPCProviderServer
+		req      *tfprotov5.PlanResourceChangeRequest
+		expected *tfprotov5.PlanResourceChangeResponse
 	}{
-		"basic": {
-			TestResource: &Resource{
-				SchemaVersion: 4,
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:     TypeInt,
-						Optional: true,
+		"basic-plan": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
 					},
 				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
 			},
-			ExpectedUnsafeLegacyTypeSystem: true,
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+			},
 		},
-		"EnableLegacyTypeSystemPlanErrors": {
-			TestResource: &Resource{
-				EnableLegacyTypeSystemPlanErrors: true,
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:     TypeInt,
-						Optional: true,
+		"basic-plan-EnableLegacyTypeSystemPlanErrors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						// Will set UnsafeToUseLegacyTypeSystem to false
+						EnableLegacyTypeSystemPlanErrors: true,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
 					},
 				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
 			},
-			ExpectedUnsafeLegacyTypeSystem: false,
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: false,
+			},
+		},
+		"deferred-with-provider-plan-modification": {
+			server: NewGRPCProviderServer(&Provider{
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						ResourceBehavior: ResourceBehavior{
+							ProviderDeferred: ProviderDeferredBehavior{
+								// Will ensure that CustomizeDiff is called
+								EnablePlanModification: true,
+							},
+						},
+						SchemaVersion: 4,
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
+							return d.SetNew("foo", "new-foo-value")
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+								Computed: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
+					DeferralAllowed: true,
+				},
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("new-foo-value"),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"deferred-skip-plan-modification": {
+			server: NewGRPCProviderServer(&Provider{
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
+							return errors.New("Test assertion failed: CustomizeDiff shouldn't be called")
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+								Computed: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
+					DeferralAllowed: true,
+				},
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("from-config!"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("from-config!"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+				// Returns proposed new state with deferred response
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("from-config!"),
+						}),
+					),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
 		},
 	}
 
@@ -2861,73 +4547,23 @@ func TestPlanResourceChange(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			server := NewGRPCProviderServer(&Provider{
-				ResourcesMap: map[string]*Resource{
-					"test": testCase.TestResource,
-				},
-			})
-
-			schema := testCase.TestResource.CoreConfigSchema()
-			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			resp, err := testCase.server.PlanResourceChange(context.Background(), testCase.req)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// A propsed state with only the ID unknown will produce a nil diff, and
-			// should return the propsed state value.
-			proposedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-				"id": cty.UnknownVal(cty.String),
-			}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			proposedState, err := msgpack.Marshal(proposedVal, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
 
-			config, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
-				"id": cty.NullVal(cty.String),
-			}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			configBytes, err := msgpack.Marshal(config, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
+				if resp != nil && resp.PlannedState != nil {
+					t.Logf("resp.PlannedState.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.PlannedState.MsgPack))
+				}
 
-			testReq := &tfprotov5.PlanResourceChangeRequest{
-				TypeName: "test",
-				PriorState: &tfprotov5.DynamicValue{
-					MsgPack: priorState,
-				},
-				ProposedNewState: &tfprotov5.DynamicValue{
-					MsgPack: proposedState,
-				},
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: configBytes,
-				},
-			}
+				if testCase.expected != nil && testCase.expected.PlannedState != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.PlannedState.MsgPack))
+				}
 
-			resp, err := server.PlanResourceChange(context.Background(), testReq)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			plannedStateVal, err := msgpack.Unmarshal(resp.PlannedState.MsgPack, schema.ImpliedType())
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !cmp.Equal(proposedVal, plannedStateVal, valueComparer) {
-				t.Fatal(cmp.Diff(proposedVal, plannedStateVal, valueComparer))
-			}
-
-			//nolint:staticcheck // explicitly for this SDK
-			if testCase.ExpectedUnsafeLegacyTypeSystem != resp.UnsafeToUseLegacyTypeSystem {
-				//nolint:staticcheck // explicitly for this SDK
-				t.Fatalf("expected UnsafeLegacyTypeSystem %t, got: %t", testCase.ExpectedUnsafeLegacyTypeSystem, resp.UnsafeToUseLegacyTypeSystem)
+				t.Error(diff)
 			}
 		})
 	}
@@ -3332,6 +4968,234 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 			}
 			if foo != 7227701560655103598 {
 				t.Fatalf("Expected %d, got %d, this represents a loss of precision in applying large numbers", 7227701560655103598, foo)
+			}
+		})
+	}
+}
+
+func TestImportResourceState(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.ImportResourceStateRequest
+		expected *tfprotov5.ImportResourceStateResponse
+	}{
+		"basic-import": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								err := d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"id":          cty.StringVal("imported-id"),
+									"test_string": cty.StringVal("new-imported-val"),
+								}),
+							),
+						},
+						Private: []byte(`{"schema_version":"1"}`),
+					},
+				},
+			},
+		},
+		"resource-doesnt-exist": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								return nil, errors.New("Test assertion failed: import shouldn't be called")
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "fake-resource",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "unknown resource type: fake-resource",
+					},
+				},
+			},
+		},
+		"deferred-response-resource-doesnt-exist": {
+			server: NewGRPCProviderServer(&Provider{
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								return nil, errors.New("Test assertion failed: import shouldn't be called")
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "fake-resource",
+				ID:       "imported-id",
+				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
+					DeferralAllowed: true,
+				},
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "unknown resource type: fake-resource",
+					},
+				},
+			},
+		},
+		"deferred-response-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferred response will skip import function and return an unknown value
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								return nil, errors.New("Test assertion failed: import shouldn't be called when deferred response is present")
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+				ClientCapabilities: &tfprotov5.ImportResourceStateClientCapabilities{
+					DeferralAllowed: true,
+				},
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.UnknownVal(
+									cty.Object(map[string]cty.Type{
+										"id":          cty.String,
+										"test_string": cty.String,
+									}),
+								),
+							),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := testCase.server.ImportResourceState(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && len(resp.ImportedResources) > 0 {
+					t.Logf("resp.ImportedResources[0].State.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.ImportedResources[0].State.MsgPack))
+				}
+
+				if testCase.expected != nil && len(testCase.expected.ImportedResources) > 0 {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.ImportedResources[0].State.MsgPack))
+				}
+
+				t.Error(diff)
 			}
 		})
 	}
@@ -3896,6 +5760,73 @@ func TestReadDataSource(t *testing.T) {
 				},
 			},
 		},
+		"deferred-response-unknown-val": {
+			server: NewGRPCProviderServer(&Provider{
+				// Deferred response will skip read function and return an unknown value
+				providerDeferred: &Deferred{
+					Reason: DeferredReasonProviderConfigUnknown,
+				},
+				DataSourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"test": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							return diag.Errorf("Test assertion failed: read shouldn't be called when provider deferred response is present")
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadDataSourceRequest{
+				ClientCapabilities: &tfprotov5.ReadDataSourceClientCapabilities{
+					DeferralAllowed: true,
+				},
+				TypeName: "test",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":        cty.String,
+							"test":      cty.String,
+							"test_bool": cty.Bool,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":        cty.NullVal(cty.String),
+							"test":      cty.StringVal("test-string"),
+							"test_bool": cty.NullVal(cty.Bool),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadDataSourceResponse{
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":        cty.String,
+							"test":      cty.String,
+							"test_bool": cty.Bool,
+						}),
+						cty.UnknownVal(
+							cty.Object(map[string]cty.Type{
+								"id":        cty.String,
+								"test":      cty.String,
+								"test_bool": cty.Bool,
+							}),
+						),
+					),
+				},
+				Deferred: &tfprotov5.Deferred{
+					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -3903,7 +5834,6 @@ func TestReadDataSource(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
 			resp, err := testCase.server.ReadDataSource(context.Background(), testCase.req)
 
 			if err != nil {

@@ -1,0 +1,6 @@
+kind: FEATURES
+body: 'helper/schema: Added `(Provider).ConfigureProvider` function for configuring
+  providers that support additional features, such as deferred actions.'
+time: 2024-05-06T15:20:18.393505-04:00
+custom:
+  Issue: "1335"
