@@ -1,7 +1,0 @@
-kind: NOTES
-body: This release contains support for deferred actions, which is an experimental
-  feature only available in prerelease builds of Terraform 1.9 and later. This functionality
-  is subject to change and is not protected by version compatibility guarantees.
-time: 2024-05-09T13:49:45.38523-04:00
-custom:
-  Issue: "1335"
