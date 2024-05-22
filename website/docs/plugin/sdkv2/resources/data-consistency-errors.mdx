@@ -47,15 +47,15 @@ Always fully verify the resource with acceptance testing before a production rel
 
 </Note>
 
-Enable the `Resource` type `EnableApplyLegacyTypeSystemErrors` and `EnablePlanLegacyTypeSystemErrors` boolean fields and run all available [acceptance testing](/terraform/plugin/testing/acceptance-tests) for the resource. These settings will cause Terraform to raise data consistency errors instead of demoting those to warning logs for the resource.
+Enable the `Resource` type `EnableLegacyTypeSystemApplyErrors` and `EnableLegacyTypeSystemPlanErrors` boolean fields and run all available [acceptance testing](/terraform/plugin/testing/acceptance-tests) for the resource. These settings will cause Terraform to raise data consistency errors instead of demoting those to warning logs for the resource.
 
 In this example, a resource has been enabled to raise data consistency errors instead of warning logs:
 
 ```go
 schema.Resource{
     // ... other fields as necessary ...
-    EnableApplyLegacyTypeSystemErrors: true,
-    EnablePlanLegacyTypeSystemErrors:  true,
+    EnableLegacyTypeSystemApplyErrors: true,
+    EnableLegacyTypeSystemPlanErrors:  true,
 }
 ```
 
