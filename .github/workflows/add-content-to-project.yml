@@ -10,7 +10,7 @@ on:
     # Calling it multiple times will be idempotent.
     #
     # See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
-    # to see the reasoning behind using `pull_request_target` instead of `pull_request`
+    # to see the reasoning behind using `pull_request_target` instead of `pull_request`
     types: [opened, reopened, ready_for_review]
 
 jobs:
