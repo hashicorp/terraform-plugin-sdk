@@ -472,3 +472,105 @@ func TestStringIsValidRegExp(t *testing.T) {
 		},
 	})
 }
+
+func TestStringLenBytesBetween(t *testing.T) {
+	cases := []struct {
+		name        string
+		input       string
+		min         int
+		max         int
+		expectError bool
+	}{
+		// 1-byte character test cases
+		{
+			name:        "valid single byte character (1 byte)",
+			input:       "a",
+			min:         1,
+			max:         1,
+			expectError: false,
+		},
+		{
+			name:        "invalid single byte character (2 characters min)",
+			input:       "a",
+			min:         2,
+			max:         2,
+			expectError: true,
+		},
+		// 2-byte character test cases
+		{
+			name:        "valid double byte character (1 character)",
+			input:       "漢",
+			min:         1,
+			max:         1,
+			expectError: false,
+		},
+		{
+			name:        "invalid double byte character (2 characters min)",
+			input:       "漢",
+			min:         2,
+			max:         2,
+			expectError: true,
+		},
+		// 3-byte character test cases
+		{
+			name:        "valid triple byte character (1 character)",
+			input:       "日",
+			min:         1,
+			max:         1,
+			expectError: false,
+		},
+		{
+			name:        "invalid triple byte character (2 characters min)",
+			input:       "日",
+			min:         2,
+			max:         2,
+			expectError: true,
+		},
+		// 4-byte character test cases
+		{
+			name:        "valid quadruple byte character (1 character)",
+			input:       "😀",
+			min:         1,
+			max:         1,
+			expectError: false,
+		},
+		{
+			name:        "invalid quadruple byte character (2 characters min)",
+			input:       "😀",
+			min:         2,
+			max:         2,
+			expectError: true,
+		},
+		// Mixed characters test cases
+		{
+			name:        "valid mixed characters",
+			input:       "a漢日😀",
+			min:         4,
+			max:         4,
+			expectError: false,
+		},
+		{
+			name:        "invalid mixed characters (5 characters min)",
+			input:       "a漢日😀",
+			min:         5,
+			max:         5,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v := StringLenBytesBetween(tc.min, tc.max)
+			_, errs := v(tc.input, "test")
+			if tc.expectError {
+				if len(errs) == 0 {
+					t.Fatalf("expected errors but got none")
+				}
+			} else {
+				if len(errs) != 0 {
+					t.Fatalf("expected no errors but got: %v", errs)
+				}
+			}
+		})
+	}
+}
