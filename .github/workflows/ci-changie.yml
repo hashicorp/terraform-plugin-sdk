@@ -1,3 +1,6 @@
+# DO NOT EDIT - This GitHub Workflow is managed by automation
+# https://github.com/hashicorp/terraform-devex-repos
+
 # Continuous integration handling for changie
 name: ci-changie
 
@@ -15,7 +18,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Ensure terraform-devex-repos is updated on version changes.
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      # Ensure terraform-devex-repos is updated on version changes.
       - uses: miniscruff/changie-action@6dcc2533cac0495148ed4046c438487e4dceaa23 # v2.0.0
         with:
           version: latest
