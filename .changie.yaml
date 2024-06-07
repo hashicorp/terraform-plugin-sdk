@@ -1,3 +1,5 @@
+# DO NOT EDIT - This GitHub Workflow is managed by automation
+# https://github.com/hashicorp/terraform-devex-repos
 changesDir: .changes
 unreleasedDir: unreleased
 changelogPath: CHANGELOG.md
@@ -20,4 +22,3 @@ newlines:
   afterKind: 1
   beforeKind: 1
   endOfVersion: 2
-
