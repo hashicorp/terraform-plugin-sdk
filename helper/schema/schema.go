@@ -100,6 +100,9 @@ type Schema struct {
 	// its value.
 	Computed bool
 
+	// TODO: POC
+	WriteOnly bool
+
 	// ForceNew indicates whether a change in this value requires the
 	// replacement (destroy and create) of the managed resource instance,
 	// rather than an in-place update. This field is only valid when the
