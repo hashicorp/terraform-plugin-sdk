@@ -4,6 +4,7 @@ name: ci-goreleaser
 on:
   pull_request:
     paths:
+      - .github/workflows/ci-goreleaser.yml
       - .goreleaser.yml
 
 permissions:
