@@ -4797,6 +4797,28 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"Etag with DiffSuppressFunc": {
+			map[string]*Schema{
+				"etag": {
+					Type:             TypeString,
+					Computed:         true,
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool { return true },
+				},
+			},
+			false,
+		},
+
+		"Non Etag with DiffSuppressFunc": {
+			map[string]*Schema{
+				"non_etag": {
+					Type:             TypeString,
+					Computed:         true,
+					DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool { return true },
+				},
+			},
+			true,
+		},
+
 		"DiffSuppressOnRefresh without DiffSuppressFunc": {
 			map[string]*Schema{
 				"string": {
@@ -5064,7 +5086,6 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestSchemaMap_DiffSuppress(t *testing.T) {
