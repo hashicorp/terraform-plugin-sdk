@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
@@ -69,10 +70,30 @@ func StringIsWhiteSpace(i interface{}, k string) ([]string, []error) {
 	return nil, nil
 }
 
+// Deprecated: Use StringBytesBetween() instead.
+// **Recommend StringRuneCountBetween()** in order to count 'String length' correctly
 // StringLenBetween returns a SchemaValidateFunc which tests if the provided value
-// is of type string and has length between min and max (inclusive)
+// is of type string and has 'Byte' length between min and max (inclusive)
 func StringLenBetween(min, max int) schema.SchemaValidateFunc {
+	return StringBytesBetween(min, max)
+}
+
+// StringBytesBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type string and has 'Byte' length between min and max (inclusive)
+// **Recommend StringRuneCountBetween()** in order to count 'String length' correctly
+func StringBytesBetween(min, max int) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (warnings []string, errors []error) {
+
+		if min < 0 {
+			errors = append(errors, fmt.Errorf("min must be zero or natural number (actual: %d)", min))
+		}
+		if max < 0 {
+			errors = append(errors, fmt.Errorf("max must be zero or natural number (actual: %d)", max))
+		}
+		if min > max {
+			errors = append(errors, fmt.Errorf("min must be less than or equal to max (actual: min=%d, max=%d)", min, max))
+		}
+
 		v, ok := i.(string)
 		if !ok {
 			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
@@ -80,6 +101,35 @@ func StringLenBetween(min, max int) schema.SchemaValidateFunc {
 		}
 
 		if len(v) < min || len(v) > max {
+			errors = append(errors, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s", k, min, max, v))
+		}
+
+		return warnings, errors
+	}
+}
+
+// StringRuneCountBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type string and has 'Rune' length between min and max (inclusive)
+func StringRuneCountBetween(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (warnings []string, errors []error) {
+
+		if min < 0 {
+			errors = append(errors, fmt.Errorf("min must be zero or natural number (actual: %d)", min))
+		}
+		if max < 0 {
+			errors = append(errors, fmt.Errorf("max must be zero or natural number (actual: %d)", max))
+		}
+		if min > max {
+			errors = append(errors, fmt.Errorf("min must be less than or equal to max (actual: min=%d, max=%d)", min, max))
+		}
+
+		v, ok := i.(string)
+		if !ok {
+			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
+			return warnings, errors
+		}
+
+		if c := utf8.RuneCountInString(v); c < min || c > max {
 			errors = append(errors, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s", k, min, max, v))
 		}
 

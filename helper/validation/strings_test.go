@@ -243,6 +243,344 @@ func TestValidationStringIsWhiteSpace(t *testing.T) {
 	}
 }
 
+func TestValidationStringBytesBetween(t *testing.T) {
+	cases := map[string]struct {
+		Value interface{}
+		Min   int
+		Max   int
+		Error bool
+	}{
+		"NotStringNil": {
+			Value: nil,
+			Error: true,
+		},
+		"NotStringBool": {
+			Value: bool(true),
+			Error: true,
+		},
+		"NotStringInt": {
+			Value: int(-1),
+			Error: true,
+		},
+		"NotStringUint": {
+			Value: uint(1),
+			Error: true,
+		},
+		"NotStringByteSlice": {
+			Value: []byte("hello"),
+			Error: true,
+		},
+		"NotStringRuneSlice": {
+			Value: []rune("こんにちは"),
+			Error: true,
+		},
+		"NotStringFloat32": {
+			Value: float32(1.23),
+			Error: true,
+		},
+		"NotStringFloat64": {
+			Value: float32(-1.23),
+			Error: true,
+		},
+		"MinNegativeNumber": {
+			Value: "MinNegativeNumber",
+			Min:   -1,
+			Max:   17,
+			Error: true,
+		},
+		"MinZero": {
+			Value: "MinZero",
+			Min:   0,
+			Max:   7,
+			Error: false,
+		},
+		"MinPositiveNumber": {
+			Value: "MinPositiveNumber",
+			Min:   1,
+			Max:   17,
+			Error: false,
+		},
+		"MaxNegativeNumber": {
+			Value: "MaxNegativeNumber",
+			Min:   0,
+			Max:   -1,
+			Error: true,
+		},
+		"MaxZero": {
+			Value: "",
+			Min:   0,
+			Max:   0,
+			Error: false,
+		},
+		"MaxPositiveNumber": {
+			Value: "MaxPositiveNumber",
+			Min:   17,
+			Max:   17,
+			Error: false,
+		},
+		"MinLowerThanByteLength": {
+			Value: "MinLowerThanByteLength",
+			Min:   21,
+			Max:   2147483647,
+			Error: false,
+		},
+		"MinEqualByteLength": {
+			Value: "MinEqualByteLength",
+			Min:   18,
+			Max:   2147483647,
+			Error: false,
+		},
+		"MinGreaterThanByteLength": {
+			Value: "MinGreaterThanByteLength",
+			Min:   25,
+			Max:   2147483647,
+			Error: true,
+		},
+		"MaxLowerThanByteLength": {
+			Value: "MaxLowerThanByteLength",
+			Min:   0,
+			Max:   21,
+			Error: true,
+		},
+		"MaxEqualByteLength": {
+			Value: "MaxEqualByteLength",
+			Min:   0,
+			Max:   18,
+			Error: false,
+		},
+		"MaxGreaterThanByteLength": {
+			Value: "MaxGreaterThanByteLength",
+			Min:   0,
+			Max:   25,
+			Error: false,
+		},
+		"Empty": {
+			Value: "",
+			Min:   0,
+			Max:   0,
+			Error: false,
+		},
+		"WhiteSpace": {
+			Value: " ",
+			Min:   1,
+			Max:   1,
+			Error: false,
+		},
+		"Tab": {
+			Value: "\t",
+			Min:   1,
+			Max:   1,
+			Error: false,
+		},
+		"1ByteString": {
+			Value: "Hello world!",
+			Min:   12,
+			Max:   12,
+			Error: false,
+		},
+		"2BytesString": {
+			Value: "αβγ",
+			Min:   6,
+			Max:   6,
+			Error: false,
+		},
+		"3BytesString": {
+			Value: "こんにちは世界！",
+			Min:   24,
+			Max:   24,
+			Error: false,
+		},
+		"4BytesString": {
+			Value: "👍",
+			Min:   4,
+			Max:   4,
+			Error: false,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			v := StringBytesBetween(tc.Min, tc.Max)
+			_, errors := v(tc.Value, tn)
+
+			if len(errors) > 0 && !tc.Error {
+				t.Errorf("StringBytesBetween(%d, %d) with '%v' produced an unexpected error", tc.Min, tc.Max, tc.Value)
+			} else if len(errors) == 0 && tc.Error {
+				t.Errorf("StringBytesBetween(%d, %d) with '%v' did not error", tc.Min, tc.Max, tc.Value)
+			}
+		})
+	}
+}
+
+func TestValidationStringRuneCountBetween(t *testing.T) {
+	cases := map[string]struct {
+		Value interface{}
+		Min   int
+		Max   int
+		Error bool
+	}{
+		"NotStringNil": {
+			Value: nil,
+			Error: true,
+		},
+		"NotStringBool": {
+			Value: bool(true),
+			Error: true,
+		},
+		"NotStringInt": {
+			Value: int(-1),
+			Error: true,
+		},
+		"NotStringUint": {
+			Value: uint(1),
+			Error: true,
+		},
+		"NotStringByteSlice": {
+			Value: []byte("hello"),
+			Error: true,
+		},
+		"NotStringRuneSlice": {
+			Value: []rune("こんにちは"),
+			Error: true,
+		},
+		"NotStringFloat32": {
+			Value: float32(1.23),
+			Error: true,
+		},
+		"NotStringFloat64": {
+			Value: float32(-1.23),
+			Error: true,
+		},
+		"MinNegativeNumber": {
+			Value: "MinNegativeNumber",
+			Min:   -1,
+			Max:   17,
+			Error: true,
+		},
+		"MinZero": {
+			Value: "MinZero",
+			Min:   0,
+			Max:   7,
+			Error: false,
+		},
+		"MinPositiveNumber": {
+			Value: "MinPositiveNumber",
+			Min:   1,
+			Max:   17,
+			Error: false,
+		},
+		"MaxNegativeNumber": {
+			Value: "MaxNegativeNumber",
+			Min:   0,
+			Max:   -1,
+			Error: true,
+		},
+		"MaxZero": {
+			Value: "",
+			Min:   0,
+			Max:   0,
+			Error: false,
+		},
+		"MaxPositiveNumber": {
+			Value: "MaxPositiveNumber",
+			Min:   17,
+			Max:   17,
+			Error: false,
+		},
+		"MinLowerThanByteLength": {
+			Value: "MinLowerThanByteLength",
+			Min:   21,
+			Max:   2147483647,
+			Error: false,
+		},
+		"MinEqualByteLength": {
+			Value: "MinEqualByteLength",
+			Min:   18,
+			Max:   2147483647,
+			Error: false,
+		},
+		"MinGreaterThanByteLength": {
+			Value: "MinGreaterThanByteLength",
+			Min:   25,
+			Max:   2147483647,
+			Error: true,
+		},
+		"MaxLowerThanByteLength": {
+			Value: "MaxLowerThanByteLength",
+			Min:   0,
+			Max:   21,
+			Error: true,
+		},
+		"MaxEqualByteLength": {
+			Value: "MaxEqualByteLength",
+			Min:   0,
+			Max:   18,
+			Error: false,
+		},
+		"MaxGreaterThanByteLength": {
+			Value: "MaxGreaterThanByteLength",
+			Min:   0,
+			Max:   25,
+			Error: false,
+		},
+		"Empty": {
+			Value: "",
+			Min:   0,
+			Max:   0,
+			Error: false,
+		},
+		"WhiteSpace": {
+			Value: " ",
+			Min:   1,
+			Max:   1,
+			Error: false,
+		},
+		"Tab": {
+			Value: "\t",
+			Min:   1,
+			Max:   1,
+			Error: false,
+		},
+		"1ByteString": {
+			Value: "Hello world!",
+			Min:   12,
+			Max:   12,
+			Error: false,
+		},
+		"2BytesString": {
+			Value: "αβγ",
+			Min:   3,
+			Max:   3,
+			Error: false,
+		},
+		"3BytesString": {
+			Value: "こんにちは世界！",
+			Min:   8,
+			Max:   8,
+			Error: false,
+		},
+		"4BytesString": {
+			Value: "👍",
+			Min:   1,
+			Max:   1,
+			Error: false,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			v := StringRuneCountBetween(tc.Min, tc.Max)
+			_, errors := v(tc.Value, tn)
+
+			if len(errors) > 0 && !tc.Error {
+				t.Errorf("StringRuneCountBetween(%d, %d) with '%v' produced an unexpected error", tc.Min, tc.Max, tc.Value)
+			} else if len(errors) == 0 && tc.Error {
+				t.Errorf("StringRuneCountBetween(%d, %d) with '%v' did not error", tc.Min, tc.Max, tc.Value)
+			}
+		})
+	}
+}
+
 func TestValidationStringIsBase64(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
