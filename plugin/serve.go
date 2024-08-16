@@ -7,14 +7,16 @@ import (
 	"errors"
 	"log"
 
-	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	testing "github.com/mitchellh/go-testing-interface"
+	"github.com/mitchellh/go-testing-interface"
+	"google.golang.org/grpc"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tf5server"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -89,6 +91,8 @@ type ServeOpts struct {
 	// Terraform can correctly match the provider address in the Terraform
 	// configuration to the running provider binary.
 	ProviderAddr string
+
+	UnaryServerInterceptor grpc.UnaryServerInterceptor
 }
 
 // Serve serves a plugin. This function never returns and should be the final
@@ -232,6 +236,10 @@ func tf6serverServe(opts *ServeOpts) error {
 
 	if opts.UseTFLogSink != nil {
 		tf6serveOpts = append(tf6serveOpts, tf6server.WithLoggingSink(opts.UseTFLogSink))
+	}
+
+	if opts.UnaryServerInterceptor != nil {
+		tf6serveOpts = append(tf6serveOpts, tf6server.WithUnaryServerInterceptor(opts.UnaryServerInterceptor))
 	}
 
 	return tf6server.Serve(opts.ProviderAddr, opts.GRPCProviderV6Func, tf6serveOpts...)
