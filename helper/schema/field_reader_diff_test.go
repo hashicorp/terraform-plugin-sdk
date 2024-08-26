@@ -131,6 +131,10 @@ func TestDiffFieldReader_MapHandling(t *testing.T) {
 					Old: "",
 					New: "qux",
 				},
+				"tags.%baz": {
+					Old: "",
+					New: "%qux",
+				},
 			},
 		},
 		Source: &MapFieldReader{
@@ -148,8 +152,9 @@ func TestDiffFieldReader_MapHandling(t *testing.T) {
 	}
 
 	expected := map[string]interface{}{
-		"foo": "bar",
-		"baz": "qux",
+		"foo":  "bar",
+		"baz":  "qux",
+		"%baz": "%qux",
 	}
 
 	if !reflect.DeepEqual(expected, result.Value) {

@@ -112,7 +112,9 @@ func (r *DiffFieldReader) readMap(
 		if !strings.HasPrefix(k, prefix) {
 			continue
 		}
-		if strings.HasPrefix(k, prefix+"%") {
+
+		key := k[len(prefix):]
+		if key == "%" {
 			// Ignore the count field
 			continue
 		}

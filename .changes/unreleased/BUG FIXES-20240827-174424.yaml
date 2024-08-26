@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/schema: Fixed an issue where all map keys starting with % where ignored, even if they didn''t correspond to the map length'
+time: 2024-08-27T17:44:24.436061-06:00
+custom:
+    Issue: "1369"
