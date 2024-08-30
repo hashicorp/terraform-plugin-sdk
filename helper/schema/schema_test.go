@@ -7076,6 +7076,41 @@ func TestSchemaMap_Validate(t *testing.T) {
 				},
 			},
 		},
+		"Required + WriteOnly attribute with null value returns no errors": {
+			Schema: map[string]*Schema{
+				"write_only_attribute": {
+					Type:      TypeString,
+					Required:  true,
+					WriteOnly: true,
+				},
+			},
+
+			Config: nil,
+		},
+		"Required + WriteOnly attribute with default func returns no errors": {
+			Schema: map[string]*Schema{
+				"write_only_attribute": {
+					Type:        TypeString,
+					Required:    true,
+					WriteOnly:   true,
+					DefaultFunc: func() (interface{}, error) { return "default", nil },
+				},
+			},
+
+			Config: nil,
+		},
+		"Required + WriteOnly attribute with default func nil value returns no errors": {
+			Schema: map[string]*Schema{
+				"write_only_attribute": {
+					Type:        TypeString,
+					Required:    true,
+					WriteOnly:   true,
+					DefaultFunc: func() (interface{}, error) { return nil, nil },
+				},
+			},
+
+			Config: nil,
+		},
 	}
 
 	for tn, tc := range cases {
