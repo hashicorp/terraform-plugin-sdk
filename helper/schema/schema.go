@@ -2396,7 +2396,11 @@ func (m schemaMap) hasWriteOnly() bool {
 				if t.WriteOnly {
 					return true
 				}
-				return schemaMap(map[string]*Schema{"nested": t}).hasWriteOnly()
+
+				isNestedWriteOnly := schemaMap(map[string]*Schema{"nested": t}).hasWriteOnly()
+				if isNestedWriteOnly {
+					return true
+				}
 			}
 		}
 	}
