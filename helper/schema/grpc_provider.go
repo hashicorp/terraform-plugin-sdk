@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
@@ -280,6 +281,9 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
+	}
+	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock))
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
@@ -1482,6 +1486,78 @@ func (s *GRPCProviderServer) GetFunctions(ctx context.Context, req *tfprotov5.Ge
 	return resp, nil
 }
 
+func (s *GRPCProviderServer) ValidateEphemeralResourceConfig(ctx context.Context, req *tfprotov5.ValidateEphemeralResourceConfigRequest) (*tfprotov5.ValidateEphemeralResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for provider validate ephemeral resource call")
+
+	resp := &tfprotov5.ValidateEphemeralResourceConfigResponse{}
+
+	resp.Diagnostics = []*tfprotov5.Diagnostic{
+		{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Ephemeral Resource Not Found ",
+			Detail:   fmt.Sprintf("No ephemeral resource type named %q was found in the provider", req.TypeName),
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) OpenEphemeralResource(ctx context.Context, req *tfprotov5.OpenEphemeralResourceRequest) (*tfprotov5.OpenEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for provider open ephemeral resource call")
+
+	resp := &tfprotov5.OpenEphemeralResourceResponse{}
+
+	resp.Diagnostics = []*tfprotov5.Diagnostic{
+		{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Ephemeral Resource Not Found ",
+			Detail:   fmt.Sprintf("No ephemeral resource type named %q was found in the provider", req.TypeName),
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) RenewEphemeralResource(ctx context.Context, req *tfprotov5.RenewEphemeralResourceRequest) (*tfprotov5.RenewEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for provider renew ephemeral resource call")
+
+	resp := &tfprotov5.RenewEphemeralResourceResponse{}
+
+	resp.Diagnostics = []*tfprotov5.Diagnostic{
+		{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Ephemeral Resource Not Found ",
+			Detail:   fmt.Sprintf("No ephemeral resource type named %q was found in the provider", req.TypeName),
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) CloseEphemeralResource(ctx context.Context, req *tfprotov5.CloseEphemeralResourceRequest) (*tfprotov5.CloseEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for provider close ephemeral resource call")
+
+	resp := &tfprotov5.CloseEphemeralResourceResponse{}
+
+	resp.Diagnostics = []*tfprotov5.Diagnostic{
+		{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Ephemeral Resource Not Found ",
+			Detail:   fmt.Sprintf("No ephemeral resource type named %q was found in the provider", req.TypeName),
+		},
+	}
+
+	return resp, nil
+}
+
 func pathToAttributePath(path cty.Path) *tftypes.AttributePath {
 	var steps []tftypes.AttributePathStep
 
@@ -1827,4 +1903,63 @@ func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities)
 	}
 
 	return in.DeferralAllowed
+}
+
+// validateWriteOnlyNullValues takes a cty.Value, and compares it to the schema and throws an
+// error diagnostic for each non-null writeOnly attribute value.
+func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configschema.Block) diag.Diagnostics {
+	if !val.IsKnown() || val.IsNull() {
+		return diag.Diagnostics{}
+	}
+
+	valMap := val.AsValueMap()
+	diags := make([]diag.Diagnostic, 0)
+
+	for name, attr := range schema.Attributes {
+		v := valMap[name]
+
+		if attr.WriteOnly && !v.IsNull() {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "WriteOnly Attributes not Allowed",
+				Detail:   fmt.Sprintf("The %q resource contains a non-null value for WriteOnly attribute %q", typeName, name),
+			})
+		}
+	}
+
+	for name, blockS := range schema.BlockTypes {
+		blockVal := valMap[name]
+		if blockVal.IsNull() || !blockVal.IsKnown() {
+			continue
+		}
+
+		blockValType := blockVal.Type()
+
+		// This switches on the value type here, so we can correctly switch
+		// between Tuples/Lists and Maps/Objects.
+		switch {
+		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
+			// NestingSingle is the only exception here, where we treat the
+			// block directly as an object
+			diags = append(diags, validateWriteOnlyNullValues(typeName, blockVal, &blockS.Block)...)
+		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
+			listVals := blockVal.AsValueSlice()
+
+			for _, v := range listVals {
+				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block)...)
+			}
+
+		case blockValType.IsMapType(), blockValType.IsObjectType():
+			mapVals := blockVal.AsValueMap()
+
+			for _, v := range mapVals {
+				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block)...)
+			}
+
+		default:
+			panic(fmt.Sprintf("failed to validate WriteOnly values for nested block %q:%#v", name, blockValType))
+		}
+	}
+
+	return diags
 }
