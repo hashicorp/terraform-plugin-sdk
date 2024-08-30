@@ -83,6 +83,17 @@ type Attribute struct {
 	// Deprecated indicates whether the attribute has been marked as deprecated in the
 	// provider and usage should be discouraged.
 	Deprecated bool
+
+	// WriteOnly indicates that the practitioner can choose a value for this
+	// attribute, but Terraform will not store this attribute in state.
+	// If WriteOnly is true, either Optional or Required must also be true.
+	//
+	// WriteOnly cannot be set to true for TypeList, TypeMap, or TypeSet.
+	//
+	// This functionality is only supported in Terraform 1.XX and later. TODO: add Terraform version
+	// Practitioners that choose a value for this attribute with older
+	// versions of Terraform will receive an error.
+	WriteOnly bool
 }
 
 // NestedBlock represents the embedding of one block within another.

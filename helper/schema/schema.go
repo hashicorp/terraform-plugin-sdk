@@ -395,6 +395,17 @@ type Schema struct {
 	// as sensitive. Any outputs containing a sensitive value must enable the
 	// output sensitive argument.
 	Sensitive bool
+
+	// WriteOnly indicates that the practitioner can choose a value for this
+	// attribute, but Terraform will not store this attribute in state.
+	// If WriteOnly is true, either Optional or Required must also be true.
+	//
+	// WriteOnly cannot be set to true for TypeList, TypeMap, or TypeSet.
+	//
+	// This functionality is only supported in Terraform 1.XX and later. TODO: Add Terraform version
+	// Practitioners that choose a value for this attribute with older
+	// versions of Terraform will receive an error.
+	WriteOnly bool
 }
 
 // SchemaConfigMode is used to influence how a schema item is mapped into a
@@ -838,6 +849,14 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: One of optional, required, or computed must be set", k)
 		}
 
+		if v.WriteOnly && !(v.Required || v.Optional) {
+			return fmt.Errorf("%s: WriteOnly must be set with either Required or Optional", k)
+		}
+
+		if v.WriteOnly && v.Computed {
+			return fmt.Errorf("%s: WriteOnly cannot be set with Computed", k)
+		}
+
 		computedOnly := v.Computed && !v.Optional
 
 		switch v.ConfigMode {
@@ -923,6 +942,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if v.Type == TypeList || v.Type == TypeSet {
+			if v.WriteOnly {
+				return fmt.Errorf("%s: WriteOnly is not valid for lists or sets", k)
+			}
+
 			if v.Elem == nil {
 				return fmt.Errorf("%s: Elem must be set for lists", k)
 			}
@@ -956,6 +979,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		if v.Type == TypeMap && v.Elem != nil {
+			if v.WriteOnly {
+				return fmt.Errorf("%s: WriteOnly is not valid for maps", k)
+			}
+
 			switch v.Elem.(type) {
 			case *Resource:
 				return fmt.Errorf("%s: TypeMap with Elem *Resource not supported,"+
@@ -2351,6 +2378,30 @@ func (m schemaMap) validateType(
 	}
 
 	return diags
+}
+
+// hasWriteOnly returns true if the schemaMap contains any
+// WriteOnly attributes are set.
+func (m schemaMap) hasWriteOnly() bool {
+	for _, v := range m {
+		if v.WriteOnly {
+			return true
+		}
+
+		if v.Elem != nil {
+			switch t := v.Elem.(type) {
+			case *Resource:
+				return schemaMap(t.SchemaMap()).hasWriteOnly()
+			case *Schema:
+				if t.WriteOnly {
+					return true
+				}
+				return schemaMap(map[string]*Schema{"nested": t}).hasWriteOnly()
+			}
+		}
+	}
+
+	return false
 }
 
 // Zero returns the zero value for a type.
