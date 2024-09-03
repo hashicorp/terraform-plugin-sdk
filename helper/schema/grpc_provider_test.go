@@ -4789,6 +4789,74 @@ func TestPlanResourceChange(t *testing.T) {
 				UnsafeToUseLegacyTypeSystem: true,
 			},
 		},
+		"create-writeonly-required-null-values": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Required:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
+					DeferralAllowed: true,
+				},
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Required WriteOnly Attribute",
+						Detail:   "The \"test\" resource contains a null value for Required WriteOnly attribute \"foo\"",
+					},
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -7200,7 +7268,7 @@ func Test_pathToAttributePath_noSteps(t *testing.T) {
 	}
 }
 
-func Test_validateWriteOnlyValues(t *testing.T) {
+func Test_validateWriteOnlyNullValues(t *testing.T) {
 	for n, tc := range map[string]struct {
 		Schema   *configschema.Block
 		Val      cty.Value
@@ -7558,6 +7626,377 @@ func Test_validateWriteOnlyValues(t *testing.T) {
 	} {
 		t.Run(n, func(t *testing.T) {
 			got := validateWriteOnlyNullValues("test_resource", tc.Val, tc.Schema)
+
+			if diff := cmp.Diff(got, tc.Expected); diff != "" {
+				t.Errorf("unexpected difference: %s", diff)
+			}
+		})
+	}
+}
+
+func Test_validateWriteOnlyRequiredValues(t *testing.T) {
+	for n, tc := range map[string]struct {
+		Schema   *configschema.Block
+		Val      cty.Value
+		Expected diag.Diagnostics
+	}{
+		"Empty returns no diags": {
+			&configschema.Block{},
+			cty.EmptyObjectVal,
+			diag.Diagnostics{},
+		},
+		"All Required + WriteOnly with values return no diags": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"foo": {
+						Type:      cty.String,
+						Required:  true,
+						WriteOnly: true,
+					},
+					"bar": {
+						Type:      cty.String,
+						Required:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"baz": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"boz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"biz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.StringVal("boop"),
+				"bar": cty.StringVal("blep"),
+				"baz": cty.ObjectVal(map[string]cty.Value{
+					"boz": cty.StringVal("blep"),
+					"biz": cty.StringVal("boop"),
+				}),
+			}),
+			diag.Diagnostics{},
+		},
+		"All Optional + WriteOnly with null values return no diags": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"foo": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+					"bar": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"baz": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"boz": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"biz": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.NullVal(cty.Object(map[string]cty.Type{
+				"foo": cty.String,
+				"bar": cty.String,
+				"baz": cty.Object(map[string]cty.Type{
+					"boz": cty.String,
+					"biz": cty.String,
+				}),
+			})),
+			diag.Diagnostics{},
+		},
+		"Set nested block Required + WriteOnly attribute with null return diags": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"foo": {
+						Type:      cty.String,
+						Required:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"baz": {
+						Nesting: configschema.NestingSet,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"boz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.NullVal(cty.String),
+				"baz": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"boz": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"foo\"",
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"boz\"",
+				},
+			},
+		},
+		"Nested single block, Required + WriteOnly attribute with null returns diag": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"foo": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"bar": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"baz": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.ObjectVal(map[string]cty.Value{
+					"baz": cty.StringVal("boop"),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+				},
+			},
+		},
+		"Map nested block, Required + WriteOnly attribute with null value returns diag": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"foo": {
+						Nesting: configschema.NestingMap,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"bar": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+								"baz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.MapVal(map[string]cty.Value{
+					"a": cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.NullVal(cty.String),
+						"baz": cty.StringVal("boop"),
+					}),
+					"b": cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.StringVal("blep"),
+						"baz": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+				},
+			},
+		},
+		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"foo": {
+						Nesting: configschema.NestingList,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"bar": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"baz": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"baz": cty.StringVal("bap"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"baz": cty.StringVal("blep"),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+				},
+			},
+		},
+		"Set nested block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"foo": {
+						Nesting: configschema.NestingSet,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"bar": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"baz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.StringVal("blep"),
+						"baz": cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.StringVal("boop"),
+						"baz": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+				},
+			},
+		},
+		"Map nested block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"foo": {
+						Nesting: configschema.NestingMap,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"bar": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+								"baz": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"foo": cty.MapVal(map[string]cty.Value{
+					"a": cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.NullVal(cty.String),
+						"baz": cty.NullVal(cty.String),
+					}),
+					"b": cty.ObjectVal(map[string]cty.Value{
+						"bar": cty.StringVal("blep"),
+						"baz": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+				},
+			},
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			got := validateWriteOnlyRequiredValues("test_resource", tc.Val, tc.Schema)
 
 			if diff := cmp.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)

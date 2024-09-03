@@ -822,6 +822,16 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		return resp, nil
 	}
 
+	// If the resource is being created, validate that all required write-only
+	// attributes in the config have non-nil values.
+	if create {
+		diags := validateWriteOnlyRequiredValues(req.TypeName, configVal, schemaBlock)
+		if diags.HasError() {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
+			return resp, nil
+		}
+	}
+
 	priorState, err := res.ShimInstanceStateFromValue(priorStateVal)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1954,6 +1964,65 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 
 			for _, v := range mapVals {
 				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block)...)
+			}
+
+		default:
+			panic(fmt.Sprintf("failed to validate WriteOnly values for nested block %q:%#v", name, blockValType))
+		}
+	}
+
+	return diags
+}
+
+// validateWriteOnlyRequiredValues takes a cty.Value, and compares it to the schema and throws an
+// error diagnostic for every WriteOnly + Required attribute null value.
+func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *configschema.Block) diag.Diagnostics {
+	if !val.IsKnown() || val.IsNull() {
+		return diag.Diagnostics{}
+	}
+
+	valMap := val.AsValueMap()
+	diags := make([]diag.Diagnostic, 0)
+
+	for name, attr := range schema.Attributes {
+		v := valMap[name]
+
+		if attr.WriteOnly && attr.Required && v.IsNull() {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "Required WriteOnly Attribute",
+				Detail:   fmt.Sprintf("The %q resource contains a null value for Required WriteOnly attribute %q", typeName, name),
+			})
+		}
+	}
+
+	for name, blockS := range schema.BlockTypes {
+		blockVal := valMap[name]
+		if blockVal.IsNull() || !blockVal.IsKnown() {
+			continue
+		}
+
+		blockValType := blockVal.Type()
+
+		// This switches on the value type here, so we can correctly switch
+		// between Tuples/Lists and Maps/Objects.
+		switch {
+		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
+			// NestingSingle is the only exception here, where we treat the
+			// block directly as an object
+			diags = append(diags, validateWriteOnlyRequiredValues(typeName, blockVal, &blockS.Block)...)
+		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
+			listVals := blockVal.AsValueSlice()
+
+			for _, v := range listVals {
+				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block)...)
+			}
+
+		case blockValType.IsMapType(), blockValType.IsObjectType():
+			mapVals := blockVal.AsValueMap()
+
+			for _, v := range mapVals {
+				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block)...)
 			}
 
 		default:
