@@ -371,6 +371,13 @@ type Schema struct {
 	//  AttributePath: append(path, cty.IndexStep{Key: cty.StringVal("key_name")})
 	ValidateDiagFunc SchemaValidateDiagFunc
 
+	// ValidateResourceConfig allows a function to define arbitrary validation
+	// logic during the ValidateResourceTypeConfig RPC. ValidateResourceConfigFunc receives
+	// the client capabilities from the ValidateResourceTypeConfig RPC and the raw cty
+	// config value for the entire resource before it is shimmed, and it can return error
+	// diagnostics based on the inspection of those values.
+	ValidateResourceConfig ValidateResourceConfigFunc
+
 	// Sensitive ensures that the attribute's value does not get displayed in
 	// the Terraform user interface output. It should be used for password or
 	// other values which should be hidden.
@@ -475,6 +482,24 @@ type SchemaValidateFunc func(interface{}, string) ([]string, []error)
 // SchemaValidateDiagFunc is a function used to validate a single field in the
 // schema and has Diagnostic support.
 type SchemaValidateDiagFunc func(interface{}, cty.Path) diag.Diagnostics
+
+// ValidateResourceConfigFunc is a function used to validate the raw resource config
+// and has Diagnostic support.
+type ValidateResourceConfigFunc func(context.Context, ValidateResourceConfigRequest, *ValidateResourceConfigResponse)
+
+type ValidateResourceConfigRequest struct {
+	// WriteOnlyAttributesAllowed indicates that the Terraform client
+	// initiating the request supports write-only attributes for managed
+	// resources.
+	WriteOnlyAttributesAllowed bool
+
+	// The raw config value provided by Terraform core
+	RawConfig cty.Value
+}
+
+type ValidateResourceConfigResponse struct {
+	Diagnostics diag.Diagnostics
+}
 
 func (s *Schema) GoString() string {
 	return fmt.Sprintf("*%#v", *s)
