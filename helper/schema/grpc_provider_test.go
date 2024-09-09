@@ -3714,6 +3714,227 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				},
 			},
 		},
+		"Server with ValidateResourceConfigFunc: WriteOnlyAttributesAllowed true returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				ClientCapabilities: &tfprotov5.ValidateResourceTypeConfigClientCapabilities{
+					WriteOnlyAttributesAllowed: true,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateResourceConfigFunc: WriteOnlyAttributesAllowed false returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateResourceConfigFunc: equal config value returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateResourceConfigFunc Error",
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {

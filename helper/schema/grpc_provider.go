@@ -286,6 +286,29 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock))
 	}
 
+	r := s.provider.ResourcesMap[req.TypeName]
+
+	// Calling ValidateResourceConfigFunc here since provider.ValidateResource()
+	// is a public function, so we can't change its signature.
+	if r.ValidateResourceConfigFuncs != nil {
+		writeOnlyAllowed := false
+
+		if req.ClientCapabilities != nil {
+			writeOnlyAllowed = req.ClientCapabilities.WriteOnlyAttributesAllowed
+		}
+
+		validateReq := ValidateResourceConfigFuncRequest{
+			WriteOnlyAttributesAllowed: writeOnlyAllowed,
+			RawConfig:                  configVal,
+		}
+
+		for _, validateFunc := range r.ValidateResourceConfigFuncs {
+			validateResp := &ValidateResourceConfigFuncResponse{}
+			validateFunc(ctx, validateReq, validateResp)
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateResp.Diagnostics)
+		}
+	}
+
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
 	logging.HelperSchemaTrace(ctx, "Calling downstream")

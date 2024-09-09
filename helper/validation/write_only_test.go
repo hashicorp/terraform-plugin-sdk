@@ -31,7 +31,7 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			},
 		},
 		"invalid oldAttributePath returns error diag": {
-			oldAttributePath: cty.GetAttrPath("oldAttribute").Index(cty.UnknownVal(cty.String)),
+			oldAttributePath: cty.GetAttrPath("oldAttribute").Index(cty.UnknownVal(cty.Number)),
 			validateConfigReq: schema.ValidateResourceConfigFuncRequest{
 				WriteOnlyAttributesAllowed: true,
 				RawConfig: cty.ObjectVal(map[string]cty.Value{
@@ -50,7 +50,7 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "oldAttribute"},
 						cty.IndexStep{
-							Key: cty.NumberIntVal(1),
+							Key: cty.NumberIntVal(0),
 						},
 					},
 				},
@@ -776,8 +776,5 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 }
 
 func indexStepComparer(step cty.IndexStep, other cty.IndexStep) bool {
-	if !step.Key.RawEquals(other.Key) {
-		return false
-	}
-	return true
+	return step.Key.RawEquals(other.Key)
 }
