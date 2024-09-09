@@ -14,130 +14,75 @@ import (
 )
 
 // PreferWriteOnlyAttribute is a ValidateResourceConfigFunc that returns a warning
-// if the Terraform client supports write-only attributes and the old attribute
-// has a value instead of the write-only attribute.
-func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttribute cty.Path) schema.ValidateResourceConfigFunc {
-	return func(ctx context.Context, req schema.ValidateResourceConfigRequest, resp *schema.ValidateResourceConfigResponse) {
+// if the Terraform client supports write-only attributes and the old attribute is
+// not null.
+// The last step in the path must be a cty.GetAttrStep{}.
+// When creating a cty.IndexStep{} to into a nested attribute, use an unknown value
+// of the index type to indicate any key value.
+// For lists: cty.Index(cty.UnknownVal(cty.Number)),
+// For maps: cty.Index(cty.UnknownVal(cty.String)),
+// For sets: cty.Index(cty.UnknownVal(cty.Object(nil))),
+func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName string) schema.ValidateResourceConfigFunc {
+	return func(ctx context.Context, req schema.ValidateResourceConfigFuncRequest, resp *schema.ValidateResourceConfigFuncResponse) {
 		if !req.WriteOnlyAttributesAllowed {
 			return
 		}
 
-		// Apply all but the last step to retrieve the attribute name
-		// for any diags that we return.
-		oldLastStepVal, oldLastStep, err := oldAttribute.LastStep(req.RawConfig)
+		var oldAttrs []attribute
+
+		err := cty.Walk(req.RawConfig, func(path cty.Path, value cty.Value) (bool, error) {
+			if PathEquals(path, oldAttribute) {
+				oldAttrs = append(oldAttrs, attribute{
+					value: value,
+					path:  path,
+				})
+			}
+
+			return true, nil
+		})
 		if err != nil {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "Invalid oldAttributePath",
-					Detail: fmt.Sprintf("Encountered an error when applying the specified oldAttribute path, "+
-						"original error: %s", err),
-					AttributePath: oldAttribute,
-				},
-			}
 			return
 		}
 
-		// Only attribute steps have a Name field
-		oldAttributeStep, ok := oldLastStep.(cty.GetAttrStep)
-		if !ok {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "Invalid oldAttributePath",
-					Detail:        "The specified oldAttribute path must point to an attribute",
-					AttributePath: oldAttribute,
-				},
+		for _, attr := range oldAttrs {
+			attrPath := attr.path.Copy()
+
+			pathLen := len(attrPath)
+
+			if pathLen == 0 {
+				return
 			}
-			return
-		}
 
-		oldAttributeConfigVal, err := oldAttributeStep.Apply(oldLastStepVal)
-		if err != nil {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "Invalid oldAttributePath",
-					Detail: fmt.Sprintf("Encountered an error when applying the specified oldAttribute path, "+
-						"original error: %s", err),
-					AttributePath: oldAttribute,
-				},
+			lastStep := attrPath[pathLen-1]
+
+			// Only attribute steps have a Name field
+			attrStep, ok := lastStep.(cty.GetAttrStep)
+			if !ok {
+				resp.Diagnostics = diag.Diagnostics{
+					{
+						Severity:      diag.Error,
+						Summary:       "Invalid oldAttributePath",
+						Detail:        "The specified oldAttribute path must point to an attribute.",
+						AttributePath: attrPath,
+					},
+				}
+				return
 			}
-			return
-		}
 
-		writeOnlyLastStepVal, writeOnlyLastStep, err := writeOnlyAttribute.LastStep(req.RawConfig)
-		if err != nil {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "Invalid writeOnlyAttributePath",
-					Detail: fmt.Sprintf("Encountered an error when applying the specified writeOnlyAttribute path, "+
-						"original error: %s", err),
-					AttributePath: writeOnlyAttribute,
-				},
-			}
-			return
-		}
-
-		// Only attribute steps have a Name field
-		writeOnlyAttributeStep, ok := writeOnlyLastStep.(cty.GetAttrStep)
-		if !ok {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity:      diag.Error,
-					Summary:       "Invalid writeOnlyAttributePath",
-					Detail:        "The specified writeOnlyAttribute path must point to an attribute",
-					AttributePath: writeOnlyAttribute,
-				},
-			}
-			return
-		}
-
-		writeOnlyAttributeConfigVal, err := writeOnlyAttributeStep.Apply(writeOnlyLastStepVal)
-		if err != nil {
-			resp.Diagnostics = diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "Invalid writeOnlyAttributePath",
-					Detail: fmt.Sprintf("Encountered an error when applying the specified writeOnlyAttribute path, "+
-						"original error: %s", err),
-					AttributePath: writeOnlyAttribute,
-				},
-			}
-			return
-		}
-
-		//oldAttributeConfigVal, err := cty.Transform(req.RawConfig, func(path cty.Path, val cty.Value) (cty.Value, error) {
-		//	if path.Equals(oldAttribute) {
-		//		oldAttributeConfig := req.RawConfig.GetAttr(oldAttributeName)
-		//		println(oldAttributeConfig.IsKnown())
-		//		return val, nil
-		//	}
-		//
-		//	// nothing to do if we already have a value
-		//	if !val.IsNull() {
-		//		return val, nil
-		//	}
-		//
-		//	return val, nil
-		//})
-		//// We shouldn't encounter any errors here, but handling them just in case.
-		//if err != nil {
-		//	resp.Diagnostics = diag.FromErr(err)
-		//	return
-		//}
-
-		if !oldAttributeConfigVal.IsNull() && writeOnlyAttributeConfigVal.IsNull() {
-			resp.Diagnostics = diag.Diagnostics{
-				{
+			if !attr.value.IsNull() {
+				resp.Diagnostics = append(resp.Diagnostics, diag.Diagnostic{
 					Severity: diag.Warning,
 					Summary:  "Available Write-Only Attribute Alternative",
 					Detail: fmt.Sprintf("The attribute %s has a WriteOnly version %s available. "+
-						"Use the WriteOnly version of the attribute when possible.", oldAttributeStep.Name, writeOnlyAttributeStep.Name),
-					AttributePath: oldAttribute,
-				},
+						"Use the WriteOnly version of the attribute when possible.", attrStep.Name, writeOnlyAttributeName),
+					AttributePath: attr.path,
+				})
 			}
 		}
 	}
+}
+
+type attribute struct {
+	value cty.Value
+	path  cty.Path
 }
