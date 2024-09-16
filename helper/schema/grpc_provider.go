@@ -288,8 +288,8 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 
 	r := s.provider.ResourcesMap[req.TypeName]
 
-	// Calling ValidateResourceConfigFunc here since provider.ValidateResource()
-	// is a public function, so we can't change its signature.
+	// Calling all ValidateResourceConfigFunc here since they validate on the raw go-cty config value
+	// and were introduced after the public provider.ValidateResource method.
 	if r.ValidateResourceConfigFuncs != nil {
 		writeOnlyAllowed := false
 
@@ -1956,7 +1956,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 		if attr.WriteOnly && !v.IsNull() {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  "WriteOnly Attributes not Allowed",
+				Summary:  "WriteOnly Attribute Not Allowed",
 				Detail:   fmt.Sprintf("The %q resource contains a non-null value for WriteOnly attribute %q", typeName, name),
 			})
 		}

@@ -2380,8 +2380,7 @@ func (m schemaMap) validateType(
 	return diags
 }
 
-// hasWriteOnly returns true if the schemaMap contains any
-// WriteOnly attributes are set.
+// hasWriteOnly returns true if the schemaMap contains any WriteOnly attributes.
 func (m schemaMap) hasWriteOnly() bool {
 	for _, v := range m {
 		if v.WriteOnly {
