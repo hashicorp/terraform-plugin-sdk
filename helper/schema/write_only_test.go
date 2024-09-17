@@ -10,6 +10,344 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
+func Test_setWriteOnlyNullValues(t *testing.T) {
+	for n, tc := range map[string]struct {
+		Schema   *configschema.Block
+		Val      cty.Value
+		Expected cty.Value
+	}{
+		"Empty returns no empty object": {
+			&configschema.Block{},
+			cty.EmptyObjectVal,
+			cty.EmptyObjectVal,
+		},
+		"Top level attributes and block: write only attributes with values": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"required_attribute": {
+						Type:     cty.String,
+						Required: true,
+					},
+					"write_only_attribute": {
+						Type:      cty.String,
+						Required:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"nested_block": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"required_block_attribute": {
+									Type:     cty.String,
+									Required: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"required_attribute":   cty.StringVal("boop"),
+				"write_only_attribute": cty.StringVal("blep"),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("blep"),
+					"required_block_attribute":   cty.StringVal("boop"),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"required_attribute":   cty.StringVal("boop"),
+				"write_only_attribute": cty.NullVal(cty.String),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.NullVal(cty.String),
+					"required_block_attribute":   cty.StringVal("boop"),
+				}),
+			}),
+		},
+		"Top level attributes and block: all null values": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"write_only_attribute1": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+					"write_only_attribute2": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"nested_block": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute1": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"write_only_block_attribute2": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.NullVal(cty.Object(map[string]cty.Type{
+				"write_only_attribute1": cty.String,
+				"write_only_attribute2": cty.String,
+				"nested_block": cty.Object(map[string]cty.Type{
+					"write_only_block_attribute1": cty.String,
+					"write_only_block_attribute2": cty.String,
+				}),
+			})),
+			cty.NullVal(cty.Object(map[string]cty.Type{
+				"write_only_attribute1": cty.String,
+				"write_only_attribute2": cty.String,
+				"nested_block": cty.Object(map[string]cty.Type{
+					"write_only_block_attribute1": cty.String,
+					"write_only_block_attribute2": cty.String,
+				}),
+			})),
+		},
+		"Set nested block: write only Nested Attribute": {
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"required_attribute": {
+						Type:     cty.String,
+						Required: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"set_block": {
+						Nesting: configschema.NestingSet,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"required_attribute": cty.StringVal("boop"),
+				"set_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("beep"),
+					}),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"required_attribute": cty.StringVal("boop"),
+				"set_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+		},
+		"Nested single block: write only nested attribute": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"nested_block": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"optional_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("boop"),
+					"optional_attribute":         cty.StringVal("boop"),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.NullVal(cty.String),
+					"optional_attribute":         cty.StringVal("boop"),
+				}),
+			}),
+		},
+		"Map nested block: multiple write only nested attributes": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"map_block": {
+						Nesting: configschema.NestingMap,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
+					"a": cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute":   cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.StringVal("boop"),
+					}),
+					"b": cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute":   cty.StringVal("blep"),
+						"write_only_block_attribute": cty.StringVal("boop2"),
+					}),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
+					"a": cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute":   cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.NullVal(cty.String),
+					}),
+					"b": cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute":   cty.StringVal("blep"),
+						"write_only_block_attribute": cty.NullVal(cty.String),
+					}),
+				}),
+			}),
+		},
+		"List nested block: multiple write only nested attributes": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"list_block": {
+						Nesting: configschema.NestingList,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("beep"),
+						"optional_block_attribute":   cty.StringVal("bap"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("boop"),
+						"optional_block_attribute":   cty.StringVal("blep"),
+					}),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.NullVal(cty.String),
+						"optional_block_attribute":   cty.StringVal("bap"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.NullVal(cty.String),
+						"optional_block_attribute":   cty.StringVal("blep"),
+					}),
+				}),
+			}),
+		},
+		"Set nested block: multiple write only nested attributes": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"set_block": {
+						Nesting: configschema.NestingSet,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"set_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("blep"),
+						"optional_block_attribute":   cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("boop"),
+						"optional_block_attribute":   cty.StringVal("boop"),
+					}),
+				}),
+			}),
+			cty.ObjectVal(map[string]cty.Value{
+				"set_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.NullVal(cty.String),
+						"optional_block_attribute":   cty.NullVal(cty.String),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.NullVal(cty.String),
+						"optional_block_attribute":   cty.StringVal("boop"),
+					}),
+				}),
+			}),
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			got := setWriteOnlyNullValues(tc.Val, tc.Schema)
+
+			if !got.RawEquals(tc.Expected) {
+				t.Errorf("\nexpected: %#v\ngot:      %#v\n", tc.Expected, got)
+			}
+		})
+	}
+}
+
 func Test_validateWriteOnlyNullValues(t *testing.T) {
 	for n, tc := range map[string]struct {
 		Schema   *configschema.Block
@@ -24,28 +362,28 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 		"All null values return no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": {
+					"write_only_attribute1": {
 						Type:      cty.String,
 						Optional:  true,
 						WriteOnly: true,
 					},
-					"bar": {
+					"write_only_attribute2": {
 						Type:      cty.String,
 						Optional:  true,
 						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
+					"single_block": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"boz": {
+								"write_only_block_attribute1": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"biz": {
+								"write_only_block_attribute2": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -56,11 +394,11 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.NullVal(cty.Object(map[string]cty.Type{
-				"foo": cty.String,
-				"bar": cty.String,
-				"baz": cty.Object(map[string]cty.Type{
-					"boz": cty.String,
-					"biz": cty.String,
+				"write_only_attribute1": cty.String,
+				"write_only_attribute2": cty.String,
+				"single_block": cty.Object(map[string]cty.Type{
+					"write_only_block_attribute1": cty.String,
+					"write_only_block_attribute2": cty.String,
 				}),
 			})),
 			diag.Diagnostics{},
@@ -68,18 +406,18 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 		"Set nested block WriteOnly attribute with value returns diag": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": {
+					"write_only_attribute": {
 						Type:      cty.String,
 						Optional:  true,
 						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
+					"set_block": {
 						Nesting: configschema.NestingSet,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"boz": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -90,10 +428,10 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("foo_val"),
-				"baz": cty.SetVal([]cty.Value{
+				"write_only_attribute": cty.StringVal("val"),
+				"set_block": cty.SetVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"boz": cty.StringVal("blep"),
+						"write_only_block_attribute": cty.StringVal("block_val"),
 					}),
 				}),
 			}),
@@ -101,28 +439,28 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"boz\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"Nested single block, WriteOnly attribute with value returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"nested_block": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -133,32 +471,32 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ObjectVal(map[string]cty.Value{
-					"bar": cty.StringVal("beep"),
-					"baz": cty.StringVal("boop"),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("beep"),
+					"optional_block_attribute1":  cty.StringVal("boop"),
 				}),
 			}),
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"Map nested block, WriteOnly attribute with value returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"map_block": {
 						Nesting: configschema.NestingMap,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
 								},
-								"baz": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -169,14 +507,14 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
 					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("boop"),
+						"optional_attribute":         cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.StringVal("boop"),
 					}),
 					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
+						"optional_attribute":         cty.StringVal("blep"),
+						"write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -184,23 +522,23 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"list_block": {
 						Nesting: configschema.NestingList,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -211,12 +549,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ListVal([]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("bap"),
+						"write_only_block_attribute": cty.StringVal("bap"),
 					}),
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
+						"write_only_block_attribute": cty.StringVal("blep"),
 					}),
 				}),
 			}),
@@ -224,28 +562,28 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"Set nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"set_block": {
 						Nesting: configschema.NestingSet,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"write_only_block_attribute1": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"write_only_block_attribute2": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -256,14 +594,14 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.SetVal([]cty.Value{
+				"set_block": cty.SetVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
+						"write_only_block_attribute1": cty.StringVal("blep"),
+						"write_only_block_attribute2": cty.NullVal(cty.String),
 					}),
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("boop"),
-						"baz": cty.NullVal(cty.String),
+						"write_only_block_attribute1": cty.StringVal("boop"),
+						"write_only_block_attribute2": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -271,28 +609,28 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\"",
 				},
 			},
 		},
 		"Map nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"map_block": {
 						Nesting: configschema.NestingMap,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
 								},
-								"baz": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -303,14 +641,14 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
 					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("boop"),
+						"optional_block_attribute":   cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.StringVal("boop"),
 					}),
 					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.StringVal("boop2"),
+						"optional_block_attribute":   cty.StringVal("blep"),
+						"write_only_block_attribute": cty.StringVal("boop2"),
 					}),
 				}),
 			}),
@@ -318,28 +656,28 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"List nested block, WriteOnly attribute with dynamic value returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"list_block": {
 						Nesting: configschema.NestingList,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
 								},
-								"baz": {
+								"write_only_block_attribute": {
 									Type:      cty.DynamicPseudoType,
 									Optional:  true,
 									WriteOnly: true,
@@ -350,10 +688,10 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.TupleVal([]cty.Value{
+				"list_block": cty.TupleVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NumberIntVal(8),
+						"optional_block_attribute":   cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.NumberIntVal(8),
 					}),
 				}),
 			}),
@@ -361,7 +699,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
@@ -390,28 +728,28 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 		"All Required + WriteOnly with values return no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": {
+					"required_write_only_attribute1": {
 						Type:      cty.String,
 						Required:  true,
 						WriteOnly: true,
 					},
-					"bar": {
+					"required_write_only_attribute2": {
 						Type:      cty.String,
 						Required:  true,
 						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
+					"nested_block": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"boz": {
+								"required_write_only_block_attribute1": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
 								},
-								"biz": {
+								"required_write_only_block_attribute2": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
@@ -422,11 +760,11 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("boop"),
-				"bar": cty.StringVal("blep"),
-				"baz": cty.ObjectVal(map[string]cty.Value{
-					"boz": cty.StringVal("blep"),
-					"biz": cty.StringVal("boop"),
+				"required_write_only_attribute1": cty.StringVal("boop"),
+				"required_write_only_attribute2": cty.StringVal("blep"),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"required_write_only_block_attribute1": cty.StringVal("blep"),
+					"required_write_only_block_attribute2": cty.StringVal("boop"),
 				}),
 			}),
 			diag.Diagnostics{},
@@ -434,28 +772,28 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 		"All Optional + WriteOnly with null values return no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": {
+					"optional_write_only_attribute1": {
 						Type:      cty.String,
 						Optional:  true,
 						WriteOnly: true,
 					},
-					"bar": {
+					"optional_write_only_attribute2": {
 						Type:      cty.String,
 						Optional:  true,
 						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
+					"nested_block": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"boz": {
+								"optional_write_only_block_attribute1": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"biz": {
+								"optional_write_only_block_attribute2": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
@@ -466,11 +804,11 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.NullVal(cty.Object(map[string]cty.Type{
-				"foo": cty.String,
-				"bar": cty.String,
-				"baz": cty.Object(map[string]cty.Type{
-					"boz": cty.String,
-					"biz": cty.String,
+				"optional_write_only_attribute1": cty.String,
+				"optional_write_only_attribute2": cty.String,
+				"nested_block": cty.Object(map[string]cty.Type{
+					"optional_write_only_block_attribute1": cty.String,
+					"optional_write_only_block_attribute2": cty.String,
 				}),
 			})),
 			diag.Diagnostics{},
@@ -478,18 +816,18 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 		"Set nested block Required + WriteOnly attribute with null return diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
-					"foo": {
+					"required_write_only_attribute": {
 						Type:      cty.String,
 						Required:  true,
 						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
+					"set_block": {
 						Nesting: configschema.NestingSet,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"boz": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
@@ -500,10 +838,10 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.NullVal(cty.String),
-				"baz": cty.SetVal([]cty.Value{
+				"required_write_only_attribute": cty.NullVal(cty.String),
+				"set_block": cty.SetVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"boz": cty.NullVal(cty.String),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -511,28 +849,28 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"foo\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"boz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
 		"Nested single block, Required + WriteOnly attribute with null returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"nested_block": {
 						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"optional_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -543,31 +881,31 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ObjectVal(map[string]cty.Value{
-					"baz": cty.StringVal("boop"),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"optional_attribute": cty.StringVal("boop"),
 				}),
 			}),
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
 		"Map nested block, Required + WriteOnly attribute with null value returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"map_block": {
 						Nesting: configschema.NestingMap,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
 								},
-								"baz": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
@@ -578,14 +916,14 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
 					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("boop"),
+						"optional_block_attribute":            cty.NullVal(cty.String),
+						"required_write_only_block_attribute": cty.StringVal("boop"),
 					}),
 					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
+						"optional_block_attribute":            cty.StringVal("blep"),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -593,23 +931,23 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
 		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"list_block": {
 						Nesting: configschema.NestingList,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -620,12 +958,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ListVal([]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"baz": cty.StringVal("bap"),
+						"optional_block_attribute": cty.StringVal("bap"),
 					}),
 					cty.ObjectVal(map[string]cty.Value{
-						"baz": cty.StringVal("blep"),
+						"optional_block_attribute": cty.StringVal("blep"),
 					}),
 				}),
 			}),
@@ -633,28 +971,28 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"bar\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
 		"Set nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"set_block": {
 						Nesting: configschema.NestingSet,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_write_only_block_attribute": {
 									Type:      cty.String,
 									Optional:  true,
 									WriteOnly: true,
 								},
-								"baz": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
@@ -665,14 +1003,14 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.SetVal([]cty.Value{
+				"set_block": cty.SetVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
+						"optional_write_only_block_attribute": cty.StringVal("blep"),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("boop"),
-						"baz": cty.NullVal(cty.String),
+						"optional_write_only_block_attribute": cty.StringVal("boop"),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -680,28 +1018,28 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
 		"Map nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
+					"map_block": {
 						Nesting: configschema.NestingMap,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"bar": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
 								},
-								"baz": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
@@ -712,14 +1050,14 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
+				"map_block": cty.MapVal(map[string]cty.Value{
 					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
+						"optional_block_attribute":            cty.NullVal(cty.String),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
+						"optional_block_attribute":            cty.StringVal("blep"),
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
 			}),
@@ -727,12 +1065,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"baz\"",
+					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -742,391 +1080,6 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 
 			if diff := cmp.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)
-			}
-		})
-	}
-}
-
-func Test_setWriteOnlyNullValues(t *testing.T) {
-	for n, tc := range map[string]struct {
-		Schema   *configschema.Block
-		Val      cty.Value
-		Expected cty.Value
-	}{
-		"Empty returns no empty object": {
-			&configschema.Block{},
-			cty.EmptyObjectVal,
-			cty.EmptyObjectVal,
-		},
-		"Top level attributes and block: write only attributes with values": {
-			&configschema.Block{
-				Attributes: map[string]*configschema.Attribute{
-					"foo": {
-						Type:     cty.String,
-						Required: true,
-					},
-					"bar": {
-						Type:      cty.String,
-						Required:  true,
-						WriteOnly: true,
-					},
-				},
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
-						Nesting: configschema.NestingSingle,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"boz": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-								"biz": {
-									Type:     cty.String,
-									Required: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("boop"),
-				"bar": cty.StringVal("blep"),
-				"baz": cty.ObjectVal(map[string]cty.Value{
-					"boz": cty.StringVal("blep"),
-					"biz": cty.StringVal("boop"),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("boop"),
-				"bar": cty.NullVal(cty.String),
-				"baz": cty.ObjectVal(map[string]cty.Value{
-					"boz": cty.NullVal(cty.String),
-					"biz": cty.StringVal("boop"),
-				}),
-			}),
-		},
-		"Top level attributes and block: all null values": {
-			&configschema.Block{
-				Attributes: map[string]*configschema.Attribute{
-					"foo": {
-						Type:      cty.String,
-						Optional:  true,
-						WriteOnly: true,
-					},
-					"bar": {
-						Type:      cty.String,
-						Optional:  true,
-						WriteOnly: true,
-					},
-				},
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
-						Nesting: configschema.NestingSingle,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"boz": {
-									Type:      cty.String,
-									Optional:  true,
-									WriteOnly: true,
-								},
-								"biz": {
-									Type:      cty.String,
-									Optional:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.NullVal(cty.Object(map[string]cty.Type{
-				"foo": cty.String,
-				"bar": cty.String,
-				"baz": cty.Object(map[string]cty.Type{
-					"boz": cty.String,
-					"biz": cty.String,
-				}),
-			})),
-			cty.NullVal(cty.Object(map[string]cty.Type{
-				"foo": cty.String,
-				"bar": cty.String,
-				"baz": cty.Object(map[string]cty.Type{
-					"boz": cty.String,
-					"biz": cty.String,
-				}),
-			})),
-		},
-		"Set nested block: write only Nested Attribute": {
-			&configschema.Block{
-				Attributes: map[string]*configschema.Attribute{
-					"foo": {
-						Type:     cty.String,
-						Required: true,
-					},
-				},
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"baz": {
-						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"boz": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("boop"),
-				"baz": cty.SetVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"boz": cty.StringVal("beep"),
-					}),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.StringVal("boop"),
-				"baz": cty.SetVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"boz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-		},
-		"Nested single block: write only nested attribute": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
-						Nesting: configschema.NestingSingle,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"bar": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-								"baz": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ObjectVal(map[string]cty.Value{
-					"bar": cty.StringVal("boop"),
-					"baz": cty.StringVal("boop"),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ObjectVal(map[string]cty.Value{
-					"bar": cty.NullVal(cty.String),
-					"baz": cty.StringVal("boop"),
-				}),
-			}),
-		},
-		"Map nested block: multiple write only nested attributes": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
-						Nesting: configschema.NestingMap,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"bar": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
-								},
-								"baz": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
-					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("boop"),
-					}),
-					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.StringVal("boop2"),
-					}),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
-					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
-					}),
-					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-		},
-		"List nested block: multiple write only nested attributes": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
-						Nesting: configschema.NestingList,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"bar": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-								"baz": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ListVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("beep"),
-						"baz": cty.StringVal("bap"),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("boop"),
-						"baz": cty.StringVal("blep"),
-					}),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.ListVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("bap"),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.StringVal("blep"),
-					}),
-				}),
-			}),
-		},
-		"Set nested block: multiple write only nested attributes": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
-						Nesting: configschema.NestingSet,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"bar": {
-									Type:      cty.String,
-									Optional:  true,
-									WriteOnly: true,
-								},
-								"baz": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.SetVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("boop"),
-						"baz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.SetVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-		},
-		"Set nested Map block: multiple write only nested attributes": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"foo": {
-						Nesting: configschema.NestingMap,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"bar": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
-								},
-								"baz": {
-									Type:      cty.String,
-									Required:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
-					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
-					}),
-					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-			cty.ObjectVal(map[string]cty.Value{
-				"foo": cty.MapVal(map[string]cty.Value{
-					"a": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.NullVal(cty.String),
-						"baz": cty.NullVal(cty.String),
-					}),
-					"b": cty.ObjectVal(map[string]cty.Value{
-						"bar": cty.StringVal("blep"),
-						"baz": cty.NullVal(cty.String),
-					}),
-				}),
-			}),
-		},
-	} {
-		t.Run(n, func(t *testing.T) {
-			got := setWriteOnlyNullValues(tc.Val, tc.Schema)
-
-			if !got.RawEquals(tc.Expected) {
-				t.Errorf("\nexpected: %#v\ngot:      %#v\n", tc.Expected, got)
 			}
 		})
 	}

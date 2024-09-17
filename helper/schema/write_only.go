@@ -9,6 +9,106 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
+// setWriteOnlyNullValues takes a cty.Value, and compares it to the schema setting any non-null
+// values that are writeOnly to null.
+func setWriteOnlyNullValues(val cty.Value, schema *configschema.Block) cty.Value {
+	if !val.IsKnown() || val.IsNull() {
+		return val
+	}
+
+	valMap := val.AsValueMap()
+	newVals := make(map[string]cty.Value)
+
+	for name, attr := range schema.Attributes {
+		v := valMap[name]
+
+		if attr.WriteOnly && !v.IsNull() {
+			newVals[name] = cty.NullVal(attr.Type)
+			continue
+		}
+
+		newVals[name] = v
+	}
+
+	for name, blockS := range schema.BlockTypes {
+		blockVal := valMap[name]
+		if blockVal.IsNull() || !blockVal.IsKnown() {
+			newVals[name] = blockVal
+			continue
+		}
+
+		blockValType := blockVal.Type()
+		blockElementType := blockS.Block.ImpliedType()
+
+		// This switches on the value type here, so we can correctly switch
+		// between Tuples/Lists and Maps/Objects.
+		switch {
+		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
+			// NestingSingle is the only exception here, where we treat the
+			// block directly as an object
+			newVals[name] = setWriteOnlyNullValues(blockVal, &blockS.Block)
+
+		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
+			listVals := blockVal.AsValueSlice()
+			newListVals := make([]cty.Value, 0, len(listVals))
+
+			for _, v := range listVals {
+				newListVals = append(newListVals, setWriteOnlyNullValues(v, &blockS.Block))
+			}
+
+			switch {
+			case blockValType.IsSetType():
+				switch len(newListVals) {
+				case 0:
+					newVals[name] = cty.SetValEmpty(blockElementType)
+				default:
+					newVals[name] = cty.SetVal(newListVals)
+				}
+			case blockValType.IsListType():
+				switch len(newListVals) {
+				case 0:
+					newVals[name] = cty.ListValEmpty(blockElementType)
+				default:
+					newVals[name] = cty.ListVal(newListVals)
+				}
+			case blockValType.IsTupleType():
+				newVals[name] = cty.TupleVal(newListVals)
+			}
+
+		case blockValType.IsMapType(), blockValType.IsObjectType():
+			mapVals := blockVal.AsValueMap()
+			newMapVals := make(map[string]cty.Value)
+
+			for k, v := range mapVals {
+				newMapVals[k] = setWriteOnlyNullValues(v, &blockS.Block)
+			}
+
+			switch {
+			case blockValType.IsMapType():
+				switch len(newMapVals) {
+				case 0:
+					newVals[name] = cty.MapValEmpty(blockElementType)
+				default:
+					newVals[name] = cty.MapVal(newMapVals)
+				}
+			case blockValType.IsObjectType():
+				if len(newMapVals) == 0 {
+					// We need to populate empty values to make a valid object.
+					for attr, ty := range blockElementType.AttributeTypes() {
+						newMapVals[attr] = cty.NullVal(ty)
+					}
+				}
+				newVals[name] = cty.ObjectVal(newMapVals)
+			}
+
+		default:
+			panic(fmt.Sprintf("failed to set null values for nested block %q:%#v", name, blockValType))
+		}
+	}
+
+	return cty.ObjectVal(newVals)
+}
+
 // validateWriteOnlyNullValues takes a cty.Value, and compares it to the schema and throws an
 // error diagnostic for each non-null writeOnly attribute value.
 func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configschema.Block) diag.Diagnostics {
@@ -125,104 +225,4 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 	}
 
 	return diags
-}
-
-// setWriteOnlyNullValues takes a cty.Value, and compares it to the schema setting any non-null
-// values that are writeOnly to null.
-func setWriteOnlyNullValues(val cty.Value, schema *configschema.Block) cty.Value {
-	if !val.IsKnown() || val.IsNull() {
-		return val
-	}
-
-	valMap := val.AsValueMap()
-	newVals := make(map[string]cty.Value)
-
-	for name, attr := range schema.Attributes {
-		v := valMap[name]
-
-		if attr.WriteOnly && !v.IsNull() {
-			newVals[name] = cty.NullVal(attr.Type)
-			continue
-		}
-
-		newVals[name] = v
-	}
-
-	for name, blockS := range schema.BlockTypes {
-		blockVal := valMap[name]
-		if blockVal.IsNull() || !blockVal.IsKnown() {
-			newVals[name] = blockVal
-			continue
-		}
-
-		blockValType := blockVal.Type()
-		blockElementType := blockS.Block.ImpliedType()
-
-		// This switches on the value type here, so we can correctly switch
-		// between Tuples/Lists and Maps/Objects.
-		switch {
-		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
-			// NestingSingle is the only exception here, where we treat the
-			// block directly as an object
-			newVals[name] = setWriteOnlyNullValues(blockVal, &blockS.Block)
-
-		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
-			listVals := blockVal.AsValueSlice()
-			newListVals := make([]cty.Value, 0, len(listVals))
-
-			for _, v := range listVals {
-				newListVals = append(newListVals, setWriteOnlyNullValues(v, &blockS.Block))
-			}
-
-			switch {
-			case blockValType.IsSetType():
-				switch len(newListVals) {
-				case 0:
-					newVals[name] = cty.SetValEmpty(blockElementType)
-				default:
-					newVals[name] = cty.SetVal(newListVals)
-				}
-			case blockValType.IsListType():
-				switch len(newListVals) {
-				case 0:
-					newVals[name] = cty.ListValEmpty(blockElementType)
-				default:
-					newVals[name] = cty.ListVal(newListVals)
-				}
-			case blockValType.IsTupleType():
-				newVals[name] = cty.TupleVal(newListVals)
-			}
-
-		case blockValType.IsMapType(), blockValType.IsObjectType():
-			mapVals := blockVal.AsValueMap()
-			newMapVals := make(map[string]cty.Value)
-
-			for k, v := range mapVals {
-				newMapVals[k] = setWriteOnlyNullValues(v, &blockS.Block)
-			}
-
-			switch {
-			case blockValType.IsMapType():
-				switch len(newMapVals) {
-				case 0:
-					newVals[name] = cty.MapValEmpty(blockElementType)
-				default:
-					newVals[name] = cty.MapVal(newMapVals)
-				}
-			case blockValType.IsObjectType():
-				if len(newMapVals) == 0 {
-					// We need to populate empty values to make a valid object.
-					for attr, ty := range blockElementType.AttributeTypes() {
-						newMapVals[attr] = cty.NullVal(ty)
-					}
-				}
-				newVals[name] = cty.ObjectVal(newMapVals)
-			}
-
-		default:
-			panic(fmt.Sprintf("failed to set null values for nested block %q:%#v", name, blockValType))
-		}
-	}
-
-	return cty.ObjectVal(newVals)
 }
