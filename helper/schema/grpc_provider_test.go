@@ -3579,7 +3579,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "WriteOnly Attributes not Allowed",
+						Summary:  "WriteOnly Attribute Not Allowed",
 						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
 					},
 				},
@@ -3625,12 +3625,12 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "WriteOnly Attributes not Allowed",
+						Summary:  "WriteOnly Attribute Not Allowed",
 						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "WriteOnly Attributes not Allowed",
+						Summary:  "WriteOnly Attribute Not Allowed",
 						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 					},
 				},
@@ -3703,12 +3703,12 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "WriteOnly Attributes not Allowed",
+						Summary:  "WriteOnly Attribute Not Allowed",
 						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "WriteOnly Attributes not Allowed",
+						Summary:  "WriteOnly Attribute Not Allowed",
 						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"writeonly_nested_attr\"",
 					},
 				},
@@ -7579,12 +7579,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"boz\"",
 				},
 			},
@@ -7620,7 +7620,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 				},
 			},
@@ -7662,7 +7662,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
 				},
 			},
@@ -7702,12 +7702,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 				},
 			},
@@ -7749,12 +7749,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
 				},
 			},
@@ -7796,12 +7796,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
 				},
 			},
@@ -7839,7 +7839,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attributes not Allowed",
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"baz\"",
 				},
 			},
