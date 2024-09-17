@@ -1219,7 +1219,9 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	newStateVal = copyTimeoutValues(newStateVal, plannedStateVal)
 
-	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
+	if req.ClientCapabilities != nil && req.ClientCapabilities.WriteOnlyAttributesAllowed {
+		newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
+	}
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
