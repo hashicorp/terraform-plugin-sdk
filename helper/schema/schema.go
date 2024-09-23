@@ -399,10 +399,12 @@ type Schema struct {
 	// WriteOnly indicates that the practitioner can choose a value for this
 	// attribute, but Terraform will not store this attribute in state.
 	// If WriteOnly is true, either Optional or Required must also be true.
+	// If an attribute is Required and WriteOnly, an attribute value
+	// is only required on resource creation.
 	//
 	// WriteOnly cannot be set to true for TypeList, TypeMap, or TypeSet.
 	//
-	// This functionality is only supported in Terraform 1.XX and later. TODO: Add Terraform version
+	// This functionality is only supported in Terraform 1.11 and later.
 	// Practitioners that choose a value for this attribute with older
 	// versions of Terraform will receive an error.
 	WriteOnly bool
@@ -1725,6 +1727,8 @@ func (m schemaMap) validate(
 	}
 
 	if !ok {
+		// We don't validate required + writeOnly attributes here
+		// as that is done in PlanResourceChange (only on create).
 		if schema.Required && !schema.WriteOnly {
 			return append(diags, diag.Diagnostic{
 				Severity:      diag.Error,
