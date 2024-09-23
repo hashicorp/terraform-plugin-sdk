@@ -228,6 +228,10 @@ func (p *Provider) InternalValidate() error {
 			validationErrors = append(validationErrors, fmt.Errorf("data source %s: %s", k, err))
 		}
 
+		if len(r.ValidateRawResourceConfigFuncs) > 0 {
+			validationErrors = append(validationErrors, fmt.Errorf("data source %s cannot contain ValidateRawResourceConfigFuncs", k))
+		}
+
 		dataSourceSchema := schemaMap(r.SchemaMap())
 		if dataSourceSchema.hasWriteOnly() {
 			validationErrors = append(validationErrors, fmt.Errorf("data source %s cannot contain WriteOnly attributes", k))

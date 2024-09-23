@@ -2420,6 +2420,65 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: nil,
 		},
+		"Data source with ValidateRawResourceConfigFuncs returns an error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				DataSourcesMap: map[string]*Resource{
+					"data-foo": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: fmt.Errorf("data source data-foo cannot contain ValidateRawResourceConfigFuncs"),
+		},
+		"Resource with ValidateRawResourceConfigFuncs returns no errors": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ResourcesMap: map[string]*Resource{
+					"resource-foo": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: nil,
+		},
 	}
 
 	for name, tc := range cases {
