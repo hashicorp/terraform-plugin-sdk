@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/hashicorp/go-cty/cty"
 
@@ -109,9 +110,13 @@ func setWriteOnlyNullValues(val cty.Value, schema *configschema.Block) cty.Value
 	return cty.ObjectVal(newVals)
 }
 
-// validateWriteOnlyNullValues takes a cty.Value, and compares it to the schema and throws an
+// validateWriteOnlyNullValues validates that write-only attribute values
+// are null to ensure that write-only values are not sent to unsupported
+// Terraform client versions.
+//
+// it takes a cty.Value, and compares it to the schema and throws an
 // error diagnostic for each non-null writeOnly attribute value.
-func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configschema.Block) diag.Diagnostics {
+func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
 	if !val.IsKnown() || val.IsNull() {
 		return diag.Diagnostics{}
 	}
@@ -119,25 +124,42 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 	valMap := val.AsValueMap()
 	diags := make([]diag.Diagnostic, 0)
 
-	for name, attr := range schema.Attributes {
+	var attrNames []string
+	for k := range schema.Attributes {
+		attrNames = append(attrNames, k)
+	}
+	sort.Strings(attrNames)
+
+	for _, name := range attrNames {
+		attr := schema.Attributes[name]
 		v := valMap[name]
 
 		if attr.WriteOnly && !v.IsNull() {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "WriteOnly Attribute Not Allowed",
-				Detail:   fmt.Sprintf("The %q resource contains a non-null value for WriteOnly attribute %q", typeName, name),
+				Detail: fmt.Sprintf("The resource contains a non-null value for WriteOnly attribute %q ", name) +
+					fmt.Sprintf("Write-only attributes are only supported in Terraform 1.11 and later."),
+				AttributePath: append(path, cty.GetAttrStep{Name: name}),
 			})
 		}
 	}
 
-	for name, blockS := range schema.BlockTypes {
+	var blockNames []string
+	for k := range schema.BlockTypes {
+		blockNames = append(blockNames, k)
+	}
+	sort.Strings(blockNames)
+
+	for _, name := range blockNames {
+		blockS := schema.BlockTypes[name]
 		blockVal := valMap[name]
 		if blockVal.IsNull() || !blockVal.IsKnown() {
 			continue
 		}
 
 		blockValType := blockVal.Type()
+		blockPath := append(path, cty.GetAttrStep{Name: name})
 
 		// This switches on the value type here, so we can correctly switch
 		// between Tuples/Lists and Maps/Objects.
@@ -145,19 +167,35 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
 			// NestingSingle is the only exception here, where we treat the
 			// block directly as an object
-			diags = append(diags, validateWriteOnlyNullValues(typeName, blockVal, &blockS.Block)...)
-		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
+			diags = append(diags, validateWriteOnlyNullValues(typeName, blockVal, &blockS.Block, blockPath)...)
+		case blockValType.IsSetType():
+			setVals := blockVal.AsValueSlice()
+
+			for _, v := range setVals {
+				setBlockPath := append(blockPath, cty.IndexStep{
+					Key: v,
+				})
+				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, setBlockPath)...)
+			}
+
+		case blockValType.IsListType(), blockValType.IsTupleType():
 			listVals := blockVal.AsValueSlice()
 
-			for _, v := range listVals {
-				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block)...)
+			for i, v := range listVals {
+				listBlockPath := append(blockPath, cty.IndexStep{
+					Key: cty.NumberIntVal(int64(i)),
+				})
+				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, listBlockPath)...)
 			}
 
 		case blockValType.IsMapType(), blockValType.IsObjectType():
 			mapVals := blockVal.AsValueMap()
 
-			for _, v := range mapVals {
-				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block)...)
+			for k, v := range mapVals {
+				mapBlockPath := append(blockPath, cty.IndexStep{
+					Key: cty.StringVal(k),
+				})
+				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, mapBlockPath)...)
 			}
 
 		default:

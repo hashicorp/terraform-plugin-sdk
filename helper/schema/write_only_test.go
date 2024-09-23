@@ -439,12 +439,24 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "write_only_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"write_only_block_attribute": cty.StringVal("block_val"),
+						})},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -480,7 +492,12 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block"},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -522,7 +539,13 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("a")},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -562,12 +585,24 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(1)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -609,12 +644,30 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"write_only_block_attribute1": cty.StringVal("blep"),
+							"write_only_block_attribute2": cty.NullVal(cty.String),
+						})},
+						cty.GetAttrStep{Name: "write_only_block_attribute1"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"write_only_block_attribute1": cty.StringVal("boop"),
+							"write_only_block_attribute2": cty.NullVal(cty.String),
+						})},
+						cty.GetAttrStep{Name: "write_only_block_attribute1"},
+					},
 				},
 			},
 		},
@@ -656,12 +709,24 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("a")},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("b")},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -699,15 +764,96 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\"",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
+				},
+			},
+		},
+		"multiple nested blocks, multiple WriteOnly attributes with value returns diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"nested_block1": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+					"nested_block2": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"nested_block1": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("beep"),
+					"optional_block_attribute1":  cty.StringVal("boop"),
+				}),
+				"nested_block2": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("beep"),
+					"optional_block_attribute1":  cty.StringVal("boop"),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block1"},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block2"},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
 	} {
 		t.Run(n, func(t *testing.T) {
-			got := validateWriteOnlyNullValues("test_resource", tc.Val, tc.Schema)
+			got := validateWriteOnlyNullValues("test_resource", tc.Val, tc.Schema, cty.Path{})
 
-			if diff := cmp.Diff(got, tc.Expected); diff != "" {
+			if diff := cmp.Diff(got, tc.Expected,
+				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
+				cmp.Comparer(indexStepComparer)); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)
 			}
 		})
@@ -849,12 +995,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -889,7 +1035,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"write_only_block_attribute\"",
 				},
 			},
 		},
@@ -931,7 +1077,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -971,12 +1117,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -1018,12 +1164,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -1065,12 +1211,12 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The \"test_resource\" resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
 				},
 			},
 		},
@@ -1083,4 +1229,8 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func indexStepComparer(step cty.IndexStep, other cty.IndexStep) bool {
+	return true
 }

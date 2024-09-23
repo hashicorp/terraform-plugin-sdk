@@ -282,7 +282,7 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		return resp, nil
 	}
 	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
-		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock))
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock, cty.Path{}))
 	}
 
 	r := s.provider.ResourcesMap[req.TypeName]
