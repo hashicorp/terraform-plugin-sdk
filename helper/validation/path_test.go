@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 )
 
-func TestPathEquals(t *testing.T) {
+func TestPathMatches(t *testing.T) {
 	tests := map[string]struct {
 		p     cty.Path
 		other cty.Path
@@ -108,8 +108,8 @@ func TestPathEquals(t *testing.T) {
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := PathEquals(tc.p, tc.other); got != tc.want {
-				t.Errorf("PathEquals() = %v, want %v", got, tc.want)
+			if got := PathMatches(tc.p, tc.other); got != tc.want {
+				t.Errorf("PathMatches() = %v, want %v", got, tc.want)
 			}
 		})
 	}

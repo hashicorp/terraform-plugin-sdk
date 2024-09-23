@@ -7,10 +7,10 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 )
 
-// PathEquals compares two Paths for equality. For cty.IndexStep,
+// PathMatches compares two Paths for equality. For cty.IndexStep,
 // unknown key values are treated as an Any qualifier and will
 // match any index step of the same type.
-func PathEquals(p cty.Path, other cty.Path) bool {
+func PathMatches(p cty.Path, other cty.Path) bool {
 	if len(p) != len(other) {
 		return false
 	}

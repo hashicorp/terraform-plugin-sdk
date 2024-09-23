@@ -3514,7 +3514,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 			},
 			expected: &tfprotov5.ValidateResourceTypeConfigResponse{},
 		},
-		"Server without WriteOnlyAttributesAllowed capabilities: null WriteOnly attribute returns no errors": {
+		"Client without WriteOnlyAttributesAllowed capabilities: null WriteOnly attribute returns no errors": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
 					"test_resource": {
@@ -3726,17 +3726,17 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				},
 			},
 		},
-		"Server with ValidateResourceConfigFunc: WriteOnlyAttributesAllowed true returns diags": {
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed true returns diags": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
 					"test_resource": {
-						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
 							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
 								if req.WriteOnlyAttributesAllowed {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3746,7 +3746,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3790,26 +3790,26 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 				},
 			},
 		},
-		"Server with ValidateResourceConfigFunc: WriteOnlyAttributesAllowed false returns diags": {
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed false returns diags": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
 					"test_resource": {
-						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
 							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
 								if !req.WriteOnlyAttributesAllowed {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3819,7 +3819,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3859,20 +3859,20 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 				},
 			},
 		},
-		"Server with ValidateResourceConfigFunc: equal config value returns diags": {
+		"Server with ValidateRawResourceConfigFunc: equal config value returns diags": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
 					"test_resource": {
-						ValidateResourceConfigFuncs: []ValidateResourceConfigFunc{
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
 							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
 								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
 									"id":  cty.NullVal(cty.String),
@@ -3883,7 +3883,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3898,7 +3898,7 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 									resp.Diagnostics = diag.Diagnostics{
 										{
 											Severity: diag.Error,
-											Summary:  "ValidateResourceConfigFunc Error",
+											Summary:  "ValidateRawResourceConfigFunc Error",
 										},
 									}
 								}
@@ -3938,11 +3938,11 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "ValidateResourceConfigFunc Error",
+						Summary:  "ValidateRawResourceConfigFunc Error",
 					},
 				},
 			},

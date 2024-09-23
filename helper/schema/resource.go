@@ -645,15 +645,18 @@ type Resource struct {
 	// interacting with this resource.
 	ResourceBehavior ResourceBehavior
 
-	// ValidateResourceConfigFuncs allows functions to define arbitrary validation
-	// logic during the ValidateResourceTypeConfig RPC. ValidateResourceConfigFunc receives
+	// ValidateRawResourceConfigFuncs allows functions to define arbitrary validation
+	// logic during the ValidateResourceTypeConfig RPC. ValidateRawResourceConfigFunc receives
 	// the client capabilities from the ValidateResourceTypeConfig RPC and the raw cty
 	// config value for the entire resource before it is shimmed, and it can return error
 	// diagnostics based on the inspection of those values.
 	//
-	// ValidateResourceConfigFuncs is only valid for Managed Resource types and will not be
+	// ValidateRawResourceConfigFuncs is only valid for Managed Resource types and will not be
 	// called for Data Resource or Block types.
-	ValidateResourceConfigFuncs []ValidateResourceConfigFunc
+	//
+	// Developers should prefer other validation methods first as this validation function
+	// deals with raw cty values.
+	ValidateRawResourceConfigFuncs []ValidateRawResourceConfigFunc
 }
 
 // ResourceBehavior controls SDK-specific logic when interacting
@@ -680,10 +683,10 @@ type ProviderDeferredBehavior struct {
 	EnablePlanModification bool
 }
 
-// ValidateResourceConfigFunc is a function used to validate the raw resource config
+// ValidateRawResourceConfigFunc is a function used to validate the raw resource config
 // and has Diagnostic support. it is only valid for Managed Resource types and will not be
 // called for Data Resource or Block types.
-type ValidateResourceConfigFunc func(context.Context, ValidateResourceConfigFuncRequest, *ValidateResourceConfigFuncResponse)
+type ValidateRawResourceConfigFunc func(context.Context, ValidateResourceConfigFuncRequest, *ValidateResourceConfigFuncResponse)
 
 type ValidateResourceConfigFuncRequest struct {
 	// WriteOnlyAttributesAllowed indicates that the Terraform client

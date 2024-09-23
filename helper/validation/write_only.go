@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// PreferWriteOnlyAttribute is a ValidateResourceConfigFunc that returns a warning
+// PreferWriteOnlyAttribute is a ValidateRawResourceConfigFunc that returns a warning
 // if the Terraform client supports write-only attributes and the old attribute is
 // not null.
 // The last step in the path must be a cty.GetAttrStep{}.
@@ -22,7 +22,7 @@ import (
 // For lists: cty.Index(cty.UnknownVal(cty.Number)),
 // For maps: cty.Index(cty.UnknownVal(cty.String)),
 // For sets: cty.Index(cty.UnknownVal(cty.Object(nil))),
-func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName string) schema.ValidateResourceConfigFunc {
+func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName string) schema.ValidateRawResourceConfigFunc {
 	return func(ctx context.Context, req schema.ValidateResourceConfigFuncRequest, resp *schema.ValidateResourceConfigFuncResponse) {
 		if !req.WriteOnlyAttributesAllowed {
 			return
@@ -31,7 +31,7 @@ func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName stri
 		var oldAttrs []attribute
 
 		err := cty.Walk(req.RawConfig, func(path cty.Path, value cty.Value) (bool, error) {
-			if PathEquals(path, oldAttribute) {
+			if PathMatches(path, oldAttribute) {
 				oldAttrs = append(oldAttrs, attribute{
 					value: value,
 					path:  path,

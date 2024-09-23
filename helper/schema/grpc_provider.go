@@ -287,9 +287,9 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 
 	r := s.provider.ResourcesMap[req.TypeName]
 
-	// Calling all ValidateResourceConfigFunc here since they validate on the raw go-cty config value
+	// Calling all ValidateRawResourceConfigFunc here since they validate on the raw go-cty config value
 	// and were introduced after the public provider.ValidateResource method.
-	if r.ValidateResourceConfigFuncs != nil {
+	if r.ValidateRawResourceConfigFuncs != nil {
 		writeOnlyAllowed := false
 
 		if req.ClientCapabilities != nil {
@@ -301,7 +301,7 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 			RawConfig:                  configVal,
 		}
 
-		for _, validateFunc := range r.ValidateResourceConfigFuncs {
+		for _, validateFunc := range r.ValidateRawResourceConfigFuncs {
 			validateResp := &ValidateResourceConfigFuncResponse{}
 			validateFunc(ctx, validateReq, validateResp)
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateResp.Diagnostics)
