@@ -128,6 +128,8 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 	for k := range schema.Attributes {
 		attrNames = append(attrNames, k)
 	}
+
+	// Sort the attribute names to produce diags in a consistent order.
 	sort.Strings(attrNames)
 
 	for _, name := range attrNames {
@@ -149,6 +151,8 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 	for k := range schema.BlockTypes {
 		blockNames = append(blockNames, k)
 	}
+
+	// Sort the block names to produce diags in a consistent order.
 	sort.Strings(blockNames)
 
 	for _, name := range blockNames {
@@ -208,7 +212,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 
 // validateWriteOnlyRequiredValues takes a cty.Value, and compares it to the schema and throws an
 // error diagnostic for every WriteOnly + Required attribute null value.
-func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *configschema.Block) diag.Diagnostics {
+func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
 	if !val.IsKnown() || val.IsNull() {
 		return diag.Diagnostics{}
 	}
@@ -216,25 +220,44 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 	valMap := val.AsValueMap()
 	diags := make([]diag.Diagnostic, 0)
 
+	var attrNames []string
+	for k := range schema.Attributes {
+		attrNames = append(attrNames, k)
+	}
+
+	// Sort the attribute names to produce diags in a consistent order.
+	sort.Strings(attrNames)
+
 	for name, attr := range schema.Attributes {
 		v := valMap[name]
 
 		if attr.WriteOnly && attr.Required && v.IsNull() {
 			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "Required WriteOnly Attribute",
-				Detail:   fmt.Sprintf("The %q resource contains a null value for Required WriteOnly attribute %q", typeName, name),
+				Severity:      diag.Error,
+				Summary:       "Required WriteOnly Attribute",
+				Detail:        fmt.Sprintf("The resource contains a null value for Required WriteOnly attribute %q", name),
+				AttributePath: append(path, cty.GetAttrStep{Name: name}),
 			})
 		}
 	}
 
-	for name, blockS := range schema.BlockTypes {
+	var blockNames []string
+	for k := range schema.BlockTypes {
+		blockNames = append(blockNames, k)
+	}
+
+	// Sort the block names to produce diags in a consistent order.
+	sort.Strings(blockNames)
+
+	for _, name := range blockNames {
+		blockS := schema.BlockTypes[name]
 		blockVal := valMap[name]
 		if blockVal.IsNull() || !blockVal.IsKnown() {
 			continue
 		}
 
 		blockValType := blockVal.Type()
+		blockPath := append(path, cty.GetAttrStep{Name: name})
 
 		// This switches on the value type here, so we can correctly switch
 		// between Tuples/Lists and Maps/Objects.
@@ -242,19 +265,35 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
 			// NestingSingle is the only exception here, where we treat the
 			// block directly as an object
-			diags = append(diags, validateWriteOnlyRequiredValues(typeName, blockVal, &blockS.Block)...)
-		case blockValType.IsSetType(), blockValType.IsListType(), blockValType.IsTupleType():
+			diags = append(diags, validateWriteOnlyRequiredValues(typeName, blockVal, &blockS.Block, blockPath)...)
+		case blockValType.IsSetType():
+			setVals := blockVal.AsValueSlice()
+
+			for _, v := range setVals {
+				setBlockPath := append(blockPath, cty.IndexStep{
+					Key: v,
+				})
+				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, setBlockPath)...)
+			}
+
+		case blockValType.IsListType(), blockValType.IsTupleType():
 			listVals := blockVal.AsValueSlice()
 
-			for _, v := range listVals {
-				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block)...)
+			for i, v := range listVals {
+				listBlockPath := append(blockPath, cty.IndexStep{
+					Key: cty.NumberIntVal(int64(i)),
+				})
+				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, listBlockPath)...)
 			}
 
 		case blockValType.IsMapType(), blockValType.IsObjectType():
 			mapVals := blockVal.AsValueMap()
 
-			for _, v := range mapVals {
-				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block)...)
+			for k, v := range mapVals {
+				mapBlockPath := append(blockPath, cty.IndexStep{
+					Key: cty.StringVal(k),
+				})
+				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, mapBlockPath)...)
 			}
 
 		default:

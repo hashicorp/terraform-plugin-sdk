@@ -847,7 +847,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// If the resource is being created, validate that all required write-only
 	// attributes in the config have non-nil values.
 	if create {
-		diags := validateWriteOnlyRequiredValues(req.TypeName, configVal, schemaBlock)
+		diags := validateWriteOnlyRequiredValues(req.TypeName, configVal, schemaBlock, cty.Path{})
 		if diags.HasError() {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 			return resp, nil

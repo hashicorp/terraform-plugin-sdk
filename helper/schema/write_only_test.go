@@ -359,7 +359,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			cty.EmptyObjectVal,
 			diag.Diagnostics{},
 		},
-		"All null values return no diags": {
+		"All null values returns no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
 					"write_only_attribute1": {
@@ -460,11 +460,18 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 		},
-		"Nested single block, WriteOnly attribute with value returns diag": {
+		"List nested block, WriteOnly attribute with value returns diag": {
 			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"write_only_attribute": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"nested_block": {
-						Nesting: configschema.NestingSingle,
+					"list_block": {
+						Nesting: configschema.NestingList,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
 								"write_only_block_attribute": {
@@ -483,19 +490,31 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"nested_block": cty.ObjectVal(map[string]cty.Value{
-					"write_only_block_attribute": cty.StringVal("beep"),
-					"optional_block_attribute1":  cty.StringVal("boop"),
+				"write_only_attribute": cty.StringVal("val"),
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("bap"),
+					}),
 				}),
 			}),
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
 					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "write_only_attribute"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
 					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
-						cty.GetAttrStep{Name: "nested_block"},
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
 						cty.GetAttrStep{Name: "write_only_block_attribute"},
 					},
 				},
@@ -549,11 +568,11 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 		},
-		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
+		"Nested single block, WriteOnly attribute with value returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"list_block": {
-						Nesting: configschema.NestingList,
+					"nested_block": {
+						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
 								"write_only_block_attribute": {
@@ -572,13 +591,9 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"list_block": cty.ListVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"write_only_block_attribute": cty.StringVal("bap"),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"write_only_block_attribute": cty.StringVal("blep"),
-					}),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"write_only_block_attribute": cty.StringVal("beep"),
+					"optional_block_attribute1":  cty.StringVal("boop"),
 				}),
 			}),
 			diag.Diagnostics{
@@ -588,19 +603,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
-						cty.GetAttrStep{Name: "list_block"},
-						cty.IndexStep{Key: cty.NumberIntVal(0)},
-						cty.GetAttrStep{Name: "write_only_block_attribute"},
-					},
-				},
-				{
-					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
-						"Write-only attributes are only supported in Terraform 1.11 and later.",
-					AttributePath: cty.Path{
-						cty.GetAttrStep{Name: "list_block"},
-						cty.IndexStep{Key: cty.NumberIntVal(1)},
+						cty.GetAttrStep{Name: "nested_block"},
 						cty.GetAttrStep{Name: "write_only_block_attribute"},
 					},
 				},
@@ -671,6 +674,63 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 		},
+		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"list_block": {
+						Nesting: configschema.NestingList,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"write_only_block_attribute": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("bap"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"write_only_block_attribute": cty.StringVal("blep"),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(1)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
+				},
+			},
+		},
 		"Map nested block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
@@ -730,51 +790,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 		},
-		"List nested block, WriteOnly attribute with dynamic value returns diag": {
-			&configschema.Block{
-				BlockTypes: map[string]*configschema.NestedBlock{
-					"list_block": {
-						Nesting: configschema.NestingList,
-						Block: configschema.Block{
-							Attributes: map[string]*configschema.Attribute{
-								"optional_block_attribute": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
-								},
-								"write_only_block_attribute": {
-									Type:      cty.DynamicPseudoType,
-									Optional:  true,
-									WriteOnly: true,
-								},
-							},
-						},
-					},
-				},
-			},
-			cty.ObjectVal(map[string]cty.Value{
-				"list_block": cty.TupleVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"optional_block_attribute":   cty.NullVal(cty.String),
-						"write_only_block_attribute": cty.NumberIntVal(8),
-					}),
-				}),
-			}),
-			diag.Diagnostics{
-				{
-					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
-						"Write-only attributes are only supported in Terraform 1.11 and later.",
-					AttributePath: cty.Path{
-						cty.GetAttrStep{Name: "list_block"},
-						cty.IndexStep{Key: cty.NumberIntVal(0)},
-						cty.GetAttrStep{Name: "write_only_block_attribute"},
-					},
-				},
-			},
-		},
-		"multiple nested blocks, multiple WriteOnly attributes with value returns diags": {
+		"Nested single block, WriteOnly attribute with multiple values returns multiple diags": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
 					"nested_block1": {
@@ -847,6 +863,50 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 			},
 		},
+		"List nested block, WriteOnly attribute with dynamic value returns diag": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"list_block": {
+						Nesting: configschema.NestingList,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+								"write_only_block_attribute": {
+									Type:      cty.DynamicPseudoType,
+									Optional:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"list_block": cty.TupleVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute":   cty.NullVal(cty.String),
+						"write_only_block_attribute": cty.NumberIntVal(8),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "WriteOnly Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+						"Write-only attributes are only supported in Terraform 1.11 and later.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(n, func(t *testing.T) {
 			got := validateWriteOnlyNullValues("test_resource", tc.Val, tc.Schema, cty.Path{})
@@ -871,7 +931,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 			cty.EmptyObjectVal,
 			diag.Diagnostics{},
 		},
-		"All Required + WriteOnly with values return no diags": {
+		"All Required + WriteOnly with values returns no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
 					"required_write_only_attribute1": {
@@ -915,7 +975,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 			}),
 			diag.Diagnostics{},
 		},
-		"All Optional + WriteOnly with null values return no diags": {
+		"All Optional + WriteOnly with null values returns no diags": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
 					"optional_write_only_attribute1": {
@@ -959,7 +1019,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 			})),
 			diag.Diagnostics{},
 		},
-		"Set nested block Required + WriteOnly attribute with null return diags": {
+		"Set nested block Required + WriteOnly attribute with null returns diag": {
 			&configschema.Block{
 				Attributes: map[string]*configschema.Attribute{
 					"required_write_only_attribute": {
@@ -996,27 +1056,44 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "required_write_only_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"required_write_only_block_attribute": cty.NullVal(cty.String),
+						})},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 			},
 		},
-		"Nested single block, Required + WriteOnly attribute with null returns diag": {
+		"List nested block Required + WriteOnly attribute with null returns diag": {
 			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"required_write_only_attribute": {
+						Type:      cty.String,
+						Required:  true,
+						WriteOnly: true,
+					},
+				},
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"nested_block": {
-						Nesting: configschema.NestingSingle,
+					"list_block": {
+						Nesting: configschema.NestingList,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"write_only_block_attribute": {
+								"required_write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
 								},
-								"optional_attribute": {
+								"optional_block_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -1027,15 +1104,31 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"nested_block": cty.ObjectVal(map[string]cty.Value{
-					"optional_attribute": cty.StringVal("boop"),
+				"required_write_only_attribute": cty.NullVal(cty.String),
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"required_write_only_block_attribute": cty.NullVal(cty.String),
+					}),
 				}),
 			}),
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The resource contains a null value for Required WriteOnly attribute \"write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "required_write_only_attribute"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -1078,22 +1171,27 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("b")},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 			},
 		},
-		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
+		"Nested single block, Required + WriteOnly attribute with null returns diag": {
 			&configschema.Block{
 				BlockTypes: map[string]*configschema.NestedBlock{
-					"list_block": {
-						Nesting: configschema.NestingList,
+					"nested_block": {
+						Nesting: configschema.NestingSingle,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"required_write_only_block_attribute": {
+								"write_only_block_attribute": {
 									Type:      cty.String,
 									Required:  true,
 									WriteOnly: true,
 								},
-								"optional_block_attribute": {
+								"optional_attribute": {
 									Type:     cty.String,
 									Optional: true,
 									Computed: true,
@@ -1104,25 +1202,19 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 				},
 			},
 			cty.ObjectVal(map[string]cty.Value{
-				"list_block": cty.ListVal([]cty.Value{
-					cty.ObjectVal(map[string]cty.Value{
-						"optional_block_attribute": cty.StringVal("bap"),
-					}),
-					cty.ObjectVal(map[string]cty.Value{
-						"optional_block_attribute": cty.StringVal("blep"),
-					}),
+				"nested_block": cty.ObjectVal(map[string]cty.Value{
+					"optional_attribute": cty.StringVal("boop"),
 				}),
 			}),
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
-				},
-				{
-					Severity: diag.Error,
-					Summary:  "Required WriteOnly Attribute",
-					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block"},
+						cty.GetAttrStep{Name: "write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -1165,11 +1257,82 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"optional_write_only_block_attribute": cty.StringVal("blep"),
+							"required_write_only_block_attribute": cty.NullVal(cty.String),
+						})},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "set_block"},
+						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
+							"optional_write_only_block_attribute": cty.StringVal("boop"),
+							"required_write_only_block_attribute": cty.NullVal(cty.String),
+						})},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
+				},
+			},
+		},
+		"List nested block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"list_block": {
+						Nesting: configschema.NestingList,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"required_write_only_block_attribute": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"optional_block_attribute": {
+									Type:     cty.String,
+									Optional: true,
+									Computed: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"list_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute": cty.StringVal("bap"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"optional_block_attribute": cty.StringVal("blep"),
+					}),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(0)},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "list_block"},
+						cty.IndexStep{Key: cty.NumberIntVal(1)},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 			},
 		},
@@ -1180,10 +1343,10 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 						Nesting: configschema.NestingMap,
 						Block: configschema.Block{
 							Attributes: map[string]*configschema.Attribute{
-								"optional_block_attribute": {
-									Type:     cty.String,
-									Optional: true,
-									Computed: true,
+								"optional_write_only_block_attribute": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
 								},
 								"required_write_only_block_attribute": {
 									Type:      cty.String,
@@ -1198,11 +1361,11 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 			cty.ObjectVal(map[string]cty.Value{
 				"map_block": cty.MapVal(map[string]cty.Value{
 					"a": cty.ObjectVal(map[string]cty.Value{
-						"optional_block_attribute":            cty.NullVal(cty.String),
+						"optional_write_only_block_attribute": cty.NullVal(cty.String),
 						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 					"b": cty.ObjectVal(map[string]cty.Value{
-						"optional_block_attribute":            cty.StringVal("blep"),
+						"optional_write_only_block_attribute": cty.StringVal("blep"),
 						"required_write_only_block_attribute": cty.NullVal(cty.String),
 					}),
 				}),
@@ -1212,19 +1375,101 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("a")},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
 				},
 				{
 					Severity: diag.Error,
 					Summary:  "Required WriteOnly Attribute",
 					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "map_block"},
+						cty.IndexStep{Key: cty.StringVal("b")},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute"},
+					},
+				},
+			},
+		},
+		"Nested single block, WriteOnly attribute with multiple values returns multiple diags": {
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"nested_block1": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"required_write_only_block_attribute1": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"optional_write_only_block_attribute1": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+					"nested_block2": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Attributes: map[string]*configschema.Attribute{
+								"required_write_only_block_attribute2": {
+									Type:      cty.String,
+									Required:  true,
+									WriteOnly: true,
+								},
+								"optional_write_only_block_attribute2": {
+									Type:      cty.String,
+									Optional:  true,
+									WriteOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			cty.ObjectVal(map[string]cty.Value{
+				"nested_block1": cty.ObjectVal(map[string]cty.Value{
+					"required_write_only_block_attribute1": cty.NullVal(cty.String),
+					"optional_write_only_block_attribute1": cty.StringVal("boop"),
+				}),
+				"nested_block2": cty.ObjectVal(map[string]cty.Value{
+					"required_write_only_block_attribute2": cty.NullVal(cty.String),
+					"optional_write_only_block_attribute2": cty.NullVal(cty.String),
+				}),
+			}),
+			diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute1\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block1"},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute1"},
+					},
+				},
+				{
+					Severity: diag.Error,
+					Summary:  "Required WriteOnly Attribute",
+					Detail:   "The resource contains a null value for Required WriteOnly attribute \"required_write_only_block_attribute2\"",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "nested_block2"},
+						cty.GetAttrStep{Name: "required_write_only_block_attribute2"},
+					},
 				},
 			},
 		},
 	} {
 		t.Run(n, func(t *testing.T) {
-			got := validateWriteOnlyRequiredValues("test_resource", tc.Val, tc.Schema)
+			got := validateWriteOnlyRequiredValues("test_resource", tc.Val, tc.Schema, cty.Path{})
 
-			if diff := cmp.Diff(got, tc.Expected); diff != "" {
+			if diff := cmp.Diff(got, tc.Expected,
+				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
+				cmp.Comparer(indexStepComparer)); diff != "" {
 				t.Errorf("unexpected difference: %s", diff)
 			}
 		})

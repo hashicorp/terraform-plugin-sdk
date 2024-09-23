@@ -3579,7 +3579,9 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "WriteOnly Attribute Not Allowed",
-						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
 					},
 				},
 			},
@@ -3625,12 +3627,16 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "WriteOnly Attribute Not Allowed",
-						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"bar\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("bar"),
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "WriteOnly Attribute Not Allowed",
-						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"bar\"",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
 					},
 				},
 			},
@@ -3703,12 +3709,19 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "WriteOnly Attribute Not Allowed",
-						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"foo\"",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
 					},
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "WriteOnly Attribute Not Allowed",
-						Detail:   "The \"test_resource\" resource contains a non-null value for WriteOnly attribute \"writeonly_nested_attr\"",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"writeonly_nested_attr\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().
+							WithAttributeName("config_block_attr").
+							WithElementKeyInt(0).
+							WithAttributeName("writeonly_nested_attr"),
 					},
 				},
 			},
@@ -5069,9 +5082,10 @@ func TestPlanResourceChange(t *testing.T) {
 			expected: &tfprotov5.PlanResourceChangeResponse{
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
-						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary:  "Required WriteOnly Attribute",
-						Detail:   "The \"test\" resource contains a null value for Required WriteOnly attribute \"foo\"",
+						Severity:  tfprotov5.DiagnosticSeverityError,
+						Summary:   "Required WriteOnly Attribute",
+						Detail:    "The resource contains a null value for Required WriteOnly attribute \"foo\"",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
 					},
 				},
 				UnsafeToUseLegacyTypeSystem: true,
