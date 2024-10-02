@@ -24,7 +24,7 @@ func TestValidationIsUUID(t *testing.T) {
 			Value: "00000000-0000-123-0000-000000000000",
 			Error: true,
 		},
-		"ValidUuidWithOutDashs": {
+		"ValidUuidWithoutDashes": {
 			Value: "12345678123412341234123456789012",
 			Error: true,
 		},

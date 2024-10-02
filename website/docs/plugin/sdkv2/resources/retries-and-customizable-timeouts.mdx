@@ -76,7 +76,7 @@ If a CRUD function timeout is exceeded, the SDK will automatically return a `con
 The retry helper takes a timeout and a retry function.
 
 - The **timeout** value specifies the maximum time Terraform will invoke the retry function. You can retrieve the timeout from the `*schema.ResourceData` struct by passing the timeout key (`schema.TimeoutCreate`) to the `Timeout` method.
-- The **retry function**, which is available by importing `github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry`, returns either a `retry.NonRetryableError` for unexpected errors/states or a `retry.RetryableError` for expected errrors/states. If the function returns a `retry.RetryableError`, it will re-run the function.
+- The **retry function**, which is available by importing `github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry`, returns either a `retry.NonRetryableError` for unexpected errors/states or a `retry.RetryableError` for expected errors/states. If the function returns a `retry.RetryableError`, it will re-run the function.
 
 In the context of a `CREATE` function, once the backend responds with the desired state, invoke the `READ` function. If `READ` errors, return that error wrapped with `retry.NonRetryableError`. Otherwise, return `nil` (no error) from the retry function.
 
