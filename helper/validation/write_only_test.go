@@ -45,8 +45,11 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "Invalid oldAttributePath",
-					Detail:   "The specified oldAttribute path must point to an attribute.",
+					Summary:  "Invalid oldAttribute path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"The oldAttribute path provided is invalid. The last step in the path must be a cty.GetAttrStep{}",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "oldAttribute"},
 						cty.IndexStep{
@@ -752,7 +755,7 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			f := PreferWriteOnlyAttribute(tc.oldAttributePath, "writeOnlyAttribute")
+			f := PreferWriteOnlyAttribute(tc.oldAttributePath, cty.GetAttrPath("writeOnlyAttribute"))
 
 			actual := &schema.ValidateResourceConfigFuncResponse{}
 			f(context.Background(), tc.validateConfigReq, actual)

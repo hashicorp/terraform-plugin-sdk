@@ -22,9 +22,34 @@ import (
 // For lists: cty.Index(cty.UnknownVal(cty.Number)),
 // For maps: cty.Index(cty.UnknownVal(cty.String)),
 // For sets: cty.Index(cty.UnknownVal(cty.Object(nil))),
-func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName string) schema.ValidateRawResourceConfigFunc {
+func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttribute cty.Path) schema.ValidateRawResourceConfigFunc {
 	return func(ctx context.Context, req schema.ValidateResourceConfigFuncRequest, resp *schema.ValidateResourceConfigFuncResponse) {
 		if !req.WriteOnlyAttributesAllowed {
+			return
+		}
+
+		pathLen := len(writeOnlyAttribute)
+
+		if pathLen == 0 {
+			return
+		}
+
+		lastStep := writeOnlyAttribute[pathLen-1]
+
+		// Only attribute steps have a Name field
+		writeOnlyAttrStep, ok := lastStep.(cty.GetAttrStep)
+		if !ok {
+			resp.Diagnostics = diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Invalid writeOnlyAttribute path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"The writeOnlyAttribute path provided is invalid. The last step in the path must be a cty.GetAttrStep{}",
+					AttributePath: writeOnlyAttribute,
+				},
+			}
 			return
 		}
 
@@ -47,22 +72,25 @@ func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName stri
 		for _, attr := range oldAttrs {
 			attrPath := attr.path.Copy()
 
-			pathLen := len(attrPath)
+			pathLen = len(attrPath)
 
 			if pathLen == 0 {
 				return
 			}
 
-			lastStep := attrPath[pathLen-1]
+			lastStep = attrPath[pathLen-1]
 
 			// Only attribute steps have a Name field
 			attrStep, ok := lastStep.(cty.GetAttrStep)
 			if !ok {
 				resp.Diagnostics = diag.Diagnostics{
 					{
-						Severity:      diag.Error,
-						Summary:       "Invalid oldAttributePath",
-						Detail:        "The specified oldAttribute path must point to an attribute.",
+						Severity: diag.Error,
+						Summary:  "Invalid oldAttribute path",
+						Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+							"This can happen if the path does not correctly follow the schema in structure or types. " +
+							"Please report this to the provider developers. \n\n" +
+							"The oldAttribute path provided is invalid. The last step in the path must be a cty.GetAttrStep{}",
 						AttributePath: attrPath,
 					},
 				}
@@ -74,7 +102,7 @@ func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttributeName stri
 					Severity: diag.Warning,
 					Summary:  "Available Write-Only Attribute Alternative",
 					Detail: fmt.Sprintf("The attribute %s has a WriteOnly version %s available. "+
-						"Use the WriteOnly version of the attribute when possible.", attrStep.Name, writeOnlyAttributeName),
+						"Use the WriteOnly version of the attribute when possible.", attrStep.Name, writeOnlyAttrStep.Name),
 					AttributePath: attr.path,
 				})
 			}
