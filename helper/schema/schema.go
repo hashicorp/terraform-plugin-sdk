@@ -851,7 +851,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: One of optional, required, or computed must be set", k)
 		}
 
-		if v.WriteOnly && !(v.Required || v.Optional) {
+		if v.WriteOnly && v.Required && v.Optional {
 			return fmt.Errorf("%s: WriteOnly must be set with either Required or Optional", k)
 		}
 
