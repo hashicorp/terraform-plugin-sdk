@@ -501,7 +501,7 @@ func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, 
 // Remove any attributes no longer present in the schema, so that the json can
 // be correctly decoded.
 func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}, ty cty.Type) {
-	// we're only concerned with finding maps that corespond to object
+	// we're only concerned with finding maps that correspond to object
 	// attributes
 	switch v := v.(type) {
 	case []interface{}:
@@ -1593,7 +1593,7 @@ func stripSchema(s *Schema) *Schema {
 }
 
 // Zero values and empty containers may be interchanged by the apply process.
-// When there is a discrepency between src and dst value being null or empty,
+// When there is a discrepancy between src and dst value being null or empty,
 // prefer the src value. This takes a little more liberty with set types, since
 // we can't correlate modified set values. In the case of sets, if the src set
 // was wholly known we assume the value was correctly applied and copy that
