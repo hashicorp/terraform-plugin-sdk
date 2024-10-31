@@ -1,3 +1,10 @@
+## 2.35.0 (October 31, 2024)
+
+NOTES:
+
+* all: This Go module has been updated to Go 1.22 per the [Go support policy](https://go.dev/doc/devel/release#policy). It is recommended to review the [Go 1.22 release notes](https://go.dev/doc/go1.22) before upgrading. Any consumers building on earlier Go versions may experience errors. ([#1373](https://github.com/hashicorp/terraform-plugin-sdk/issues/1373))
+* helper/schema: While this Go module will not receive support for ephemeral resource types, the provider server is updated to handle the new operations, which will be required to prevent errors when updating `terraform-plugin-framework` or `terraform-plugin-mux` in the future. ([#1390](https://github.com/hashicorp/terraform-plugin-sdk/issues/1390))
+
 ## 2.34.0 (May 17, 2024)
 
 NOTES:

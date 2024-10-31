@@ -1,8 +1,0 @@
-kind: NOTES
-body: 'helper/schema: While this Go module will not receive support for ephemeral
-  resource types, the provider server is updated to handle the new operations, which
-  will be required to prevent errors when updating `terraform-plugin-framework` or
-  `terraform-plugin-mux` in the future.'
-time: 2024-10-30T17:36:04.538418-04:00
-custom:
-  Issue: "1390"
