@@ -84,6 +84,7 @@ func (s *GRPCProviderServer) GetMetadata(ctx context.Context, req *tfprotov5.Get
 
 	resp := &tfprotov5.GetMetadataResponse{
 		DataSources:        make([]tfprotov5.DataSourceMetadata, 0, len(s.provider.DataSourcesMap)),
+		EphemeralResources: make([]tfprotov5.EphemeralResourceMetadata, 0),
 		Functions:          make([]tfprotov5.FunctionMetadata, 0),
 		Resources:          make([]tfprotov5.ResourceMetadata, 0, len(s.provider.ResourcesMap)),
 		ServerCapabilities: s.serverCapabilities(),
@@ -110,10 +111,11 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 	logging.HelperSchemaTrace(ctx, "Getting provider schema")
 
 	resp := &tfprotov5.GetProviderSchemaResponse{
-		DataSourceSchemas:  make(map[string]*tfprotov5.Schema, len(s.provider.DataSourcesMap)),
-		Functions:          make(map[string]*tfprotov5.Function, 0),
-		ResourceSchemas:    make(map[string]*tfprotov5.Schema, len(s.provider.ResourcesMap)),
-		ServerCapabilities: s.serverCapabilities(),
+		DataSourceSchemas:        make(map[string]*tfprotov5.Schema, len(s.provider.DataSourcesMap)),
+		EphemeralResourceSchemas: make(map[string]*tfprotov5.Schema, 0),
+		Functions:                make(map[string]*tfprotov5.Function, 0),
+		ResourceSchemas:          make(map[string]*tfprotov5.Schema, len(s.provider.ResourcesMap)),
+		ServerCapabilities:       s.serverCapabilities(),
 	}
 
 	resp.Provider = &tfprotov5.Schema{
@@ -1477,6 +1479,78 @@ func (s *GRPCProviderServer) GetFunctions(ctx context.Context, req *tfprotov5.Ge
 
 	resp := &tfprotov5.GetFunctionsResponse{
 		Functions: make(map[string]*tfprotov5.Function, 0),
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) ValidateEphemeralResourceConfig(ctx context.Context, req *tfprotov5.ValidateEphemeralResourceConfigRequest) (*tfprotov5.ValidateEphemeralResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource validate")
+
+	resp := &tfprotov5.ValidateEphemeralResourceConfigResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) OpenEphemeralResource(ctx context.Context, req *tfprotov5.OpenEphemeralResourceRequest) (*tfprotov5.OpenEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource open")
+
+	resp := &tfprotov5.OpenEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) RenewEphemeralResource(ctx context.Context, req *tfprotov5.RenewEphemeralResourceRequest) (*tfprotov5.RenewEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource renew")
+
+	resp := &tfprotov5.RenewEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) CloseEphemeralResource(ctx context.Context, req *tfprotov5.CloseEphemeralResourceRequest) (*tfprotov5.CloseEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource close")
+
+	resp := &tfprotov5.CloseEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
 	}
 
 	return resp, nil
