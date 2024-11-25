@@ -54,7 +54,7 @@ We welcome issues of all kinds including feature requests, bug reports or docume
 
 ### Bug Reports
 
- - [ ] **Test against latest release**: Make sure you test against the latest avaiable version of both Terraform and SDK.
+ - [ ] **Test against latest release**: Make sure you test against the latest available version of both Terraform and SDK.
 It is possible we already fixed the bug you're experiencing.
 
  - [ ] **Search for duplicates**: It's helpful to keep bug reports consolidated to one thread, so do a quick search on existing bug reports to check if anybody else has reported the same thing. You can scope searches by the label `bug` to help narrow things down.
@@ -116,7 +116,7 @@ In the case of `terraform-plugin-sdk`, the repo's close relationship to the `ter
 
 #### Exceptions
 
-We belive that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
+We believe that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
 
 ### Dependency Updates
 
@@ -140,7 +140,7 @@ changie new
 ```
 and choose a `kind` of change corresponding to the Terraform Plugin [changelog categories](https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#categorization)
 
-Fill out the body field following the entry format. Changie will then prompt for a Github issue or pull request number.
+Fill out the body field following the entry format. Changie will then prompt for a GitHub issue or pull request number.
 
 Repeat this process for any additional changes. The `.yaml` files created in the `.changes/unreleased` folder
 should be pushed the repository along with any code changes.
@@ -181,7 +181,7 @@ tfsdk: Prevented potential panic in `Example()` function
 
 ###### Enhancements
 
-A new enhancement entry should use the `ENHANCEMENTS` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for enchancements that apply to all sub-packages.
+A new enhancement entry should use the `ENHANCEMENTS` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for enhancements that apply to all sub-packages.
 
 ``````markdown
 attr: Added `Great` interface for doing great things
@@ -262,7 +262,7 @@ To test the `ci-go/terraform-provider-corner` job, a valid GitHub Personal Acces
 
 ### Go Unit Tests
 
-Go code unit testing is perfomed via Go's built-in testing functionality.
+Go code unit testing is performed via Go's built-in testing functionality.
 
 To run the Go unit testing locally:
 
@@ -343,7 +343,7 @@ Before running a release:
 
 - **`meta/meta.go`**: The versions must be appropriately updated.
 
-To cut a release, go to the repository in Github and click on the `Actions` tab.
+To cut a release, go to the repository in GitHub and click on the `Actions` tab.
 
 Select the `Release` workflow on the left-hand menu.
 
