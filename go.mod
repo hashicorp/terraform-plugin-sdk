@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.21.0
 	github.com/hashicorp/terraform-json v0.23.0
-	github.com/hashicorp/terraform-plugin-go v0.24.1-0.20240926180758-adf4d559d7d4
+	github.com/hashicorp/terraform-plugin-go v0.25.1-0.20241125193751-9019c19499e0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-testing-interface v1.14.1
@@ -57,5 +57,5 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 )
