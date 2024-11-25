@@ -283,9 +283,9 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
 	}
-	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
-		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock, cty.Path{}))
-	}
+	//if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
+	//	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock, cty.Path{}))
+	//}
 
 	r := s.provider.ResourcesMap[req.TypeName]
 
@@ -1220,9 +1220,9 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	newStateVal = copyTimeoutValues(newStateVal, plannedStateVal)
 
-	if req.ClientCapabilities != nil && req.ClientCapabilities.WriteOnlyAttributesAllowed {
-		newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
-	}
+	//if req.ClientCapabilities != nil && req.ClientCapabilities.WriteOnlyAttributesAllowed {
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
+	//}
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
