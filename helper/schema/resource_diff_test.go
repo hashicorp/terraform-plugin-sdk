@@ -634,6 +634,142 @@ func testDiffCases(t *testing.T, computed bool) []resourceDiffTestCase {
 				}(),
 			},
 		},
+		{
+			Name: "NewComputed should always propagate write-only",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					WriteOnly: true,
+				},
+			},
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo": "",
+				},
+				ID: "pre-existing",
+			},
+			Config:   testConfig(t, map[string]interface{}{}),
+			Diff:     &terraform.InstanceDiff{Attributes: map[string]*terraform.ResourceAttrDiff{}},
+			Key:      "foo",
+			NewValue: "",
+			Expected: &terraform.InstanceDiff{
+				Attributes: func() map[string]*terraform.ResourceAttrDiff {
+					if computed {
+						return map[string]*terraform.ResourceAttrDiff{
+							"foo": {
+								NewComputed: computed,
+							},
+						}
+					}
+					return map[string]*terraform.ResourceAttrDiff{}
+				}(),
+			},
+		},
+		{
+			Name: "additional diff with primitive - write only",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"one": {
+					Type:      TypeString,
+					WriteOnly: true,
+				},
+			},
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo": "bar",
+					"one": "",
+				},
+			},
+			Config: testConfig(t, map[string]interface{}{
+				"foo": "baz",
+			}),
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo": {
+						Old: "bar",
+						New: "baz",
+					},
+				},
+			},
+			Key:      "one",
+			NewValue: "four",
+			Expected: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo": {
+						Old: "bar",
+						New: "baz",
+					},
+					"one": {
+						Old: "",
+						New: func() string {
+							if computed {
+								return ""
+							}
+							return "four"
+						}(),
+						NewComputed: computed,
+					},
+				},
+			},
+		},
+		{
+			Name: "additional diff with primitive write-only",
+			Schema: map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+				},
+				"one": {
+					Type:      TypeString,
+					WriteOnly: true,
+				},
+			},
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"foo": "bar",
+					"one": "",
+				},
+			},
+			Config: testConfig(t, map[string]interface{}{
+				"foo": "baz",
+				"one": "two",
+			}),
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo": {
+						Old: "bar",
+						New: "baz",
+					},
+					"one": {
+						Old: "",
+						New: "two",
+					},
+				},
+			},
+			Key:      "one",
+			NewValue: "three",
+			Expected: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"foo": {
+						Old: "bar",
+						New: "baz",
+					},
+					"one": {
+						Old: "",
+						New: func() string {
+							if computed {
+								return ""
+							}
+							return "three"
+						}(),
+						NewComputed: computed,
+					},
+				},
+			},
+		},
 	}
 }
 
