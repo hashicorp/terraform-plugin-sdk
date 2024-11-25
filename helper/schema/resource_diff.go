@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -614,8 +615,8 @@ func (d *ResourceDiff) checkKey(key, caller string, nested bool) error {
 	if schema == nil {
 		return fmt.Errorf("%s: invalid key: %s", caller, key)
 	}
-	if !schema.Computed {
-		return fmt.Errorf("%s only operates on computed keys - %s is not one", caller, key)
+	if !schema.Computed && !schema.WriteOnly {
+		return fmt.Errorf("%s only operates on computed or write-only keys - %s is not one", caller, key)
 	}
 	return nil
 }
