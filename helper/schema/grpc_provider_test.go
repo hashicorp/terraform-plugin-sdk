@@ -17,9 +17,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/msgpack"
-
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -3488,6 +3488,489 @@ func TestGRPCProviderServerMoveResourceState(t *testing.T) {
 	}
 }
 
+func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		request  *tfprotov5.ValidateResourceTypeConfigRequest
+		expected *tfprotov5.ValidateResourceTypeConfigResponse
+	}{
+		"Provider with empty resource returns no errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{},
+		},
+		"Client without WriteOnlyAttributesAllowed capabilities: null WriteOnly attribute returns no errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: WriteOnly Attribute with Value returns an error": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "WriteOnly Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+				},
+			},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: multiple WriteOnly Attributes with Value returns multiple errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "WriteOnly Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"bar\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("bar"),
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "WriteOnly Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+				},
+			},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: multiple nested WriteOnly Attributes with Value returns multiple errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"config_block_attr": {
+								Type:      TypeList,
+								Optional:  true,
+								WriteOnly: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+										"writeonly_nested_attr": {
+											Type:      TypeString,
+											WriteOnly: true,
+											Optional:  true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+							"config_block_attr": cty.List(cty.Object(map[string]cty.Type{
+								"nested_attr":           cty.String,
+								"writeonly_nested_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+							"config_block_attr": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"nested_attr":           cty.StringVal("value"),
+									"writeonly_nested_attr": cty.StringVal("value"),
+								}),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "WriteOnly Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "WriteOnly Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for WriteOnly attribute \"writeonly_nested_attr\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().
+							WithAttributeName("config_block_attr").
+							WithElementKeyInt(0).
+							WithAttributeName("writeonly_nested_attr"),
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed true returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				ClientCapabilities: &tfprotov5.ValidateResourceTypeConfigClientCapabilities{
+					WriteOnlyAttributesAllowed: true,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed false returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: equal config value returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			resp, err := testCase.server.ValidateResourceTypeConfig(context.Background(), testCase.request)
+
+			if testCase.request != nil && err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected); diff != "" {
+				t.Errorf("unexpected difference: %s", diff)
+			}
+		})
+	}
+}
+
 func TestUpgradeState_jsonState(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
@@ -4538,6 +5021,75 @@ func TestPlanResourceChange(t *testing.T) {
 							"foo": cty.StringVal("from-config!"),
 						}),
 					),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"create-writeonly-required-null-values": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Required:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				ClientCapabilities: &tfprotov5.PlanResourceChangeClientCapabilities{
+					DeferralAllowed: true,
+				},
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity:  tfprotov5.DiagnosticSeverityError,
+						Summary:   "Required WriteOnly Attribute",
+						Detail:    "The resource contains a null value for Required WriteOnly attribute \"foo\"",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
 				},
 				UnsafeToUseLegacyTypeSystem: true,
 			},
