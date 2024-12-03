@@ -2400,6 +2400,9 @@ func (m schemaMap) hasWriteOnly() bool {
 					return true
 				}
 
+				// Test the edge case where elements in a collection are set to writeOnly.
+				// Technically, this is an invalid schema as collections cannot have write-only
+				// attributes. However, this method is not concerned with the validity of the schema.
 				isNestedWriteOnly := schemaMap(map[string]*Schema{"nested": t}).hasWriteOnly()
 				if isNestedWriteOnly {
 					return true

@@ -973,6 +973,9 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		plannedStateVal = SetUnknowns(plannedStateVal, schemaBlock)
 	}
 
+	// Set any write-only attribute values to null
+	plannedStateVal = setWriteOnlyNullValues(plannedStateVal, schemaBlock)
+
 	plannedMP, err := msgpack.Marshal(plannedStateVal, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1220,9 +1223,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	newStateVal = copyTimeoutValues(newStateVal, plannedStateVal)
 
-	if req.ClientCapabilities != nil && req.ClientCapabilities.WriteOnlyAttributesAllowed {
-		newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
-	}
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
