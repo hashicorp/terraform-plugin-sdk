@@ -1816,7 +1816,7 @@ func validateRequiredWithAttribute(
 	schema *Schema,
 	c *terraform.ResourceConfig) error {
 
-	if len(schema.RequiredWith) == 0 {
+	if len(schema.RequiredWith) == 0 || schema.DefaultFunc != nil {
 		return nil
 	}
 
