@@ -1,1 +1,5 @@
 * @hashicorp/terraform-devex
+
+# web presence and education
+
+/website/       @hashicorp/team-docs-packer-and-terraform @hashicorp/web-presence @hashicorp/terraform-devex
