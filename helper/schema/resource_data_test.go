@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -753,6 +755,83 @@ func TestResourceDataGet(t *testing.T) {
 		if !reflect.DeepEqual(v, tc.Value) {
 			t.Fatalf("Bad: %d\n\n%#v\n\nExpected: %#v", i, v, tc.Value)
 		}
+	}
+}
+
+func TestResourceDataWriteOnlyGet(t *testing.T) {
+	cases := map[string]struct {
+		RawWriteOnly cty.Value
+		Path         cty.Path
+		Value        cty.Value
+		ExpectedErr  error
+	}{
+		"null RawWriteOnly returns error": {
+			RawWriteOnly: cty.NullVal(cty.EmptyObject),
+			Path:         cty.GetAttrPath("invalid_root_path"),
+			Value:        cty.NullVal(cty.EmptyObject),
+			ExpectedErr:  fmt.Errorf("no write-only values exist in the config"),
+		},
+		"invalid path returns error": {
+			RawWriteOnly: cty.ObjectVal(map[string]cty.Value{
+				"writeOnlyAttribute": cty.NumberIntVal(42),
+			}),
+			Path:        cty.GetAttrPath("invalid_root_path"),
+			Value:       cty.NullVal(cty.EmptyObject),
+			ExpectedErr: fmt.Errorf("no write-only value found for given path [{{} invalid_root_path}]"),
+		},
+		"root level attribute": {
+			RawWriteOnly: cty.ObjectVal(map[string]cty.Value{
+				"writeOnlyAttribute": cty.NumberIntVal(42),
+			}),
+			Path:        cty.GetAttrPath("writeOnlyAttribute"),
+			Value:       cty.NumberIntVal(42),
+			ExpectedErr: nil,
+		},
+		"list nested block attribute - get attribute value": {
+			RawWriteOnly: cty.ObjectVal(map[string]cty.Value{
+				"list_nested_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"writeOnlyAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"writeOnlyAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:        cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("writeOnlyAttribute"),
+			Value:       cty.StringVal("valueB"),
+			ExpectedErr: nil,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			diff := &terraform.InstanceDiff{
+				RawWriteOnly: tc.RawWriteOnly,
+			}
+			d := &ResourceData{
+				diff: diff,
+			}
+
+			v, err := d.GetWriteOnly(tc.Path)
+			if err == nil && tc.ExpectedErr != nil {
+				t.Fatalf("expected error: %s, but encountered no error", tc.ExpectedErr.Error())
+			}
+
+			if err != nil && tc.ExpectedErr == nil {
+				t.Fatalf("encountered unexepected error: %s", err.Error())
+			}
+
+			if err != nil && tc.ExpectedErr != nil {
+				if err.Error() != tc.ExpectedErr.Error() {
+					t.Errorf("expected error: %s not equal to encountered error: %s", tc.ExpectedErr.Error(), err.Error())
+				}
+			}
+
+			if !reflect.DeepEqual(v, tc.Value) {
+				t.Errorf("Bad: %s\n\n%#v\n\nExpected: %#v", tn, v, tc.Value)
+			}
+		})
 	}
 }
 

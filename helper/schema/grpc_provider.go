@@ -1191,6 +1191,12 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		priorState.ProviderMeta = providerSchemaVal
 	}
 
+	// This is a hack to pass write-only values to instanceDiff,
+	// for (*ResourceData).GetRawWriteOnly() and (*ResourceData).GetWriteOnly().
+	// Ideally, this should be set in DiffFromValues() but since it is a public
+	// function, we cannot change its signature.
+	diff.RawWriteOnly = createRawWriteOnly(configVal, schemaBlock)
+
 	newInstanceState, diags := res.Apply(ctx, priorState, diff, s.provider.Meta())
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 
