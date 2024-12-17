@@ -5094,6 +5094,88 @@ func TestPlanResourceChange(t *testing.T) {
 				UnsafeToUseLegacyTypeSystem: true,
 			},
 		},
+		"create-writeonly-plan-modification": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
+							val := d.Get("foo")
+							if val != "bar" {
+								t.Fatalf("Incorrect write-only value")
+							}
+
+							return nil
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("bar"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("bar"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedPrivate: []byte(`{"_new_extra_shim":{}}`),
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -5523,6 +5605,239 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 			}
 			if foo != 7227701560655103598 {
 				t.Fatalf("Expected %d, got %d, this represents a loss of precision in applying large numbers", 7227701560655103598, foo)
+			}
+		})
+	}
+}
+
+func TestApplyResourceChange_writeOnly(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		TestResource                   *Resource
+		ExpectedUnsafeLegacyTypeSystem bool
+	}{
+		"Create": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				Create: func(rd *ResourceData, _ interface{}) error {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateContext": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateWithoutTimeout": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateWithoutTimeout: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"Create_cty": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateWithoutTimeout: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					if rd.GetRawConfig().IsNull() {
+						return diag.FromErr(errors.New("null raw writeOnly val"))
+					}
+					if rd.GetRawConfig().GetAttr("write_only_bar").Type() != cty.String {
+						return diag.FromErr(errors.New("write_only_bar is not of the expected type string"))
+					}
+					writeOnlyVal := rd.GetRawConfig().GetAttr("write_only_bar").AsString()
+					if writeOnlyVal != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateContext_SchemaFunc": {
+			TestResource: &Resource{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"id": {
+							Type:     TypeString,
+							Computed: true,
+						},
+						"write_only_bar": {
+							Type:      TypeString,
+							Optional:  true,
+							WriteOnly: true,
+						},
+					}
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
+
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// A proposed state with only the ID unknown will produce a nil diff, and
+			// should return the proposed state value.
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			config, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id":             cty.NullVal(cty.String),
+				"write_only_bar": cty.StringVal("bar"),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			configBytes, err := msgpack.Marshal(config, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: configBytes,
+				},
+			}
+
+			resp, err := server.ApplyResourceChange(context.Background(), testReq)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			id := newStateVal.GetAttr("id").AsString()
+			if id != "baz" {
+				t.Fatalf("incorrect final state: %#v\n", newStateVal)
+			}
+
+			//nolint:staticcheck // explicitly for this SDK
+			if testCase.ExpectedUnsafeLegacyTypeSystem != resp.UnsafeToUseLegacyTypeSystem {
+				//nolint:staticcheck // explicitly for this SDK
+				t.Fatalf("expected UnsafeLegacyTypeSystem %t, got: %t", testCase.ExpectedUnsafeLegacyTypeSystem, resp.UnsafeToUseLegacyTypeSystem)
 			}
 		})
 	}

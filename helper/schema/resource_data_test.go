@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -3912,6 +3914,83 @@ func TestResourceData_nonStringValuesInMap(t *testing.T) {
 			t.Fatalf("expected %q to be %q, it is %q.",
 				c.ItemName, c.ExpectedType, typeName)
 		}
+	}
+}
+
+func TestResourceDataGetRawConfigAt(t *testing.T) {
+	cases := map[string]struct {
+		RawConfig   cty.Value
+		Path        cty.Path
+		Value       cty.Value
+		ExpectedErr error
+	}{
+		"null RawConfig returns error": {
+			RawConfig:   cty.NullVal(cty.EmptyObject),
+			Path:        cty.GetAttrPath("invalid_root_path"),
+			Value:       cty.NullVal(cty.EmptyObject),
+			ExpectedErr: fmt.Errorf("the raw config is null"),
+		},
+		"invalid path returns error": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:        cty.GetAttrPath("invalid_root_path"),
+			Value:       cty.NullVal(cty.EmptyObject),
+			ExpectedErr: fmt.Errorf("no config value found for given path [{{} invalid_root_path}]"),
+		},
+		"root level attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:        cty.GetAttrPath("ConfigAttribute"),
+			Value:       cty.NumberIntVal(42),
+			ExpectedErr: nil,
+		},
+		"list nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"list_nested_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:        cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
+			Value:       cty.StringVal("valueB"),
+			ExpectedErr: nil,
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			diff := &terraform.InstanceDiff{
+				RawConfig: tc.RawConfig,
+			}
+			d := &ResourceData{
+				diff: diff,
+			}
+
+			v, err := d.GetRawConfigAt(tc.Path)
+			if err == nil && tc.ExpectedErr != nil {
+				t.Fatalf("expected error: %s, but encountered no error", tc.ExpectedErr.Error())
+			}
+
+			if err != nil && tc.ExpectedErr == nil {
+				t.Fatalf("encountered unexepected error: %s", err.Error())
+			}
+
+			if err != nil && tc.ExpectedErr != nil {
+				if err.Error() != tc.ExpectedErr.Error() {
+					t.Errorf("expected error: %s not equal to encountered error: %s", tc.ExpectedErr.Error(), err.Error())
+				}
+			}
+
+			if !reflect.DeepEqual(v, tc.Value) {
+				t.Errorf("Bad: %s\n\n%#v\n\nExpected: %#v", tn, v, tc.Value)
+			}
+		})
 	}
 }
 

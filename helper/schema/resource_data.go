@@ -4,6 +4,8 @@
 package schema
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/gocty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -602,6 +605,37 @@ func (d *ResourceData) GetRawConfig() cty.Value {
 		return d.state.RawConfig
 	}
 	return cty.NullVal(schemaMap(d.schema).CoreConfigSchema().ImpliedType())
+}
+
+// GetRawConfigAt is a helper method for retrieving specific values
+// from the RawConfig returned from GetRawConfig. It returns the cty.Value
+// for a given cty.Path or an error if the value at the given path does not exist.
+//
+// GetRawConfigAt is considered advanced functionality, and
+// familiarity with the Terraform protocol is suggested when using it.
+func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, error) {
+	rawConfig := d.GetRawConfig()
+	configVal := cty.NullVal(cty.EmptyObject)
+
+	if rawConfig.IsNull() {
+		return configVal, errors.New("the raw config is null")
+	}
+	err := cty.Walk(rawConfig, func(path cty.Path, value cty.Value) (bool, error) {
+		if path.Equals(valPath) {
+			configVal = value
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return configVal, fmt.Errorf("encountered error while retrieving config value %s", err)
+	}
+
+	if configVal.IsNull() {
+		return configVal, fmt.Errorf("no config value found for given path %v", valPath)
+	}
+
+	return configVal, nil
 }
 
 // GetRawState returns the cty.Value that Terraform sent the SDK for the state.
