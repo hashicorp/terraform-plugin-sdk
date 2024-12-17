@@ -4,8 +4,6 @@
 package schema
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -15,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/gocty"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -447,35 +444,6 @@ func (d *ResourceData) Timeout(key string) time.Duration {
 	return defaultTimeout
 }
 
-// GetWriteOnly returns a cty.Value for a given path to a write-only attribute.
-// An error will be thrown if the path does not exist in the rawWriteOnly cty.Value
-// or the rawWriteOnly value is null. If an error is thrown, the return cty.Value will
-// be a null value of an empty cty object.
-func (d *ResourceData) GetWriteOnly(writeOnlyPath cty.Path) (cty.Value, error) {
-	rawWriteOnly := d.GetRawWriteOnly()
-	writeOnlyVal := cty.NullVal(cty.EmptyObject)
-
-	if rawWriteOnly.IsNull() {
-		return writeOnlyVal, errors.New("no write-only values exist in the config")
-	}
-	err := cty.Walk(rawWriteOnly, func(path cty.Path, value cty.Value) (bool, error) {
-		if path.Equals(writeOnlyPath) {
-			writeOnlyVal = value
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		return writeOnlyVal, fmt.Errorf("encountered error while retrieving write-only value %s", err)
-	}
-
-	if writeOnlyVal.IsNull() {
-		return writeOnlyVal, fmt.Errorf("no write-only value found for given path %v", writeOnlyPath)
-	}
-
-	return writeOnlyVal, nil
-}
-
 func (d *ResourceData) init() {
 	// Initialize the field that will store our new state
 	var copyState terraform.InstanceState
@@ -668,19 +636,4 @@ func (d *ResourceData) GetRawPlan() cty.Value {
 		return d.state.RawPlan
 	}
 	return cty.NullVal(schemaMap(d.schema).CoreConfigSchema().ImpliedType())
-}
-
-// GetRawWriteOnly returns a cty.Value containing all write-only attributes
-// values sent in the config. Since the cty.Value contains only write-only values,
-// it is NOT expected to match the resource's type.
-// If no value was sent, or if a null value was sent, the value will be a null
-// value of an empty cty object.
-//
-// GetRawWriteOnly is considered experimental and advanced functionality, and
-// familiarity with the Terraform protocol is suggested when using it.
-func (d *ResourceData) GetRawWriteOnly() cty.Value {
-	if d.diff != nil && !d.diff.RawWriteOnly.IsNull() {
-		return d.diff.RawWriteOnly
-	}
-	return cty.NullVal(cty.EmptyObject)
 }

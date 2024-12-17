@@ -46,11 +46,6 @@ type InstanceDiff struct {
 	RawState  cty.Value
 	RawPlan   cty.Value
 
-	// RawWriteOnly is the raw cty value of the write-only attribute values
-	// set in the final config. The cty.Type of this value is NOT expected to match
-	// the resource schema or the RawConfig / RawState / RawPlan.
-	RawWriteOnly cty.Value
-
 	// Meta is a simple K/V map that is stored in a diff and persisted to
 	// plans but otherwise is completely ignored by Terraform core. It is
 	// meant to be used for additional data a resource may want to pass through.
