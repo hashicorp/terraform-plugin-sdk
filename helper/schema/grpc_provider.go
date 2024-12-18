@@ -764,6 +764,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 	newStateVal = normalizeNullValues(newStateVal, stateVal, false)
 	newStateVal = copyTimeoutValues(newStateVal, stateVal)
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
