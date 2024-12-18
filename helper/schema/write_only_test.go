@@ -19,11 +19,6 @@ func Test_setWriteOnlyNullValues(t *testing.T) {
 		Val      cty.Value
 		Expected cty.Value
 	}{
-		"Incorrect": {
-			&configschema.Block{},
-			cty.StringVal("s"),
-			cty.EmptyObjectVal,
-		},
 		"Empty returns no empty object": {
 			&configschema.Block{},
 			cty.EmptyObjectVal,
