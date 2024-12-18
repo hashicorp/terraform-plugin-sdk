@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -3919,32 +3921,55 @@ func TestResourceData_nonStringValuesInMap(t *testing.T) {
 
 func TestResourceDataGetRawConfigAt(t *testing.T) {
 	cases := map[string]struct {
-		RawConfig   cty.Value
-		Path        cty.Path
-		Value       cty.Value
-		ExpectedErr error
+		RawConfig     cty.Value
+		Path          cty.Path
+		Value         cty.Value
+		ExpectedDiags diag.Diagnostics
 	}{
 		"null RawConfig returns error": {
-			RawConfig:   cty.NullVal(cty.EmptyObject),
-			Path:        cty.GetAttrPath("invalid_root_path"),
-			Value:       cty.NullVal(cty.EmptyObject),
-			ExpectedErr: fmt.Errorf("the raw config is null"),
+			RawConfig: cty.NullVal(cty.EmptyObject),
+			Path:      cty.GetAttrPath("invalid_root_path"),
+			Value:     cty.NullVal(cty.EmptyObject),
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Invalid config path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"The RawConfig is empty.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
 		},
 		"invalid path returns error": {
 			RawConfig: cty.ObjectVal(map[string]cty.Value{
 				"ConfigAttribute": cty.NumberIntVal(42),
 			}),
-			Path:        cty.GetAttrPath("invalid_root_path"),
-			Value:       cty.NullVal(cty.EmptyObject),
-			ExpectedErr: fmt.Errorf("no config value found for given path [{{} invalid_root_path}]"),
+			Path:  cty.GetAttrPath("invalid_root_path"),
+			Value: cty.NullVal(cty.EmptyObject),
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Invalid config path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"Cannot find config value for given path.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
 		},
 		"root level attribute": {
 			RawConfig: cty.ObjectVal(map[string]cty.Value{
 				"ConfigAttribute": cty.NumberIntVal(42),
 			}),
-			Path:        cty.GetAttrPath("ConfigAttribute"),
-			Value:       cty.NumberIntVal(42),
-			ExpectedErr: nil,
+			Path:  cty.GetAttrPath("ConfigAttribute"),
+			Value: cty.NumberIntVal(42),
 		},
 		"list nested block attribute - get attribute value": {
 			RawConfig: cty.ObjectVal(map[string]cty.Value{
@@ -3957,9 +3982,8 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 					}),
 				}),
 			}),
-			Path:        cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
-			Value:       cty.StringVal("valueB"),
-			ExpectedErr: nil,
+			Path:  cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
 		},
 	}
 
@@ -3972,19 +3996,20 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 				diff: diff,
 			}
 
-			v, err := d.GetRawConfigAt(tc.Path)
-			if err == nil && tc.ExpectedErr != nil {
-				t.Fatalf("expected error: %s, but encountered no error", tc.ExpectedErr.Error())
+			v, diags := d.GetRawConfigAt(tc.Path)
+			if len(diags) == 0 && tc.ExpectedDiags == nil {
+				return
 			}
 
-			if err != nil && tc.ExpectedErr == nil {
-				t.Fatalf("encountered unexepected error: %s", err.Error())
+			if len(diags) != 0 && tc.ExpectedDiags == nil {
+				t.Fatalf("expected no diagnostics but got %v", diags)
 			}
 
-			if err != nil && tc.ExpectedErr != nil {
-				if err.Error() != tc.ExpectedErr.Error() {
-					t.Errorf("expected error: %s not equal to encountered error: %s", tc.ExpectedErr.Error(), err.Error())
-				}
+			if diff := cmp.Diff(tc.ExpectedDiags, diags,
+				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
+				cmp.Comparer(indexStepComparer),
+			); diff != "" {
+				t.Errorf("Unexpected diagnostics (-wanted +got): %s", diff)
 			}
 
 			if !reflect.DeepEqual(v, tc.Value) {

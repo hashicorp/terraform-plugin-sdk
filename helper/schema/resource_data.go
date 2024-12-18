@@ -4,7 +4,6 @@
 package schema
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/gocty"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -609,16 +609,26 @@ func (d *ResourceData) GetRawConfig() cty.Value {
 
 // GetRawConfigAt is a helper method for retrieving specific values
 // from the RawConfig returned from GetRawConfig. It returns the cty.Value
-// for a given cty.Path or an error if the value at the given path does not exist.
+// for a given cty.Path or an error diagnostic if the value at the given path does not exist.
 //
 // GetRawConfigAt is considered advanced functionality, and
 // familiarity with the Terraform protocol is suggested when using it.
-func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, error) {
+func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, diag.Diagnostics) {
 	rawConfig := d.GetRawConfig()
 	configVal := cty.NullVal(cty.EmptyObject)
 
 	if rawConfig.IsNull() {
-		return configVal, errors.New("the raw config is null")
+		return configVal, diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  "Invalid config path",
+				Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+					"This can happen if the path does not correctly follow the schema in structure or types. " +
+					"Please report this to the provider developers. \n\n" +
+					"The RawConfig is empty.",
+				AttributePath: valPath,
+			},
+		}
 	}
 	err := cty.Walk(rawConfig, func(path cty.Path, value cty.Value) (bool, error) {
 		if path.Equals(valPath) {
@@ -628,11 +638,31 @@ func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, error) {
 		return true, nil
 	})
 	if err != nil {
-		return configVal, fmt.Errorf("encountered error while retrieving config value %s", err)
+		return configVal, diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  "Invalid config path",
+				Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+					"This can happen if the path does not correctly follow the schema in structure or types. " +
+					"Please report this to the provider developers. \n\n" +
+					fmt.Sprintf("Encountered error while retrieving config value %s", err.Error()),
+				AttributePath: valPath,
+			},
+		}
 	}
 
 	if configVal.IsNull() {
-		return configVal, fmt.Errorf("no config value found for given path %v", valPath)
+		return configVal, diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  "Invalid config path",
+				Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+					"This can happen if the path does not correctly follow the schema in structure or types. " +
+					"Please report this to the provider developers. \n\n" +
+					"Cannot find config value for given path.",
+				AttributePath: valPath,
+			},
+		}
 	}
 
 	return configVal, nil

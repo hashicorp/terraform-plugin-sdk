@@ -5635,7 +5635,7 @@ func TestApplyResourceChange_writeOnly(t *testing.T) {
 					rd.SetId("baz")
 					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
 					if err != nil {
-						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
 					}
 					if writeOnlyVal.AsString() != "bar" {
 						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
@@ -5663,7 +5663,7 @@ func TestApplyResourceChange_writeOnly(t *testing.T) {
 					rd.SetId("baz")
 					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
 					if err != nil {
-						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
 					}
 					if writeOnlyVal.AsString() != "bar" {
 						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
@@ -5691,7 +5691,7 @@ func TestApplyResourceChange_writeOnly(t *testing.T) {
 					rd.SetId("baz")
 					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
 					if err != nil {
-						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
 					}
 					if writeOnlyVal.AsString() != "bar" {
 						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
@@ -5751,7 +5751,7 @@ func TestApplyResourceChange_writeOnly(t *testing.T) {
 					rd.SetId("baz")
 					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
 					if err != nil {
-						t.Errorf("Unable to retrieve write only attribute, err: %s", err)
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
 					}
 					if writeOnlyVal.AsString() != "bar" {
 						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
