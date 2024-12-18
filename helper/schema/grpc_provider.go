@@ -284,7 +284,7 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		return resp, nil
 	}
 	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
-		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(req.TypeName, configVal, schemaBlock, cty.Path{}))
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(configVal, schemaBlock, cty.Path{}))
 	}
 
 	r := s.provider.ResourcesMap[req.TypeName]
@@ -850,7 +850,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// If the resource is being created, validate that all required write-only
 	// attributes in the config have non-nil values.
 	if create {
-		diags := validateWriteOnlyRequiredValues(req.TypeName, configVal, schemaBlock, cty.Path{})
+		diags := validateWriteOnlyRequiredValues(configVal, schemaBlock, cty.Path{})
 		if diags.HasError() {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 			return resp, nil

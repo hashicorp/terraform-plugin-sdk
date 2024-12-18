@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -116,7 +119,7 @@ func setWriteOnlyNullValues(val cty.Value, schema *configschema.Block) cty.Value
 //
 // it takes a cty.Value, and compares it to the schema and throws an
 // error diagnostic for each non-null writeOnly attribute value.
-func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
+func validateWriteOnlyNullValues(val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
 	if !val.IsKnown() || val.IsNull() {
 		return diag.Diagnostics{}
 	}
@@ -141,7 +144,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 				Severity: diag.Error,
 				Summary:  "WriteOnly Attribute Not Allowed",
 				Detail: fmt.Sprintf("The resource contains a non-null value for WriteOnly attribute %q ", name) +
-					fmt.Sprintf("Write-only attributes are only supported in Terraform 1.11 and later."),
+					"Write-only attributes are only supported in Terraform 1.11 and later.",
 				AttributePath: append(path, cty.GetAttrStep{Name: name}),
 			})
 		}
@@ -171,7 +174,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
 			// NestingSingle is the only exception here, where we treat the
 			// block directly as an object
-			diags = append(diags, validateWriteOnlyNullValues(typeName, blockVal, &blockS.Block, blockPath)...)
+			diags = append(diags, validateWriteOnlyNullValues(blockVal, &blockS.Block, blockPath)...)
 		case blockValType.IsSetType():
 			setVals := blockVal.AsValueSlice()
 
@@ -179,7 +182,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 				setBlockPath := append(blockPath, cty.IndexStep{
 					Key: v,
 				})
-				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, setBlockPath)...)
+				diags = append(diags, validateWriteOnlyNullValues(v, &blockS.Block, setBlockPath)...)
 			}
 
 		case blockValType.IsListType(), blockValType.IsTupleType():
@@ -189,7 +192,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 				listBlockPath := append(blockPath, cty.IndexStep{
 					Key: cty.NumberIntVal(int64(i)),
 				})
-				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, listBlockPath)...)
+				diags = append(diags, validateWriteOnlyNullValues(v, &blockS.Block, listBlockPath)...)
 			}
 
 		case blockValType.IsMapType(), blockValType.IsObjectType():
@@ -199,7 +202,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 				mapBlockPath := append(blockPath, cty.IndexStep{
 					Key: cty.StringVal(k),
 				})
-				diags = append(diags, validateWriteOnlyNullValues(typeName, v, &blockS.Block, mapBlockPath)...)
+				diags = append(diags, validateWriteOnlyNullValues(v, &blockS.Block, mapBlockPath)...)
 			}
 
 		default:
@@ -212,7 +215,7 @@ func validateWriteOnlyNullValues(typeName string, val cty.Value, schema *configs
 
 // validateWriteOnlyRequiredValues takes a cty.Value, and compares it to the schema and throws an
 // error diagnostic for every WriteOnly + Required attribute null value.
-func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
+func validateWriteOnlyRequiredValues(val cty.Value, schema *configschema.Block, path cty.Path) diag.Diagnostics {
 	if !val.IsKnown() || val.IsNull() {
 		return diag.Diagnostics{}
 	}
@@ -265,7 +268,7 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 		case blockS.Nesting == configschema.NestingSingle || blockS.Nesting == configschema.NestingGroup:
 			// NestingSingle is the only exception here, where we treat the
 			// block directly as an object
-			diags = append(diags, validateWriteOnlyRequiredValues(typeName, blockVal, &blockS.Block, blockPath)...)
+			diags = append(diags, validateWriteOnlyRequiredValues(blockVal, &blockS.Block, blockPath)...)
 		case blockValType.IsSetType():
 			setVals := blockVal.AsValueSlice()
 
@@ -273,7 +276,7 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 				setBlockPath := append(blockPath, cty.IndexStep{
 					Key: v,
 				})
-				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, setBlockPath)...)
+				diags = append(diags, validateWriteOnlyRequiredValues(v, &blockS.Block, setBlockPath)...)
 			}
 
 		case blockValType.IsListType(), blockValType.IsTupleType():
@@ -283,7 +286,7 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 				listBlockPath := append(blockPath, cty.IndexStep{
 					Key: cty.NumberIntVal(int64(i)),
 				})
-				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, listBlockPath)...)
+				diags = append(diags, validateWriteOnlyRequiredValues(v, &blockS.Block, listBlockPath)...)
 			}
 
 		case blockValType.IsMapType(), blockValType.IsObjectType():
@@ -293,7 +296,7 @@ func validateWriteOnlyRequiredValues(typeName string, val cty.Value, schema *con
 				mapBlockPath := append(blockPath, cty.IndexStep{
 					Key: cty.StringVal(k),
 				})
-				diags = append(diags, validateWriteOnlyRequiredValues(typeName, v, &blockS.Block, mapBlockPath)...)
+				diags = append(diags, validateWriteOnlyRequiredValues(v, &blockS.Block, mapBlockPath)...)
 			}
 
 		default:

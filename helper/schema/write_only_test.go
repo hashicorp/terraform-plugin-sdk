@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -16,6 +19,11 @@ func Test_setWriteOnlyNullValues(t *testing.T) {
 		Val      cty.Value
 		Expected cty.Value
 	}{
+		"Incorrect": {
+			&configschema.Block{},
+			cty.StringVal("s"),
+			cty.EmptyObjectVal,
+		},
 		"Empty returns no empty object": {
 			&configschema.Block{},
 			cty.EmptyObjectVal,
@@ -909,7 +917,7 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 		},
 	} {
 		t.Run(n, func(t *testing.T) {
-			got := validateWriteOnlyNullValues("test_resource", tc.Val, tc.Schema, cty.Path{})
+			got := validateWriteOnlyNullValues(tc.Val, tc.Schema, cty.Path{})
 
 			if diff := cmp.Diff(got, tc.Expected,
 				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
@@ -1465,7 +1473,7 @@ func Test_validateWriteOnlyRequiredValues(t *testing.T) {
 		},
 	} {
 		t.Run(n, func(t *testing.T) {
-			got := validateWriteOnlyRequiredValues("test_resource", tc.Val, tc.Schema, cty.Path{})
+			got := validateWriteOnlyRequiredValues(tc.Val, tc.Schema, cty.Path{})
 
 			if diff := cmp.Diff(got, tc.Expected,
 				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
