@@ -5326,7 +5326,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			false,
 		},
-		"List computed-only block nested attribute with WriteOnly set returns error": {
+		"List computed block nested attribute with WriteOnly set returns error": {
 			map[string]*Schema{
 				"config_block_attr": {
 					Type:     TypeList,
@@ -5335,7 +5335,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 						Schema: map[string]*Schema{
 							"nested_attr": {
 								Type:      TypeString,
-								Computed:  true,
+								Optional:  true,
 								WriteOnly: true,
 							},
 						},
@@ -5344,7 +5344,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
-		"Set computed-only block nested attribute with WriteOnly set returns error": {
+		"Set computed block nested attribute with WriteOnly set returns error": {
 			map[string]*Schema{
 				"config_block_attr": {
 					Type:     TypeSet,
@@ -5353,7 +5353,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 						Schema: map[string]*Schema{
 							"nested_attr": {
 								Type:      TypeString,
-								Computed:  true,
+								Required:  true,
 								WriteOnly: true,
 							},
 						},
