@@ -3929,7 +3929,7 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 		"null RawConfig returns error": {
 			RawConfig: cty.NullVal(cty.EmptyObject),
 			Path:      cty.GetAttrPath("invalid_root_path"),
-			Value:     cty.NullVal(cty.EmptyObject),
+			Value:     cty.DynamicVal,
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,
@@ -3949,7 +3949,7 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 				"ConfigAttribute": cty.NumberIntVal(42),
 			}),
 			Path:  cty.GetAttrPath("invalid_root_path"),
-			Value: cty.NullVal(cty.EmptyObject),
+			Value: cty.DynamicVal,
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,

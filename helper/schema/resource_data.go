@@ -615,7 +615,7 @@ func (d *ResourceData) GetRawConfig() cty.Value {
 // familiarity with the Terraform protocol is suggested when using it.
 func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, diag.Diagnostics) {
 	rawConfig := d.GetRawConfig()
-	configVal := cty.NullVal(cty.EmptyObject)
+	configVal := cty.DynamicVal
 
 	if rawConfig.IsNull() {
 		return configVal, diag.Diagnostics{
@@ -651,7 +651,7 @@ func (d *ResourceData) GetRawConfigAt(valPath cty.Path) (cty.Value, diag.Diagnos
 		}
 	}
 
-	if configVal.IsNull() {
+	if configVal.RawEquals(cty.DynamicVal) {
 		return configVal, diag.Diagnostics{
 			{
 				Severity: diag.Error,
