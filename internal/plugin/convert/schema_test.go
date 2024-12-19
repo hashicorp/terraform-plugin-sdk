@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 )
 
@@ -232,6 +233,12 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 						Type:     tftypes.Number,
 						Required: true,
 					},
+					{
+						Name:      "write-only",
+						Type:      tftypes.String,
+						WriteOnly: true,
+						Optional:  true,
+					},
 				},
 			},
 			&configschema.Block{
@@ -252,6 +259,11 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 					"required": {
 						Type:     cty.Number,
 						Required: true,
+					},
+					"write-only": {
+						Type:      cty.String,
+						WriteOnly: true,
+						Optional:  true,
 					},
 				},
 			},
