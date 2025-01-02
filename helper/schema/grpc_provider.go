@@ -283,6 +283,32 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
 	}
+	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(configVal, schemaBlock, cty.Path{}))
+	}
+
+	r := s.provider.ResourcesMap[req.TypeName]
+
+	// Calling all ValidateRawResourceConfigFunc here since they validate on the raw go-cty config value
+	// and were introduced after the public provider.ValidateResource method.
+	if r.ValidateRawResourceConfigFuncs != nil {
+		writeOnlyAllowed := false
+
+		if req.ClientCapabilities != nil {
+			writeOnlyAllowed = req.ClientCapabilities.WriteOnlyAttributesAllowed
+		}
+
+		validateReq := ValidateResourceConfigFuncRequest{
+			WriteOnlyAttributesAllowed: writeOnlyAllowed,
+			RawConfig:                  configVal,
+		}
+
+		for _, validateFunc := range r.ValidateRawResourceConfigFuncs {
+			validateResp := &ValidateResourceConfigFuncResponse{}
+			validateFunc(ctx, validateReq, validateResp)
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateResp.Diagnostics)
+		}
+	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
@@ -738,6 +764,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 	newStateVal = normalizeNullValues(newStateVal, stateVal, false)
 	newStateVal = copyTimeoutValues(newStateVal, stateVal)
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -818,6 +845,16 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
+	}
+
+	// If the resource is being created, validate that all required write-only
+	// attributes in the config have non-nil values.
+	if create {
+		diags := validateWriteOnlyRequiredValues(configVal, schemaBlock, cty.Path{})
+		if diags.HasError() {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
+			return resp, nil
+		}
 	}
 
 	priorState, err := res.ShimInstanceStateFromValue(priorStateVal)
@@ -936,6 +973,9 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if create {
 		plannedStateVal = SetUnknowns(plannedStateVal, schemaBlock)
 	}
+
+	// Set any write-only attribute values to null
+	plannedStateVal = setWriteOnlyNullValues(plannedStateVal, schemaBlock)
 
 	plannedMP, err := msgpack.Marshal(plannedStateVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -1183,6 +1223,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	newStateVal = normalizeNullValues(newStateVal, plannedStateVal, true)
 
 	newStateVal = copyTimeoutValues(newStateVal, plannedStateVal)
+
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
