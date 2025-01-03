@@ -399,6 +399,7 @@ type Schema struct {
 	// WriteOnly indicates that the practitioner can choose a value for this
 	// attribute, but Terraform will not store this attribute in state.
 	// If WriteOnly is true, either Optional or Required must also be true.
+	// WriteOnly cannot be set with ForceNew.
 	// If an attribute is Required and WriteOnly, an attribute value
 	// is only required on resource creation.
 	//
@@ -857,6 +858,10 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 
 		if v.WriteOnly && v.Computed {
 			return fmt.Errorf("%s: WriteOnly cannot be set with Computed", k)
+		}
+
+		if v.WriteOnly && v.ForceNew {
+			return fmt.Errorf("%s: WriteOnly cannot be set with ForceNew", k)
 		}
 
 		computedOnly := v.Computed && !v.Optional

@@ -5086,6 +5086,18 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"Attribute with WriteOnly and ForceNew set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					ForceNew:  true,
+					Optional:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
 		"Attribute with WriteOnly, Optional, and Computed set returns error": {
 			map[string]*Schema{
 				"foo": {
