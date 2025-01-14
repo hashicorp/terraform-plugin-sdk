@@ -4519,6 +4519,94 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 	}
 }
 
+func TestUpgradeState_writeOnlyNullification(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"two": {
+				Type:      TypeInt,
+				Optional:  true,
+				WriteOnly: true,
+			},
+		},
+	}
+
+	r.StateUpgraders = []StateUpgrader{
+		{
+			Version: 0,
+			Type: cty.Object(map[string]cty.Type{
+				"id":   cty.String,
+				"zero": cty.Number,
+			}),
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+				_, ok := m["zero"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("zero not found in %#v", m)
+				}
+				m["one"] = float64(1)
+				delete(m, "zero")
+				return m, nil
+			},
+		},
+		{
+			Version: 1,
+			Type: cty.Object(map[string]cty.Type{
+				"id":  cty.String,
+				"one": cty.Number,
+			}),
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+				_, ok := m["one"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("one not found in %#v", m)
+				}
+				m["two"] = float64(2)
+				delete(m, "one")
+				return m, nil
+			},
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	req := &tfprotov5.UpgradeResourceStateRequest{
+		TypeName: "test",
+		Version:  0,
+		RawState: &tfprotov5.RawState{
+			JSON: []byte(`{"id":"bar","zero":0}`),
+		},
+	}
+
+	resp, err := server.UpgradeResourceState(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		for _, d := range resp.Diagnostics {
+			t.Errorf("%#v", d)
+		}
+		t.Fatal("error")
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"id":  cty.StringVal("bar"),
+		"two": cty.NullVal(cty.Number),
+	})
+
+	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
+		t.Fatal(cmp.Diff(expected, val, valueComparer, equateEmpty))
+	}
+}
+
 func TestReadResource(t *testing.T) {
 	t.Parallel()
 
@@ -6627,6 +6715,60 @@ func TestImportResourceState(t *testing.T) {
 								),
 							),
 						},
+					},
+				},
+			},
+		},
+		"write-only-nullification": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								err := d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"id":          cty.StringVal("imported-id"),
+									"test_string": cty.NullVal(cty.String),
+								}),
+							),
+						},
+						Private: []byte(`{"schema_version":"1"}`),
 					},
 				},
 			},

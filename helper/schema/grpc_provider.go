@@ -420,6 +420,9 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 	// Normalize the value and fill in any missing blocks.
 	val = objchange.NormalizeObjectFromLegacySDK(val, schemaBlock)
 
+	// Set any write-only attribute values to null
+	val = setWriteOnlyNullValues(val, schemaBlock)
+
 	// encode the final state to the expected msgpack format
 	newStateMP, err := msgpack.Marshal(val, schemaBlock.ImpliedType())
 	if err != nil {
@@ -1346,6 +1349,9 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			newStateValueMap[TimeoutsConfigKey] = cty.NullVal(newStateType.AttributeType(TimeoutsConfigKey))
 			newStateVal = cty.ObjectVal(newStateValueMap)
 		}
+
+		// Set any write-only attribute values to null
+		newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 		newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 		if err != nil {
