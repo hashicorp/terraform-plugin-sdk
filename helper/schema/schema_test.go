@@ -7088,7 +7088,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 				},
 			},
 		},
-		"Required + WriteOnly attribute with null value returns no errors": {
+		"Required + WriteOnly attribute with null value returns validation error": {
 			Schema: map[string]*Schema{
 				"write_only_attribute": {
 					Type:      TypeString,
@@ -7098,6 +7098,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 
 			Config: nil,
+			Err:    true,
 		},
 		"Required + WriteOnly attribute with default func returns no errors": {
 			Schema: map[string]*Schema{
@@ -7111,7 +7112,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 
 			Config: nil,
 		},
-		"Required + WriteOnly attribute with default func nil value returns no errors": {
+		"Required + WriteOnly attribute with default func nil value returns validation error": {
 			Schema: map[string]*Schema{
 				"write_only_attribute": {
 					Type:        TypeString,
@@ -7122,6 +7123,7 @@ func TestSchemaMap_Validate(t *testing.T) {
 			},
 
 			Config: nil,
+			Err:    true,
 		},
 	}
 

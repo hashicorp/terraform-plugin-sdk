@@ -86,9 +86,8 @@ type Attribute struct {
 
 	// WriteOnly indicates that the practitioner can choose a value for this
 	// attribute, but Terraform will not store this attribute in state.
-	// If WriteOnly is true, either Optional or Required must also be true.
-	// If an attribute is Required and WriteOnly, an attribute value
-	// is only required on resource creation.
+	// WriteOnly can only be set for managed resource schemas. If WriteOnly is true,
+	// either Optional or Required must also be true. WriteOnly cannot be set with ForceNew.
 	//
 	// WriteOnly cannot be set to true for TypeList, TypeMap, or TypeSet.
 	//

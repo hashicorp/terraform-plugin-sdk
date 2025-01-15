@@ -850,16 +850,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		return resp, nil
 	}
 
-	// If the resource is being created, validate that all required write-only
-	// attributes in the config have non-nil values.
-	if create {
-		diags := validateWriteOnlyRequiredValues(configVal, schemaBlock, cty.Path{})
-		if diags.HasError() {
-			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
-			return resp, nil
-		}
-	}
-
 	priorState, err := res.ShimInstanceStateFromValue(priorStateVal)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
