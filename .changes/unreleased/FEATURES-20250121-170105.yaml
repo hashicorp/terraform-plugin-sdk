@@ -1,0 +1,6 @@
+kind: FEATURES
+body: 'helper/validation: Added `PreferWriteOnlyAttribute()` validator that warns practitioners when a write-only version of 
+a configured attribute is available.'
+time: 2025-01-21T17:01:05.40229-05:00
+custom:
+    Issue: "1375"
