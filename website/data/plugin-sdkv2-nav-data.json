@@ -38,6 +38,10 @@
       {
         "title": "State Migration",
         "path": "resources/state-migration"
+      },
+      {
+        "title": "Write-only Attributes",
+        "path": "resources/write-only-attributes"
       }
     ]
   },
