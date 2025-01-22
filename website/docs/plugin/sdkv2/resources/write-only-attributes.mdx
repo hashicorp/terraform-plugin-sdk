@@ -10,7 +10,7 @@ description: Implementing write-only attributes within resources.
 Write-only attributes are managed resource attributes whose values are not saved to the Terraform plan or state artifacts. Write-only attributes
 should be used to handle secret values that do not need to be persisted in Terraform state, such as passwords, API keys, etc.
 The provider is expected to be the terminal point for an ephemeral value,
-which should either use the value by making the appropriate change to the API or ignore the value. Write-only attributes can accept ephemeral values.
+which should either use the value by making the appropriate change to the API or ignore the value. Write-only attributes can accept [ephemeral values](/terraform/language/resources/ephemeral).
 
 ## General Concepts
 
@@ -55,7 +55,7 @@ Write-only attribute values are only available in the raw resource configuration
 
 Use the `(*schema.ResourceData).GetRawConfigAt()` method to retrieve the raw config value.
 
-This method is an advanced method that uses the `Hashicorp/cty` library for its type system.
+This method is an advanced method that uses the `hashicorp/go-cty` library for its type system.
 
 ```go
 woVal, diags := d.GetRawConfigAt(cty.GetAttrPath("password_wo"))
