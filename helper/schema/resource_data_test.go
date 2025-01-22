@@ -3971,6 +3971,36 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 			Path:  cty.GetAttrPath("ConfigAttribute"),
 			Value: cty.NumberIntVal(42),
 		},
+		"root level set attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.SetVal([]cty.Value{
+					cty.StringVal("valueA"),
+					cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").Index(cty.StringVal("valueA")),
+			Value: cty.StringVal("valueA"),
+		},
+		"root level list attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.ListVal([]cty.Value{
+					cty.StringVal("valueA"),
+					cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").IndexInt(0),
+			Value: cty.StringVal("valueA"),
+		},
+		"root level map attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.MapVal(map[string]cty.Value{
+					"mapA": cty.StringVal("valueA"),
+					"mapB": cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").IndexString("mapB"),
+			Value: cty.StringVal("valueB"),
+		},
 		"list nested block attribute - get attribute value": {
 			RawConfig: cty.ObjectVal(map[string]cty.Value{
 				"list_nested_block": cty.ListVal([]cty.Value{
@@ -3985,6 +4015,36 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 			Path:  cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
 			Value: cty.StringVal("valueB"),
 		},
+		"set nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"set_nested_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path: cty.GetAttrPath("set_nested_block").Index(cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.StringVal("valueB"),
+			})).GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
+		"map nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"map_nested_block": cty.MapVal(map[string]cty.Value{
+					"mapA": cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					"mapB": cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:  cty.GetAttrPath("map_nested_block").IndexString("mapB").GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
 	}
 
 	for tn, tc := range cases {
@@ -3997,10 +4057,6 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 			}
 
 			v, diags := d.GetRawConfigAt(tc.Path)
-			if len(diags) == 0 && tc.ExpectedDiags == nil {
-				return
-			}
-
 			if len(diags) != 0 && tc.ExpectedDiags == nil {
 				t.Fatalf("expected no diagnostics but got %v", diags)
 			}
