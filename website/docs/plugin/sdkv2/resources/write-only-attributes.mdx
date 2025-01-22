@@ -65,7 +65,7 @@ woVal, diags := d.GetRawConfigAt(cty.GetAttrPath("password_wo"))
 
 `(*schema.ResourceData).GetRawConfigAt()` uses `cty.Path` to specify locations in the raw configuration.
 
-This is very similar to the `terraform-plugin-framework` [paths](https://developer.hashicorp.com/terraform/plugin/framework/handling-data/paths) or `terraform-plugin-testing` [json paths](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/tfjson-paths).
+This is very similar to the `terraform-plugin-framework` [paths](/terraform/plugin/framework/handling-data/paths) or `terraform-plugin-testing` [json paths](/terraform/plugin/testing/acceptance-tests/tfjson-paths).
 
 All top level attributes or blocks can be referred to using `cty.GetAttrPath()`
 
