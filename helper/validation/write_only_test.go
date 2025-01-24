@@ -71,9 +71,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{cty.GetAttrStep{Name: "oldAttribute"}},
 				},
 			},
@@ -121,9 +121,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{cty.GetAttrStep{Name: "oldAttribute"}},
 				},
 			},
@@ -146,9 +146,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "config_block_attr"},
 						cty.GetAttrStep{Name: "oldAttribute"},
@@ -190,9 +190,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "config_block_attr"},
 						cty.GetAttrStep{Name: "oldAttribute"},
@@ -221,9 +221,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_nested_block"},
 						cty.IndexStep{Key: cty.NumberIntVal(0)},
@@ -271,9 +271,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_nested_block"},
 						cty.IndexStep{Key: cty.NumberIntVal(0)},
@@ -311,9 +311,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_nested_block"},
 						cty.IndexStep{Key: cty.NumberIntVal(0)},
@@ -322,9 +322,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_nested_block"},
 						cty.IndexStep{Key: cty.NumberIntVal(2)},
@@ -359,9 +359,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_nested_block"},
 						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
@@ -420,9 +420,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_nested_block"},
 						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
@@ -462,9 +462,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_nested_block"},
 						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
@@ -476,9 +476,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_nested_block"},
 						cty.IndexStep{Key: cty.ObjectVal(map[string]cty.Value{
@@ -511,9 +511,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key1")},
@@ -561,9 +561,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key1")},
@@ -601,9 +601,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key1")},
@@ -612,9 +612,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key3")},
@@ -685,9 +685,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 			expectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key1")},
@@ -702,9 +702,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key1")},
@@ -718,9 +718,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key3")},
@@ -734,9 +734,9 @@ func TestPreferWriteOnlyAttribute(t *testing.T) {
 				},
 				{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: "The attribute oldAttribute has a WriteOnly version writeOnlyAttribute available. " +
-						"Use the WriteOnly version of the attribute when possible.",
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: "The attribute oldAttribute has a write-only alternative writeOnlyAttribute available. " +
+						"Use the write-only alternative of the attribute when possible.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_nested_block"},
 						cty.IndexStep{Key: cty.StringVal("key3")},

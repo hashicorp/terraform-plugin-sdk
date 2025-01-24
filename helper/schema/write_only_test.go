@@ -441,8 +441,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "write_only_attribute"},
@@ -450,8 +450,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_block"},
@@ -503,8 +503,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "write_only_attribute"},
@@ -512,8 +512,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_block"},
@@ -560,8 +560,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_block"},
@@ -602,8 +602,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "nested_block"},
@@ -649,8 +649,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute1\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_block"},
@@ -663,8 +663,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute1\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute1\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "set_block"},
@@ -712,8 +712,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_block"},
@@ -723,8 +723,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_block"},
@@ -771,8 +771,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_block"},
@@ -782,8 +782,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "map_block"},
@@ -845,8 +845,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "nested_block1"},
@@ -855,8 +855,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 				},
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 
 					AttributePath: cty.Path{
@@ -899,8 +899,8 @@ func Test_validateWriteOnlyNullValues(t *testing.T) {
 			diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "WriteOnly Attribute Not Allowed",
-					Detail: "The resource contains a non-null value for WriteOnly attribute \"write_only_block_attribute\" " +
+					Summary:  "Write-only Attribute Not Allowed",
+					Detail: "The resource contains a non-null value for write-only attribute \"write_only_block_attribute\" " +
 						"Write-only attributes are only supported in Terraform 1.11 and later.",
 					AttributePath: cty.Path{
 						cty.GetAttrStep{Name: "list_block"},

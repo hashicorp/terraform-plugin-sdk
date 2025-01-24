@@ -2356,7 +2356,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			ExpectedErr: fmt.Errorf("provider schema cannot contain WriteOnly attributes"),
+			ExpectedErr: fmt.Errorf("provider schema cannot contain write-only attributes"),
 		},
 		"Provider meta schema with WriteOnly attribute set returns an error": {
 			P: &Provider{
@@ -2374,7 +2374,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			ExpectedErr: fmt.Errorf("provider meta schema cannot contain WriteOnly attributes"),
+			ExpectedErr: fmt.Errorf("provider meta schema cannot contain write-only attributes"),
 		},
 		"Data source schema with WriteOnly attribute set returns an error": {
 			P: &Provider{
@@ -2396,7 +2396,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			ExpectedErr: fmt.Errorf("data source data-foo cannot contain WriteOnly attributes"),
+			ExpectedErr: fmt.Errorf("data source data-foo cannot contain write-only attributes"),
 		},
 		"Resource schema with WriteOnly attribute set returns no errors": {
 			P: &Provider{
