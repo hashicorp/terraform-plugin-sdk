@@ -100,9 +100,9 @@ func PreferWriteOnlyAttribute(oldAttribute cty.Path, writeOnlyAttribute cty.Path
 			if !attr.value.IsNull() {
 				resp.Diagnostics = append(resp.Diagnostics, diag.Diagnostic{
 					Severity: diag.Warning,
-					Summary:  "Available Write-Only Attribute Alternative",
-					Detail: fmt.Sprintf("The attribute %s has a WriteOnly version %s available. "+
-						"Use the WriteOnly version of the attribute when possible.", attrStep.Name, writeOnlyAttrStep.Name),
+					Summary:  "Available Write-only Attribute Alternative",
+					Detail: fmt.Sprintf("The attribute %s has a write-only alternative %s available. "+
+						"Use the write-only alternative of the attribute when possible.", attrStep.Name, writeOnlyAttrStep.Name),
 					AttributePath: attr.path,
 				})
 			}

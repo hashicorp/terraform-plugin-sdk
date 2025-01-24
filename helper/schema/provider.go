@@ -201,13 +201,13 @@ func (p *Provider) InternalValidate() error {
 	}
 
 	if sm.hasWriteOnly() {
-		validationErrors = append(validationErrors, fmt.Errorf("provider schema cannot contain WriteOnly attributes"))
+		validationErrors = append(validationErrors, fmt.Errorf("provider schema cannot contain write-only attributes"))
 	}
 
 	// Provider meta schema validation
 	providerMeta := schemaMap(p.ProviderMetaSchema)
 	if providerMeta.hasWriteOnly() {
-		validationErrors = append(validationErrors, fmt.Errorf("provider meta schema cannot contain WriteOnly attributes"))
+		validationErrors = append(validationErrors, fmt.Errorf("provider meta schema cannot contain write-only attributes"))
 	}
 
 	// Provider-specific checks
@@ -234,7 +234,7 @@ func (p *Provider) InternalValidate() error {
 
 		dataSourceSchema := schemaMap(r.SchemaMap())
 		if dataSourceSchema.hasWriteOnly() {
-			validationErrors = append(validationErrors, fmt.Errorf("data source %s cannot contain WriteOnly attributes", k))
+			validationErrors = append(validationErrors, fmt.Errorf("data source %s cannot contain write-only attributes", k))
 		}
 	}
 

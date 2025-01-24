@@ -652,7 +652,7 @@ type Resource struct {
 	// diagnostics based on the inspection of those values.
 	//
 	// ValidateRawResourceConfigFuncs is only valid for Managed Resource types and will not be
-	// called for Data Resource or Block types.
+	// called for Data Resource or Provider types.
 	//
 	// Developers should prefer other validation methods first as this validation function
 	// deals with raw cty values.
