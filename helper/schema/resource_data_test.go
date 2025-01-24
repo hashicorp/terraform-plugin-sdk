@@ -3944,6 +3944,13 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 				},
 			},
 		},
+		"null value in config": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NullVal(cty.Number),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute"),
+			Value: cty.NullVal(cty.Number),
+		},
 		"invalid path returns error": {
 			RawConfig: cty.ObjectVal(map[string]cty.Value{
 				"ConfigAttribute": cty.NumberIntVal(42),
