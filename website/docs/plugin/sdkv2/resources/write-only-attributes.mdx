@@ -44,9 +44,12 @@ write-only attributes should always be `null`.
 
 **Restrictions:**
 
-- Cannot be used in data source or provider schemas.
+- Cannot be used in data source or provider schemas
 - Must be set with either `Required` is `true` or `Optional` is `true`
 - Cannot be used when `Computed` is `true`
+- Cannot be used when `ForceNew` is `true`
+- Cannot be used when `Default` is `specified`
+- Cannot be used with `DefaultFunc`
 - Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`)
 
 ## Retrieving Write-only Values

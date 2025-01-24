@@ -898,6 +898,14 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: Default cannot be set with Required", k)
 		}
 
+		if v.WriteOnly && v.Default != nil {
+			return fmt.Errorf("%s: Default cannot be set with WriteOnly", k)
+		}
+
+		if v.WriteOnly && v.DefaultFunc != nil {
+			return fmt.Errorf("%s: DefaultFunc cannot be set with WriteOnly", k)
+		}
+
 		if len(v.ComputedWhen) > 0 && !v.Computed {
 			return fmt.Errorf("%s: ComputedWhen can only be set with Computed", k)
 		}

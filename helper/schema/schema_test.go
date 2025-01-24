@@ -5135,6 +5135,46 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 
+		"Attribute with WriteOnly, Optional, and Default set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					Default:   true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Required, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Required: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
 		"Attribute with only WriteOnly set returns error": {
 			map[string]*Schema{
 				"foo": {
@@ -7087,43 +7127,6 @@ func TestSchemaMap_Validate(t *testing.T) {
 					DefaultFunc: func() (interface{}, error) { return "1", nil },
 				},
 			},
-		},
-		"Required + WriteOnly attribute with null value returns validation error": {
-			Schema: map[string]*Schema{
-				"write_only_attribute": {
-					Type:      TypeString,
-					Required:  true,
-					WriteOnly: true,
-				},
-			},
-
-			Config: nil,
-			Err:    true,
-		},
-		"Required + WriteOnly attribute with default func returns no errors": {
-			Schema: map[string]*Schema{
-				"write_only_attribute": {
-					Type:        TypeString,
-					Required:    true,
-					WriteOnly:   true,
-					DefaultFunc: func() (interface{}, error) { return "default", nil },
-				},
-			},
-
-			Config: nil,
-		},
-		"Required + WriteOnly attribute with default func nil value returns validation error": {
-			Schema: map[string]*Schema{
-				"write_only_attribute": {
-					Type:        TypeString,
-					Required:    true,
-					WriteOnly:   true,
-					DefaultFunc: func() (interface{}, error) { return nil, nil },
-				},
-			},
-
-			Config: nil,
-			Err:    true,
 		},
 	}
 
