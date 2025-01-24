@@ -142,8 +142,8 @@ func validateWriteOnlyNullValues(val cty.Value, schema *configschema.Block, path
 		if attr.WriteOnly && !v.IsNull() {
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
-				Summary:  "WriteOnly Attribute Not Allowed",
-				Detail: fmt.Sprintf("The resource contains a non-null value for WriteOnly attribute %q ", name) +
+				Summary:  "Write-only Attribute Not Allowed",
+				Detail: fmt.Sprintf("The resource contains a non-null value for write-only attribute %q ", name) +
 					"Write-only attributes are only supported in Terraform 1.11 and later.",
 				AttributePath: append(path, cty.GetAttrStep{Name: name}),
 			})

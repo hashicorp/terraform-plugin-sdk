@@ -7,10 +7,10 @@ description: Implementing write-only attributes within resources.
 
 ~> **NOTE:** Write-only attributes are only supported in Terraform `v1.11` or higher
 
-Write-only attributes are managed resource attributes whose values are not saved to the Terraform plan or state artifacts. Write-only attributes
+Write-only attributes are managed resource attributes that are configured by practitioners but are not persisted to the Terraform plan or state artifacts. Write-only attributes
 should be used to handle secret values that do not need to be persisted in Terraform state, such as passwords, API keys, etc.
 The provider is expected to be the terminal point for an ephemeral value,
-which should either use the value by making the appropriate change to the API or ignore the value. Write-only attributes can accept [ephemeral values](/terraform/language/resources/ephemeral).
+which should either use the value by making the appropriate change to the API or ignore the value. Write-only attributes can accept [ephemeral values](/terraform/language/resources/ephemeral) and are not required to be consistent between plan and apply operations.
 
 ## General Concepts
 
@@ -18,13 +18,13 @@ The following are high level differences between regular attributes and write-on
 
 - Write-only attributes can accept ephemeral and non-ephemeral values
 
-- Write-only attribute values are only available in the configuration, and the prior state, planned state, and final state values for
+- Write-only attribute values are only available in the configuration. The prior state, planned state, and final state values for
 write-only attributes should always be `null`.
-    - Provider developers do not need to “clean up” write-only attribute values after using them as the SDKv2 will handle the nullification of write-only attributes for all RPCs.
+    - Provider developers do not need to explicitly set write-only attribute values to `null` after using them as the SDKv2 will handle the nullification of write-only attributes for all RPCs.
 
-- Any value that is set for a write-only attribute using `(*ResourceData).Set()` by the provider will be set to `null` by SDKv2 before the RPC response is sent to Terraform
+- Any value that is set for a write-only attribute using `(*ResourceData).Set()` by the provider will be reverted to `null` by SDKv2 before the RPC response is sent to Terraform
 
-- Write-only attribute values on its own will never cause a Terraform diff.
+- Write-only attribute values cannot produce a Terraform plan difference.
     - This is because the prior state value for a write-only attribute will always be `null` and the planned/final state value will also be `null`, therefore, it cannot produce a diff on its own.
     - The one exception to this case is if the write-only attribute is added to `requires_replace` via [CustomizeDiff](/terraform/plugin/sdkv2/resources/customizing-differences), in that case, the write-only attribute will always cause a diff/trigger a resource recreation
 
@@ -112,7 +112,7 @@ Index(cty.ObjectVal(map[string]cty.Value{"set_nested_block_attribute": cty.Strin
 
 ### cty.Value
 
-When working with `cty.Value`, you must always check the type of the value before converting it to a Go value or else the conversion will cause a panic.
+When working with `cty.Value`, you must always check the type of the value before converting it to a Go value or else the conversion could cause a panic.
 
 ```go
 // Check that the type is a cty.String before conversion
@@ -127,9 +127,9 @@ if !woVal.IsNull() {
 }
 ```
 
-## PreferWriteOnly Validator
+## PreferWriteOnlyAttribute Validator
 
-`PreferWriteOnlyAttribute()` is a validator that takes a `cty.Path` to a regular attribute and a `cty.Path` to a write-only attribute.
+`PreferWriteOnlyAttribute()` is a validator that takes a `cty.Path` to an existing configuration attribute (required/optional) and a `cty.Path` to a write-only attribute.
 
 Use this validator when you have a write-only version of an existing attribute, and you want to encourage practitioners to use the write-only version whenever possible.
 
@@ -170,8 +170,8 @@ When using `cty.Path` to traverse into a nested block, use an unknown value to i
 
 ## Best Practices
 
-Since write-only attributes have no prior values, we cannot determine user intent with a write-only attribute alone. To determine when to use/not use a write-only attribute value in your provider, we recommend using other attributes in the provider. For example:
+Since write-only attributes have no prior values, user intent cannot be determined with a write-only attribute alone. To determine when to use/not use a write-only attribute value in your provider, we recommend using other non-write-only attributes in the provider. For example:
 
-- Pair write-only attributes with a regular attribute to “trigger” the use of the write-only attribute
-    - For example, a `password_wo` write-only attribute can be paired with a configured `password_wo_version` attribute. When the `password_wo_version` updates, the provider will send the `password_wo` value to the API.
+- Pair write-only attributes with a configuration attribute (required or optional) to “trigger” the use of the write-only attribute
+    - For example, a `password_wo` write-only attribute can be paired with a configured `password_wo_version` attribute. When the `password_wo_version` is modified, the provider will send the `password_wo` value to the API.
 - Use a keepers attribute (which is used in the [Random Provider](https://registry.terraform.io/providers/hashicorp/random/latest/docs#resource-keepers)) that will take in arbitrary key-pair values. Whenever there is a change to the `keepers` attribute, the provider will use the write-only attribute value.

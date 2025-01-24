@@ -397,7 +397,7 @@ type Schema struct {
 	Sensitive bool
 
 	// WriteOnly indicates that the practitioner can choose a value for this
-	// attribute, but Terraform will not store this attribute in state.
+	// attribute, but Terraform will not store this attribute in plan or state.
 	// WriteOnly can only be set for managed resource schemas. If WriteOnly is true,
 	// either Optional or Required must also be true. WriteOnly cannot be set with ForceNew.
 	//
