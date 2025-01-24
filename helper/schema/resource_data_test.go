@@ -3933,9 +3933,9 @@ func TestResourceDataGetRawConfigAt(t *testing.T) {
 			ExpectedDiags: diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  "Invalid config path",
-					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
-						"This can happen if the path does not correctly follow the schema in structure or types. " +
+					Summary:  "Empty Raw Config",
+					Detail: "The Terraform Provider unexpectedly received an empty configuration. " +
+						"This is almost always an issue with the Terraform Plugin SDK used to create providers. " +
 						"Please report this to the provider developers. \n\n" +
 						"The RawConfig is empty.",
 					AttributePath: cty.Path{
