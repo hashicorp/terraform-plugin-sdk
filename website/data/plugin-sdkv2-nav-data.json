@@ -40,8 +40,8 @@
         "path": "resources/state-migration"
       },
       {
-        "title": "Write-only Attributes",
-        "path": "resources/write-only-attributes"
+        "title": "Write-only Arguments",
+        "path": "resources/write-only-arguments"
       }
     ]
   },

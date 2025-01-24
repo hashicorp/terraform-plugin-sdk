@@ -31,11 +31,11 @@ Resources define the data types and API interactions required to create, update,
 
 When resource implementations change (due to bug fixes, improvements, or changes to the backend APIs Terraform interacts with), they can sometimes become incompatible with existing state. When this happens, a migration is needed for resources provisioned in the wild with old schema configurations. Terraform resources support migrating state values in these scenarios via [State Migration](/terraform/plugin/sdkv2/resources/state-migration).
 
-## Write-only Attributes
+## Write-only Arguments
 
-~> **NOTE:** Write-only attributes are only supported in Terraform `v1.11` or higher
+~> **NOTE:** Write-only arguments are only supported in Terraform `v1.11` or higher
 
-Write-only attributes are a special type of managed resource attribute
+Write-only arguments are a special type of managed resource attribute
 that are configured by practitioners but are not persisted in the Terraform plan or state artifacts.
-Write-only attributes can accept [ephemeral values](/terraform/language/resources/ephemeral) and are not required to be consistent between plan and apply operations..
-The [Write-only attribute] page discusses how to create these attributes.
+Write-only arguments can accept [ephemeral values](/terraform/language/resources/ephemeral) and are not required to be consistent between plan and apply operations.
+The [Write-only arguments](/terraform/plugin/sdkv2/resources/write-only-arguments) page discusses how to create these arguments.
