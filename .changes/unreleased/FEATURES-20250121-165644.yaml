@@ -1,0 +1,6 @@
+kind: FEATURES
+body: 'helper/schema: Added `WriteOnly` schema behavior for managed resource schemas to indicate a write-only attribute. 
+Write-only attribute values are not saved to the Terraform plan or state artifacts.'
+time: 2025-01-21T16:56:44.038893-05:00
+custom:
+    Issue: "1375"

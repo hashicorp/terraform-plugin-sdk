@@ -17,9 +17,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/msgpack"
-
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -3488,6 +3488,489 @@ func TestGRPCProviderServerMoveResourceState(t *testing.T) {
 	}
 }
 
+func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		request  *tfprotov5.ValidateResourceTypeConfigRequest
+		expected *tfprotov5.ValidateResourceTypeConfigResponse
+	}{
+		"Provider with empty resource returns no errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{},
+		},
+		"Client without WriteOnlyAttributesAllowed capabilities: null WriteOnly attribute returns no errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: WriteOnly Attribute with Value returns an error": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Write-only Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for write-only attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+				},
+			},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: multiple WriteOnly Attributes with Value returns multiple errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Write-only Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for write-only attribute \"bar\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("bar"),
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Write-only Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for write-only attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+				},
+			},
+		},
+		"Server without WriteOnlyAttributesAllowed capabilities: multiple nested WriteOnly Attributes with Value returns multiple errors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"config_block_attr": {
+								Type:      TypeList,
+								Optional:  true,
+								WriteOnly: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+										"writeonly_nested_attr": {
+											Type:      TypeString,
+											WriteOnly: true,
+											Optional:  true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+							"config_block_attr": cty.List(cty.Object(map[string]cty.Type{
+								"nested_attr":           cty.String,
+								"writeonly_nested_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+							"config_block_attr": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"nested_attr":           cty.StringVal("value"),
+									"writeonly_nested_attr": cty.StringVal("value"),
+								}),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Write-only Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for write-only attribute \"foo\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().WithAttributeName("foo"),
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Write-only Attribute Not Allowed",
+						Detail: "The resource contains a non-null value for write-only attribute \"writeonly_nested_attr\" " +
+							"Write-only attributes are only supported in Terraform 1.11 and later.",
+						Attribute: tftypes.NewAttributePath().
+							WithAttributeName("config_block_attr").
+							WithElementKeyInt(0).
+							WithAttributeName("writeonly_nested_attr"),
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed true returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeInt,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				ClientCapabilities: &tfprotov5.ValidateResourceTypeConfigClientCapabilities{
+					WriteOnlyAttributesAllowed: true,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: WriteOnlyAttributesAllowed false returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								if !req.WriteOnlyAttributesAllowed {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+		"Server with ValidateRawResourceConfigFunc: equal config value returns diags": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+								equals := req.RawConfig.Equals(cty.ObjectVal(map[string]cty.Value{
+									"id":  cty.NullVal(cty.String),
+									"foo": cty.NumberIntVal(2),
+									"bar": cty.NumberIntVal(2),
+								}))
+								if equals.True() {
+									resp.Diagnostics = diag.Diagnostics{
+										{
+											Severity: diag.Error,
+											Summary:  "ValidateRawResourceConfigFunc Error",
+										},
+									}
+								}
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+							"bar": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			request: &tfprotov5.ValidateResourceTypeConfigRequest{
+				TypeName: "test_resource",
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+							"bar": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NumberIntVal(2),
+							"bar": cty.NumberIntVal(2),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ValidateResourceTypeConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "ValidateRawResourceConfigFunc Error",
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			resp, err := testCase.server.ValidateResourceTypeConfig(context.Background(), testCase.request)
+
+			if testCase.request != nil && err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected); diff != "" {
+				t.Errorf("unexpected difference: %s", diff)
+			}
+		})
+	}
+}
+
 func TestUpgradeState_jsonState(t *testing.T) {
 	r := &Resource{
 		SchemaVersion: 2,
@@ -4036,6 +4519,94 @@ func TestUpgradeState_flatmapStateMissingMigrateState(t *testing.T) {
 	}
 }
 
+func TestUpgradeState_writeOnlyNullification(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Schema: map[string]*Schema{
+			"two": {
+				Type:      TypeInt,
+				Optional:  true,
+				WriteOnly: true,
+			},
+		},
+	}
+
+	r.StateUpgraders = []StateUpgrader{
+		{
+			Version: 0,
+			Type: cty.Object(map[string]cty.Type{
+				"id":   cty.String,
+				"zero": cty.Number,
+			}),
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+				_, ok := m["zero"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("zero not found in %#v", m)
+				}
+				m["one"] = float64(1)
+				delete(m, "zero")
+				return m, nil
+			},
+		},
+		{
+			Version: 1,
+			Type: cty.Object(map[string]cty.Type{
+				"id":  cty.String,
+				"one": cty.Number,
+			}),
+			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+				_, ok := m["one"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("one not found in %#v", m)
+				}
+				m["two"] = float64(2)
+				delete(m, "one")
+				return m, nil
+			},
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	req := &tfprotov5.UpgradeResourceStateRequest{
+		TypeName: "test",
+		Version:  0,
+		RawState: &tfprotov5.RawState{
+			JSON: []byte(`{"id":"bar","zero":0}`),
+		},
+	}
+
+	resp, err := server.UpgradeResourceState(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		for _, d := range resp.Diagnostics {
+			t.Errorf("%#v", d)
+		}
+		t.Fatal("error")
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedState.MsgPack, r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"id":  cty.StringVal("bar"),
+		"two": cty.NullVal(cty.Number),
+	})
+
+	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
+		t.Fatal(cmp.Diff(expected, val, valueComparer, equateEmpty))
+	}
+}
+
 func TestReadResource(t *testing.T) {
 	t.Parallel()
 
@@ -4179,6 +4750,88 @@ func TestReadResource(t *testing.T) {
 				},
 				Deferred: &tfprotov5.Deferred{
 					Reason: tfprotov5.DeferredReasonProviderConfigUnknown,
+				},
+			},
+		},
+		"write-only values are nullified in ReadResourceResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+							"test_write_only": {
+								Type:      TypeString,
+								WriteOnly: true,
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test_bool", true)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							err = d.Set("test_string", "new-state-val")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							err = d.Set("test_write_only", "write-only-val")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":              cty.String,
+							"test_bool":       cty.Bool,
+							"test_string":     cty.String,
+							"test_write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":              cty.StringVal("test-id"),
+							"test_bool":       cty.BoolVal(false),
+							"test_string":     cty.StringVal("prior-state-val"),
+							"test_write_only": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":              cty.String,
+							"test_bool":       cty.Bool,
+							"test_string":     cty.String,
+							"test_write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":              cty.StringVal("test-id"),
+							"test_bool":       cty.BoolVal(true),
+							"test_string":     cty.StringVal("new-state-val"),
+							"test_write_only": cty.NullVal(cty.String),
+						}),
+					),
 				},
 			},
 		},
@@ -4542,6 +5195,368 @@ func TestPlanResourceChange(t *testing.T) {
 				UnsafeToUseLegacyTypeSystem: true,
 			},
 		},
+		"create: write-only value can be retrieved in CustomizeDiff": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
+							val := d.Get("foo")
+							if val != "bar" {
+								t.Fatalf("Incorrect write-only value")
+							}
+
+							return nil
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("bar"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("bar"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedPrivate: []byte(`{"_new_extra_shim":{}}`),
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"create: write-only values are nullified in PlanResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+								"bar": cty.String,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+							"bar": cty.StringVal("boop"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("baz"),
+							"bar": cty.StringVal("boop"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.String),
+							"bar": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedPrivate: []byte(`{"_new_extra_shim":{}}`),
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"update: write-only value can be retrieved in CustomizeDiff": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, i interface{}) error {
+							val := d.Get("write_only")
+							if val != "bar" {
+								t.Fatalf("Incorrect write-only value")
+							}
+
+							return nil
+						},
+						Schema: map[string]*Schema{
+							"configured": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"write_only": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":         cty.String,
+							"configured": cty.String,
+							"write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":         cty.NullVal(cty.String),
+							"configured": cty.StringVal("prior_val"),
+							"write_only": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":         cty.String,
+							"configured": cty.String,
+							"write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":         cty.UnknownVal(cty.String),
+							"configured": cty.StringVal("updated_val"),
+							"write_only": cty.StringVal("bar"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":         cty.String,
+							"configured": cty.String,
+							"write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":         cty.NullVal(cty.String),
+							"configured": cty.StringVal("updated_val"),
+							"write_only": cty.StringVal("bar"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":         cty.String,
+							"configured": cty.String,
+							"write_only": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":         cty.UnknownVal(cty.String),
+							"configured": cty.StringVal("updated_val"),
+							"write_only": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedPrivate: []byte(`{"_new_extra_shim":{}}`),
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"update: write-only values are nullified in PlanResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"configured": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"write_onlyA": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"write_onlyB": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"configured":  cty.StringVal("prior_val"),
+							"write_onlyA": cty.NullVal(cty.String),
+							"write_onlyB": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.UnknownVal(cty.String),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.StringVal("foo"),
+							"write_onlyB": cty.StringVal("bar"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.StringVal("foo"),
+							"write_onlyB": cty.StringVal("bar"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.UnknownVal(cty.String),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.NullVal(cty.String),
+							"write_onlyB": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedPrivate: []byte(`{"_new_extra_shim":{}}`),
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -4653,6 +5668,237 @@ func TestPlanResourceChange_bigint(t *testing.T) {
 }
 
 func TestApplyResourceChange(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.ApplyResourceChangeRequest
+		expected *tfprotov5.ApplyResourceChangeResponse
+	}{
+		"create: write-only values are nullified in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							rd.SetId("baz")
+							return nil
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"bar": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.String,
+								"bar": cty.String,
+							}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+							"bar": cty.StringVal("boop"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("baz"),
+							"bar": cty.StringVal("boop"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"bar": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.StringVal("baz"),
+							"foo": cty.NullVal(cty.String),
+							"bar": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				Private:                     []uint8(`{"schema_version":"4"}`),
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"update: write-only values are nullified in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							rd.SetId("baz")
+							s := rd.Get("configured").(string)
+							err := rd.Set("configured", s)
+							if err != nil {
+								return nil
+							}
+							return nil
+						},
+						Schema: map[string]*Schema{
+							"configured": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"write_onlyA": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+							"write_onlyB": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"configured":  cty.StringVal("prior_val"),
+							"write_onlyA": cty.NullVal(cty.String),
+							"write_onlyB": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.UnknownVal(cty.String),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.StringVal("foo"),
+							"write_onlyB": cty.StringVal("bar"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.StringVal("foo"),
+							"write_onlyB": cty.StringVal("bar"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"configured":  cty.String,
+							"write_onlyA": cty.String,
+							"write_onlyB": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("baz"),
+							"configured":  cty.StringVal("updated_val"),
+							"write_onlyA": cty.NullVal(cty.String),
+							"write_onlyB": cty.NullVal(cty.String),
+						}),
+					),
+				},
+				Private:                     []uint8(`{"schema_version":"4"}`),
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			resp, err := testCase.server.ApplyResourceChange(context.Background(), testCase.req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && resp.NewState != nil {
+					t.Logf("resp.NewState.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.NewState.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.NewState != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.NewState.MsgPack))
+				}
+
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestApplyResourceChange_ResourceFuncs(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
@@ -4976,6 +6222,239 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 	}
 }
 
+func TestApplyResourceChange_ResourceFuncs_writeOnly(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		TestResource                   *Resource
+		ExpectedUnsafeLegacyTypeSystem bool
+	}{
+		"Create: retrieve write-only value using GetRawConfigAt": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				Create: func(rd *ResourceData, _ interface{}) error {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateContext: retrieve write-only value using GetRawConfigAt": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateWithoutTimeout: retrieve write-only value using GetRawConfigAt": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateWithoutTimeout: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateContext with SchemaFunc: retrieve write-only value using GetRawConfigAt": {
+			TestResource: &Resource{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"id": {
+							Type:     TypeString,
+							Computed: true,
+						},
+						"write_only_bar": {
+							Type:      TypeString,
+							Optional:  true,
+							WriteOnly: true,
+						},
+					}
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					writeOnlyVal, err := rd.GetRawConfigAt(cty.GetAttrPath("write_only_bar"))
+					if err != nil {
+						t.Errorf("Unable to retrieve write only attribute, err: %v", err)
+					}
+					if writeOnlyVal.AsString() != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+		"CreateContext: retrieve write-only value using GetRawConfig": {
+			TestResource: &Resource{
+				SchemaVersion: 4,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+					"write_only_bar": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+					rd.SetId("baz")
+					if rd.GetRawConfig().IsNull() {
+						return diag.FromErr(errors.New("null raw writeOnly val"))
+					}
+					if rd.GetRawConfig().GetAttr("write_only_bar").Type() != cty.String {
+						return diag.FromErr(errors.New("write_only_bar is not of the expected type string"))
+					}
+					writeOnlyVal := rd.GetRawConfig().GetAttr("write_only_bar").AsString()
+					if writeOnlyVal != "bar" {
+						t.Errorf("Incorrect write-only value: expected bar but got %s", writeOnlyVal)
+					}
+					return nil
+				},
+			},
+			ExpectedUnsafeLegacyTypeSystem: true,
+		},
+	}
+
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			server := NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": testCase.TestResource,
+				},
+			})
+
+			schema := testCase.TestResource.CoreConfigSchema()
+			priorState, err := msgpack.Marshal(cty.NullVal(schema.ImpliedType()), schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// A proposed state with only the ID unknown will produce a nil diff, and
+			// should return the proposed state value.
+			plannedVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id": cty.UnknownVal(cty.String),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			plannedState, err := msgpack.Marshal(plannedVal, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			config, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
+				"id":             cty.NullVal(cty.String),
+				"write_only_bar": cty.StringVal("bar"),
+			}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			configBytes, err := msgpack.Marshal(config, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			testReq := &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: priorState,
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: plannedState,
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: configBytes,
+				},
+			}
+
+			resp, err := server.ApplyResourceChange(context.Background(), testReq)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			newStateVal, err := msgpack.Unmarshal(resp.NewState.MsgPack, schema.ImpliedType())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			id := newStateVal.GetAttr("id").AsString()
+			if id != "baz" {
+				t.Fatalf("incorrect final state: %#v\n", newStateVal)
+			}
+
+			//nolint:staticcheck // explicitly for this SDK
+			if testCase.ExpectedUnsafeLegacyTypeSystem != resp.UnsafeToUseLegacyTypeSystem {
+				//nolint:staticcheck // explicitly for this SDK
+				t.Fatalf("expected UnsafeLegacyTypeSystem %t, got: %t", testCase.ExpectedUnsafeLegacyTypeSystem, resp.UnsafeToUseLegacyTypeSystem)
+			}
+		})
+	}
+}
+
 func TestImportResourceState(t *testing.T) {
 	t.Parallel()
 
@@ -5170,6 +6649,60 @@ func TestImportResourceState(t *testing.T) {
 								),
 							),
 						},
+					},
+				},
+			},
+		},
+		"write-only-nullification": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								err := d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				ID:       "imported-id",
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"id":          cty.StringVal("imported-id"),
+									"test_string": cty.NullVal(cty.String),
+								}),
+							),
+						},
+						Private: []byte(`{"schema_version":"1"}`),
 					},
 				},
 			},

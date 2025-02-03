@@ -12,6 +12,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/hashicorp/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -2304,5 +2307,105 @@ func TestResourceDiffHasChanges(t *testing.T) {
 		if actual != tc.Change {
 			t.Fatalf("Bad: %d %#v", i, actual)
 		}
+	}
+}
+
+func TestResourceDiffGetRawConfigAt(t *testing.T) {
+	cases := map[string]struct {
+		RawConfig     cty.Value
+		Path          cty.Path
+		Value         cty.Value
+		ExpectedDiags diag.Diagnostics
+	}{
+		"null RawConfig returns error": {
+			RawConfig: cty.NullVal(cty.EmptyObject),
+			Path:      cty.GetAttrPath("invalid_root_path"),
+			Value:     cty.DynamicVal,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Empty Raw Config",
+					Detail: "The Terraform Provider unexpectedly received an empty configuration. " +
+						"This is almost always an issue with the Terraform Plugin SDK used to create providers. " +
+						"Please report this to the provider developers. \n\n" +
+						"The RawConfig is empty.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
+		},
+		"invalid path returns error": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:  cty.GetAttrPath("invalid_root_path"),
+			Value: cty.DynamicVal,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Invalid config path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"Cannot find config value for given path.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
+		},
+		"root level attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute"),
+			Value: cty.NumberIntVal(42),
+		},
+		"list nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"list_nested_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:  cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			diff := &terraform.InstanceDiff{
+				RawConfig: tc.RawConfig,
+			}
+			d := &ResourceDiff{
+				diff: diff,
+			}
+
+			v, diags := d.GetRawConfigAt(tc.Path)
+			if len(diags) == 0 && tc.ExpectedDiags == nil {
+				return
+			}
+
+			if len(diags) != 0 && tc.ExpectedDiags == nil {
+				t.Fatalf("expected no diagnostics but got %v", diags)
+			}
+
+			if diff := cmp.Diff(tc.ExpectedDiags, diags,
+				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
+				cmp.Comparer(indexStepComparer),
+			); diff != "" {
+				t.Errorf("Unexpected diagnostics (-wanted +got): %s", diff)
+			}
+
+			if !reflect.DeepEqual(v, tc.Value) {
+				t.Errorf("Bad: %s\n\n%#v\n\nExpected: %#v", tn, v, tc.Value)
+			}
+		})
 	}
 }

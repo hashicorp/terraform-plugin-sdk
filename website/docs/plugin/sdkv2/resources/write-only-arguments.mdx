@@ -1,0 +1,248 @@
+---
+page_title: Resources - Write-only Arguments
+description: Implementing write-only arguments within resources.
+---
+
+# Resources - Write-only Arguments
+
+~> **NOTE:** Write-only arguments are only supported in Terraform `v1.11` or higher
+
+Write-only arguments are managed resource attributes that are configured by practitioners but are not persisted to the Terraform plan or state artifacts. Write-only arguments
+should be used to handle secret values that do not need to be persisted in Terraform state, such as passwords, API keys, etc.
+The provider is expected to be the terminal point for an ephemeral value,
+which should either use the value by making the appropriate change to the API or ignore the value. Write-only arguments can accept [ephemeral values](/terraform/language/resources/ephemeral) and are not required to be consistent between plan and apply operations.
+
+## General Concepts
+
+The following are high level differences between `Required`/`Optional` arguments and write-only arguments:
+
+- Write-only arguments can accept ephemeral and non-ephemeral values
+
+- Write-only argument values are only available in the configuration. The prior state, planned state, and final state values for
+write-only arguments should always be `null`.
+    - Provider developers do not need to explicitly set write-only argument values to `null` after using them as the SDKv2 will handle the nullification of write-only arguments for all RPCs.
+
+- Any value that is set for a write-only argument using `(*ResourceData).Set()` by the provider will be reverted to `null` by SDKv2 before the RPC response is sent to Terraform
+
+- Write-only argument values cannot produce a Terraform plan difference.
+    - This is because the prior state value for a write-only argument will always be `null` and the planned/final state value will also be `null`, therefore, it cannot produce a diff on its own.
+    - The one exception to this case is if the write-only argument is added to `requires_replace` via [CustomizeDiff](/terraform/plugin/sdkv2/resources/customizing-differences), in that case, the write-only argument will always cause a diff/trigger a resource recreation
+
+- Since write-only arguments can accept ephemeral values, write-only argument configuration values are not expected to be consistent between plan and apply.
+
+## Schema Behavior
+
+**Schema example:**
+
+```go
+"password_wo": {
+  Type:     schema.TypeString,
+  Required:  true,
+  WriteOnly: true,
+},
+```
+
+**Restrictions:**
+
+- Cannot be used in data source or provider schemas
+- Must be set with either `Required` is `true` or `Optional` is `true`
+- Cannot be used when `Computed` is `true`
+- Cannot be used when `ForceNew` is `true`
+- Cannot be used when `Default` is `specified`
+- Cannot be used with `DefaultFunc`
+- Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed nested block types can contain write-only arguments.
+
+## Retrieving Write-only Values
+
+Write-only argument values are only available in the raw resource configuration, you cannot retrieve it using `(*resourceData).Get()` like other attribute values.
+
+Use the `(*schema.ResourceData).GetRawConfigAt()` method to retrieve the raw config value.
+
+This method is an advanced method that uses the `hashicorp/go-cty` library for its type system.
+
+```go
+woVal, diags := d.GetRawConfigAt(cty.GetAttrPath("password_wo"))
+```
+
+### cty.Path
+
+`(*schema.ResourceData).GetRawConfigAt()` uses `cty.Path` to specify locations in the raw configuration.
+
+This is very similar to the `terraform-plugin-framework` [paths](/terraform/plugin/framework/handling-data/paths) or `terraform-plugin-testing` [json paths](/terraform/plugin/testing/acceptance-tests/tfjson-paths).
+
+All top level attributes or blocks can be referred to using `cty.GetAttrPath()`
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  "top_level_schema_attribute" = 1
+}
+```
+
+**Path example:**
+
+```go
+cty.GetAttrPath("top_level_schema_attribute") // returns cty.NumberIntVal(1)
+```
+
+Maps can be traversed using `IndexString()`
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  map_attribute {
+    key1 = "value1"
+  }
+}
+```
+
+**Path example:**
+
+```go
+// Map traversal
+cty.GetAttrPath("map_attribute").IndexString("key1") // returns cty.StringVal("value1")
+```
+
+Lists or list nested blocks can be traversed using `IndexInt()`
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  list_attribute = ["value1", "value2"]
+  list_nested_block {
+    list_nested_block_attribute = "value3"
+  }
+
+  list_nested_block {
+    list_nested_block_attribute = "value4"
+  }
+}
+```
+
+**Path example:**
+
+```go
+// List traversal
+cty.GetAttrPath("list_attribute").IndexInt(0) // returns cty.StringVal("value1")
+
+
+// List nested block traversal
+cty.GetAttrPath("list_nested_block").IndexInt(1).getAttr("list_nested_block_attribute") // returns cty.StringVal("value4")
+```
+
+Sets or set nested blocks can be traversed using `Index()`. `Index()` takes in a `cty.Value` of the set element that you want to traverse into.
+
+However, if you do not know the specific value of the desired set element,
+you can also retrieve the entire set using `cty.GetAttrPath()`.
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  set_attribute = ["value1", "value2"]
+  set_nested_block {
+    set_nested_block_attribute = "value3"
+  }
+
+  set_nested_block {
+    set_nested_block_attribute = "value4"
+  }
+}
+```
+
+**Path example:**
+
+```go
+// Set attribute - root traversal
+cty.GetAttrPath("set_attribute") // returns cty.SetVal([]cty.Value{cty.StringVal("value1"), cty.StringVal("value2")})
+
+// Set attribute - index traversal
+cty.GetAttrPath("set_attribute").Index(cty.StringVal("value2")) // returns cty.StringVal("value2")
+
+
+// Set nested block - root traversal
+cty.GetAttrPath("set_nested_block")
+// returns:
+// cty.SetVal([]cty.Value{
+//    cty.ObjectVal(map[string]cty.Value{
+//        "set_nested_block_attribute": cty.StringVal("value3"),
+//    }),
+//    cty.ObjectVal(map[string]cty.Value{
+//        "set_nested_block_attribute": cty.StringVal("value4"),
+//    }),
+// }),
+
+// Set nested block - index traversal
+cty.GetAttrPath("set_nested_block")
+.Index(cty.ObjectVal(map[string]cty.Value{"set_nested_block_attribute": cty.StringVal("value4")}))
+.GetAttr("set_nested_block_attribute") // returns cty.String("value4")
+```
+
+### cty.Value
+
+When working with `cty.Value`, you must always check the type of the value before converting it to a Go value or else the conversion could cause a panic.
+
+```go
+// Check that the type is a cty.String before conversion
+if !woVal.Type().Equals(cty.String) {
+    return errors.New("error retrieving write-only argument: password_wo - retrieved config value is not a string")
+}
+
+// Check if the value is not null
+if !woVal.IsNull() {
+    // Now we can safely convert to a Go string
+    encryptedValue = woVal.AsString()
+}
+```
+
+## PreferWriteOnlyAttribute Validator
+
+`PreferWriteOnlyAttribute()` is a validator that takes a `cty.Path` to an existing configuration attribute (required/optional) and a `cty.Path` to a write-only argument.
+
+Use this validator when you have a write-only version of an existing attribute, and you want to encourage practitioners to use the write-only version whenever possible.
+
+The validator returns a warning if the Terraform client is 1.11 or above and the value to the regular attribute is non-null.
+
+Usage:
+
+```go
+func resourceDbInstance() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceCreate,
+		Read:   resourceRead,
+		Delete: resourceDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceImport,
+		},
+		Schema: //omitted for brevity
+		ValidateRawResourceConfigFuncs: []schema.ValidateRawResourceConfigFunc{
+            validation.PreferWriteOnlyAttribute(cty.GetAttrPath("password"), cty.GetAttrPath("password_wo")),
+		},
+	}
+}
+```
+
+```hcl
+resource "example_db_instance" "ex" {
+  username = "foo"
+  password = "bar" # returns a warning encouraging practitioners to use `password_wo` instead.
+}
+```
+
+When using `cty.Path` to traverse into a nested block, use an unknown value to indicate any key value:
+
+- For lists: `cty.Index(cty.UnknownVal(cty.Number))`,
+- For maps: `cty.Index(cty.UnknownVal(cty.String))`,
+- For sets: `cty.Index(cty.UnknownVal(cty.Object(nil)))`,
+
+
+## Best Practices
+
+Since write-only arguments have no prior values, user intent cannot be determined with a write-only argument alone. To determine when to use/not use a write-only argument value in your provider, we recommend using other non-write-only arguments in the provider. For example:
+
+- Pair write-only arguments with a configuration attribute (required or optional) to “trigger” the use of the write-only argument
+    - For example, a `password_wo` write-only argument can be paired with a configured `password_wo_version` attribute. When the `password_wo_version` is modified, the provider will send the `password_wo` value to the API.
+- Use a keepers attribute (which is used in the [Random Provider](https://registry.terraform.io/providers/hashicorp/random/latest/docs#resource-keepers)) that will take in arbitrary key-pair values. Whenever there is a change to the `keepers` attribute, the provider will use the write-only argument value.

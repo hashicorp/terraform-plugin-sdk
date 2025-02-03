@@ -2288,11 +2288,11 @@ func TestProviderMeta(t *testing.T) {
 }
 
 func TestProvider_InternalValidate(t *testing.T) {
-	cases := []struct {
+	cases := map[string]struct {
 		P           *Provider
 		ExpectedErr error
 	}{
-		{
+		"Provider with schema returns no errors": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -2303,7 +2303,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: nil,
 		},
-		{ // Reserved resource fields should be allowed in provider block
+		"Reserved resource fields in provider block returns no errors": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"provisioner": {
@@ -2318,7 +2318,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: nil,
 		},
-		{ // Reserved provider fields should not be allowed
+		"Reserved provider fields returns an error": { //
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"alias": {
@@ -2329,7 +2329,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: fmt.Errorf("%s is a reserved field name for a provider", "alias"),
 		},
-		{ // ConfigureFunc and ConfigureContext cannot both be set
+		"Provider with ConfigureFunc and ConfigureContext both set returns an error": {
 			P: &Provider{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -2346,22 +2346,156 @@ func TestProvider_InternalValidate(t *testing.T) {
 			},
 			ExpectedErr: fmt.Errorf("ConfigureFunc and ConfigureContextFunc must not both be set"),
 		},
+		"Provider schema with WriteOnly attribute set returns an error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+			},
+			ExpectedErr: fmt.Errorf("provider schema cannot contain write-only attributes"),
+		},
+		"Provider meta schema with WriteOnly attribute set returns an error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ProviderMetaSchema: map[string]*Schema{
+					"meta-foo": {
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+			},
+			ExpectedErr: fmt.Errorf("provider meta schema cannot contain write-only attributes"),
+		},
+		"Data source schema with WriteOnly attribute set returns an error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				DataSourcesMap: map[string]*Resource{
+					"data-foo": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: fmt.Errorf("data source data-foo cannot contain write-only attributes"),
+		},
+		"Resource schema with WriteOnly attribute set returns no errors": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ResourcesMap: map[string]*Resource{
+					"resource-foo": {
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: nil,
+		},
+		"Data source with ValidateRawResourceConfigFuncs returns an error": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				DataSourcesMap: map[string]*Resource{
+					"data-foo": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: fmt.Errorf("data source data-foo cannot contain ValidateRawResourceConfigFuncs"),
+		},
+		"Resource with ValidateRawResourceConfigFuncs returns no errors": {
+			P: &Provider{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ResourcesMap: map[string]*Resource{
+					"resource-foo": {
+						ValidateRawResourceConfigFuncs: []ValidateRawResourceConfigFunc{
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+							func(ctx context.Context, req ValidateResourceConfigFuncRequest, resp *ValidateResourceConfigFuncResponse) {
+
+							},
+						},
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			ExpectedErr: nil,
+		},
 	}
 
-	for i, tc := range cases {
-		err := tc.P.InternalValidate()
-		if tc.ExpectedErr == nil {
-			if err != nil {
-				t.Fatalf("%d: Error returned (expected no error): %s", i, err)
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.P.InternalValidate()
+			if tc.ExpectedErr == nil {
+				if err != nil {
+					t.Fatalf("Error returned (expected no error): %s", err)
+				}
 			}
-			continue
-		}
-		if tc.ExpectedErr != nil && err == nil {
-			t.Fatalf("%d: Expected error (%s), but no error returned", i, tc.ExpectedErr)
-		}
-		if err.Error() != tc.ExpectedErr.Error() {
-			t.Fatalf("%d: Errors don't match. Expected: %#v Given: %#v", i, tc.ExpectedErr, err)
-		}
+			if tc.ExpectedErr != nil && err == nil {
+				t.Fatalf("Expected error (%s), but no error returned", tc.ExpectedErr)
+			}
+			if tc.ExpectedErr != nil && err.Error() != tc.ExpectedErr.Error() {
+				t.Fatalf("Errors don't match. Expected: %#v Given: %#v", tc.ExpectedErr.Error(), err.Error())
+			}
+		})
 	}
 }
 

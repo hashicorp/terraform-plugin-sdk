@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
@@ -3125,7 +3126,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 		In  map[string]*Schema
 		Err bool
 	}{
-		"nothing": {
+		"nothing returns no error": {
 			nil,
 			false,
 		},
@@ -5046,6 +5047,368 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 					ValidateDiagFunc: func(interface{}, cty.Path) diag.Diagnostics {
 						return nil
+					},
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly and Required set returns no errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Required:  true,
+					WriteOnly: true,
+				},
+			},
+			false,
+		},
+
+		"Attribute with WriteOnly and Optional set returns no errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					WriteOnly: true,
+				},
+			},
+			false,
+		},
+
+		"Attribute with WriteOnly and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Computed:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly and ForceNew set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					ForceNew:  true,
+					Optional:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					Computed:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, Required, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					Required:  true,
+					Computed:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, and Required set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					Required:  true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, and Default set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					Optional:  true,
+					Default:   true,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Optional, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with WriteOnly, Required, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Required: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with only WriteOnly set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:      TypeString,
+					WriteOnly: true,
+				},
+			},
+			true,
+		},
+
+		"List attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:      TypeList,
+					Required:  true,
+					WriteOnly: true,
+					Elem:      &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+		"Map attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:      TypeMap,
+					Required:  true,
+					WriteOnly: true,
+					Elem:      &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+		"Set attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:      TypeSet,
+					Required:  true,
+					WriteOnly: true,
+					Elem:      &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+
+		"List configuration block with WriteOnly set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:      TypeList,
+					Optional:  true,
+					WriteOnly: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		"List configuration block nested attribute with WriteOnly set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Map configuration attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:      TypeMap,
+					Optional:  true,
+					WriteOnly: true,
+					Elem: &Schema{
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+			},
+			true,
+		},
+		"Map configuration attribute nested attribute with WriteOnly set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem: &Schema{
+						Type:      TypeString,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with WriteOnly set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:      TypeSet,
+					Optional:  true,
+					WriteOnly: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		"Set configuration block nested attribute with WriteOnly set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List configuration block with ConfigModeAttr set, sub block nested attribute with WriteOnly set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeList,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeList,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:      TypeString,
+											Optional:  true,
+											WriteOnly: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with ConfigModeAttr set, sub block nested attribute with WriteOnly set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeSet,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeSet,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:      TypeString,
+											Optional:  true,
+											WriteOnly: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List computed block nested attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:      TypeString,
+								Optional:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		"Set computed block nested attribute with WriteOnly set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:      TypeString,
+								Required:  true,
+								WriteOnly: true,
+							},
+						},
 					},
 				},
 			},
@@ -8818,6 +9181,278 @@ func TestValidateRequiredWithAttributes(t *testing.T) {
 				}
 
 				t.FailNow()
+			}
+		})
+	}
+}
+
+func TestHasWriteOnly(t *testing.T) {
+	cases := map[string]struct {
+		Schema          map[string]*Schema
+		expectWriteOnly bool
+	}{
+		"Empty returns false": {
+			Schema:          map[string]*Schema{},
+			expectWriteOnly: false,
+		},
+		"Top-level WriteOnly set returns true": {
+			Schema: map[string]*Schema{
+				"top-level": {
+					Type:      TypeSet,
+					Optional:  true,
+					WriteOnly: true,
+					MinItems:  2,
+					Elem:      &Schema{Type: TypeString},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Top-level WriteOnly not set returns false": {
+			Schema: map[string]*Schema{
+				"top-level": {
+					Type:     TypeSet,
+					Optional: true,
+					MinItems: 2,
+					Elem:     &Schema{Type: TypeString},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Multiple top-level WriteOnly set returns true": {
+			Schema: map[string]*Schema{
+				"top-level1": {
+					Type:     TypeSet,
+					Optional: true,
+					MinItems: 2,
+					Elem:     &Schema{Type: TypeString},
+				},
+				"top-level2": {
+					Type:      TypeString,
+					Optional:  true,
+					WriteOnly: true,
+				},
+				"top-level3": {
+					Type:      TypeInt,
+					Optional:  true,
+					WriteOnly: true,
+					MinItems:  2,
+					Elem:      &Schema{Type: TypeString},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Elem set with Resource: no WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Elem set with Resource: WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:      TypeString,
+								Computed:  true,
+								WriteOnly: true,
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Double nested Elem set with Resource: no WriteOnly returns false": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Computed: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_nested_attr": {
+											Type:     TypeString,
+											Computed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Double nested Elem set with Resource: WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Computed: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_nested_attr": {
+											Type:      TypeString,
+											Computed:  true,
+											WriteOnly: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Elem set with Schema: no WriteOnly returns false": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type:     TypeString,
+						Computed: true,
+					},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Elem set with Schema: WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type:      TypeString,
+						Computed:  true,
+						WriteOnly: true,
+					},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Double nested Elem set with Schema: no WriteOnly returns false": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type: TypeString,
+						Elem: &Schema{
+							Computed: true,
+						},
+					},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Double nested Elem set with Schema: WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type: TypeString,
+						Elem: &Schema{
+							Computed:  true,
+							WriteOnly: true,
+						},
+					},
+				},
+			},
+			expectWriteOnly: true,
+		},
+		"Multiple nested elements: no WriteOnly returns false": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type: TypeString,
+						Elem: &Schema{
+							Computed: true,
+							Elem: &Resource{
+								Schema: map[string]*Schema{
+									"nested_nested_nested_attr": {
+										Type:     TypeString,
+										Computed: true,
+									},
+									"nested_nested_nested_attr2": {
+										Type:     TypeString,
+										Computed: true,
+										Elem: &Schema{
+											Computed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: false,
+		},
+		"Multiple nested elements: WriteOnly returns true": {
+			Schema: map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Schema{
+						Type: TypeString,
+						Elem: &Schema{
+							Computed: true,
+							Elem: &Resource{
+								Schema: map[string]*Schema{
+									"nested_nested_nested_attr": {
+										Type:     TypeString,
+										Computed: true,
+									},
+									"nested_nested_nested_attr2": {
+										Type:     TypeString,
+										Computed: true,
+										Elem: &Schema{
+											Computed:  true,
+											WriteOnly: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectWriteOnly: true,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			actualWriteOnly := schemaMap(tc.Schema).hasWriteOnly()
+			if tc.expectWriteOnly != actualWriteOnly {
+				t.Fatalf("Expected: %t, got: %t", tc.expectWriteOnly, actualWriteOnly)
 			}
 		})
 	}

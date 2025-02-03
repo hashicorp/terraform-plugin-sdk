@@ -197,6 +197,53 @@ resource "example_instance" "ex" {
 }
 ```
 
+### WriteOnly
+
+~> **NOTE:** Write-only arguments are only supported in Terraform `v1.11` or higher
+
+**Data structure:** [bool](https://pkg.go.dev/builtin#bool)
+
+**Value:** `true`
+
+**Restrictions:**
+
+- Cannot be used in data source or provider schemas
+- Must be set with either `Required` is `true` or `Optional` is `true`
+- Cannot be used when `Computed` is `true`
+- Cannot be used when `ForceNew` is `true`
+- Cannot be used when `Default` is `specified`
+- Cannot be used with `DefaultFunc`
+- Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed nested block types can contain write-only arguments.
+
+`WriteOnly` should be used for arguments that handle secret values that do not need to be persisted in Terraform plan or state,
+such as passwords, API keys, etc. Write-only argument values are not sent to Terraform and do not
+persist in the Terraform plan or state artifacts.
+Arguments marked
+as `WriteOnly` can accept [ephemeral values](/terraform/language/resources/ephemeral).
+
+**Schema example:**
+
+```go
+"password_wo": {
+  Type:     schema.TypeString,
+  Required:  true,
+  WriteOnly: true,
+},
+```
+
+**Configuration example:**
+
+```hcl
+ephemeral "random_password" "ex_pass" {
+  length = 15
+}
+
+resource "example_db_instance" "ex" {
+  username = "foo"
+  password_wo = random_password.ex_pass.password
+}
+```
+
 ## Function Behaviors
 
 ### DiffSuppressFunc

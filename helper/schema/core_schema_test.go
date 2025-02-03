@@ -458,6 +458,25 @@ func TestSchemaMapCoreConfigSchema(t *testing.T) {
 				BlockTypes: map[string]*configschema.NestedBlock{},
 			}),
 		},
+		"write-only": {
+			map[string]*Schema{
+				"string": {
+					Type:      TypeString,
+					Optional:  true,
+					WriteOnly: true,
+				},
+			},
+			testResource(&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"string": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{},
+			}),
+		},
 	}
 
 	for name, test := range tests {

@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-cty/cty"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -3912,6 +3916,169 @@ func TestResourceData_nonStringValuesInMap(t *testing.T) {
 			t.Fatalf("expected %q to be %q, it is %q.",
 				c.ItemName, c.ExpectedType, typeName)
 		}
+	}
+}
+
+func TestResourceDataGetRawConfigAt(t *testing.T) {
+	cases := map[string]struct {
+		RawConfig     cty.Value
+		Path          cty.Path
+		Value         cty.Value
+		ExpectedDiags diag.Diagnostics
+	}{
+		"null RawConfig returns error": {
+			RawConfig: cty.NullVal(cty.EmptyObject),
+			Path:      cty.GetAttrPath("invalid_root_path"),
+			Value:     cty.DynamicVal,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Empty Raw Config",
+					Detail: "The Terraform Provider unexpectedly received an empty configuration. " +
+						"This is almost always an issue with the Terraform Plugin SDK used to create providers. " +
+						"Please report this to the provider developers. \n\n" +
+						"The RawConfig is empty.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
+		},
+		"null value in config": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NullVal(cty.Number),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute"),
+			Value: cty.NullVal(cty.Number),
+		},
+		"invalid path returns error": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:  cty.GetAttrPath("invalid_root_path"),
+			Value: cty.DynamicVal,
+			ExpectedDiags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Invalid config path",
+					Detail: "The Terraform Provider unexpectedly provided a path that does not match the current schema. " +
+						"This can happen if the path does not correctly follow the schema in structure or types. " +
+						"Please report this to the provider developers. \n\n" +
+						"Cannot find config value for given path.",
+					AttributePath: cty.Path{
+						cty.GetAttrStep{Name: "invalid_root_path"},
+					},
+				},
+			},
+		},
+		"root level attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.NumberIntVal(42),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute"),
+			Value: cty.NumberIntVal(42),
+		},
+		"root level set attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.SetVal([]cty.Value{
+					cty.StringVal("valueA"),
+					cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").Index(cty.StringVal("valueA")),
+			Value: cty.StringVal("valueA"),
+		},
+		"root level list attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.ListVal([]cty.Value{
+					cty.StringVal("valueA"),
+					cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").IndexInt(0),
+			Value: cty.StringVal("valueA"),
+		},
+		"root level map attribute": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.MapVal(map[string]cty.Value{
+					"mapA": cty.StringVal("valueA"),
+					"mapB": cty.StringVal("valueB"),
+				}),
+			}),
+			Path:  cty.GetAttrPath("ConfigAttribute").IndexString("mapB"),
+			Value: cty.StringVal("valueB"),
+		},
+		"list nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"list_nested_block": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:  cty.GetAttrPath("list_nested_block").IndexInt(1).GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
+		"set nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"set_nested_block": cty.SetVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path: cty.GetAttrPath("set_nested_block").Index(cty.ObjectVal(map[string]cty.Value{
+				"ConfigAttribute": cty.StringVal("valueB"),
+			})).GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
+		"map nested block attribute - get attribute value": {
+			RawConfig: cty.ObjectVal(map[string]cty.Value{
+				"map_nested_block": cty.MapVal(map[string]cty.Value{
+					"mapA": cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueA"),
+					}),
+					"mapB": cty.ObjectVal(map[string]cty.Value{
+						"ConfigAttribute": cty.StringVal("valueB"),
+					}),
+				}),
+			}),
+			Path:  cty.GetAttrPath("map_nested_block").IndexString("mapB").GetAttr("ConfigAttribute"),
+			Value: cty.StringVal("valueB"),
+		},
+	}
+
+	for tn, tc := range cases {
+		t.Run(tn, func(t *testing.T) {
+			diff := &terraform.InstanceDiff{
+				RawConfig: tc.RawConfig,
+			}
+			d := &ResourceData{
+				diff: diff,
+			}
+
+			v, diags := d.GetRawConfigAt(tc.Path)
+			if len(diags) != 0 && tc.ExpectedDiags == nil {
+				t.Fatalf("expected no diagnostics but got %v", diags)
+			}
+
+			if diff := cmp.Diff(tc.ExpectedDiags, diags,
+				cmp.AllowUnexported(cty.GetAttrStep{}, cty.IndexStep{}),
+				cmp.Comparer(indexStepComparer),
+			); diff != "" {
+				t.Errorf("Unexpected diagnostics (-wanted +got): %s", diff)
+			}
+
+			if !reflect.DeepEqual(v, tc.Value) {
+				t.Errorf("Bad: %s\n\n%#v\n\nExpected: %#v", tn, v, tc.Value)
+			}
+		})
 	}
 }
 
