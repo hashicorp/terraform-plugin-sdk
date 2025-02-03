@@ -72,45 +72,113 @@ This is very similar to the `terraform-plugin-framework` [paths](/terraform/plug
 
 All top level attributes or blocks can be referred to using `cty.GetAttrPath()`
 
-```go
-cty.GetAttrPath("top_level_schema_attribute")
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  "top_level_schema_attribute" = 1
+}
 ```
 
-Maps or map nested blocks can be traversed using `IndexString()`
+**Path example:**
+
+```go
+cty.GetAttrPath("top_level_schema_attribute") // returns cty.NumberIntVal(1)
+```
+
+Maps can be traversed using `IndexString()`
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  map_attribute {
+    key1 = "value1"
+  }
+}
+```
+
+**Path example:**
 
 ```go
 // Map traversal
-cty.GetAttrPath("map_attribute").IndexString("key1")
-
-
-// Map nested block traversal
-cty.GetAttrPath("map_nested_block").IndexString("block1").getAttr("map_nested_block_attribute")
-
+cty.GetAttrPath("map_attribute").IndexString("key1") // returns cty.StringVal("value1")
 ```
 
 Lists or list nested blocks can be traversed using `IndexInt()`
 
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  list_attribute = ["value1", "value2"]
+  list_nested_block {
+    list_nested_block_attribute = "value3"
+  }
+
+  list_nested_block {
+    list_nested_block_attribute = "value4"
+  }
+}
+```
+
+**Path example:**
+
 ```go
 // List traversal
-cty.GetAttrPath("list_attribute").IndexInt(0)
+cty.GetAttrPath("list_attribute").IndexInt(0) // returns cty.StringVal("value1")
 
 
 // List nested block traversal
-cty.GetAttrPath("list_nested_block").IndexInt(1).getAttr("list_nested_block_attribute")
+cty.GetAttrPath("list_nested_block").IndexInt(1).getAttr("list_nested_block_attribute") // returns cty.StringVal("value4")
 ```
 
 Sets or set nested blocks can be traversed using `Index()`. `Index()` takes in a `cty.Value` of the set element that you want to traverse into.
 
+However, if you do not know the specific value of the desired set element,
+you can also retrieve the entire set using `cty.GetAttrPath()`.
+
+**Configuration example:**
+
+```hcl
+resource "example_resource" "example" {
+  set_attribute = ["value1", "value2"]
+  set_nested_block {
+    set_nested_block_attribute = "value3"
+  }
+
+  set_nested_block {
+    set_nested_block_attribute = "value4"
+  }
+}
+```
+
+**Path example:**
+
 ```go
-// Set traversal
-cty.GetAttrPath("set_attribute").Index(cty.String("set_string_val"))
+// Set attribute - root traversal
+cty.GetAttrPath("set_attribute") // returns cty.SetVal([]cty.Value{cty.StringVal("value1"), cty.StringVal("value2")})
+
+// Set attribute - index traversal
+cty.GetAttrPath("set_attribute").Index(cty.StringVal("value2")) // returns cty.StringVal("value2")
 
 
-// Set nested block traversal
-cty.GetAttrPath("set_nested_block").
-Index(cty.ObjectVal(map[string]cty.Value{"set_nested_block_attribute": cty.StringVal("valueA")}))
-.GetAttr("set_nested_block_attribute") // returns path to cty.String("valueA")
+// Set nested block - root traversal
+cty.GetAttrPath("set_nested_block")
+// returns:
+// cty.SetVal([]cty.Value{
+//    cty.ObjectVal(map[string]cty.Value{
+//        "set_nested_block_attribute": cty.StringVal("value3"),
+//    }),
+//    cty.ObjectVal(map[string]cty.Value{
+//        "set_nested_block_attribute": cty.StringVal("value4"),
+//    }),
+// }),
 
+// Set nested block - index traversal
+cty.GetAttrPath("set_nested_block")
+.Index(cty.ObjectVal(map[string]cty.Value{"set_nested_block_attribute": cty.StringVal("value4")}))
+.GetAttr("set_nested_block_attribute") // returns cty.String("value4")
 ```
 
 ### cty.Value
