@@ -1,3 +1,15 @@
+## 2.36.0 (February 04, 2025)
+
+NOTES:
+
+* Write-only attribute support is in technical preview and offered without compatibility promises until Terraform 1.11 is generally available. ([#1375](https://github.com/hashicorp/terraform-plugin-sdk/issues/1375))
+
+FEATURES:
+
+* helper/schema: Added `WriteOnly` schema behavior for managed resource schemas to indicate a write-only attribute. Write-only attribute values are not saved to the Terraform plan or state artifacts. ([#1375](https://github.com/hashicorp/terraform-plugin-sdk/issues/1375))
+* helper/validation: Added `PreferWriteOnlyAttribute()` validator that warns practitioners when a write-only version of a configured attribute is available. ([#1375](https://github.com/hashicorp/terraform-plugin-sdk/issues/1375))
+* schema/resource: Added `ValidateRawResourceConfigFuncs` field which allows resources to define validation logic during the `ValidateResourceTypeConfig` RPC. ([#1375](https://github.com/hashicorp/terraform-plugin-sdk/issues/1375))
+
 ## 2.35.0 (October 31, 2024)
 
 NOTES:

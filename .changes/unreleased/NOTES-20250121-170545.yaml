@@ -1,5 +1,0 @@
-kind: NOTES
-body: Write-only attribute support is in technical preview and offered without compatibility promises until Terraform 1.11 is generally available.
-time: 2025-01-21T17:05:45.398836-05:00
-custom:
-    Issue: "1375"

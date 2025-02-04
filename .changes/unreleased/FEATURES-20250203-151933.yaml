@@ -1,5 +1,0 @@
-kind: FEATURES
-body: 'schema/resource: Added `ValidateRawResourceConfigFuncs` field which allows resources to define validation logic during the `ValidateResourceTypeConfig` RPC.'
-time: 2025-02-03T15:19:33.669857-05:00
-custom:
-    Issue: "1375"
