@@ -77,6 +77,18 @@ func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities 
 	}
 }
 
+func (s *GRPCProviderServer) GetResourceIdentitySchemas(context.Context, *tfprotov5.GetResourceIdentitySchemasRequest) (*tfprotov5.GetResourceIdentitySchemasResponse, error) {
+	// TODO: First task for Rain?
+	// TODO: Adding fields to schema.Provider struct
+	panic("unimplemented")
+}
+
+func (s *GRPCProviderServer) UpgradeResourceIdentity(context.Context, *tfprotov5.UpgradeResourceIdentityRequest) (*tfprotov5.UpgradeResourceIdentityResponse, error) {
+	// TODO: Second task for Rain?
+	// TODO: Adding field to schema.Provider struct
+	panic("unimplemented")
+}
+
 func (s *GRPCProviderServer) GetMetadata(ctx context.Context, req *tfprotov5.GetMetadataRequest) (*tfprotov5.GetMetadataResponse, error) {
 	ctx = logging.InitContext(ctx)
 
@@ -673,6 +685,9 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 }
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
+	// TODO: New identity dynamic value data coming in
+	// TODO: Feed into schema.ResourceData
+
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but

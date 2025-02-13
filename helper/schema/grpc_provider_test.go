@@ -4625,6 +4625,13 @@ func TestReadResource(t *testing.T) {
 								Type:     TypeString,
 								Computed: true,
 							},
+							"test_list": {
+								Type: TypeList,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Computed: true,
+							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
 							err := d.Set("test_bool", true)
@@ -4644,17 +4651,25 @@ func TestReadResource(t *testing.T) {
 			}),
 			req: &tfprotov5.ReadResourceRequest{
 				TypeName: "test",
+				// CurrentIdentity: &tfprotov5.ResourceIdentityData{
+
+				// },
 				CurrentState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
 							"id":          cty.String,
 							"test_bool":   cty.Bool,
 							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
 							"id":          cty.StringVal("test-id"),
 							"test_bool":   cty.BoolVal(false),
 							"test_string": cty.StringVal("prior-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
 						}),
 					),
 				},
@@ -4666,11 +4681,16 @@ func TestReadResource(t *testing.T) {
 							"id":          cty.String,
 							"test_bool":   cty.Bool,
 							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
 							"id":          cty.StringVal("test-id"),
 							"test_bool":   cty.BoolVal(true),
 							"test_string": cty.StringVal("new-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
 						}),
 					),
 				},
