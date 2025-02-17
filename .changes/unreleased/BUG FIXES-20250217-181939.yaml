@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'tfsdk: Correctly validate the length of a UTF8 string with `StringLenBetween` validator'
+time: 2025-02-17T18:19:39.713656+11:00
+custom:
+    Issue: "1425"
