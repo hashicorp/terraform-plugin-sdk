@@ -68,6 +68,12 @@ func TestValidationAll(t *testing.T) {
 			),
 			expectedErr: regexp.MustCompile("value must be alphanumeric"),
 		},
+		{
+			val: "你好世界",
+			f: All(
+				StringLenBetween(1,5),
+			),
+		},
 	})
 }
 
