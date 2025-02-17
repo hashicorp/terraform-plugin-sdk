@@ -124,7 +124,7 @@ jobs:
           cd .changes
           sed -e "1{/# /d;}" -e "2{/^$/d;}" ${{ needs.changelog-version.outputs.version }}.md > /tmp/release-notes.txt
 
-      - uses: goreleaser/goreleaser-action@9ed2f89a662bf1735a48bc8557fd212fa902bebf # v6.1.0
+      - uses: goreleaser/goreleaser-action@026299872805cb2db698e02dd7fb506a4da5122d # v6.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
