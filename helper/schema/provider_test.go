@@ -2498,6 +2498,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 
 func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
 	if oldenv, isSet := os.LookupEnv(uaEnvVar); isSet {
+		//nolint:usetesting
 		defer os.Setenv(uaEnvVar, oldenv)
 	} else {
 		defer os.Unsetenv(uaEnvVar)
