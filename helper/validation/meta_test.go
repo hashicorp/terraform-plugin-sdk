@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-cty/cty"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -240,8 +241,6 @@ func TestToDiagFunc(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
