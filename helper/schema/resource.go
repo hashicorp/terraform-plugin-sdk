@@ -89,6 +89,10 @@ type Resource struct {
 	// their Versioning at any integer >= 1
 	SchemaVersion int
 
+	// TODO: comment
+	// TODO: do we need to support an IdentityFunc for this as well?
+	Identity *ResourceIdentity
+
 	// MigrateState is responsible for updating an InstanceState with an old
 	// version to the format expected by the current version of the Schema.
 	// This field is only valid when the Resource is a managed resource.
