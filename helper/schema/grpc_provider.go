@@ -172,6 +172,11 @@ func (s *GRPCProviderServer) getResourceSchemaBlock(name string) *configschema.B
 	return res.CoreConfigSchema()
 }
 
+// func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) *configschema.Block {
+// 	res := s.provider.ResourcesMap[name]
+// 	return res.CoreIdentitySchema()
+// }
+
 func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema.Block {
 	dat := s.provider.DataSourcesMap[name]
 	return dat.CoreConfigSchema()
@@ -687,6 +692,7 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
 	// TODO: New identity dynamic value data coming in
 	// TODO: Feed into schema.ResourceData
+	// TODO: ResourceDiff needs it too
 
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ReadResourceResponse{
@@ -713,6 +719,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		)
 
 		resp.NewState = req.CurrentState
+		resp.NewIdentity = req.CurrentIdentity
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
@@ -731,6 +738,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		return resp, nil
 	}
 	instanceState.RawState = stateVal
+	// TODO: do we need to put identity into instanceState somehow?
 
 	private := make(map[string]interface{})
 	if len(req.Private) > 0 {
@@ -751,6 +759,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		instanceState.ProviderMeta = providerSchemaVal
 	}
 
+	// TODO: do we need to update identity data in ReadResource rpcs? -> YES
 	newInstanceState, diags := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 	if diags.HasError() {
@@ -793,6 +802,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	resp.NewState = &tfprotov5.DynamicValue{
 		MsgPack: newStateMP,
 	}
+	// TODO: do this for identity as well
 
 	return resp, nil
 }
