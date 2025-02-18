@@ -77,16 +77,112 @@ func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities 
 	}
 }
 
-func (s *GRPCProviderServer) GetResourceIdentitySchemas(context.Context, *tfprotov5.GetResourceIdentitySchemasRequest) (*tfprotov5.GetResourceIdentitySchemasResponse, error) {
+func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req *tfprotov5.GetResourceIdentitySchemasRequest) (*tfprotov5.GetResourceIdentitySchemasResponse, error) {
 	// TODO: First task for Rain?
 	// TODO: Adding fields to schema.Provider struct
-	panic("unimplemented")
+
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Getting resource identity schemas")
+
+	resp := &tfprotov5.GetResourceIdentitySchemasResponse{
+		IdentitySchemas: make(map[string]*tfprotov5.ResourceIdentitySchema),
+	}
+
+	for typ, res := range s.provider.ResourcesMap { // look at this
+		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
+
+		resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
+			Version:            int64(res.SchemaVersion),
+			IdentityAttributes: make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0), // TODO: figure out what goes here
+		}
+	}
+
+	return resp, nil
+
 }
 
-func (s *GRPCProviderServer) UpgradeResourceIdentity(context.Context, *tfprotov5.UpgradeResourceIdentityRequest) (*tfprotov5.UpgradeResourceIdentityResponse, error) {
+// modelled after UpgradeResourceState
+func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *tfprotov5.UpgradeResourceIdentityRequest) (*tfprotov5.UpgradeResourceIdentityResponse, error) {
 	// TODO: Second task for Rain?
 	// TODO: Adding field to schema.Provider struct
-	panic("unimplemented")
+
+	ctx = logging.InitContext(ctx)
+	resp := &tfprotov5.UpgradeResourceIdentityResponse{}
+
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
+	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+
+	version := int(req.Version)
+
+	jsonMap := map[string]interface{}{}
+	var err error
+
+	switch {
+	// if there's a JSON state, we need to decode it.
+	case len(req.RawIdentity.JSON) > 0: // TODO: find out why req.RawIdentity.JSON causes panic
+		if res.UseJSONNumber {
+			err = unmarshalJSON(req.RawIdentity.JSON, &jsonMap)
+		} else {
+			err = json.Unmarshal(req.RawIdentity.JSON, &jsonMap)
+		}
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+	default:
+		logging.HelperSchemaDebug(ctx, "no resource identity provided to upgrade")
+		return resp, nil
+	}
+
+	// complete the upgrade of the JSON states
+	logging.HelperSchemaTrace(ctx, "Upgrading JSON state")
+
+	jsonMap, err = s.upgradeJSONState(ctx, version, jsonMap, res)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	// The provider isn't required to clean out removed fields
+	s.removeAttributes(ctx, jsonMap, schemaBlock.ImpliedType())
+
+	// now we need to turn the state into the default json representation, so
+	// that it can be re-decoded using the actual schema.
+	val, err := JSONMapToStateValue(jsonMap, schemaBlock)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	// Now we need to make sure blocks are represented correctly, which means
+	// that missing blocks are empty collections, rather than null.
+	// First we need to CoerceValue to ensure that all object types match.
+	val, err = schemaBlock.CoerceValue(val)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+	// Normalize the value and fill in any missing blocks.
+	val = objchange.NormalizeObjectFromLegacySDK(val, schemaBlock)
+
+	// Set any write-only attribute values to null
+	val = setWriteOnlyNullValues(val, schemaBlock)
+
+	// encode the final state to the expected msgpack format
+	newStateMP, err := msgpack.Marshal(val, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	resp.UpgradedIdentity = &tfprotov5.ResourceIdentityData{IdentityData: &tfprotov5.DynamicValue{MsgPack: newStateMP}}
+
+	return resp, nil
 }
 
 func (s *GRPCProviderServer) GetMetadata(ctx context.Context, req *tfprotov5.GetMetadataRequest) (*tfprotov5.GetMetadataResponse, error) {
@@ -138,7 +234,7 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 		Block: convert.ConfigSchemaToProto(ctx, s.getProviderMetaSchemaBlock()),
 	}
 
-	for typ, res := range s.provider.ResourcesMap {
+	for typ, res := range s.provider.ResourcesMap { // look at this
 		logging.HelperSchemaTrace(ctx, "Found resource type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		resp.ResourceSchemas[typ] = &tfprotov5.Schema{
