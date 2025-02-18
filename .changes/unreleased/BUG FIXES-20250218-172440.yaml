@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: 'helper/schema: Fixed bug that allowed write-only attributes within set nested blocks. 
+Any attribute within a set nested block with `WriteOnly` set to `true` will now trigger an error message.'
+time: 2025-02-18T17:24:40.023079-05:00
+custom:
+    Issue: "1427"

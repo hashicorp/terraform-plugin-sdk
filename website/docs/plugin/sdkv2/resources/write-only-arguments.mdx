@@ -16,7 +16,9 @@ which should either use the value by making the appropriate change to the API or
 
 The following are high level differences between `Required`/`Optional` arguments and write-only arguments:
 
-- Write-only arguments can accept ephemeral and non-ephemeral values
+- Write-only arguments can accept ephemeral and non-ephemeral values.
+
+- Write-only arguments cannot be used with set attributes and set nested blocks.
 
 - Write-only argument values are only available in the configuration. The prior state, planned state, and final state values for
 write-only arguments should always be `null`.
@@ -51,6 +53,7 @@ write-only arguments should always be `null`.
 - Cannot be used when `Default` is `specified`
 - Cannot be used with `DefaultFunc`
 - Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed nested block types can contain write-only arguments.
+- Cannot be used within a set nested block type.
 
 ## Retrieving Write-only Values
 

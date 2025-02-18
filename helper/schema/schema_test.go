@@ -5303,7 +5303,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
-		"Set configuration block nested attribute with WriteOnly set returns no errors": {
+		"Set configuration block nested attribute with WriteOnly set returns error": {
 			map[string]*Schema{
 				"config_block_attr": {
 					Type:     TypeSet,
@@ -5319,7 +5319,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			false,
+			true,
 		},
 		"List configuration block with ConfigModeAttr set, sub block nested attribute with WriteOnly set returns no errors": {
 			map[string]*Schema{
@@ -5350,7 +5350,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			false,
 		},
 
-		"Set configuration block with ConfigModeAttr set, sub block nested attribute with WriteOnly set returns no errors": {
+		"Set configuration block with ConfigModeAttr set, sub block nested attribute with WriteOnly set returns error": {
 			map[string]*Schema{
 				"block": {
 					Type:       TypeSet,
@@ -5376,7 +5376,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 					},
 				},
 			},
-			false,
+			true,
 		},
 		"List computed block nested attribute with WriteOnly set returns error": {
 			map[string]*Schema{
