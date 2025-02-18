@@ -3301,11 +3301,40 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 		Provider *Provider
 		Expected *tfprotov5.GetResourceIdentitySchemasResponse
 	}{
-		"datasources": {
+		"resources": {
 			Provider: &Provider{
-				DataSourcesMap: map[string]*Resource{
-					"test_datasource1": nil, // implementation not necessary
-					"test_datasource2": nil, // implementation not necessary
+				ResourcesMap: map[string]*Resource{
+					"test_resource1": &Resource{
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"test": {
+									Type:              TypeString,
+									RequiredForImport: true,
+									OptionalForImport: false,
+									Description:       "test resource",
+								},
+							},
+						},
+					},
+					"test_resource2": {
+						Identity: &ResourceIdentity{
+							Schema: map[string]*Schema{
+								"test2": {
+									Type:              TypeString,
+									RequiredForImport: false,
+									OptionalForImport: true,
+									Description:       "test resource 2",
+								},
+								"test2-2": {
+									Type:              TypeList,
+									RequiredForImport: false,
+									OptionalForImport: true,
+									Description:       "test resource 2-2",
+								},
+							},
+						},
+					},
 				},
 			},
 			Expected: &tfprotov5.GetResourceIdentitySchemasResponse{
@@ -3360,19 +3389,74 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 				t.Fatalf("unexpected gRPC error: %s", err)
 			}
 
-			//// Prevent false positives with random map access in testing
-			//sort.Slice(resp.DataSources, func(i int, j int) bool {
-			//	return resp.DataSources[i].TypeName < resp.DataSources[j].TypeName
-			//})
-			//
-			//sort.Slice(resp.Resources, func(i int, j int) bool {
-			//	return resp.Resources[i].TypeName < resp.Resources[j].TypeName
-			//})
-
 			if diff := cmp.Diff(resp, testCase.Expected); diff != "" {
 				t.Errorf("unexpected response difference: %s", diff)
 			}
 		})
+	}
+}
+
+// Based on TestUpgradeState_jsonState
+func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
+	r := &Resource{
+		SchemaVersion: 2,
+		Identity: &ResourceIdentity{
+			Version:           0,
+			Schema:            make(map[string]*Schema),
+			IdentityUpgraders: make([]IdentityUpgrader, 0),
+		},
+	}
+
+	r.Identity.IdentityUpgraders = []IdentityUpgrader{ // TODO: find out what goes in here
+		ResourceIdentity{
+			Version:           0,
+			Schema:            make(map[string]*Schema),
+			IdentityUpgraders: make([]IdentityUpgrader, 0),
+		},
+		ResourceIdentity{
+			Version:           1,
+			Schema:            make(map[string]*Schema),
+			IdentityUpgraders: make([]IdentityUpgrader, 0),
+		},
+	}
+
+	server := NewGRPCProviderServer(&Provider{
+		ResourcesMap: map[string]*Resource{
+			"test": r,
+		},
+	})
+
+	req := &tfprotov5.UpgradeResourceIdentityRequest{
+		TypeName: "test",
+		Version:  0,
+		RawIdentity: &tfprotov5.RawIdentity{
+			JSON: []byte(`{"zero":0}`), // TODO: Update when the test actually runs
+		},
+	}
+
+	resp, err := server.UpgradeResourceIdentity(context.Background(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resp.Diagnostics) > 0 {
+		for _, d := range resp.Diagnostics {
+			t.Errorf("%#v", d)
+		}
+		t.Fatal("error")
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreConfigSchema().ImpliedType())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"test": cty.NumberIntVal(2),
+	})
+
+	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
+		t.Fatal(cmp.Diff(expected, val, valueComparer, equateEmpty))
 	}
 }
 

@@ -93,6 +93,14 @@ type Schema struct {
 	// with Required.
 	Optional bool
 
+	// Similar to Required but for ResourceIdentity
+	// TODO: Write Documentation
+	RequiredForImport bool
+
+	// Similar to Optional but for ResourceIdentity
+	// TODO: Write Documentation
+	OptionalForImport bool
+
 	// Computed indicates whether the provider may return its own value for
 	// this attribute or not. Computed cannot be used with Required. If
 	// Required and Optional are both false, the attribute will be considered
