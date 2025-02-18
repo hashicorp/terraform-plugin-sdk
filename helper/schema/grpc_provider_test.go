@@ -3294,6 +3294,88 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 	}
 }
 
+func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		Provider *Provider
+		Expected *tfprotov5.GetResourceIdentitySchemasResponse
+	}{
+		"datasources": {
+			Provider: &Provider{
+				DataSourcesMap: map[string]*Resource{
+					"test_datasource1": nil, // implementation not necessary
+					"test_datasource2": nil, // implementation not necessary
+				},
+			},
+			Expected: &tfprotov5.GetResourceIdentitySchemasResponse{
+				IdentitySchemas: map[string]*tfprotov5.ResourceIdentitySchema{
+					"test_resource1": {
+						Version: 1,
+						IdentityAttributes: []*tfprotov5.ResourceIdentitySchemaAttribute{
+							{
+								Name:              "test",
+								Type:              tftypes.String,
+								RequiredForImport: true,
+								OptionalForImport: false,
+								Description:       "test resource",
+							},
+						},
+					},
+					"test_resource2": {
+						IdentityAttributes: []*tfprotov5.ResourceIdentitySchemaAttribute{
+							{
+								Name:              "test2",
+								Type:              tftypes.String,
+								RequiredForImport: false,
+								OptionalForImport: true,
+								Description:       "test resource 2",
+							},
+							{
+								Name:              "test2-2",
+								Type:              tftypes.List{ElementType: tftypes.Bool},
+								RequiredForImport: false,
+								OptionalForImport: true,
+								Description:       "test resource 2-2",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			server := NewGRPCProviderServer(testCase.Provider)
+
+			testReq := &tfprotov5.GetResourceIdentitySchemasRequest{}
+
+			resp, err := server.GetResourceIdentitySchemas(context.Background(), testReq)
+
+			if err != nil {
+				t.Fatalf("unexpected gRPC error: %s", err)
+			}
+
+			//// Prevent false positives with random map access in testing
+			//sort.Slice(resp.DataSources, func(i int, j int) bool {
+			//	return resp.DataSources[i].TypeName < resp.DataSources[j].TypeName
+			//})
+			//
+			//sort.Slice(resp.Resources, func(i int, j int) bool {
+			//	return resp.Resources[i].TypeName < resp.Resources[j].TypeName
+			//})
+
+			if diff := cmp.Diff(resp, testCase.Expected); diff != "" {
+				t.Errorf("unexpected response difference: %s", diff)
+			}
+		})
+	}
+}
+
 func TestGRPCProviderServerGetMetadata(t *testing.T) {
 	t.Parallel()
 
