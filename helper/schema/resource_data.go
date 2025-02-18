@@ -701,3 +701,9 @@ func (d *ResourceData) GetRawPlan() cty.Value {
 	}
 	return cty.NullVal(schemaMap(d.schema).CoreConfigSchema().ImpliedType())
 }
+
+// IdentityData is only available for managed resources, data sources
+// will return an error.
+func (d *ResourceData) Identity() (*IdentityData, error) {
+	return nil, fmt.Errorf("IdentityData is not implemented yet")
+}

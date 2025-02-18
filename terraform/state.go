@@ -1305,6 +1305,10 @@ type InstanceState struct {
 	// and collections.
 	Meta map[string]interface{} `json:"meta"`
 
+	// Identity is the identity data used to track resource identity
+	// starting in Terraform 1.12+
+	Identity map[string]string `json:"identity"`
+
 	ProviderMeta cty.Value
 
 	RawConfig cty.Value
@@ -1391,6 +1395,7 @@ func (s *InstanceState) Set(from *InstanceState) {
 	s.Ephemeral = from.Ephemeral
 	s.Meta = from.Meta
 	s.Tainted = from.Tainted
+	s.Identity = from.Identity
 }
 
 func (s *InstanceState) DeepCopy() *InstanceState {
@@ -1469,6 +1474,8 @@ func (s *InstanceState) Equal(other *InstanceState) bool {
 	if s.Tainted != other.Tainted {
 		return false
 	}
+
+	// TODO: compare identity
 
 	return true
 }
