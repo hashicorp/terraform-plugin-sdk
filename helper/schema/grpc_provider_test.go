@@ -3268,8 +3268,6 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -3389,8 +3387,6 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -3470,8 +3466,6 @@ func TestGRPCProviderServerMoveResourceState(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -3953,8 +3947,6 @@ func TestGRPCProviderServerValidateResourceTypeConfig(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -4838,8 +4830,6 @@ func TestReadResource(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ReadResource(context.Background(), testCase.req)
@@ -5560,8 +5550,6 @@ func TestPlanResourceChange(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -5871,8 +5859,6 @@ func TestApplyResourceChange(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -6014,8 +6000,6 @@ func TestApplyResourceChange_ResourceFuncs(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -6148,7 +6132,6 @@ func TestApplyResourceChange_bigint(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.Description, func(t *testing.T) {
 			server := NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -6376,8 +6359,6 @@ func TestApplyResourceChange_ResourceFuncs_writeOnly(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -6710,8 +6691,6 @@ func TestImportResourceState(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ImportResourceState(context.Background(), testCase.req)
@@ -7366,8 +7345,6 @@ func TestReadDataSource(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ReadDataSource(context.Background(), testCase.req)
@@ -8138,7 +8115,6 @@ func TestStopContext_grpc(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.Description, func(t *testing.T) {
 			server := NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -8253,7 +8229,6 @@ func TestStopContext_stop(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.Description, func(t *testing.T) {
 			server := NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -8371,7 +8346,6 @@ func TestStopContext_stopReset(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.Description, func(t *testing.T) {
 			server := NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{

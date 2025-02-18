@@ -11,7 +11,7 @@ linters:
   enable:
     - durationcheck
     - errcheck
-    - exportloopref
+    - copyloopvar
     - gofmt
     - gosimple
     - ineffassign
@@ -20,7 +20,7 @@ linters:
     # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
     - predeclared
     - staticcheck
-    - tenv
+    - usetesting
     - unconvert
     - unparam
     - unused
