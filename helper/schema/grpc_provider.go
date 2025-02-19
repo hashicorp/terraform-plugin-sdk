@@ -268,10 +268,10 @@ func (s *GRPCProviderServer) getResourceSchemaBlock(name string) *configschema.B
 	return res.CoreConfigSchema()
 }
 
-// func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) *configschema.Block {
-// 	res := s.provider.ResourcesMap[name]
-// 	return res.CoreIdentitySchema()
-// }
+func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) *configschema.Block {
+	res := s.provider.ResourcesMap[name]
+	return res.CoreIdentitySchema()
+}
 
 func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema.Block {
 	dat := s.provider.DataSourcesMap[name]
@@ -834,7 +834,30 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		return resp, nil
 	}
 	instanceState.RawState = stateVal
-	// TODO: do we need to put identity into instanceState somehow?
+
+	// meta contains schema version, so we also add identity version there
+	// instanceState.Meta["identity_version"] = req.CurrentIdentity. <- there's no version in here, we need another way?
+	// TODO: do we need to set identity_version in Meta in state? -> we might not need it, since it's overwritten anyway.. (see further down below)
+
+	// TODO: is there a more elegant way to do this? this requires us to look for the identity schema block again
+	if req.CurrentIdentity != nil {
+
+		// convert req.CurrentIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		// TODO: check if CurrentIdentity and IdentityData are not nil!
+		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the instanceState
+		instanceState.Identity = identityAttrs
+	} else {
+		// TODO: add diagnostic or trace in case there's no identity?
+	}
 
 	private := make(map[string]interface{})
 	if len(req.Private) > 0 {
@@ -843,6 +866,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 	}
+	// TODO: this overrides the meta set within res.ShimInstanceStateFromValue() containing the schema version, is this intended?
 	instanceState.Meta = private
 
 	pmSchemaBlock := s.getProviderMetaSchemaBlock()
@@ -898,7 +922,27 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	resp.NewState = &tfprotov5.DynamicValue{
 		MsgPack: newStateMP,
 	}
-	// TODO: do this for identity as well
+
+	if newInstanceState.Identity != nil {
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.NewIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
+		}
+	}
 
 	return resp, nil
 }
