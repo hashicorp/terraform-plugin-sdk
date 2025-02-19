@@ -370,3 +370,18 @@ func (r *Resource) CoreConfigSchema() *configschema.Block {
 func (r *Resource) coreConfigSchema() *configschema.Block {
 	return schemaMap(r.SchemaMap()).CoreConfigSchema()
 }
+
+func (r *Resource) CoreIdentitySchema() *configschema.Block {
+	block := r.coreIdentitySchema()
+
+	if block.Attributes == nil {
+		// TODO: shall we error here if it's empty?
+		block.Attributes = map[string]*configschema.Attribute{}
+	}
+
+	return block
+}
+
+func (r *Resource) coreIdentitySchema() *configschema.Block {
+	return schemaMap(r.Identity.Schema).CoreConfigSchema()
+}
