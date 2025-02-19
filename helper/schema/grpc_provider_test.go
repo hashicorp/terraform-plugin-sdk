@@ -4807,6 +4807,19 @@ func TestReadResource(t *testing.T) {
 								Computed: true,
 							},
 						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"instance_id": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+								"region": {
+									Type:              TypeString,
+									OptionalForImport: true,
+								},
+							},
+						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
 							err := d.Set("test_bool", true)
 							if err != nil {
@@ -4818,6 +4831,8 @@ func TestReadResource(t *testing.T) {
 								return diag.FromErr(err)
 							}
 
+							// TODO: setting IdentityData should be possible in this context? (does it though? anyway)
+
 							return nil
 						},
 					},
@@ -4825,9 +4840,20 @@ func TestReadResource(t *testing.T) {
 			}),
 			req: &tfprotov5.ReadResourceRequest{
 				TypeName: "test",
-				// CurrentIdentity: &tfprotov5.ResourceIdentityData{
-
-				// },
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"instance_id": cty.String,
+								"region":      cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"instance_id": cty.StringVal("test-id"),
+								"region":      cty.StringVal("test-region"),
+							}),
+						),
+					},
+				},
 				CurrentState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
@@ -4867,6 +4893,20 @@ func TestReadResource(t *testing.T) {
 							}),
 						}),
 					),
+				},
+				NewIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"instance_id": cty.String,
+								"region":      cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"instance_id": cty.StringVal("test-id"),
+								"region":      cty.StringVal("test-region"),
+							}),
+						),
+					},
 				},
 			},
 		},
