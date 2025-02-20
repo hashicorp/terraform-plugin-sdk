@@ -2,7 +2,7 @@ module tools
 
 go 1.22.7
 
-require github.com/hashicorp/copywrite v0.20.0
+require github.com/hashicorp/copywrite v0.21.0
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
