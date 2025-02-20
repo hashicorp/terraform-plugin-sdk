@@ -93,7 +93,7 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
-			Version:            int64(res.SchemaVersion),
+			Version:            res.Identity.Version,
 			IdentityAttributes: make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0), // TODO: figure out what goes here
 		}
 	}
