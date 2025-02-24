@@ -46,6 +46,10 @@ type Block struct {
 	Deprecated bool
 }
 
+type IdentitySchema struct {
+	IdentityAttributes []*Attribute
+}
+
 // Attribute represents a configuration attribute, within a block.
 type Attribute struct {
 	// Type is a type specification that the attribute's value must conform to.
@@ -95,6 +99,14 @@ type Attribute struct {
 	// Practitioners that choose a value for this attribute with older
 	// versions of Terraform will receive an error.
 	WriteOnly bool
+
+	// RequiredForImport, if set to true, specifies that an omitted or null value is
+	// not permitted.
+	RequiredForImport bool
+
+	// OptionalForImport, if set to true, specifies that an omitted or null value is
+	// permitted. This field conflicts with RequiredForImport.
+	OptionalForImport bool
 }
 
 // NestedBlock represents the embedding of one block within another.
