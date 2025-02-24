@@ -17,7 +17,6 @@ package schema
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"log"
 	"os"
 	"reflect"
@@ -2435,13 +2434,6 @@ func (m schemaMap) hasWriteOnly() bool {
 	}
 
 	return false
-}
-
-// TODO: Fill out this function and add validation
-func (m schemaMap) coreConfigIdentitySchema() *configschema.IdentitySchema {
-	return &configschema.IdentitySchema{
-		IdentityAttributes: make([]*configschema.Attribute, 0),
-	}
 }
 
 // Zero returns the zero value for a type.

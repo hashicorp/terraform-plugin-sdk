@@ -172,12 +172,13 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 	return block
 }
 
-func ConfigIdentitySchemaToProto(ctx context.Context, identitySchema *configschema.IdentitySchema) []*tfprotov5.ResourceIdentitySchemaAttribute {
-	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, len(identitySchema.IdentityAttributes))
+func ConfigIdentitySchemaToProto(ctx context.Context, identitySchema *configschema.Block) []*tfprotov5.ResourceIdentitySchemaAttribute {
+	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0)
 
-	for _, a := range identitySchema.IdentityAttributes {
+	for name, a := range identitySchema.Attributes {
 
 		attr := &tfprotov5.ResourceIdentitySchemaAttribute{
+			Name:              name,
 			Description:       a.Description,
 			OptionalForImport: a.OptionalForImport,
 			RequiredForImport: a.RequiredForImport,
