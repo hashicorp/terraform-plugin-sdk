@@ -3406,15 +3406,38 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 // Based on TestUpgradeState_jsonState
 func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 	r := &Resource{
-		SchemaVersion: 2,
+		SchemaVersion: 1,
 		Identity: &ResourceIdentity{
-			Version:           0,
-			Schema:            make(map[string]*Schema),
-			IdentityUpgraders: make([]IdentityUpgrader, 0),
+			Version: 1,
+			Schema: map[string]*Schema{
+				"id": {
+					Type:              TypeString,
+					RequiredForImport: true,
+					OptionalForImport: false,
+					Description:       "id of thing",
+				},
+			},
+			IdentityUpgraders: []IdentityUpgrader{
+				{
+					Version: 0,
+					Type: tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"identity": tftypes.String,
+						},
+					},
+					// upgrades former identity using "identity" as the attribute name to the new and shiny one just using "id"
+					Upgrade: func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+						id, ok := rawState["identity"].(string)
+						if !ok {
+							return nil, fmt.Errorf("identity not found in %#v", rawState)
+						}
+						rawState["id"] = id
+						delete(rawState, "identity")
+						return rawState, nil
+					},
+				},
+			},
 		},
-	}
-
-	r.Identity.IdentityUpgraders = []IdentityUpgrader{ // TODO: find out what goes in here
 	}
 
 	server := NewGRPCProviderServer(&Provider{
@@ -3427,7 +3450,7 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 		TypeName: "test",
 		Version:  0,
 		RawIdentity: &tfprotov5.RawIdentity{
-			JSON: []byte(`{"zero":0}`), // TODO: Update when the test actually runs
+			JSON: []byte(`{"identity":"Peter"}`),
 		},
 	}
 
@@ -3443,13 +3466,14 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreConfigSchema().ImpliedType())
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreIdentitySchema().ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// TODO: See if this should be a tftype instead
 	expected := cty.ObjectVal(map[string]cty.Value{
-		"test": cty.NumberIntVal(2),
+		"id": cty.StringVal("Peter"),
 	})
 
 	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {

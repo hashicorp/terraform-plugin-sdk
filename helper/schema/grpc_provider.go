@@ -117,14 +117,14 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
-	version := int(req.Version)
+	version := int64(req.Version)
 
 	jsonMap := map[string]interface{}{}
 	var err error
 
 	switch {
 	// if there's a JSON state, we need to decode it.
-	case len(req.RawIdentity.JSON) > 0: // TODO: find out why req.RawIdentity.JSON causes panic
+	case len(req.RawIdentity.JSON) > 0:
 		if res.UseJSONNumber {
 			err = unmarshalJSON(req.RawIdentity.JSON, &jsonMap)
 		} else {
@@ -140,9 +140,9 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 	}
 
 	// complete the upgrade of the JSON states
-	logging.HelperSchemaTrace(ctx, "Upgrading JSON state")
+	logging.HelperSchemaTrace(ctx, "Upgrading JSON identity")
 
-	jsonMap, err = s.upgradeJSONState(ctx, version, jsonMap, res)
+	jsonMap, err = s.upgradeJSONIdentity(ctx, version, jsonMap, res)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
@@ -153,7 +153,7 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 
 	// now we need to turn the state into the default json representation, so
 	// that it can be re-decoded using the actual schema.
-	val, err := JSONMapToStateValue(jsonMap, schemaBlock)
+	val, err := JSONMapToStateValue(jsonMap, schemaBlock) // TODO: Find out if we need resource identity version here
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
@@ -2104,4 +2104,23 @@ func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities)
 	}
 
 	return in.DeferralAllowed
+}
+
+// Resource Identity version of upgradeJSONState
+func (s *GRPCProviderServer) upgradeJSONIdentity(ctx context.Context, version int64, m map[string]interface{}, res *Resource) (map[string]interface{}, error) {
+	var err error
+
+	for _, upgrader := range res.IdentityUpgraders {
+		if version != upgrader.Version {
+			continue
+		}
+
+		m, err = upgrader.Upgrade(ctx, m, s.provider.Meta())
+		if err != nil {
+			return nil, err
+		}
+		version++
+	}
+
+	return m, nil
 }
