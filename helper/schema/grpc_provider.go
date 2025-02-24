@@ -94,7 +94,7 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 
 		resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
 			Version:            res.Identity.Version,
-			IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreResourceIdentitySchema()), // TODO: figure out what goes here
+			IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()), // TODO: figure out what goes here
 		}
 	}
 

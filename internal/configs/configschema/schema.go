@@ -46,10 +46,6 @@ type Block struct {
 	Deprecated bool
 }
 
-type IdentitySchema struct {
-	IdentityAttributes []*Attribute
-}
-
 // Attribute represents a configuration attribute, within a block.
 type Attribute struct {
 	// Type is a type specification that the attribute's value must conform to.

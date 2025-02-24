@@ -167,6 +167,9 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 		DescriptionKind: descKind,
 		Deprecated:      s.Deprecated != "",
 		WriteOnly:       s.WriteOnly,
+		// For Identity Attributes only
+		OptionalForImport: s.OptionalForImport,
+		RequiredForImport: s.RequiredForImport,
 	}
 }
 
@@ -379,72 +382,6 @@ func (r *Resource) CoreIdentitySchema() *configschema.Block {
 	}
 
 	return block
-}
-
-func (r *Resource) CoreResourceIdentitySchema() *configschema.IdentitySchema {
-	block := r.coreResourceIdentitySchema()
-	block.IdentityAttributes = make([]*configschema.Attribute, 0)
-
-	return block
-}
-
-func (r *Resource) coreResourceIdentitySchema() *configschema.IdentitySchema {
-	return schemaMap(r.Identity.Schema).coreConfigIdentitySchema()
-}
-
-// coreConfigIdentitySchemaAttribute prepares a configschema.Attribute representation
-// of a schema. This is appropriate only for primitives or collections whose
-// Elem is an instance of Schema. Use coreConfigSchemaBlock for collections
-// whose elem is a whole resource.
-func (s *Schema) coreConfigIdentitySchema() *configschema.IdentitySchema {
-	// The Schema.DefaultFunc capability adds some extra weirdness here since
-	// it can be combined with "Required: true" to create a situation where
-	// required-ness is conditional. Terraform Core doesn't share this concept,
-	// so we must sniff for this possibility here and conditionally turn
-	// off the "Required" flag if it looks like the DefaultFunc is going
-	// to provide a value.
-	// This is not 100% true to the original interface of DefaultFunc but
-	// works well enough for the EnvDefaultFunc and MultiEnvDefaultFunc
-	// situations, which are the main cases we care about.
-	//
-	// Note that this also has a consequence for commands that return schema
-	// information for documentation purposes: running those for certain
-	// providers will produce different results depending on which environment
-	// variables are set. We accept that weirdness in order to keep this
-	// interface to core otherwise simple.
-	reqd := s.RequiredForImport
-	opt := s.OptionalForImport
-	if reqd && s.DefaultFunc != nil {
-		v, err := s.DefaultFunc()
-		// We can't report errors from here, so we'll instead just force
-		// "Required" to false and let the provider try calling its
-		// DefaultFunc again during the validate step, where it can then
-		// return the error.
-		if err != nil || (err == nil && v != nil) {
-			reqd = false
-			opt = true
-		}
-	}
-
-	desc := SchemaDescriptionBuilder(s)
-
-	output := &configschema.IdentitySchema{
-		IdentityAttributes: make([]*configschema.Attribute, s.MaxItems),
-	}
-
-	for _, a := range output.IdentityAttributes {
-
-		attr := &configschema.Attribute{
-			Description:       desc,
-			OptionalForImport: opt,
-			RequiredForImport: reqd,
-			Type:              a.Type,
-		}
-
-		output.IdentityAttributes = append(output.IdentityAttributes, attr)
-	}
-
-	return output
 }
 
 func (r *Resource) coreIdentitySchema() *configschema.Block {
