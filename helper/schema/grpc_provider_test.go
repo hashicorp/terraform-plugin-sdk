@@ -3362,7 +3362,7 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 							},
 							{
 								Name:              "test2-2",
-								Type:              tftypes.List{ElementType: tftypes.Bool},
+								Type:              tftypes.List{ElementType: tftypes.String},
 								RequiredForImport: false,
 								OptionalForImport: true,
 								Description:       "test resource 2-2",
@@ -3389,6 +3389,13 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 				t.Fatalf("unexpected gRPC error: %s", err)
 			}
 
+			// Prevent false positives with random map access in testing
+			for _, schema := range resp.IdentitySchemas {
+				sort.Slice(schema.IdentityAttributes, func(i int, j int) bool {
+					return schema.IdentityAttributes[i].Name < schema.IdentityAttributes[j].Name
+				})
+			}
+
 			if diff := cmp.Diff(resp, testCase.Expected); diff != "" {
 				t.Errorf("unexpected response difference: %s", diff)
 			}
@@ -3408,16 +3415,6 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 	}
 
 	r.Identity.IdentityUpgraders = []IdentityUpgrader{ // TODO: find out what goes in here
-		ResourceIdentity{
-			Version:           0,
-			Schema:            make(map[string]*Schema),
-			IdentityUpgraders: make([]IdentityUpgrader, 0),
-		},
-		ResourceIdentity{
-			Version:           1,
-			Schema:            make(map[string]*Schema),
-			IdentityUpgraders: make([]IdentityUpgrader, 0),
-		},
 	}
 
 	server := NewGRPCProviderServer(&Provider{
