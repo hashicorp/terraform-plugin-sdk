@@ -838,6 +838,7 @@ func (m schemaMap) InternalValidate(topSchemaMap schemaMap) error {
 	return m.internalValidate(topSchemaMap, false)
 }
 
+// TODO: Add validation for OptionalForImport and RequiredForImport in resource identity
 func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) error {
 	if topSchemaMap == nil {
 		topSchemaMap = m
