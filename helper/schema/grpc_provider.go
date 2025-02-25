@@ -2111,7 +2111,7 @@ func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities)
 func (s *GRPCProviderServer) upgradeJSONIdentity(ctx context.Context, version int64, m map[string]interface{}, res *Resource) (map[string]interface{}, error) {
 	var err error
 
-	for _, upgrader := range res.IdentityUpgraders {
+	for _, upgrader := range res.Identity.IdentityUpgraders {
 		if version != upgrader.Version {
 			continue
 		}
