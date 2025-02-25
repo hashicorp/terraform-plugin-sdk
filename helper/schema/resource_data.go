@@ -409,6 +409,11 @@ func (d *ResourceData) State() *terraform.InstanceState {
 		result.Tainted = d.state.Tainted
 	}
 
+	// copy identity data
+	if d.state != nil {
+		result.Identity = d.state.Identity // TODO: this needs adjustment once we support get/set identity data
+	}
+
 	return &result
 }
 
@@ -531,6 +536,7 @@ func (d *ResourceData) getChange(
 	return o, n
 }
 
+// TODO: we need this for identity data as well (and then Get, Set, ... as well)
 func (d *ResourceData) get(addr []string, source getSource) getResult {
 	d.once.Do(d.init)
 

@@ -924,13 +924,14 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 
 	if newInstanceState.Identity != nil {
-		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, schemaBlock.ImpliedType())
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
 
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
