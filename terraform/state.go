@@ -1335,6 +1335,9 @@ func (s *InstanceState) init() {
 	if s.Meta == nil {
 		s.Meta = make(map[string]interface{})
 	}
+	if s.Identity == nil {
+		s.Identity = make(map[string]string)
+	}
 	s.Ephemeral.init()
 }
 
@@ -1554,6 +1557,8 @@ func (s *InstanceState) String() string {
 		av := attributes[ak]
 		buf.WriteString(fmt.Sprintf("%s = %s\n", ak, av))
 	}
+
+	// TODO: add identity
 
 	buf.WriteString(fmt.Sprintf("Tainted = %t\n", s.Tainted))
 

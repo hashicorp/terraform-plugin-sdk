@@ -4844,7 +4844,14 @@ func TestReadResource(t *testing.T) {
 								return diag.FromErr(err)
 							}
 
-							// TODO: setting IdentityData should be possible in this context? (does it though? anyway)
+							identity, err := d.Identity()
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("region", "new-region")
+							if err != nil {
+								return diag.FromErr(err)
+							}
 
 							return nil
 						},
@@ -4916,7 +4923,7 @@ func TestReadResource(t *testing.T) {
 							}),
 							cty.ObjectVal(map[string]cty.Value{
 								"instance_id": cty.StringVal("test-id"),
-								"region":      cty.StringVal("test-region"),
+								"region":      cty.StringVal("new-region"),
 							}),
 						),
 					},

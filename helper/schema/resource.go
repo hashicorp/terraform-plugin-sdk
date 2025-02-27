@@ -726,7 +726,11 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 
 	// We now rebuild the state through the ResourceData, so that the set indexes
 	// match what helper/schema expects.
-	data, err := schemaMap(r.SchemaMap()).Data(s, nil)
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	data, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Data(s, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -900,6 +904,7 @@ func (r *Resource) Apply(
 	d *terraform.InstanceDiff,
 	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
 	schema := schemaMap(r.SchemaMap())
+	//identitySchema := r.Identity.Schema
 	data, err := schema.Data(s, d)
 	if err != nil {
 		return s, diag.FromErr(err)
@@ -1111,7 +1116,11 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	schema := schemaMap(r.SchemaMap())
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 
 	if r.Exists != nil {
 		// Make a copy of data so that if it is modified it doesn't
@@ -1421,7 +1430,8 @@ func (r *Resource) Data(s *terraform.InstanceState) *ResourceData {
 // TODO: May be able to be removed with the above ResourceData function.
 func (r *Resource) TestResourceData() *ResourceData {
 	return &ResourceData{
-		schema: r.SchemaMap(),
+		schema:         r.SchemaMap(),
+		identitySchema: r.Identity.Schema,
 	}
 }
 

@@ -28,18 +28,20 @@ import (
 // The most relevant methods to take a look at are Get and Set.
 type ResourceData struct {
 	// Settable (internally)
-	schema       map[string]*Schema
-	config       *terraform.ResourceConfig
-	state        *terraform.InstanceState
-	diff         *terraform.InstanceDiff
-	meta         map[string]interface{}
-	timeouts     *ResourceTimeout
-	providerMeta cty.Value
+	schema         map[string]*Schema
+	identitySchema map[string]*Schema // TODO: ensure we set this
+	config         *terraform.ResourceConfig
+	state          *terraform.InstanceState
+	diff           *terraform.InstanceDiff
+	meta           map[string]interface{}
+	timeouts       *ResourceTimeout
+	providerMeta   cty.Value
 
 	// Don't set
 	multiReader *MultiLevelFieldReader
 	setWriter   *MapFieldWriter
 	newState    *terraform.InstanceState
+	newIdentity *IdentityData
 	partial     bool
 	once        sync.Once
 	isNew       bool
@@ -409,10 +411,33 @@ func (d *ResourceData) State() *terraform.InstanceState {
 		result.Tainted = d.state.Tainted
 	}
 
-	// copy identity data
-	if d.state != nil {
-		result.Identity = d.state.Identity // TODO: this needs adjustment once we support get/set identity data
-	}
+	// copy over identity data (by getting it so we also include changes)
+	// In order to build the final state attributes, we read the full
+	// attribute set as a map[string]interface{}, write it to a MapFieldWriter,
+	// and then use that map.
+	rawMapIdentity := make(map[string]interface{})
+	identityData, err := d.Identity()
+	// There's the case where the resource does not have identity data (via ShimInstanceStateFromValue)
+	// so we need to check this
+	if err == nil {
+		for k := range d.identitySchema {
+			raw := identityData.get([]string{k})
+			if raw.Exists && !raw.Computed {
+				rawMapIdentity[k] = raw.Value
+				if raw.ValueProcessed != nil {
+					rawMapIdentity[k] = raw.ValueProcessed
+				}
+			}
+		}
+
+		mapWIdentity := &MapFieldWriter{Schema: d.identitySchema}
+		if err := mapWIdentity.WriteField(nil, rawMapIdentity); err != nil {
+			log.Printf("[ERR] Error writing identity fields: %s", err)
+			return nil
+		}
+
+		result.Identity = mapWIdentity.Map()
+	} // TODO: else log error?
 
 	return &result
 }
@@ -536,7 +561,6 @@ func (d *ResourceData) getChange(
 	return o, n
 }
 
-// TODO: we need this for identity data as well (and then Get, Set, ... as well)
 func (d *ResourceData) get(addr []string, source getSource) getResult {
 	d.once.Do(d.init)
 
@@ -709,7 +733,22 @@ func (d *ResourceData) GetRawPlan() cty.Value {
 }
 
 // IdentityData is only available for managed resources, data sources
-// will return an error.
+// will return an error. //TODO: return this error (:
 func (d *ResourceData) Identity() (*IdentityData, error) {
-	return nil, fmt.Errorf("IdentityData is not implemented yet")
+	// return memoized value if available
+	if d.newIdentity != nil {
+		return d.newIdentity, nil
+	}
+
+	if d.state == nil || d.state.Identity == nil {
+		return nil, fmt.Errorf("Resource does not have Identity data")
+	}
+
+	d.newIdentity = &IdentityData{
+		schema:       d.identitySchema,
+		raw:          d.state.Identity,
+		panicOnError: d.panicOnError,
+	}
+
+	return d.newIdentity, nil
 }

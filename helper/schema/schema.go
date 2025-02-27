@@ -639,8 +639,30 @@ type InternalMap = schemaMap
 // schemaMap is a wrapper that adds nice functions on top of schemas.
 type schemaMap map[string]*Schema
 
+// schemaMapWithIdentity is a wrapper around schemaMap that allows passing an
+// identity schema to ResourceData{} structs that are returned.
+type schemaMapWithIdentity struct {
+	schemaMap
+	identitySchema map[string]*Schema
+}
+
 func (m schemaMap) panicOnError() bool {
 	return os.Getenv("TF_ACC") != ""
+}
+
+// Data returns a ResourceData for the given schema, state, and diff.
+//
+// The diff is optional.
+func (m schemaMapWithIdentity) Data(
+	s *terraform.InstanceState,
+	d *terraform.InstanceDiff) (*ResourceData, error) {
+	return &ResourceData{
+		schema:         m.schemaMap,
+		identitySchema: m.identitySchema,
+		state:          s,
+		diff:           d,
+		panicOnError:   m.panicOnError(),
+	}, nil
 }
 
 // Data returns a ResourceData for the given schema, state, and diff.
@@ -649,12 +671,7 @@ func (m schemaMap) panicOnError() bool {
 func (m schemaMap) Data(
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff) (*ResourceData, error) {
-	return &ResourceData{
-		schema:       m,
-		state:        s,
-		diff:         d,
-		panicOnError: m.panicOnError(),
-	}, nil
+	return schemaMapWithIdentity{m, nil}.Data(s, d)
 }
 
 // DeepCopy returns a copy of this schemaMap. The copy can be safely modified
@@ -669,7 +686,7 @@ func (m *schemaMap) DeepCopy() schemaMap {
 
 // Diff returns the diff for a resource given the schema map,
 // state, and configuration.
-func (m schemaMap) Diff(
+func (m schemaMapWithIdentity) Diff(
 	ctx context.Context,
 	s *terraform.InstanceState,
 	c *terraform.ResourceConfig,
@@ -688,13 +705,14 @@ func (m schemaMap) Diff(
 	}
 
 	d := &ResourceData{
-		schema:       m,
-		state:        s,
-		config:       c,
-		panicOnError: m.panicOnError(),
+		schema:         m.schemaMap,
+		identitySchema: m.identitySchema,
+		state:          s,
+		config:         c,
+		panicOnError:   m.panicOnError(),
 	}
 
-	for k, schema := range m {
+	for k, schema := range m.schemaMap {
 		err := m.diff(ctx, k, schema, result, d, false)
 		if err != nil {
 			return nil, err
@@ -751,7 +769,7 @@ func (m schemaMap) Diff(
 			d.init()
 
 			// Perform the diff again
-			for k, schema := range m {
+			for k, schema := range m.schemaMap {
 				err := m.diff(ctx, k, schema, result2, d, false)
 				if err != nil {
 					return nil, err
@@ -823,6 +841,18 @@ func (m schemaMap) Diff(
 	}
 
 	return result, nil
+}
+
+// Diff returns the diff for a resource given the schema map,
+// state, and configuration.
+func (m schemaMap) Diff(
+	ctx context.Context,
+	s *terraform.InstanceState,
+	c *terraform.ResourceConfig,
+	customizeDiff CustomizeDiffFunc,
+	meta interface{},
+	handleRequiresNew bool) (*terraform.InstanceDiff, error) {
+	return schemaMapWithIdentity{m, nil}.Diff(ctx, s, c, customizeDiff, meta, handleRequiresNew)
 }
 
 // Validate validates the configuration against this schema mapping.
@@ -1661,7 +1691,7 @@ func (m schemaMap) diffString(
 // DiffSuppressOnRefresh, checks whether the new value is materially different
 // than the old and if not it overwrites the new value with the old one,
 // in-place.
-func (m schemaMap) handleDiffSuppressOnRefresh(ctx context.Context, oldState, newState *terraform.InstanceState) {
+func (m schemaMapWithIdentity) handleDiffSuppressOnRefresh(ctx context.Context, oldState, newState *terraform.InstanceState) {
 	if newState == nil || oldState == nil {
 		return // nothing to do, then
 	}
@@ -1681,7 +1711,7 @@ func (m schemaMap) handleDiffSuppressOnRefresh(ctx context.Context, oldState, ne
 			continue // no change to test
 		}
 
-		schemaList := addrToSchema(strings.Split(k, "."), m)
+		schemaList := addrToSchema(strings.Split(k, "."), m.schemaMap)
 		if len(schemaList) == 0 {
 			continue // no schema? weird, but not our responsibility to handle
 		}

@@ -5878,7 +5878,7 @@ func TestSchema_DiffSuppressOnRefresh(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			schema := tc.Schema
+			schema := schemaMapWithIdentity{tc.Schema, nil} // TODO: add IdentitySchema here
 			priorState := &terraform.InstanceState{
 				Attributes: tc.PriorState,
 			}
