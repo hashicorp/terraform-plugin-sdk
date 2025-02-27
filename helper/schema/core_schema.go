@@ -5,6 +5,7 @@ package schema
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
@@ -385,5 +386,8 @@ func (r *Resource) CoreIdentitySchema() *configschema.Block {
 }
 
 func (r *Resource) coreIdentitySchema() *configschema.Block {
+	// while there is schemaMapWithIdentity, we don't need to use it here
+	// as we're only interested in the existing CoreConfigSchema() method
+	// to convert our schema
 	return schemaMap(r.Identity.Schema).CoreConfigSchema()
 }

@@ -835,10 +835,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 	instanceState.RawState = stateVal
 
-	// meta contains schema version, so we also add identity version there
-	// instanceState.Meta["identity_version"] = req.CurrentIdentity. <- there's no version in here, we need another way?
-	// TODO: do we need to set identity_version in Meta in state? -> we might not need it, since it's overwritten anyway.. (see further down below)
-
 	// TODO: is there a more elegant way to do this? this requires us to look for the identity schema block again
 	if req.CurrentIdentity != nil {
 
