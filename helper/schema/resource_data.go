@@ -29,7 +29,7 @@ import (
 type ResourceData struct {
 	// Settable (internally)
 	schema         map[string]*Schema
-	identitySchema map[string]*Schema // TODO: ensure we set this
+	identitySchema map[string]*Schema
 	config         *terraform.ResourceConfig
 	state          *terraform.InstanceState
 	diff           *terraform.InstanceDiff

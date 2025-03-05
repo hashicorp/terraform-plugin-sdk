@@ -684,6 +684,17 @@ func (m *schemaMap) DeepCopy() schemaMap {
 	return *copiedMap.(*schemaMap)
 }
 
+// DeepCopy returns a copy of this schemaMapWithIdentity. The copy can be safely modified
+// without affecting the original.
+func (m *schemaMapWithIdentity) DeepCopy() schemaMapWithIdentity {
+	copiedMap := schemaMapWithIdentity{}
+	copiedMap.schemaMap = m.schemaMap.DeepCopy()
+	identitySchema := schemaMap(m.identitySchema)
+	copiedMap.identitySchema = identitySchema.DeepCopy()
+
+	return copiedMap
+}
+
 // Diff returns the diff for a resource given the schema map,
 // state, and configuration.
 func (m schemaMapWithIdentity) Diff(
@@ -702,6 +713,7 @@ func (m schemaMapWithIdentity) Diff(
 		result.RawConfig = s.RawConfig
 		result.RawState = s.RawState
 		result.RawPlan = s.RawPlan
+		result.Identity = s.Identity
 	}
 
 	d := &ResourceData{
@@ -740,11 +752,36 @@ func (m schemaMapWithIdentity) Diff(
 			return nil, err
 		}
 		for _, k := range rd.UpdatedKeys() {
-			err := m.diff(ctx, k, mc[k], result, rd, false)
+			err := m.diff(ctx, k, mc.schemaMap[k], result, rd, false)
 			if err != nil {
 				return nil, err
 			}
 		}
+		// copy over identity data (by getting it so we also include changes)
+		// In order to build the final identity attributes, we read the full
+		// attribute set as a map[string]interface{}, write it to a MapFieldWriter,
+		// and then use that map.
+		rawMapIdentity := make(map[string]interface{})
+		identityData, err := rd.Identity()
+		if err == nil && d.identitySchema != nil {
+			for k := range d.identitySchema {
+				raw := identityData.get([]string{k})
+				if raw.Exists && !raw.Computed {
+					rawMapIdentity[k] = raw.Value
+					if raw.ValueProcessed != nil {
+						rawMapIdentity[k] = raw.ValueProcessed
+					}
+				}
+			}
+
+			mapWIdentity := &MapFieldWriter{Schema: d.identitySchema}
+			if err := mapWIdentity.WriteField(nil, rawMapIdentity); err != nil {
+				log.Printf("[ERR] Error writing identity fields: %s", err)
+				return nil, err
+			}
+
+			result.Identity = mapWIdentity.Map()
+		} // TODO: else log error?
 	}
 
 	if handleRequiresNew {
@@ -784,11 +821,37 @@ func (m schemaMapWithIdentity) Diff(
 					return nil, err
 				}
 				for _, k := range rd.UpdatedKeys() {
-					err := m.diff(ctx, k, mc[k], result2, rd, false)
+					err := m.diff(ctx, k, mc.schemaMap[k], result2, rd, false)
 					if err != nil {
 						return nil, err
 					}
 				}
+				// copy over identity data (by getting it so we also include changes)
+				// In order to build the final identity attributes, we read the full
+				// attribute set as a map[string]interface{}, write it to a MapFieldWriter,
+				// and then use that map.
+				rawMapIdentity := make(map[string]interface{})
+				identityData, err := rd.Identity()
+				if err == nil && d.identitySchema != nil {
+					for k := range d.identitySchema {
+						raw := identityData.get([]string{k})
+						if raw.Exists && !raw.Computed {
+							rawMapIdentity[k] = raw.Value
+							if raw.ValueProcessed != nil {
+								rawMapIdentity[k] = raw.ValueProcessed
+							}
+						}
+					}
+
+					mapWIdentity := &MapFieldWriter{Schema: d.identitySchema}
+					if err := mapWIdentity.WriteField(nil, rawMapIdentity); err != nil {
+						log.Printf("[ERR] Error writing identity fields: %s", err)
+						return nil, err
+					}
+
+					result2.Identity = mapWIdentity.Map()
+				} // TODO: else log error?
+
 			}
 
 			// Force all the fields to not force a new since we know what we
@@ -838,6 +901,7 @@ func (m schemaMapWithIdentity) Diff(
 	if result.Empty() {
 		// If we don't have any diff elements, just return nil
 		return nil, nil
+		// TODO: identity might be accidentally dropped here!
 	}
 
 	return result, nil
