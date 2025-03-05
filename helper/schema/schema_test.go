@@ -3114,8 +3114,8 @@ func TestSchemaMap_Diff(t *testing.T) {
 				t.Fatalf("err: %s", err)
 			}
 
-			if !reflect.DeepEqual(tc.Diff, d) {
-				t.Fatalf("expected:\n%#v\n\ngot:\n%#v", tc.Diff, d)
+			if diff := cmp.Diff(tc.Diff, d); diff != "" {
+				t.Fatalf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
