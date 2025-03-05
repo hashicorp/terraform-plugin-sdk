@@ -836,12 +836,11 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	instanceState.RawState = stateVal
 
 	// TODO: is there a more elegant way to do this? this requires us to look for the identity schema block again
-	if req.CurrentIdentity != nil {
+	if req.CurrentIdentity != nil && req.CurrentIdentity.IdentityData != nil {
 
 		// convert req.CurrentIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
 		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
-		// TODO: check if CurrentIdentity and IdentityData are not nil!
 		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -919,6 +918,8 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		MsgPack: newStateMP,
 	}
 
+	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
+
 	if newInstanceState.Identity != nil {
 		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
 
@@ -945,6 +946,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 }
 
 func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanResourceChangeRequest) (*tfprotov5.PlanResourceChangeResponse, error) {
+	// TODO: Ansgar: this one next
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.PlanResourceChangeResponse{}
 
@@ -982,6 +984,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
 		}
+		resp.PlannedIdentity = req.PriorIdentity
 		return resp, nil
 	}
 
@@ -1003,6 +1006,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if proposedNewStateVal.IsNull() {
 		resp.PlannedState = req.ProposedNewState
 		resp.PlannedPrivate = req.PriorPrivate
+		resp.PlannedIdentity = req.PriorIdentity
 		return resp, nil
 	}
 
@@ -1049,6 +1053,25 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// turn the proposed state into a legacy configuration
 	cfg := terraform.NewResourceConfigShimmed(proposedNewStateVal, schemaBlock)
 
+	// add identity data to priorState
+	if req.PriorIdentity != nil && req.PriorIdentity.IdentityData != nil {
+		// convert req.PriorIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityVal, err := msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the priorState
+		priorState.Identity = identityAttrs
+	} else {
+		// TODO: add diagnostic or trace in case there's no identity?
+	}
+
+	// TODO: SimpleDiff calls Resource.CustomizeDiff which might need support for setting identity data (e.g. for deferred resources or newly created ones)
 	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1064,15 +1087,17 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		diff.Attributes["id"] = &terraform.ResourceAttrDiff{
 			NewComputed: true,
 		}
+		// TODO: we could error here if a new Diff got no Identity set
 	}
 
-	if diff == nil || len(diff.Attributes) == 0 {
+	if diff == nil || (len(diff.Attributes) == 0 && len(diff.Identity) == 0) {
 		// schema.Provider.Diff returns nil if it ends up making a diff with no
 		// changes, but our new interface wants us to return an actual change
 		// description that _shows_ there are no changes. This is always the
 		// prior state, because we force a diff above if this is a new instance.
 		resp.PlannedState = req.PriorState
 		resp.PlannedPrivate = req.PriorPrivate
+		resp.PlannedIdentity = req.PriorIdentity
 		return resp, nil
 	}
 
@@ -1220,6 +1245,29 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 		resp.Deferred = &tfprotov5.Deferred{
 			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+	}
+
+	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
+	if res.Identity != nil {
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.PlannedIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
 		}
 	}
 

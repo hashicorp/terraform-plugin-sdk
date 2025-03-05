@@ -31,17 +31,18 @@ func testSetFunc(v interface{}) int {
 
 // resourceDiffTestCase provides a test case struct for SetNew and SetDiff.
 type resourceDiffTestCase struct {
-	Name          string
-	Schema        map[string]*Schema
-	State         *terraform.InstanceState
-	Config        *terraform.ResourceConfig
-	Diff          *terraform.InstanceDiff
-	Key           string
-	OldValue      interface{}
-	NewValue      interface{}
-	Expected      *terraform.InstanceDiff
-	ExpectedKeys  []string
-	ExpectedError bool
+	Name           string
+	Schema         map[string]*Schema
+	IdentitySchema map[string]*Schema
+	State          *terraform.InstanceState
+	Config         *terraform.ResourceConfig
+	Diff           *terraform.InstanceDiff
+	Key            string
+	OldValue       interface{}
+	NewValue       interface{}
+	Expected       *terraform.InstanceDiff
+	ExpectedKeys   []string
+	ExpectedError  bool
 }
 
 // testDiffCases produces a list of test cases for use with SetNew and SetDiff.
@@ -645,7 +646,7 @@ func TestSetNew(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			m := schemaMap(tc.Schema)
-			d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+			d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 			err := d.SetNew(tc.Key, tc.NewValue)
 			switch {
 			case err != nil && !tc.ExpectedError:
@@ -672,7 +673,7 @@ func TestSetNewComputed(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			m := schemaMap(tc.Schema)
-			d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+			d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 			err := d.SetNewComputed(tc.Key)
 			switch {
 			case err != nil && !tc.ExpectedError:
@@ -940,7 +941,7 @@ func TestForceNew(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			m := schemaMap(tc.Schema)
+			m := schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}
 			d := newResourceDiff(m, tc.Config, tc.State, tc.Diff)
 			err := d.ForceNew(tc.Key)
 			switch {
@@ -952,7 +953,7 @@ func TestForceNew(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m.schemaMap[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -1189,7 +1190,7 @@ func TestClear(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			m := schemaMap(tc.Schema)
+			m := schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}
 			d := newResourceDiff(m, tc.Config, tc.State, tc.Diff)
 			err := d.Clear(tc.Key)
 			switch {
@@ -1201,7 +1202,7 @@ func TestClear(t *testing.T) {
 				return
 			}
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m.schemaMap[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -1438,12 +1439,12 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			m := schemaMap(tc.Schema)
+			m := schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}
 			d := newResourceDiff(m, tc.Config, tc.State, tc.Diff)
 			keys := d.GetChangedKeysPrefix(tc.Key)
 
 			for _, k := range d.UpdatedKeys() {
-				if err := m.diff(context.Background(), k, m[k], tc.Diff, d, false); err != nil {
+				if err := m.diff(context.Background(), k, m.schemaMap[k], tc.Diff, d, false); err != nil {
 					t.Fatalf("bad: %s", err)
 				}
 			}
@@ -1459,14 +1460,15 @@ func TestGetChangedKeysPrefix(t *testing.T) {
 
 func TestResourceDiffGetOkExists(t *testing.T) {
 	cases := []struct {
-		Name   string
-		Schema map[string]*Schema
-		State  *terraform.InstanceState
-		Config *terraform.ResourceConfig
-		Diff   *terraform.InstanceDiff
-		Key    string
-		Value  interface{}
-		Ok     bool
+		Name           string
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Config         *terraform.ResourceConfig
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Value          interface{}
+		Ok             bool
 	}{
 		/*
 		 * Primitives
@@ -1814,7 +1816,7 @@ func TestResourceDiffGetOkExists(t *testing.T) {
 
 	for i, tc := range cases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.Name), func(t *testing.T) {
-			d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+			d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 
 			v, ok := d.GetOkExists(tc.Key)
 			if s, ok := v.(*Set); ok {
@@ -1833,12 +1835,13 @@ func TestResourceDiffGetOkExists(t *testing.T) {
 
 func TestResourceDiffGetOkExistsSetNew(t *testing.T) {
 	tc := struct {
-		Schema map[string]*Schema
-		State  *terraform.InstanceState
-		Diff   *terraform.InstanceDiff
-		Key    string
-		Value  interface{}
-		Ok     bool
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Value          interface{}
+		Ok             bool
 	}{
 		Schema: map[string]*Schema{
 			"availability_zone": {
@@ -1859,7 +1862,7 @@ func TestResourceDiffGetOkExistsSetNew(t *testing.T) {
 		Ok:    true,
 	}
 
-	d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
+	d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
 
 	if err := d.SetNew(tc.Key, tc.Value); err != nil {
 		t.Fatalf("unexpected SetNew error: %s", err)
@@ -1880,12 +1883,13 @@ func TestResourceDiffGetOkExistsSetNew(t *testing.T) {
 
 func TestResourceDiffGetOkExistsSetNewComputed(t *testing.T) {
 	tc := struct {
-		Schema map[string]*Schema
-		State  *terraform.InstanceState
-		Diff   *terraform.InstanceDiff
-		Key    string
-		Value  interface{}
-		Ok     bool
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Value          interface{}
+		Ok             bool
 	}{
 		Schema: map[string]*Schema{
 			"availability_zone": {
@@ -1910,7 +1914,7 @@ func TestResourceDiffGetOkExistsSetNewComputed(t *testing.T) {
 		Ok:    false,
 	}
 
-	d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
+	d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
 
 	if err := d.SetNewComputed(tc.Key); err != nil {
 		t.Fatalf("unexpected SetNewComputed error: %s", err)
@@ -1925,13 +1929,14 @@ func TestResourceDiffGetOkExistsSetNewComputed(t *testing.T) {
 
 func TestResourceDiffNewValueKnown(t *testing.T) {
 	cases := []struct {
-		Name     string
-		Schema   map[string]*Schema
-		State    *terraform.InstanceState
-		Config   *terraform.ResourceConfig
-		Diff     *terraform.InstanceDiff
-		Key      string
-		Expected bool
+		Name           string
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Config         *terraform.ResourceConfig
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Expected       bool
 	}{
 		{
 			Name: "in config, no state",
@@ -2102,7 +2107,7 @@ func TestResourceDiffNewValueKnown(t *testing.T) {
 
 	for i, tc := range cases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.Name), func(t *testing.T) {
-			d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+			d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 
 			actual := d.NewValueKnown(tc.Key)
 			if tc.Expected != actual {
@@ -2114,13 +2119,14 @@ func TestResourceDiffNewValueKnown(t *testing.T) {
 
 func TestResourceDiffNewValueKnownSetNew(t *testing.T) {
 	tc := struct {
-		Schema   map[string]*Schema
-		State    *terraform.InstanceState
-		Config   *terraform.ResourceConfig
-		Diff     *terraform.InstanceDiff
-		Key      string
-		Value    interface{}
-		Expected bool
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Config         *terraform.ResourceConfig
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Value          interface{}
+		Expected       bool
 	}{
 		Schema: map[string]*Schema{
 			"availability_zone": {
@@ -2154,7 +2160,7 @@ func TestResourceDiffNewValueKnownSetNew(t *testing.T) {
 		Expected: true,
 	}
 
-	d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+	d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 
 	if err := d.SetNew(tc.Key, tc.Value); err != nil {
 		t.Fatalf("unexpected SetNew error: %s", err)
@@ -2168,12 +2174,13 @@ func TestResourceDiffNewValueKnownSetNew(t *testing.T) {
 
 func TestResourceDiffNewValueKnownSetNewComputed(t *testing.T) {
 	tc := struct {
-		Schema   map[string]*Schema
-		State    *terraform.InstanceState
-		Config   *terraform.ResourceConfig
-		Diff     *terraform.InstanceDiff
-		Key      string
-		Expected bool
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Config         *terraform.ResourceConfig
+		Diff           *terraform.InstanceDiff
+		Key            string
+		Expected       bool
 	}{
 		Schema: map[string]*Schema{
 			"availability_zone": {
@@ -2194,7 +2201,7 @@ func TestResourceDiffNewValueKnownSetNewComputed(t *testing.T) {
 		Expected: false,
 	}
 
-	d := newResourceDiff(tc.Schema, tc.Config, tc.State, tc.Diff)
+	d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, tc.Config, tc.State, tc.Diff)
 
 	if err := d.SetNewComputed(tc.Key); err != nil {
 		t.Fatalf("unexpected SetNewComputed error: %s", err)
@@ -2208,11 +2215,12 @@ func TestResourceDiffNewValueKnownSetNewComputed(t *testing.T) {
 
 func TestResourceDiffHasChanges(t *testing.T) {
 	cases := []struct {
-		Schema map[string]*Schema
-		State  *terraform.InstanceState
-		Diff   *terraform.InstanceDiff
-		Keys   []string
-		Change bool
+		Schema         map[string]*Schema
+		IdentitySchema map[string]*Schema
+		State          *terraform.InstanceState
+		Diff           *terraform.InstanceDiff
+		Keys           []string
+		Change         bool
 	}{
 		// empty call d.HasChanges()
 		{
@@ -2301,7 +2309,7 @@ func TestResourceDiffHasChanges(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		d := newResourceDiff(tc.Schema, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
+		d := newResourceDiff(schemaMapWithIdentity{tc.Schema, tc.IdentitySchema}, testConfig(t, map[string]interface{}{}), tc.State, tc.Diff)
 
 		actual := d.HasChanges(tc.Keys...)
 		if actual != tc.Change {

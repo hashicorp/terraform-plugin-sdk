@@ -1028,13 +1028,18 @@ func (r *Resource) SimpleDiff(
 	c *terraform.ResourceConfig,
 	meta interface{}) (*terraform.InstanceDiff, error) {
 
-	instanceDiff, err := schemaMap(r.SchemaMap()).Diff(ctx, s, c, r.CustomizeDiff, meta, false)
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
 	if err != nil {
 		return instanceDiff, err
 	}
 
 	if instanceDiff == nil {
 		instanceDiff = terraform.NewInstanceDiff()
+		instanceDiff.Identity = s.Identity // if we create a new diff, we need to copy the identity
 	}
 
 	// Make sure the old value is set in each of the instance diffs.
