@@ -3,6 +3,9 @@ page_title: Resources - State Migration
 description: Migrating state values within resources.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Resources - State Migration
 
 Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor while the [Terraform state](/terraform/language/state) stores mapping and metadata information for those remote objects. There are several reasons why a resource implementation needs to change: backend APIs Terraform interacts with will change overtime, or the current implementation might be incorrect or unmaintainable. Some of these changes may not be backward compatible and a migration is needed for resources provisioned in the wild with old schema configurations.

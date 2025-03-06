@@ -3,6 +3,9 @@ page_title: Resources - Data Consistency Errors
 description: Fixing data consistency errors caused by this SDK.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Resources - Data Consistency Errors
 
 Resources written with `terraform-plugin-sdk` are by default allowed to perform unexpected data handling operations from Terraform's perspective. Terraform versions 0.12 and later have stricter [data consistency rules](https://github.com/hashicorp/terraform/blob/main/docs/resource-instance-change-lifecycle.md) than the design and implementation of this SDK, which predated those rules.

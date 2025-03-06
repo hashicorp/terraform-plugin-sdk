@@ -4,6 +4,9 @@ description: |-
   SDKv2 provides a helper to send all the HTTP transactions to structured logging.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # HTTP Transport
 
 Terraform's public interface has included `helper/logging` [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since `v0.9.5`. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
