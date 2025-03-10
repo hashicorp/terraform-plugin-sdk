@@ -78,9 +78,6 @@ func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities 
 }
 
 func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req *tfprotov5.GetResourceIdentitySchemasRequest) (*tfprotov5.GetResourceIdentitySchemasResponse, error) {
-	// TODO: First task for Rain?
-	// TODO: Adding fields to schema.Provider struct
-
 	ctx = logging.InitContext(ctx)
 
 	logging.HelperSchemaTrace(ctx, "Getting resource identity schemas")
@@ -102,11 +99,7 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 
 }
 
-// modelled after UpgradeResourceState
 func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *tfprotov5.UpgradeResourceIdentityRequest) (*tfprotov5.UpgradeResourceIdentityResponse, error) {
-	// TODO: Second task for Rain?
-	// TODO: Adding field to schema.Provider struct
-
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.UpgradeResourceIdentityResponse{}
 
