@@ -5414,6 +5414,709 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
+		// TODO: Check if all these tests are the correct expected behavior
+		"Both OptionalForImport and Required for Import return error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeInt,
+					OptionalForImport: true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+		"Attribute with RequiredForImport returns no errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					RequiredForImport: true,
+				},
+			},
+			false,
+		},
+		"Attribute with OptionalForImport returns no errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					OptionalForImport: true,
+				},
+			},
+			false,
+		},
+		"Attribute with RequiredForImport and Required set returns errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Required:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport and Optional set returns errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Computed:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport and ForceNew set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					ForceNew:          true,
+					Optional:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Optional, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Computed:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Optional, Required, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Required:          true,
+					Computed:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Optional, and Required set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Required:          true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Optional, and Default set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Default:           true,
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Optional, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with RequiredForImport, Required, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Required: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					RequiredForImport: true,
+				},
+			},
+			true,
+		},
+		"List attribute with RequiredForImport set returns no error": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:              TypeList,
+					RequiredForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			false,
+		},
+		"Map attribute with RequiredForImport set returns error": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:              TypeMap,
+					RequiredForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+		"Set attribute with RequiredForImport set returns error": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:              TypeSet,
+					RequiredForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+
+		"List configuration block with RequiredForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeList,
+					RequiredForImport: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List configuration block nested attribute with RequiredForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Map configuration attribute with RequiredForImport set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeMap,
+					RequiredForImport: true,
+					Elem: &Schema{
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+			},
+			true,
+		},
+		"Map configuration attribute nested attribute with RequiredForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem: &Schema{
+						Type:              TypeString,
+						RequiredForImport: true,
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with RequiredForImport set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeSet,
+					RequiredForImport: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		"Set configuration block nested attribute with RequiredForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List configuration block with ConfigModeAttr set, sub block nested attribute with RequiredForImport set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeList,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeList,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:              TypeString,
+											RequiredForImport: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with ConfigModeAttr set, sub block nested attribute with RequiredForImport set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeSet,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeSet,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:              TypeString,
+											RequiredForImport: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List computed block nested attribute with RequiredForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"Set computed block nested attribute with RequiredForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"Attribute with OptionalForImport and Required set returns errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Required:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport and Optional set returns errors": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Computed:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport and ForceNew set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					ForceNew:          true,
+					Optional:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Optional, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Computed:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Optional, Required, and Computed set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Required:          true,
+					Computed:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Optional, and Required set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Required:          true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Optional, and Default set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					Optional:          true,
+					Default:           true,
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Optional, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+
+		"Attribute with OptionalForImport, Required, and DefaultFunc set returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Required: true,
+					DefaultFunc: func() (interface{}, error) {
+						return "foo", nil
+					},
+					OptionalForImport: true,
+				},
+			},
+			true,
+		},
+		"List attribute with OptionalForImport set returns no error": {
+			map[string]*Schema{
+				"list_attr": {
+					Type:              TypeList,
+					OptionalForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			false,
+		},
+		"Map attribute with OptionalForImport set returns error": {
+			map[string]*Schema{
+				"map_attr": {
+					Type:              TypeMap,
+					OptionalForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+		"Set attribute with OptionalForImport set returns error": {
+			map[string]*Schema{
+				"set_attr": {
+					Type:              TypeSet,
+					OptionalForImport: true,
+					Elem:              &Schema{Type: TypeString},
+				},
+			},
+			true,
+		},
+
+		"List configuration block with OptionalForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeList,
+					OptionalForImport: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List configuration block nested attribute with OptionalForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								OptionalForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Map configuration attribute with OptionalForImport set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeMap,
+					OptionalForImport: true,
+					Elem: &Schema{
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+			},
+			true,
+		},
+		"Map configuration attribute nested attribute with OptionalForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeMap,
+					Optional: true,
+					Elem: &Schema{
+						Type:              TypeString,
+						OptionalForImport: true,
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with OptionalForImport set returns error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:              TypeSet,
+					OptionalForImport: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+		"Set configuration block nested attribute with OptionalForImport set returns no errors": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Optional: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								OptionalForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List configuration block with ConfigModeAttr set, sub block nested attribute with OptionalForImport set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeList,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeList,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:              TypeString,
+											OptionalForImport: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+
+		"Set configuration block with ConfigModeAttr set, sub block nested attribute with OptionalForImport set returns no errors": {
+			map[string]*Schema{
+				"block": {
+					Type:       TypeSet,
+					ConfigMode: SchemaConfigModeAttr,
+					Optional:   true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"sub": {
+								Type:       TypeSet,
+								ConfigMode: SchemaConfigModeAttr,
+								Optional:   true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"nested_attr": {
+											Type:              TypeString,
+											OptionalForImport: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"List computed block nested attribute with OptionalForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeList,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								OptionalForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
+		"Set computed block nested attribute with OptionalForImport set returns no error": {
+			map[string]*Schema{
+				"config_block_attr": {
+					Type:     TypeSet,
+					Computed: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"nested_attr": {
+								Type:              TypeString,
+								OptionalForImport: true,
+							},
+						},
+					},
+				},
+			},
+			false,
+		},
 	}
 
 	for tn, tc := range cases {
