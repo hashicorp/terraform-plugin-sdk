@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
@@ -79,7 +80,8 @@ func StringLenBetween(minVal, maxVal int) schema.SchemaValidateFunc {
 			return warnings, errors
 		}
 
-		if len(v) < minVal || len(v) > maxVal {
+		length := utf8.RuneCountInString(v)
+		if length < minVal || length > maxVal {
 			errors = append(errors, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s", k, minVal, maxVal, v))
 		}
 
