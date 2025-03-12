@@ -411,33 +411,35 @@ func (d *ResourceData) State() *terraform.InstanceState {
 		result.Tainted = d.state.Tainted
 	}
 
+	// If the ResourceData has an identitySchema:
 	// copy over identity data (by getting it so we also include changes)
 	// In order to build the final state attributes, we read the full
 	// attribute set as a map[string]interface{}, write it to a MapFieldWriter,
 	// and then use that map.
-	rawMapIdentity := make(map[string]interface{})
-	identityData, err := d.Identity()
-	// There's the case where the resource does not have identity data (via ShimInstanceStateFromValue)
-	// so we need to check this
-	if err == nil {
-		for k := range d.identitySchema {
-			raw := identityData.get([]string{k})
-			if raw.Exists && !raw.Computed {
-				rawMapIdentity[k] = raw.Value
-				if raw.ValueProcessed != nil {
-					rawMapIdentity[k] = raw.ValueProcessed
+	if d.identitySchema != nil {
+		rawMapIdentity := make(map[string]interface{})
+		identityData, err := d.Identity()
+		// This error shouldn't happen, as we check for the identity schema first
+		if err == nil {
+			for k := range d.identitySchema {
+				raw := identityData.get([]string{k})
+				if raw.Exists && !raw.Computed {
+					rawMapIdentity[k] = raw.Value
+					if raw.ValueProcessed != nil {
+						rawMapIdentity[k] = raw.ValueProcessed
+					}
 				}
 			}
-		}
 
-		mapWIdentity := &MapFieldWriter{Schema: d.identitySchema}
-		if err := mapWIdentity.WriteField(nil, rawMapIdentity); err != nil {
-			log.Printf("[ERR] Error writing identity fields: %s", err)
-			return nil
-		}
+			mapWIdentity := &MapFieldWriter{Schema: d.identitySchema}
+			if err := mapWIdentity.WriteField(nil, rawMapIdentity); err != nil {
+				log.Printf("[ERR] Error writing identity fields: %s", err)
+				return nil
+			}
 
-		result.Identity = mapWIdentity.Map()
-	} // TODO: else log error?
+			result.Identity = mapWIdentity.Map()
+		}
+	}
 
 	return &result
 }
@@ -740,13 +742,18 @@ func (d *ResourceData) Identity() (*IdentityData, error) {
 		return d.newIdentity, nil
 	}
 
+	if d.identitySchema == nil {
+		return nil, fmt.Errorf("Resource does not have Identity schema. Please set one in order to use Identity(). This is always a problem in the provider code.")
+	}
+
+	var identityData map[string]string
 	if d.state == nil || d.state.Identity == nil {
-		return nil, fmt.Errorf("Resource does not have Identity data")
+		identityData = d.state.Identity
 	}
 
 	d.newIdentity = &IdentityData{
 		schema:       d.identitySchema,
-		raw:          d.state.Identity,
+		raw:          identityData,
 		panicOnError: d.panicOnError,
 	}
 

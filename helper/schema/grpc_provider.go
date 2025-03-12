@@ -1465,7 +1465,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	if res.Identity != nil {
 		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
 
-		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
