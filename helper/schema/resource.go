@@ -903,8 +903,11 @@ func (r *Resource) Apply(
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff,
 	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
-	schema := schemaMap(r.SchemaMap())
-	//identitySchema := r.Identity.Schema
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 	data, err := schema.Data(s, d)
 	if err != nil {
 		return s, diag.FromErr(err)
@@ -1032,6 +1035,7 @@ func (r *Resource) SimpleDiff(
 	if r.Identity != nil {
 		identity = r.Identity.Schema
 	}
+	// TODO: figure out if it makes sense to be able to set identity in CustomizeDiff at all
 	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
 	if err != nil {
 		return instanceDiff, err
