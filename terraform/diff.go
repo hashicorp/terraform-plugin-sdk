@@ -54,7 +54,7 @@ type InstanceDiff struct {
 
 	// Identity is the identity data used to track resource identity
 	// starting in Terraform 1.12+
-	Identity map[string]string `json:"identity"`
+	Identity map[string]string
 }
 
 func (d *InstanceDiff) Lock()   { d.mu.Lock() }

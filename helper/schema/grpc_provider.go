@@ -89,9 +89,11 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 	for typ, res := range s.provider.ResourcesMap { // look at this
 		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
 
-		resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
-			Version:            res.Identity.Version,
-			IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()), // TODO: figure out what goes here
+		if res.Identity != nil {
+			resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
+				Version:            res.Identity.Version,
+				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()), // TODO: figure out what goes here
+			}
 		}
 	}
 
@@ -1313,6 +1315,24 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		}
 	}
 
+	// add identity data to priorState
+	if req.PlannedIdentity != nil && req.PlannedIdentity.IdentityData != nil {
+		// convert req.PriorIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityVal, err := msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the priorState
+		priorState.Identity = identityAttrs
+	} else {
+		// TODO: add diagnostic or trace in case there's no identity?
+	}
+
 	var diff *terraform.InstanceDiff
 	destroy := false
 
@@ -1326,6 +1346,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			RawPlan:    plannedStateVal,
 			RawState:   priorStateVal,
 			RawConfig:  configVal,
+			Identity:   priorState.Identity,
 		}
 	} else {
 		diff, err = DiffFromValues(ctx, priorStateVal, plannedStateVal, configVal, stripResourceModifiers(res))
@@ -1333,6 +1354,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
+		diff.Identity = priorState.Identity
 	}
 
 	if diff == nil {
@@ -1342,6 +1364,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			RawPlan:    plannedStateVal,
 			RawState:   priorStateVal,
 			RawConfig:  configVal,
+			Identity:   priorState.Identity,
 		}
 	}
 
@@ -1437,6 +1460,29 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		return resp, nil
 	}
 	resp.Private = meta
+
+	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
+	if res.Identity != nil {
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.NewIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
+		}
+	}
 
 	// This is a signal to Terraform Core that we're doing the best we can to
 	// shim the legacy type system of the SDK onto the Terraform type system
