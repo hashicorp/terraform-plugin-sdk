@@ -117,7 +117,7 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 
 	switch {
 	// if there's a JSON state, we need to decode it.
-	case len(req.RawIdentity.JSON) > 0:
+	case req.RawIdentity != nil && len(req.RawIdentity.JSON) > 0:
 		if res.UseJSONNumber {
 			err = unmarshalJSON(req.RawIdentity.JSON, &jsonMap)
 		} else {
