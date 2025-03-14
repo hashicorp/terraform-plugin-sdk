@@ -747,7 +747,7 @@ func (d *ResourceData) Identity() (*IdentityData, error) {
 	}
 
 	var identityData map[string]string
-	if d.state == nil || d.state.Identity == nil {
+	if d.state != nil && d.state.Identity != nil {
 		identityData = d.state.Identity
 	}
 
