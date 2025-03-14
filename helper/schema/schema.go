@@ -93,12 +93,20 @@ type Schema struct {
 	// with Required.
 	Optional bool
 
-	// Similar to Required but for ResourceIdentity
-	// TODO: Write Documentation
+	// RequiredForImport indicates whether the practitioner must enter a value
+	// in the import block for this attribute when importing a resource.
+	//
+	// RequiredForImport is only valid for identity schemas and either
+	// RequiredForImport or OptionalForImport must be set to true.
 	RequiredForImport bool
 
-	// Similar to Optional but for ResourceIdentity
-	// TODO: Write Documentation
+	// OptionalForImport indicates whether the practitioner can choose to not
+	// enter a value in the import block for this attribute when importing a
+	// resource. For example, this can be data that would normally be the default
+	// of the configured provider running the import.
+	//
+	// OptionalForImport is only valid for identity schemas and either
+	// RequiredForImport or OptionalForImport must be set to true.
 	OptionalForImport bool
 
 	// Computed indicates whether the provider may return its own value for
@@ -901,7 +909,6 @@ func (m schemaMapWithIdentity) Diff(
 	if result.Empty() {
 		// If we don't have any diff elements, just return nil
 		return nil, nil
-		// TODO: identity might be accidentally dropped here!
 	}
 
 	return result, nil
