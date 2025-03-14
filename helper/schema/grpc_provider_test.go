@@ -3499,7 +3499,7 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 	req := &tfprotov5.UpgradeResourceIdentityRequest{
 		TypeName: "test",
 		Version:  0,
-		RawIdentity: &tfprotov5.RawIdentity{
+		RawIdentity: &tfprotov5.RawState{
 			JSON: []byte(`{"identity":"Peter"}`),
 		},
 	}
@@ -3577,7 +3577,7 @@ func TestUpgradeResourceIdentity_removedAttr(t *testing.T) {
 	req := &tfprotov5.UpgradeResourceIdentityRequest{
 		TypeName: "test",
 		Version:  0,
-		RawIdentity: &tfprotov5.RawIdentity{
+		RawIdentity: &tfprotov5.RawState{
 			JSON: []byte(`{"identity":"Peter", "removed":"to_be_removed"}`),
 		},
 	}
@@ -3636,7 +3636,7 @@ func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 	req := &tfprotov5.UpgradeResourceIdentityRequest{
 		TypeName: "test",
 		Version:  0,
-		RawIdentity: &tfprotov5.RawIdentity{
+		RawIdentity: &tfprotov5.RawState{
 			JSON: []byte(`{"id":"bar","int":7227701560655103598}`),
 		},
 	}
