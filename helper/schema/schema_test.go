@@ -5415,7 +5415,7 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			true,
 		},
 		// TODO: Check if all these tests are the correct expected behavior
-		"Both OptionalForImport and Required for Import return error": {
+		"Both OptionalForImport and RequiredForImport return error": {
 			map[string]*Schema{
 				"foo": {
 					Type:              TypeInt,
