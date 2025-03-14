@@ -1480,3 +1480,11 @@ func RemoveFromState(d *ResourceData, _ interface{}) error {
 	d.SetId("")
 	return nil
 }
+
+// Internal validation of provider implementation
+func (r *ResourceIdentity) internalIdentityValidate() diag.Diagnostics {
+	if r.Schema == nil {
+		// return some kind of error
+	}
+	return nil
+}
