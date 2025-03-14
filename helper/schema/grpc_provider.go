@@ -1354,7 +1354,6 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
-		diff.Identity = priorState.Identity
 	}
 
 	if diff == nil {
@@ -1366,6 +1365,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			RawConfig:  configVal,
 			Identity:   priorState.Identity,
 		}
+	} else {
+		diff.Identity = priorState.Identity
 	}
 
 	// add NewExtra Fields that may have been stored in the private data
