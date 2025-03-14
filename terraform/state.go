@@ -1314,7 +1314,6 @@ type InstanceState struct {
 	RawConfig cty.Value
 	RawState  cty.Value
 	RawPlan   cty.Value
-	// TODO: add RawIdentity (do we need it? What's RawState used for? Seems to be experimental according to GetRawState())
 
 	// Tainted is used to mark a resource for recreation.
 	Tainted bool `json:"tainted"`

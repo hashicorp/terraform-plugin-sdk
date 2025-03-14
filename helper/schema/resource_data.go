@@ -735,7 +735,7 @@ func (d *ResourceData) GetRawPlan() cty.Value {
 }
 
 // IdentityData is only available for managed resources, data sources
-// will return an error. //TODO: return this error (:
+// will return an error. // TODO: return error in case of data sources
 func (d *ResourceData) Identity() (*IdentityData, error) {
 	// return memoized value if available
 	if d.newIdentity != nil {
