@@ -86,13 +86,13 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 		IdentitySchemas: make(map[string]*tfprotov5.ResourceIdentitySchema),
 	}
 
-	for typ, res := range s.provider.ResourcesMap { // look at this
+	for typ, res := range s.provider.ResourcesMap {
 		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		if res.Identity != nil {
 			resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
 				Version:            res.Identity.Version,
-				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()), // TODO: figure out what goes here
+				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()),
 			}
 		}
 	}
@@ -781,10 +781,6 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 }
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
-	// TODO: New identity dynamic value data coming in
-	// TODO: Feed into schema.ResourceData
-	// TODO: ResourceDiff needs it too
-
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but
@@ -856,7 +852,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 	}
-	// TODO: this overrides the meta set within res.ShimInstanceStateFromValue() containing the schema version, is this intended?
 	instanceState.Meta = private
 
 	pmSchemaBlock := s.getProviderMetaSchemaBlock()
@@ -869,7 +864,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		instanceState.ProviderMeta = providerSchemaVal
 	}
 
-	// TODO: do we need to update identity data in ReadResource rpcs? -> YES
 	newInstanceState, diags := res.RefreshWithoutUpgrade(ctx, instanceState, s.provider.Meta())
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
 	if diags.HasError() {
@@ -941,7 +935,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 }
 
 func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanResourceChangeRequest) (*tfprotov5.PlanResourceChangeResponse, error) {
-	// TODO: Ansgar: this one next
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.PlanResourceChangeResponse{}
 
@@ -1066,7 +1059,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		// TODO: add diagnostic or trace in case there's no identity?
 	}
 
-	// TODO: SimpleDiff calls Resource.CustomizeDiff which might need support for setting identity data (e.g. for deferred resources or newly created ones)
 	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)

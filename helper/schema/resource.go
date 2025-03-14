@@ -89,8 +89,10 @@ type Resource struct {
 	// their Versioning at any integer >= 1
 	SchemaVersion int
 
-	// TODO: comment
-	// TODO: do we need to support an IdentityFunc for this as well?
+	// Identity is a nested structure containing information about the structure
+	// and type of this resource's identity. This field is only valid when the
+	// Resource is a managed resource.
+	// This field, is optional.
 	Identity *ResourceIdentity
 
 	// MigrateState is responsible for updating an InstanceState with an old

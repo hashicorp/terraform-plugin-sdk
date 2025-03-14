@@ -378,7 +378,8 @@ func (r *Resource) CoreIdentitySchema() *configschema.Block {
 	block := r.coreIdentitySchema()
 
 	if block.Attributes == nil {
-		// TODO: shall we error here if it's empty?
+		// TODO: we should error instead and callers should handle the error appropriately
+		// and error would hint at an invalid provider implementation
 		block.Attributes = map[string]*configschema.Attribute{}
 	}
 

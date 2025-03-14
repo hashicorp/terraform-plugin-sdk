@@ -2,10 +2,11 @@ package schema
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-// TODO: implement IdentityUpgrader struct
+// Implementation of a single identity schema version upgrade.
 type IdentityUpgrader struct {
 	// Version is the version schema that this Upgrader will handle, converting
 	// it to Version+1.
