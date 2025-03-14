@@ -168,6 +168,9 @@ func (s *Schema) coreConfigSchemaAttribute() *configschema.Attribute {
 		DescriptionKind: descKind,
 		Deprecated:      s.Deprecated != "",
 		WriteOnly:       s.WriteOnly,
+		// For Identity Attributes only
+		OptionalForImport: s.OptionalForImport,
+		RequiredForImport: s.RequiredForImport,
 	}
 }
 
@@ -369,4 +372,23 @@ func (r *Resource) CoreConfigSchema() *configschema.Block {
 
 func (r *Resource) coreConfigSchema() *configschema.Block {
 	return schemaMap(r.SchemaMap()).CoreConfigSchema()
+}
+
+func (r *Resource) CoreIdentitySchema() *configschema.Block {
+	block := r.coreIdentitySchema()
+
+	if block.Attributes == nil {
+		// TODO: we should error instead and callers should handle the error appropriately
+		// and error would hint at an invalid provider implementation
+		block.Attributes = map[string]*configschema.Attribute{}
+	}
+
+	return block
+}
+
+func (r *Resource) coreIdentitySchema() *configschema.Block {
+	// while there is schemaMapWithIdentity, we don't need to use it here
+	// as we're only interested in the existing CoreConfigSchema() method
+	// to convert our schema
+	return schemaMap(r.Identity.Schema).CoreConfigSchema()
 }
