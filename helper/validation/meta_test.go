@@ -69,6 +69,12 @@ func TestValidationAll(t *testing.T) {
 			),
 			expectedErr: regexp.MustCompile("value must be alphanumeric"),
 		},
+		{
+			val: "你好世界",
+			f: All(
+				StringLenBetween(1, 5),
+			),
+		},
 	})
 }
 
@@ -96,6 +102,12 @@ func TestValidationAllDiag(t *testing.T) {
 				ToDiagFunc(StringMatch(regexp.MustCompile(`[a-zA-Z0-9]+`), "value must be alphanumeric")),
 			),
 			expectedDiagSummary: regexp.MustCompile("value must be alphanumeric"),
+		},
+		{
+			val: "你好世界",
+			f: AllDiag(
+				ToDiagFunc(StringLenBetween(1, 5)),
+			),
 		},
 	})
 }
