@@ -3,6 +3,9 @@ page_title: Resources - Write-only Arguments
 description: Implementing write-only arguments within resources.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Resources - Write-only Arguments
 
 ~> **NOTE:** Write-only arguments are only supported in Terraform `v1.11` or higher
@@ -16,7 +19,9 @@ which should either use the value by making the appropriate change to the API or
 
 The following are high level differences between `Required`/`Optional` arguments and write-only arguments:
 
-- Write-only arguments can accept ephemeral and non-ephemeral values
+- Write-only arguments can accept ephemeral and non-ephemeral values.
+
+- Write-only arguments cannot be used with set attributes and set nested blocks.
 
 - Write-only argument values are only available in the configuration. The prior state, planned state, and final state values for
 write-only arguments should always be `null`.
@@ -51,6 +56,7 @@ write-only arguments should always be `null`.
 - Cannot be used when `Default` is `specified`
 - Cannot be used with `DefaultFunc`
 - Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed nested block types can contain write-only arguments.
+- Cannot be used within a set nested block type.
 
 ## Retrieving Write-only Values
 
@@ -199,6 +205,13 @@ if !woVal.IsNull() {
 ```
 
 ## PreferWriteOnlyAttribute Validator
+
+<Note>
+
+    This validator will produce persistent warnings for practitioners on every Terraform run as long as the specified non-write-only attribute
+    has a value in the configuration. The validator will also produce warnings for users of shared modules who cannot immediately take action on the warning.
+
+</Note>
 
 `PreferWriteOnlyAttribute()` is a validator that takes a `cty.Path` to an existing configuration attribute (required/optional) and a `cty.Path` to a write-only argument.
 

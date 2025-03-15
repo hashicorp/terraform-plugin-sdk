@@ -1633,7 +1633,6 @@ func TestProviderConfigure(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -2246,8 +2245,6 @@ func TestProviderImportState(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -2501,6 +2498,7 @@ func TestProvider_InternalValidate(t *testing.T) {
 
 func TestProviderUserAgentAppendViaEnvVar(t *testing.T) {
 	if oldenv, isSet := os.LookupEnv(uaEnvVar); isSet {
+		//nolint:usetesting
 		defer os.Setenv(uaEnvVar, oldenv)
 	} else {
 		defer os.Unsetenv(uaEnvVar)

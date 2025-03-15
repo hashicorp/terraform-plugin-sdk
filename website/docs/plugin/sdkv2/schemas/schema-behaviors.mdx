@@ -5,6 +5,9 @@ description: |-
   you can use to define element behaviors in SDKv2.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Schema Behaviors
 
 Schema fields that can have an effect at plan or apply time are collectively
@@ -213,7 +216,8 @@ resource "example_instance" "ex" {
 - Cannot be used when `ForceNew` is `true`
 - Cannot be used when `Default` is `specified`
 - Cannot be used with `DefaultFunc`
-- Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed nested block types can contain write-only arguments.
+- Cannot be used with aggregate schema types (e.g. `typeMap`, `typeList`, `typeSet`), but non-computed list nested block types can contain write-only arguments.
+- Cannot be used within a set nested block type
 
 `WriteOnly` should be used for arguments that handle secret values that do not need to be persisted in Terraform plan or state,
 such as passwords, API keys, etc. Write-only argument values are not sent to Terraform and do not
