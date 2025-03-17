@@ -3304,7 +3304,7 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 		"resources": {
 			Provider: &Provider{
 				ResourcesMap: map[string]*Resource{
-					"test_resource1": &Resource{
+					"test_resource1": {
 						Identity: &ResourceIdentity{
 							Version: 1,
 							Schema: map[string]*Schema{
