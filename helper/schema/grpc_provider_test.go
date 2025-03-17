@@ -3612,7 +3612,7 @@ func TestUpgradeResourceIdentity_removedAttr(t *testing.T) {
 // This test currently does not return the integer and does not recognize it as an attribute
 func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 	r := &Resource{
-		UseJSONNumber: true, // TODO: Look into this and figure out if it has to do with the problem
+		UseJSONNumber: true,
 		SchemaVersion: 1,
 		Identity: &ResourceIdentity{
 			Version: 1,
@@ -3637,7 +3637,7 @@ func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 		TypeName: "test",
 		Version:  0,
 		RawIdentity: &tfprotov5.RawState{
-			JSON: []byte(`{"id":"bar","int":7227701560655103598}`),
+			JSON: []byte(`{"int":7227701560655103598}`),
 		},
 	}
 
@@ -3653,14 +3653,13 @@ func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreConfigSchema().ImpliedType())
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreIdentitySchema().ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expected := cty.ObjectVal(map[string]cty.Value{
-		"id": cty.StringVal("bar"),
-		// "int": cty.NumberIntVal(7227701560655103598), //TODO: uncomment to properly run the test
+		"int": cty.NumberIntVal(7227701560655103598),
 	})
 
 	if !cmp.Equal(expected, val, valueComparer, equateEmpty) {
