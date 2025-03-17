@@ -423,7 +423,7 @@ func (d *ResourceData) State() *terraform.InstanceState {
 		if err == nil {
 			for k := range d.identitySchema {
 				raw := identityData.get([]string{k})
-				if raw.Exists && !raw.Computed {
+				if raw.Exists {
 					rawMapIdentity[k] = raw.Value
 					if raw.ValueProcessed != nil {
 						rawMapIdentity[k] = raw.ValueProcessed
