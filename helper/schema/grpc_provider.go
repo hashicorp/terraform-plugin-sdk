@@ -836,9 +836,8 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
 		// Step 3: Well, set it in the instanceState
 		instanceState.Identity = identityAttrs
-	} else {
-		// TODO: add diagnostic or trace in case there's no identity?
 	}
+	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	private := make(map[string]interface{})
 	if len(req.Private) > 0 {
@@ -1050,9 +1049,8 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
-	} else {
-		// TODO: add diagnostic or trace in case there's no identity?
 	}
+	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
@@ -1316,9 +1314,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
-	} else {
-		// TODO: add diagnostic or trace in case there's no identity?
 	}
+	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	var diff *terraform.InstanceDiff
 	destroy := false
