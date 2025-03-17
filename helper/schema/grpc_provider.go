@@ -110,9 +110,9 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
 		return resp, nil
 	}
-	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+	schemaBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
 
-	version := int64(req.Version)
+	version := req.Version
 
 	jsonMap := map[string]interface{}{}
 	var err error
@@ -162,11 +162,6 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
 	}
-	// Normalize the value and fill in any missing blocks.
-	val = objchange.NormalizeObjectFromLegacySDK(val, schemaBlock)
-
-	// Set any write-only attribute values to null
-	val = setWriteOnlyNullValues(val, schemaBlock)
 
 	// encode the final state to the expected msgpack format
 	newStateMP, err := msgpack.Marshal(val, schemaBlock.ImpliedType())
@@ -229,7 +224,7 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 		Block: convert.ConfigSchemaToProto(ctx, s.getProviderMetaSchemaBlock()),
 	}
 
-	for typ, res := range s.provider.ResourcesMap { // look at this
+	for typ, res := range s.provider.ResourcesMap {
 		logging.HelperSchemaTrace(ctx, "Found resource type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		resp.ResourceSchemas[typ] = &tfprotov5.Schema{

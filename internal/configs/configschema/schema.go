@@ -97,12 +97,12 @@ type Attribute struct {
 	WriteOnly bool
 
 	// RequiredForImport, if set to true, specifies that an omitted or null value is
-	// not permitted. This field conflicts with OptionalForImport.
+	// not permitted when importing by the identity. This field conflicts with OptionalForImport.
 	// Only valid for identity schemas.
 	RequiredForImport bool
 
 	// OptionalForImport, if set to true, specifies that an omitted or null value is
-	// permitted. This field conflicts with RequiredForImport.
+	// permitted when importing by the identity. This field conflicts with RequiredForImport.
 	// Only valid for identity schemas.
 	OptionalForImport bool
 }
