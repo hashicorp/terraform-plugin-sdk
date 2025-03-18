@@ -5,5 +5,6 @@ builds:
 milestones:
   - close: true
 release:
+  prerelease: auto
   ids:
     - 'none'
