@@ -6,7 +6,7 @@ project {
 
   header_ignore = [
     # changie tooling configuration and CHANGELOG entries (prose)
-    ".changes/unreleased/*.yaml",
+    ".changes/unreleased/**",
     ".changie.yaml",
 
     # GitHub issue template configuration
