@@ -826,7 +826,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 		// convert req.CurrentIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -837,7 +837,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		// Step 3: Well, set it in the instanceState
 		instanceState.Identity = identityAttrs
 	}
-	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	private := make(map[string]interface{})
 	if len(req.Private) > 0 {
@@ -901,10 +900,8 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		MsgPack: newStateMP,
 	}
 
-	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
-
 	if newInstanceState.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
@@ -1039,7 +1036,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if req.PriorIdentity != nil && req.PriorIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 		identityVal, err := msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1050,7 +1047,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
 	}
-	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
@@ -1230,7 +1226,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
 		if err != nil {
@@ -1304,7 +1300,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	if req.PlannedIdentity != nil && req.PlannedIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 		identityVal, err := msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1315,7 +1311,6 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
 	}
-	// TODO: ELSE add diagnostic or trace in case there's no identity?
 
 	var diff *terraform.InstanceDiff
 	destroy := false
@@ -1448,7 +1443,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
