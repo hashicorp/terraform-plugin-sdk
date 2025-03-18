@@ -3385,7 +3385,6 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 				},
 			},
 		},
-		// Do we need to specifically test Float and Int 32 and 64 and does number encapsulate those since we are using tftypes instead of types?
 		"primitive attributes": {
 			Provider: &Provider{
 				ResourcesMap: map[string]*Resource{
