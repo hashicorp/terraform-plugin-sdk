@@ -1,0 +1,8 @@
+kind: NOTES
+body: This alpha pre-release contains an initial implementation for managed resource identity, which can used with Terraform v1.12.0-alpha20250312,
+    to store and read identity data during plan and apply workflows. A managed resource identity can be used by definning an identity schema in the
+    `resource.Identity` field. Once the identity schema is defined, you can read and store identity data in the new IdentityData struct that is available
+    via the new `Identity()` method on ResourceData and ResourceDiff structs.
+time: 2025-03-19T15:07:17.690255+01:00
+custom:
+    Issue: "1444"
