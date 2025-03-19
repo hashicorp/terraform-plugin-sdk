@@ -89,6 +89,12 @@ type Resource struct {
 	// their Versioning at any integer >= 1
 	SchemaVersion int
 
+	// Identity is a nested structure containing information about the structure
+	// and type of this resource's identity. This field is only valid when the
+	// Resource is a managed resource.
+	// This field, is optional.
+	Identity *ResourceIdentity
+
 	// MigrateState is responsible for updating an InstanceState with an old
 	// version to the format expected by the current version of the Schema.
 	// This field is only valid when the Resource is a managed resource.
@@ -722,7 +728,11 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 
 	// We now rebuild the state through the ResourceData, so that the set indexes
 	// match what helper/schema expects.
-	data, err := schemaMap(r.SchemaMap()).Data(s, nil)
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	data, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Data(s, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -895,7 +905,11 @@ func (r *Resource) Apply(
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff,
 	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
-	schema := schemaMap(r.SchemaMap())
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 	data, err := schema.Data(s, d)
 	if err != nil {
 		return s, diag.FromErr(err)
@@ -1019,13 +1033,19 @@ func (r *Resource) SimpleDiff(
 	c *terraform.ResourceConfig,
 	meta interface{}) (*terraform.InstanceDiff, error) {
 
-	instanceDiff, err := schemaMap(r.SchemaMap()).Diff(ctx, s, c, r.CustomizeDiff, meta, false)
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	// TODO: figure out if it makes sense to be able to set identity in CustomizeDiff at all
+	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
 	if err != nil {
 		return instanceDiff, err
 	}
 
 	if instanceDiff == nil {
 		instanceDiff = terraform.NewInstanceDiff()
+		instanceDiff.Identity = s.Identity // if we create a new diff, we need to copy the identity
 	}
 
 	// Make sure the old value is set in each of the instance diffs.
@@ -1107,7 +1127,11 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	schema := schemaMap(r.SchemaMap())
+	var identity map[string]*Schema
+	if r.Identity != nil {
+		identity = r.Identity.Schema
+	}
+	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 
 	if r.Exists != nil {
 		// Make a copy of data so that if it is modified it doesn't
@@ -1417,7 +1441,8 @@ func (r *Resource) Data(s *terraform.InstanceState) *ResourceData {
 // TODO: May be able to be removed with the above ResourceData function.
 func (r *Resource) TestResourceData() *ResourceData {
 	return &ResourceData{
-		schema: r.SchemaMap(),
+		schema:         r.SchemaMap(),
+		identitySchema: r.Identity.Schema,
 	}
 }
 

@@ -3114,8 +3114,8 @@ func TestSchemaMap_Diff(t *testing.T) {
 				t.Fatalf("err: %s", err)
 			}
 
-			if !reflect.DeepEqual(tc.Diff, d) {
-				t.Fatalf("expected:\n%#v\n\ngot:\n%#v", tc.Diff, d)
+			if diff := cmp.Diff(tc.Diff, d); diff != "" {
+				t.Fatalf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -5878,7 +5878,7 @@ func TestSchema_DiffSuppressOnRefresh(t *testing.T) {
 
 	for tn, tc := range cases {
 		t.Run(tn, func(t *testing.T) {
-			schema := tc.Schema
+			schema := schemaMapWithIdentity{tc.Schema, nil} // TODO: add IdentitySchema here
 			priorState := &terraform.InstanceState{
 				Attributes: tc.PriorState,
 			}

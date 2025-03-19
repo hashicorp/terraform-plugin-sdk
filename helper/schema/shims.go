@@ -43,7 +43,11 @@ func diffFromValues(ctx context.Context, prior, planned, config cty.Value, res *
 	removeConfigUnknowns(cfg.Config)
 	removeConfigUnknowns(cfg.Raw)
 
-	diff, err := schemaMap(res.SchemaMap()).Diff(ctx, instanceState, cfg, cust, nil, false)
+	var identity map[string]*Schema
+	if res.Identity != nil {
+		identity = res.Identity.Schema
+	}
+	diff, err := schemaMapWithIdentity{res.SchemaMap(), identity}.Diff(ctx, instanceState, cfg, cust, nil, false)
 	if err != nil {
 		return nil, err
 	}
