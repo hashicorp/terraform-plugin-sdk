@@ -1068,10 +1068,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: DefaultFunc cannot be set with RequiredForImport, RequiredForImport is used for resource identity", k)
 		}
 
-		if v.WriteOnly && v.Default != nil {
-			return fmt.Errorf("%s: Default cannot be set with WriteOnly", k)
-		}
-
 		if v.WriteOnly && v.DefaultFunc != nil {
 			return fmt.Errorf("%s: DefaultFunc cannot be set with WriteOnly", k)
 		}

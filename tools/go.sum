@@ -144,8 +144,8 @@ github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgf
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/hashicorp/consul/api v1.13.0/go.mod h1:ZlVrynguJKcYr54zGaDbaL3fOvKC9m72FhPvA8T35KQ=
 github.com/hashicorp/consul/sdk v0.8.0/go.mod h1:GBvyrGALthsZObzUGsfgHZQDXjg4lOjagTIwIR1vPms=
-github.com/hashicorp/copywrite v0.21.0 h1:IE8uByQdos8s0uAyHF4O8RHV5cJEhmIc+Awk+wkKXKI=
-github.com/hashicorp/copywrite v0.21.0/go.mod h1:mu6DAyUI6m6vq8weoJn9a0HDuUUrV+0GQdRp4mD50yU=
+github.com/hashicorp/copywrite v0.22.0 h1:mqjMrgP3VptS7aLbu2l39rtznoK+BhphHst6i7HiTAo=
+github.com/hashicorp/copywrite v0.22.0/go.mod h1:FqvGJt2+yoYDpVYgFSdg3R2iyhkCVaBmPMhfso0MR2k=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-cleanhttp v0.5.0/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
