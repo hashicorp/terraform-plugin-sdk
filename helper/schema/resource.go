@@ -1531,25 +1531,25 @@ func (r *ResourceIdentity) InternalIdentityValidate() error {
 			}
 		}
 
-		if v.ForceNew != false {
+		if v.ForceNew {
 			return fmt.Errorf(`ForceNew is not used in resource identity`)
 		}
-		if v.Required != false {
+		if v.Required {
 			return fmt.Errorf(`Required is not used in resource identity`)
 		}
-		if v.Optional != false {
+		if v.Optional {
 			return fmt.Errorf(`Optional is not used in resource identity`)
 		}
-		if v.WriteOnly != false {
+		if v.WriteOnly {
 			return fmt.Errorf(`WriteOnly is not used in resource identity`)
 		}
-		if v.Computed != false {
+		if v.Computed {
 			return fmt.Errorf(`Computed is not used in resource identity`)
 		}
-		if v.Sensitive != false {
+		if v.Sensitive {
 			return fmt.Errorf(`Sensitive is not used in resource identity`)
 		}
-		if v.DiffSuppressOnRefresh != false {
+		if v.DiffSuppressOnRefresh {
 			return fmt.Errorf(`DiffSuppressOnRefresh is not used in resource identity`)
 		}
 		if v.Deprecated != "" {
