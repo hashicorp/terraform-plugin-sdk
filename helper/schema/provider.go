@@ -218,10 +218,11 @@ func (p *Provider) InternalValidate() error {
 	}
 
 	for k, r := range p.ResourcesMap {
-		// TODO: call internalIdentityValidation
-		// if r.Identity != nil {
-		// TODO: check r.Identity.Schema
-		// }
+		if r.Identity != nil {
+			if err := r.Identity.InternalIdentityValidate(); err != nil {
+				validationErrors = append(validationErrors, fmt.Errorf("resource %s identity: %s", k, err))
+			}
+		}
 		if err := r.InternalValidate(nil, true); err != nil {
 			validationErrors = append(validationErrors, fmt.Errorf("resource %s: %s", k, err))
 		}
