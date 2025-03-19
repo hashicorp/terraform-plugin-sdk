@@ -1659,3 +1659,376 @@ func TestResource_ContextTimeout(t *testing.T) {
 		t.Fatal("context does not have timeout")
 	}
 }
+
+func TestResourceInternalIdentityValidate(t *testing.T) {
+	cases := map[string]struct {
+		In  *ResourceIdentity
+		Err bool
+	}{
+		"nil": {
+			nil,
+			true,
+		},
+
+		"schema is nil": {
+			&ResourceIdentity{},
+			true,
+		},
+
+		"OptionalForImport and RequiredForImport both false": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						OptionalForImport: false,
+						RequiredForImport: false,
+					},
+				},
+			},
+			true,
+		},
+
+		"OptionalForImport and RequiredForImport both true": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						OptionalForImport: true,
+						RequiredForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"TypeMap is not valid": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {Type: TypeMap, OptionalForImport: true},
+				},
+			},
+			true,
+		},
+
+		"TypeSet is not valid": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {Type: TypeSet, OptionalForImport: true},
+				},
+			},
+			true,
+		},
+
+		"TypeObject is not valid": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {Type: typeObject, OptionalForImport: true},
+				},
+			},
+			true,
+		},
+
+		"TypeInvalid is not valid": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {Type: TypeInvalid, OptionalForImport: true},
+				},
+			},
+			true,
+		},
+
+		"TypeList contains TypeMap": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type: TypeList, Elem: TypeMap, OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		" TypeList contains TypeSet": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type: TypeList,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"bar": {
+									Type:              TypeSet,
+									RequiredForImport: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			true,
+		},
+
+		"TypeList contains TypeInvalid": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type: TypeList, Elem: TypeInvalid, OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"ForceNew is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						ForceNew:          true,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Optional is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						Optional:          true,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Required is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						Required:          true,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"WriteOnly is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						WriteOnly:         true,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Computed is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						Computed:          true,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Deprecated is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						Deprecated:        "deprecated",
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Default is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						Default:           42,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"MaxItems is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						MaxItems:          5,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"MinItems is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						MinItems:          1,
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"DiffSuppressOnRefresh is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:                  TypeInt,
+						DiffSuppressOnRefresh: true,
+						OptionalForImport:     true,
+					},
+				},
+			},
+			true,
+		},
+
+		"RequiredWith is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						RequiredWith:      []string{"bar"},
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"ComputedWhen is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						ComputedWhen:      []string{"bar"},
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"DefaultFunc is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						DefaultFunc:       func() (interface{}, error) { return 42, nil },
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"StateFunc is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						StateFunc:         func(val interface{}) string { return "" },
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"ValidateFunc is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						ValidateFunc:      func(val interface{}, key string) (ws []string, es []error) { return nil, nil },
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						AtLeastOneOf:      []string{"bar"},
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith is set": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:              TypeInt,
+						ConflictsWith:     []string{"bar"},
+						OptionalForImport: true,
+					},
+				},
+			},
+			true,
+		},
+
+		"Valid resource identity OptionalForImport": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type: TypeInt, OptionalForImport: true},
+				},
+			},
+			false,
+		},
+
+		"Valid resource identity RequiredorImport": {
+			&ResourceIdentity{
+				Schema: map[string]*Schema{
+					"foo": {
+						Type: TypeInt, RequiredForImport: true},
+				},
+			},
+			false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.In.InternalIdentityValidate()
+			if err != nil && !tc.Err {
+				t.Fatalf("%s: expected validation to pass: %s", name, err)
+			}
+			if err == nil && tc.Err {
+				t.Fatalf("%s: expected validation to fail", name)
+			}
+		})
+	}
+}
