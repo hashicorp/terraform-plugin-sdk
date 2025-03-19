@@ -956,11 +956,7 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: Cannot be both Required and Computed", k)
 		}
 
-		if v.RequiredForImport {
-
-		} else if v.OptionalForImport {
-
-		} else if !v.Required && !v.Optional && !v.Computed {
+		if !v.Required && !v.Optional && !v.Computed {
 			return fmt.Errorf("%s: One of optional, required, or computed must be set", k)
 		}
 
@@ -974,42 +970,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 
 		if v.WriteOnly && v.ForceNew {
 			return fmt.Errorf("%s: WriteOnly cannot be set with ForceNew", k)
-		}
-
-		if v.OptionalForImport && v.Optional {
-			return fmt.Errorf("%s: OptionalForImport is for resource identity, it cannot be set with Optional", k)
-		}
-
-		if v.OptionalForImport && v.Required {
-			return fmt.Errorf("%s: OptionalForImport is for resource identity, it cannot be set with Required", k)
-		}
-
-		if v.RequiredForImport && v.Optional {
-			return fmt.Errorf("%s: RequiredForImport is for resource identity, it cannot be set with Optional", k)
-		}
-
-		if v.RequiredForImport && v.Required {
-			return fmt.Errorf("%s: RequiredForImport is for resource identity, it cannot be set with Required", k)
-		}
-
-		if v.OptionalForImport && v.RequiredForImport {
-			return fmt.Errorf("%s: OptionalForImport or RequiredForImport must be set, not both", k)
-		}
-
-		if v.OptionalForImport && v.Computed {
-			return fmt.Errorf("%s: OptionalForImport is for resource identity, it cannot be set with Computed", k)
-		}
-
-		if v.RequiredForImport && v.Computed {
-			return fmt.Errorf("%s: RequiredForImport is for resource identity, it cannot be set with Computed", k)
-		}
-
-		if v.OptionalForImport && v.ForceNew {
-			return fmt.Errorf("%s: OptionalForImport is for resource identity, it cannot be set with ForceNew", k)
-		}
-
-		if v.RequiredForImport && v.ForceNew {
-			return fmt.Errorf("%s: RequiredForImport is for resource identity, it cannot be set with ForceNew", k)
 		}
 
 		computedOnly := v.Computed && !v.Optional
@@ -1050,22 +1010,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 
 		if v.WriteOnly && v.Default != nil {
 			return fmt.Errorf("%s: Default cannot be set with WriteOnly", k)
-		}
-
-		if v.OptionalForImport && v.Default != nil {
-			return fmt.Errorf("%s: Default cannot be set with OptionalForImport, OptionalForImport is used for resource identity", k)
-		}
-
-		if v.OptionalForImport && v.DefaultFunc != nil {
-			return fmt.Errorf("%s: DefaultFunc cannot be set with OptionalForImport, OptionalForImport is used for resource identity", k)
-		}
-
-		if v.RequiredForImport && v.Default != nil {
-			return fmt.Errorf("%s: Default cannot be set with RequiredForImport, RequiredForImport is used for resource identity", k)
-		}
-
-		if v.RequiredForImport && v.DefaultFunc != nil {
-			return fmt.Errorf("%s: DefaultFunc cannot be set with RequiredForImport, RequiredForImport is used for resource identity", k)
 		}
 
 		if v.WriteOnly && v.Default != nil {
@@ -1124,15 +1068,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: cannot set DiffSuppressOnRefresh without DiffSuppressFunc", k)
 		}
 
-		if v.Type == TypeSet {
-			if v.OptionalForImport {
-				return fmt.Errorf("%s: OptionalForImport is not valid for sets", k)
-			}
-			if v.RequiredForImport {
-				return fmt.Errorf("%s: RequiredForImport is not valid for sets", k)
-			}
-		}
-
 		if v.Type == TypeList || v.Type == TypeSet {
 			if v.WriteOnly {
 				return fmt.Errorf("%s: WriteOnly is not valid for lists or sets", k)
@@ -1183,14 +1118,6 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		if v.Type == TypeMap && v.Elem != nil {
 			if v.WriteOnly {
 				return fmt.Errorf("%s: WriteOnly is not valid for maps", k)
-			}
-
-			if v.OptionalForImport {
-				return fmt.Errorf("%s: OptionalForImport is not valid for maps", k)
-			}
-
-			if v.RequiredForImport {
-				return fmt.Errorf("%s: RequiredForImport is not valid for maps", k)
 			}
 
 			switch v.Elem.(type) {
