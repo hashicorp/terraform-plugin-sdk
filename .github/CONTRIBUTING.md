@@ -339,10 +339,6 @@ This section is dedicated to the maintainers of this project.
 
 ### Releases
 
-Before running a release:
-
-- **`meta/meta.go`**: The versions must be appropriately updated.
-
 To cut a release, go to the repository in GitHub and click on the `Actions` tab.
 
 Select the `Release` workflow on the left-hand menu.
@@ -352,4 +348,6 @@ Click on the `Run workflow` button.
 Select the branch to cut the release from (default is main).
 
 Input the `Release version number` which is the Semantic Release number including
-the `v` prefix (i.e. `v1.4.0`) and click `Run workflow` to kickoff the release.
+the `v` prefix (i.e. `v1.4.0` or `v1.4.0-alpha.1`) and click `Run workflow` to kickoff the release.
+
+The (deprecated) version information in `meta/meta.go` will be updated automatically and a commit will be pushed.
