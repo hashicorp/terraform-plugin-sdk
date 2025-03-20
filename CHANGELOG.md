@@ -1,3 +1,10 @@
+## 2.37.0-alpha.1 (March 20, 2025)
+
+NOTES:
+
+* all: This Go module has been updated to Go 1.23 per the [Go support policy](https://go.dev/doc/devel/release#policy). It is recommended to review the [Go 1.23 release notes](https://go.dev/doc/go1.23) before upgrading. Any consumers building on earlier Go versions may experience errors. ([#1445](https://github.com/hashicorp/terraform-plugin-sdk/issues/1445))
+* This alpha pre-release contains an initial implementation for managed resource identity, which can used with Terraform v1.12.0-alpha20250319, to store and read identity data during plan and apply workflows. A managed resource identity can be used by defining an identity schema in the `resource.Identity` field. Once the identity schema is defined, you can read and store identity data in the new IdentityData struct that is available via the new `Identity()` method on ResourceData and ResourceDiff structs. ([#1444](https://github.com/hashicorp/terraform-plugin-sdk/issues/1444))
+
 ## 2.36.1 (February 19, 2025)
 
 NOTES:
