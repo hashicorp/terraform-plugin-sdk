@@ -20,9 +20,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.changelog-version.outputs.version }}
+      version_only: ${{ steps.changelog-version.outputs.version_only }}
+      prerelease: ${{ steps.changelog-version.outputs.prerelease }}
     steps:
       - id: changelog-version
-        run: echo "version=$(echo "${{ inputs.versionNumber }}" | cut -c 2-)" >> "$GITHUB_OUTPUT"
+        run: |
+          version="${{ inputs.versionNumber }}"
+          version="${version#v}"  # Remove leading "v" if present
+          version_only="${version%%-*}"
+          prerelease="${version#*-}"
+
+          # If there's no dash, set prerelease to empty
+          if [ "$version" = "$version_only" ]; then
+            prerelease=""
+          fi
+
+          {
+            echo "version=$version"
+            echo "version_only=$version_only"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
 
   changelog:
     needs: [ changelog-version, meta-version ]
@@ -70,8 +87,10 @@ jobs:
           # Avoid persisting GITHUB_TOKEN credentials as they take priority over our service account PAT for `git push` operations
           # More details: https://github.com/actions/checkout/blob/b4626ce19ce1106186ddf9bb20e706842f11a7c3/adrs/0153-checkout-v2.md#persist-credentials
           persist-credentials: false
-      - name: Update meta package SDKVersion
-        run: sed -i "s/var SDKVersion =.*/var SDKVersion = \"${{ needs.changelog-version.outputs.version }}\"/" meta/meta.go
+      - name: Update meta package SDKVersion and SDKPrerelease
+        run: |
+          sed -i "s/var SDKVersion =.*/var SDKVersion = \"${{ needs.changelog-version.outputs.version_only }}\"/" meta/meta.go
+          sed -i "s/var SDKPrerelease =.*/var SDKPrerelease = \"${{ needs.changelog-version.outputs.prerelease }}\"/" meta/meta.go
       - name: Git push meta
         run: |
           git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
