@@ -3421,6 +3421,47 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 				},
 			},
 		},
+		"no identity schema": {
+			Provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource1": {
+						Identity: &ResourceIdentity{
+							Version: 1,
+						},
+					},
+				},
+			},
+			Expected: &tfprotov5.GetResourceIdentitySchemasResponse{
+				IdentitySchemas: map[string]*tfprotov5.ResourceIdentitySchema{},
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test_resource1': resource does not have an identity schema",
+					},
+				},
+			},
+		},
+		"empty identity schema": {
+			Provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource1": {
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema:  map[string]*Schema{},
+						},
+					},
+				},
+			},
+			Expected: &tfprotov5.GetResourceIdentitySchemasResponse{
+				IdentitySchemas: map[string]*tfprotov5.ResourceIdentitySchema{},
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test_resource1': identity schema must have at least one attribute",
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
