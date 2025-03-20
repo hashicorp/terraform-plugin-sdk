@@ -5172,6 +5172,97 @@ func TestReadResource(t *testing.T) {
 				},
 			},
 		},
+		"no-identity-schema": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Identity: &ResourceIdentity{
+							Version: 1,
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"instance_id": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"instance_id": cty.StringVal("test-id"),
+							}),
+						),
+					},
+				},
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("test-id"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': resource does not have an identity schema",
+					},
+				},
+			},
+		},
+		"empty-identity": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema:  map[string]*Schema{},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"instance_id": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"instance_id": cty.StringVal("test-id"),
+							}),
+						),
+					},
+				},
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("test-id"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': identity schema must have at least one attribute",
+					},
+				},
+			},
+		},
 		"deferred-response-unknown-val": {
 			server: NewGRPCProviderServer(&Provider{
 				// Deferred response will skip read function and return current state
@@ -5641,6 +5732,163 @@ func TestPlanResourceChange(t *testing.T) {
 						),
 					},
 				},
+			},
+		},
+		"no identity schema": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				PriorIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"name": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"name": cty.StringVal("test-name"),
+							}),
+						),
+					},
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': resource does not have an identity schema",
+					},
+				},
+				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"empty identity schema": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeInt,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema:  map[string]*Schema{},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"foo": cty.Number,
+						}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{
+								"foo": cty.Number,
+							}),
+						),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.Number,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.NullVal(cty.Number),
+						}),
+					),
+				},
+				PriorIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"name": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"name": cty.StringVal("test-name"),
+							}),
+						),
+					},
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': identity schema must have at least one attribute",
+					},
+				},
+				UnsafeToUseLegacyTypeSystem: true,
 			},
 		},
 		"basic-plan-EnableLegacyTypeSystemPlanErrors": {
@@ -6561,6 +6809,241 @@ func TestApplyResourceChange(t *testing.T) {
 				},
 				Private:                     []uint8(`{"schema_version":"4"}`),
 				UnsafeToUseLegacyTypeSystem: true,
+			},
+		},
+		"create: identity returned in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							rd.SetId("baz")
+							identity, err := rd.Identity()
+							if err != nil {
+								t.Fatal(err)
+							}
+							err = identity.Set("ident", "bazz")
+							if err != nil {
+								t.Fatal(err)
+							}
+							return nil
+						},
+						Schema: map[string]*Schema{},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"ident": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"ident": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"ident": cty.UnknownVal(cty.String),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Private:                     []uint8(`{"schema_version":"4"}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				NewIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"ident": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"ident": cty.StringVal("bazz"),
+							}),
+						),
+					},
+				},
+			},
+		},
+		"create: no identity schema diag in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema:        map[string]*Schema{},
+						Identity: &ResourceIdentity{
+							Version: 1,
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"ident": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"ident": cty.UnknownVal(cty.String),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': resource does not have an identity schema",
+					},
+				},
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(cty.DynamicPseudoType, cty.NullVal(cty.DynamicPseudoType)),
+				},
+			},
+		},
+		"create: empty identity schema diag in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema:        map[string]*Schema{},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema:  map[string]*Schema{},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"ident": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"ident": cty.UnknownVal(cty.String),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "getting identity schema failed for resource 'test': identity schema must have at least one attribute",
+					},
+				},
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(cty.DynamicPseudoType, cty.NullVal(cty.DynamicPseudoType)),
+				},
 			},
 		},
 	}
