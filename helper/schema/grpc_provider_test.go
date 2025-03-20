@@ -3515,7 +3515,13 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreIdentitySchema().ImpliedType())
+	idschema, err := r.CoreIdentitySchema()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, idschema.ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3593,7 +3599,12 @@ func TestUpgradeResourceIdentity_removedAttr(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreIdentitySchema().ImpliedType())
+	idschema, err := r.CoreIdentitySchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, idschema.ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3652,7 +3663,12 @@ func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 		t.Fatal("error")
 	}
 
-	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, r.CoreIdentitySchema().ImpliedType())
+	idschema, err := r.CoreIdentitySchema()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	val, err := msgpack.Unmarshal(resp.UpgradedIdentity.IdentityData.MsgPack, idschema.ImpliedType())
 	if err != nil {
 		t.Fatal(err)
 	}
