@@ -374,21 +374,26 @@ func (r *Resource) coreConfigSchema() *configschema.Block {
 	return schemaMap(r.SchemaMap()).CoreConfigSchema()
 }
 
-func (r *Resource) CoreIdentitySchema() *configschema.Block {
-	block := r.coreIdentitySchema()
+func (r *Resource) CoreIdentitySchema() (*configschema.Block, error) {
+	block, err := r.coreIdentitySchema()
 
-	if block.Attributes == nil {
-		// TODO: we should error instead and callers should handle the error appropriately
-		// and error would hint at an invalid provider implementation
-		block.Attributes = map[string]*configschema.Attribute{}
+	if err != nil {
+		return nil, err
 	}
 
-	return block
+	if block.Attributes == nil {
+		return nil, fmt.Errorf("identity schema must have at least one attribute")
+	}
+
+	return block, nil
 }
 
-func (r *Resource) coreIdentitySchema() *configschema.Block {
+func (r *Resource) coreIdentitySchema() (*configschema.Block, error) {
+	if r.Identity == nil || r.Identity.Schema == nil {
+		return nil, fmt.Errorf("resource does not have an identity schema")
+	}
 	// while there is schemaMapWithIdentity, we don't need to use it here
 	// as we're only interested in the existing CoreConfigSchema() method
 	// to convert our schema
-	return schemaMap(r.Identity.Schema).CoreConfigSchema()
+	return schemaMap(r.Identity.Schema).CoreConfigSchema(), nil
 }

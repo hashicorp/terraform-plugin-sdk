@@ -90,9 +90,16 @@ func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req
 		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
 
 		if res.Identity != nil {
+			idschema, err := res.CoreIdentitySchema()
+
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", typ, err))
+				return resp, nil
+			}
+
 			resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
 				Version:            res.Identity.Version,
-				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, res.CoreIdentitySchema()),
+				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, idschema),
 			}
 		}
 	}
@@ -110,12 +117,16 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
 		return resp, nil
 	}
-	schemaBlock := s.getResourceIdentitySchemaBlock(req.TypeName)
+
+	schemaBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
 
 	version := req.Version
 
 	jsonMap := map[string]interface{}{}
-	var err error
 
 	switch {
 	// if there's a JSON state, we need to decode it.
@@ -258,7 +269,7 @@ func (s *GRPCProviderServer) getResourceSchemaBlock(name string) *configschema.B
 	return res.CoreConfigSchema()
 }
 
-func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) *configschema.Block {
+func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) (*configschema.Block, error) {
 	res := s.provider.ResourcesMap[name]
 	return res.CoreIdentitySchema()
 }
@@ -826,7 +837,12 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 		// convert req.CurrentIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
 		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -901,7 +917,11 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 
 	if newInstanceState.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
@@ -1036,7 +1056,12 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if req.PriorIdentity != nil && req.PriorIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
 		identityVal, err := msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1226,7 +1251,11 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
 		if err != nil {
@@ -1300,7 +1329,12 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	if req.PlannedIdentity != nil && req.PlannedIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
 		// Step 1: Turn JSON into cty.Value based on schema
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
 		identityVal, err := msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1443,7 +1477,11 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
-		identityBlock := s.getResourceIdentitySchemaBlock(req.TypeName) // TODO: handle error if no schema exists (and after we add the error)
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
 
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
