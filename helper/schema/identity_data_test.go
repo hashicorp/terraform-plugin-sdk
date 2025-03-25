@@ -57,8 +57,6 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: "foo",
 		},
 
-		// TODO: these numbers are off since i removed some cases -> remove them
-		// #3
 		{
 			Name: "state with identity, no diff",
 			IdentitySchema: map[string]*Schema{
@@ -99,10 +97,9 @@ func TestIdentityDataGet(t *testing.T) {
 			Diff: &terraform.InstanceDiff{},
 
 			Key:   "region",
-			Value: "",
+			Value: "foo", // This is different than for resource data – which would be empty
 		},
 
-		// #5
 		{
 			Name: "int type: state with identity, no diff",
 			IdentitySchema: map[string]*Schema{
@@ -113,7 +110,7 @@ func TestIdentityDataGet(t *testing.T) {
 			},
 
 			State: &terraform.InstanceState{
-				Attributes: map[string]string{
+				Identity: map[string]string{
 					"port": "80",
 				},
 			},
@@ -136,7 +133,7 @@ func TestIdentityDataGet(t *testing.T) {
 			},
 
 			State: &terraform.InstanceState{
-				Attributes: map[string]string{
+				Identity: map[string]string{
 					"ports.#": "3",
 					"ports.0": "1",
 					"ports.1": "2",

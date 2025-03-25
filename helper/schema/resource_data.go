@@ -750,6 +750,9 @@ func (d *ResourceData) Identity() (*IdentityData, error) {
 	if d.state != nil && d.state.Identity != nil {
 		identityData = d.state.Identity
 	}
+	if d.diff != nil && d.diff.Identity != nil {
+		identityData = d.diff.Identity
+	}
 
 	d.newIdentity = &IdentityData{
 		schema:       d.identitySchema,
