@@ -11,16 +11,14 @@ import (
 )
 
 func TestIdentityDataGet(t *testing.T) {
-	cases := []struct {
-		Name           string
+	cases := map[string]struct {
 		IdentitySchema map[string]*Schema
 		State          *terraform.InstanceState
 		Diff           *terraform.InstanceDiff
 		Key            string
 		Value          interface{}
 	}{
-		{
-			Name: "no state, empty diff",
+		"no state, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -36,8 +34,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: "",
 		},
 
-		{
-			Name: "no state, diff with identity",
+		"no state, diff with identity": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -57,8 +54,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: "foo",
 		},
 
-		{
-			Name: "state with identity, no diff",
+		"state with identity, no diff": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -79,8 +75,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: "bar",
 		},
 
-		{
-			Name: "state with identity, empty diff",
+		"state with identity, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -100,8 +95,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: "foo", // This is different than for resource data – which would be empty
 		},
 
-		{
-			Name: "int type: state with identity, no diff",
+		"int type: state with identity, no diff": {
 			IdentitySchema: map[string]*Schema{
 				"port": {
 					Type:              TypeInt,
@@ -122,8 +116,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 80,
 		},
 
-		{
-			Name: "int list type: state with identity, empty diff",
+		"int list type: state with identity, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type:              TypeList,
@@ -146,8 +139,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 2,
 		},
 
-		{
-			Name: "int list type length: state with identity, empty diff",
+		"int list type length: state with identity, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type: TypeList,
@@ -169,8 +161,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 3,
 		},
 
-		{
-			Name: "int list type length: empty state, empty diff",
+		"int list type length: empty state, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type:              TypeList,
@@ -186,8 +177,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 0,
 		},
 
-		{
-			Name: "int list type all: state with identity, empty diff",
+		"int list type all: state with identity, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type:              TypeList,
@@ -210,8 +200,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: []interface{}{1, 2, 5},
 		},
 
-		{
-			Name: "full object: empty state, diff with identity",
+		"full object: empty state, diff with identity": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -234,8 +223,7 @@ func TestIdentityDataGet(t *testing.T) {
 			},
 		},
 
-		{
-			Name: "float zero: empty state, empty diff",
+		"float zero: empty state, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ratio": {
 					Type:              TypeFloat,
@@ -252,8 +240,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 0.0,
 		},
 
-		{
-			Name: "float: state with identity, empty diff",
+		"float: state with identity, empty diff": {
 			IdentitySchema: map[string]*Schema{
 				"ratio": {
 					Type:              TypeFloat,
@@ -274,8 +261,7 @@ func TestIdentityDataGet(t *testing.T) {
 			Value: 0.5,
 		},
 
-		{
-			Name: "float: state with identity, diff with identity",
+		"float: state with identity, diff with identity": {
 			IdentitySchema: map[string]*Schema{
 				"ratio": {
 					Type:              TypeFloat,
@@ -301,8 +287,8 @@ func TestIdentityDataGet(t *testing.T) {
 		},
 	}
 
-	for i, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
 			schema := map[string]*Schema{}
 			d, err := schemaMapWithIdentity{schema, tc.IdentitySchema}.Data(tc.State, tc.Diff)
 			if err != nil {
@@ -317,7 +303,7 @@ func TestIdentityDataGet(t *testing.T) {
 			v := identity.Get(tc.Key)
 
 			if !reflect.DeepEqual(v, tc.Value) {
-				t.Fatalf("Bad: %d\n\n%#v\n\nExpected: %#v", i, v, tc.Value)
+				t.Fatalf("Bad: %s\n\n%#v\n\nExpected: %#v", name, v, tc.Value)
 			}
 		})
 	}
@@ -425,8 +411,7 @@ func TestIdentityDataGetOk(t *testing.T) {
 func TestIdentityDataSet(t *testing.T) {
 	var testNilPtr *string
 
-	cases := []struct {
-		Name           string
+	cases := map[string]struct {
 		IdentitySchema map[string]*Schema
 		State          *terraform.InstanceState
 		Diff           *terraform.InstanceDiff
@@ -436,8 +421,7 @@ func TestIdentityDataSet(t *testing.T) {
 		GetKey         string
 		GetValue       interface{}
 	}{
-		{
-			Name: "basic good",
+		"basic string": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -456,8 +440,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: "foo",
 		},
 
-		{
-			Name: "basic int",
+		"basic int": {
 			IdentitySchema: map[string]*Schema{
 				"port": {
 					Type: TypeInt,
@@ -475,8 +458,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: 80,
 		},
 
-		{
-			Name: "basic bool",
+		"basic bool": {
 			IdentitySchema: map[string]*Schema{
 				"vpc": {
 					Type: TypeBool,
@@ -494,8 +476,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: true,
 		},
 
-		{
-			Name: "basic bool false",
+		"basic bool false": {
 			IdentitySchema: map[string]*Schema{
 				"vpc": {
 					Type: TypeBool,
@@ -513,8 +494,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: false,
 		},
 
-		{
-			Name: "invalid type",
+		"invalid type": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -534,8 +514,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: "",
 		},
 
-		{
-			Name: "list of primitives - set list",
+		"list of primitives - set list": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type: TypeList,
@@ -555,8 +534,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: []interface{}{1, 2, 5},
 		},
 
-		{
-			Name: "list of primitives - set list with error",
+		"list of primitives - set list with error": {
 			IdentitySchema: map[string]*Schema{
 				"ports": {
 					Type: TypeList,
@@ -577,8 +555,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: []interface{}{},
 		},
 
-		{
-			Name: "list of floats - set list",
+		"list of floats - set list": {
 			IdentitySchema: map[string]*Schema{
 				"ratios": {
 					Type: TypeList,
@@ -598,8 +575,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: []interface{}{1.0, 2.2, 5.5},
 		},
 
-		{
-			Name: "basic pointer",
+		"basic pointer": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -618,8 +594,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: "foo",
 		},
 
-		{
-			Name: "basic nil value",
+		"basic nil value": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -638,8 +613,7 @@ func TestIdentityDataSet(t *testing.T) {
 			GetValue: "",
 		},
 
-		{
-			Name: "basic nil pointer",
+		"basic nil pointer": {
 			IdentitySchema: map[string]*Schema{
 				"region": {
 					Type:              TypeString,
@@ -659,8 +633,8 @@ func TestIdentityDataSet(t *testing.T) {
 		},
 	}
 
-	for i, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
 
 			schema := map[string]*Schema{}
 
@@ -676,7 +650,7 @@ func TestIdentityDataSet(t *testing.T) {
 
 			err = identity.Set(tc.Key, tc.Value)
 			if err != nil != tc.Err {
-				t.Fatalf("%d err: %s", i, err)
+				t.Fatalf("%s err: %s", name, err)
 			}
 
 			// we retrieve a new identity to ensure memoization is working
@@ -688,7 +662,7 @@ func TestIdentityDataSet(t *testing.T) {
 			v := identity.Get(tc.GetKey)
 
 			if !reflect.DeepEqual(v, tc.GetValue) {
-				t.Fatalf("Get Bad: %d\n\n%#v", i, v)
+				t.Fatalf("Get Bad: %s\n\n%#v", name, v)
 			}
 		})
 	}
