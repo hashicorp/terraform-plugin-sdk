@@ -4178,6 +4178,142 @@ func TestResourceDataSetType(t *testing.T) {
 	}
 }
 
+func TestResourceDataIdentity(t *testing.T) {
+	d := &ResourceData{
+		identitySchema: map[string]*Schema{
+			"foo": {
+				Type:              TypeString,
+				RequiredForImport: true,
+			},
+		},
+	}
+	d.SetId("baz") // just required to be able to call .State()
+	identity, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	// test setting
+	err = identity.Set("foo", "bar")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	// test memoization
+	identity2, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	if identity2.Get("foo").(string) != "bar" {
+		t.Fatalf("expected identity to contain value for foo: %#v", identity2)
+	}
+
+	// test identity added to state
+	state := d.State()
+	if state.Identity == nil {
+		t.Fatalf("expected identity to be added to state: %#v", state)
+	}
+	if state.Identity["foo"] != "bar" {
+		t.Fatalf("expected identity to contain value for foo: %#v", state)
+	}
+}
+
+func TestResourceDataIdentity_initial_data_from_state(t *testing.T) {
+	d := &ResourceData{
+		identitySchema: map[string]*Schema{
+			"foo": {
+				Type:              TypeString,
+				RequiredForImport: true,
+			},
+		},
+		state: &terraform.InstanceState{
+			Identity: map[string]string{
+				"foo": "bar",
+			},
+		},
+	}
+	identity, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	if identity.Get("foo").(string) != "bar" {
+		t.Fatalf("expected identity to contain value for foo: %#v", identity)
+	}
+}
+
+func TestResourceDataIdentity_initial_data_from_diff(t *testing.T) {
+	d := &ResourceData{
+		identitySchema: map[string]*Schema{
+			"foo": {
+				Type:              TypeString,
+				RequiredForImport: true,
+			},
+		},
+		// we also keep this to ensure diff takes precedence over state
+		state: &terraform.InstanceState{
+			Identity: map[string]string{
+				"foo": "bar",
+			},
+		},
+		diff: &terraform.InstanceDiff{
+			Identity: map[string]string{
+				"foo": "baz",
+			},
+		},
+	}
+	identity, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	if identity.Get("foo").(string) != "baz" {
+		t.Fatalf("expected identity to contain baz value for foo: %#v", identity)
+	}
+}
+
+func TestResourceDataIdentity_changing_initial_data(t *testing.T) {
+	d := &ResourceData{
+		identitySchema: map[string]*Schema{
+			"foo": {
+				Type:              TypeString,
+				RequiredForImport: true,
+			},
+		},
+		diff: &terraform.InstanceDiff{
+			Identity: map[string]string{
+				"foo": "baz",
+			},
+		},
+	}
+	d.SetId("bar") // just required to be able to call .State()
+	identity, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	err = identity.Set("foo", "qux")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state := d.State()
+	if state.Identity == nil {
+		t.Fatalf("expected identity to be added to state: %#v", state)
+	}
+	if state.Identity["foo"] != "qux" {
+		t.Fatalf("expected identity to contain qux value for foo: %#v", state)
+	}
+}
+
+func TestResourceDataIdentity_no_schema(t *testing.T) {
+	d := &ResourceData{}
+	_, err := d.Identity()
+	if err == nil {
+		t.Fatalf("expected error since there's no identity schema, got: nil")
+	}
+	if diff := cmp.Diff("Resource does not have Identity schema. Please set one in order to use Identity(). This is always a problem in the provider code.", err.Error()); diff != "" {
+		t.Fatalf("unexpected error message (-want +got):\n%s", diff)
+	}
+}
+
 func testPtrTo(raw interface{}) interface{} {
 	return &raw
 }
