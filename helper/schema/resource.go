@@ -1482,3 +1482,135 @@ func RemoveFromState(d *ResourceData, _ interface{}) error {
 	d.SetId("")
 	return nil
 }
+
+// Internal validation of provider implementation
+func (r *ResourceIdentity) InternalIdentityValidate() error {
+	if r == nil {
+		return fmt.Errorf(`The resource identity is empty`)
+	}
+
+	if len(r.Schema) == 0 {
+		return fmt.Errorf(`The resource identity schema is empty`)
+	}
+
+	for k, v := range r.Schema {
+		if !v.OptionalForImport && !v.RequiredForImport {
+			return fmt.Errorf(`OptionalForImport or RequiredForImport must be set for resource identity`)
+		}
+		if v.OptionalForImport && v.RequiredForImport {
+			return fmt.Errorf(`OptionalForImport or RequiredForImport must be set for resource identity, not both`)
+		}
+
+		if v.Type == TypeMap {
+			return fmt.Errorf(`TypeMap is not valid for resource identity`)
+		}
+		if v.Type == TypeSet {
+			return fmt.Errorf(`TypeSet is not valid for resource identity`)
+		}
+		if v.Type == typeObject {
+			return fmt.Errorf(`TypeObject is not valid for resource identity`)
+		}
+		if v.Type == TypeInvalid {
+			return fmt.Errorf(`TypeInvalid is not valid for resource identity`)
+		}
+
+		if v.Type == TypeList {
+			if v.Elem != nil {
+				if v.Elem == TypeMap {
+					return fmt.Errorf(`TypeMap is not valid for resource identity element type`)
+				}
+				if v.Elem == TypeSet {
+					return fmt.Errorf(`TypeSet is not valid for resource identity element type`)
+				}
+				if v.Elem == typeObject {
+					return fmt.Errorf(`TypeObject is not valid for resource identity element type`)
+				}
+				if v.Elem == TypeInvalid {
+					return fmt.Errorf(`TypeInvalid is not valid for resource identity element type`)
+				}
+			}
+		}
+
+		if v.ForceNew {
+			return fmt.Errorf(`ForceNew is not used in resource identity`)
+		}
+		if v.Required {
+			return fmt.Errorf(`Required is not used in resource identity`)
+		}
+		if v.Optional {
+			return fmt.Errorf(`Optional is not used in resource identity`)
+		}
+		if v.WriteOnly {
+			return fmt.Errorf(`WriteOnly is not used in resource identity`)
+		}
+		if v.Computed {
+			return fmt.Errorf(`Computed is not used in resource identity`)
+		}
+		if v.Sensitive {
+			return fmt.Errorf(`Sensitive is not used in resource identity`)
+		}
+		if v.DiffSuppressOnRefresh {
+			return fmt.Errorf(`DiffSuppressOnRefresh is not used in resource identity`)
+		}
+		if v.Deprecated != "" {
+			return fmt.Errorf(`Deprecated is not used in resource identity`)
+		}
+		if len(v.RequiredWith) > 0 {
+			return fmt.Errorf(`RequiredWith is not used in resource identity`)
+		}
+		if len(v.ComputedWhen) > 0 {
+			return fmt.Errorf(`ComputedWhen is not used in resource identity`)
+		}
+		if len(v.AtLeastOneOf) > 0 {
+			return fmt.Errorf("%s: AtLeastOneOf is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if len(v.ConflictsWith) > 0 {
+			return fmt.Errorf("%s: ConflictsWith is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.Default != nil {
+			return fmt.Errorf("%s: Default is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.DefaultFunc != nil {
+			return fmt.Errorf("%s: DefaultFunc is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.DiffSuppressFunc != nil {
+			return fmt.Errorf("%s: DiffSuppressFunc is for suppressing differences"+
+				" between config and state representation. "+
+				"There is no config for resource identity, nothing to compare.", k)
+		}
+		if len(v.ExactlyOneOf) > 0 {
+			return fmt.Errorf("%s: ExactlyOneOf is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.InputDefault != "" {
+			return fmt.Errorf("%s: InputDefault is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.MaxItems > 0 {
+			return fmt.Errorf("%s: MaxItems is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.MinItems > 0 {
+			return fmt.Errorf("%s: MinItems is for configurable attributes,"+
+				"there's nothing to configure for resource identity", k)
+		}
+		if v.StateFunc != nil {
+			return fmt.Errorf("%s: StateFunc is extraneous, "+
+				"value should just be changed before setting for resource identity", k)
+		}
+		if v.ValidateFunc != nil {
+			return fmt.Errorf("%s: ValidateFunc is for validating user input, "+
+				"there's nothing to validate for resource identity", k)
+		}
+		if v.ValidateDiagFunc != nil {
+			return fmt.Errorf("%s: ValidateDiagFunc is for validating user input, "+
+				"there's nothing to validate for resource identity", k)
+		}
+	}
+
+	return nil
+}
