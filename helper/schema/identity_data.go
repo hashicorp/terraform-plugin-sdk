@@ -16,9 +16,9 @@ type IdentityData struct {
 	schema map[string]*Schema
 
 	// Don't set
-	once   sync.Once
-	writer *MapFieldWriter
-	reader *MapFieldReader
+	once        sync.Once
+	multiReader *MultiLevelFieldReader
+	setWriter   *MapFieldWriter
 
 	panicOnError bool
 }
@@ -68,33 +68,37 @@ func (d *IdentityData) Set(key string, value interface{}) error {
 		}
 	}
 
-	err := d.writer.WriteField(strings.Split(key, "."), value)
+	err := d.setWriter.WriteField(strings.Split(key, "."), value)
 	if err != nil {
 		if d.panicOnError {
 			panic(err)
 		} else {
-			log.Printf("[ERROR] setting state: %s", err)
+			log.Printf("[ERROR] setting identity state: %s", err)
 		}
 	}
 	return err
 }
 
 func (d *IdentityData) init() {
-	// re-use writers and readers to handle storing in flat map data structure
-	d.writer = &MapFieldWriter{Schema: d.schema}
-	for key, value := range d.raw {
-		err := d.writer.WriteField(strings.Split(key, "."), value)
-		if err != nil {
-			if d.panicOnError {
-				panic(err)
-			} else {
-				log.Printf("[ERROR] setting identity state: %s", err)
-			}
+	// Initialize the map for storing data set by the user
+	d.setWriter = &MapFieldWriter{Schema: d.schema}
+
+	// Initialize the reader for getting data from the
+	// underlying sources (config, diff, etc.)
+	readers := make(map[string]FieldReader)
+	if d.raw != nil {
+		readers["raw"] = &MapFieldReader{
+			Schema: d.schema,
+			Map:    BasicMapReader(d.raw),
 		}
 	}
-	d.reader = &MapFieldReader{
+	readers["set"] = &MapFieldReader{
 		Schema: d.schema,
-		Map:    BasicMapReader(d.writer.Map()),
+		Map:    BasicMapReader(d.setWriter.Map()),
+	}
+	d.multiReader = &MultiLevelFieldReader{
+		Levels:  []string{"raw", "set"},
+		Readers: readers,
 	}
 }
 
@@ -110,7 +114,7 @@ func (d *IdentityData) getRaw(key string) getResult {
 func (d *IdentityData) get(addr []string) getResult {
 	d.once.Do(d.init)
 
-	result, err := d.reader.ReadField(addr)
+	result, err := d.multiReader.ReadFieldMerge(addr, "set")
 
 	if err != nil {
 		panic(err)
