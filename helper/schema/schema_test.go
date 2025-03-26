@@ -5414,6 +5414,26 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
+		"OptionalForImport returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeInt,
+					OptionalForImport: true,
+					Optional:          true,
+				},
+			},
+			true,
+		},
+		"RequiredForImport returns error": {
+			map[string]*Schema{
+				"foo": {
+					Type:              TypeString,
+					RequiredForImport: true,
+					Required:          true,
+				},
+			},
+			true,
+		},
 	}
 
 	for tn, tc := range cases {

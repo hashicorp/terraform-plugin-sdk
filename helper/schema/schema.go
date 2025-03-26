@@ -972,6 +972,13 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 			return fmt.Errorf("%s: WriteOnly cannot be set with ForceNew", k)
 		}
 
+		if v.RequiredForImport {
+			return fmt.Errorf("%s: RequiredForImport is only valid for resource identity schemas", k)
+		}
+		if v.OptionalForImport {
+			return fmt.Errorf("%s: OptionalForImport is only valid for resource identity schemas", k)
+		}
+
 		computedOnly := v.Computed && !v.Optional
 
 		switch v.ConfigMode {
