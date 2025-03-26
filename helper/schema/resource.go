@@ -1489,7 +1489,7 @@ func (r *ResourceIdentity) InternalIdentityValidate() error {
 		return fmt.Errorf(`The resource identity is empty`)
 	}
 
-	if r.Schema == nil {
+	if len(r.Schema) == 0 {
 		return fmt.Errorf(`The resource identity schema is empty`)
 	}
 
