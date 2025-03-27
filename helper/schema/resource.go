@@ -730,7 +730,7 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 	// match what helper/schema expects.
 	var identity map[string]*Schema
 	if r.Identity != nil {
-		identity = r.Identity.Schema
+		identity = r.Identity.SchemaMap()
 	}
 	data, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Data(s, nil)
 	if err != nil {
@@ -907,7 +907,7 @@ func (r *Resource) Apply(
 	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
 	var identity map[string]*Schema
 	if r.Identity != nil {
-		identity = r.Identity.Schema
+		identity = r.Identity.SchemaMap()
 	}
 	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 	data, err := schema.Data(s, d)
@@ -1035,7 +1035,7 @@ func (r *Resource) SimpleDiff(
 
 	var identity map[string]*Schema
 	if r.Identity != nil {
-		identity = r.Identity.Schema
+		identity = r.Identity.SchemaMap()
 	}
 	// TODO: figure out if it makes sense to be able to set identity in CustomizeDiff at all
 	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
@@ -1129,7 +1129,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 
 	var identity map[string]*Schema
 	if r.Identity != nil {
-		identity = r.Identity.Schema
+		identity = r.Identity.SchemaMap()
 	}
 	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
 
@@ -1442,7 +1442,7 @@ func (r *Resource) Data(s *terraform.InstanceState) *ResourceData {
 func (r *Resource) TestResourceData() *ResourceData {
 	return &ResourceData{
 		schema:         r.SchemaMap(),
-		identitySchema: r.Identity.Schema,
+		identitySchema: r.Identity.SchemaMap(),
 	}
 }
 
@@ -1489,11 +1489,11 @@ func (r *ResourceIdentity) InternalIdentityValidate() error {
 		return fmt.Errorf(`The resource identity is empty`)
 	}
 
-	if len(r.Schema) == 0 {
+	if len(r.SchemaMap()) == 0 {
 		return fmt.Errorf(`The resource identity schema is empty`)
 	}
 
-	for k, v := range r.Schema {
+	for k, v := range r.SchemaMap() {
 		if !v.OptionalForImport && !v.RequiredForImport {
 			return fmt.Errorf(`OptionalForImport or RequiredForImport must be set for resource identity`)
 		}

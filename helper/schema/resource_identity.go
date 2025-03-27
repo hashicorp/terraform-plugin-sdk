@@ -37,6 +37,12 @@ type ResourceIdentity struct {
 	// previous resource schemas.
 	Schema map[string]*Schema
 
+	// SchemaFunc is an optional function that returns the schema for the
+	// identity. Use this field instead of Schema on resource identity
+	// declarations to prevent storing all identity schema information in
+	// memory for the lifecycle of a provider.
+	SchemaFunc func() map[string]*Schema
+
 	// New struct, will be similar to (Resource).StateUpgraders
 	IdentityUpgraders []IdentityUpgrader
 }
@@ -70,3 +76,14 @@ type ResourceIdentity struct {
 // identity schema version data for a managed resource instance. Values must
 // align to the typing mentioned above.
 type ResourceIdentityUpgradeFunc func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
+
+// SchemaMap returns the schema information for this Resource whether it is
+// defined via the SchemaFunc field or Schema field. The SchemaFunc field, if
+// defined, takes precedence over the Schema field.
+func (ri *ResourceIdentity) SchemaMap() map[string]*Schema {
+	if ri.SchemaFunc != nil {
+		return ri.SchemaFunc()
+	}
+
+	return ri.Schema
+}

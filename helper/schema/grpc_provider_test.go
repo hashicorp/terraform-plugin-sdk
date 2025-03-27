@@ -3319,25 +3319,27 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 					},
 					"test_resource2": {
 						Identity: &ResourceIdentity{
-							Schema: map[string]*Schema{
-								"test2": {
-									Type:              TypeString,
-									RequiredForImport: false,
-									OptionalForImport: true,
-									Description:       "test resource 2",
-								},
-								"test2-2": {
-									Type:              TypeList,
-									RequiredForImport: false,
-									OptionalForImport: true,
-									Description:       "test resource 2-2",
-								},
-								"test2-3": {
-									Type:              TypeInt,
-									RequiredForImport: false,
-									OptionalForImport: true,
-									Description:       "test resource 2-3",
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"test2": {
+										Type:              TypeString,
+										RequiredForImport: false,
+										OptionalForImport: true,
+										Description:       "test resource 2",
+									},
+									"test2-2": {
+										Type:              TypeList,
+										RequiredForImport: false,
+										OptionalForImport: true,
+										Description:       "test resource 2-2",
+									},
+									"test2-3": {
+										Type:              TypeInt,
+										RequiredForImport: false,
+										OptionalForImport: true,
+										Description:       "test resource 2-3",
+									},
+								}
 							},
 						},
 					},
