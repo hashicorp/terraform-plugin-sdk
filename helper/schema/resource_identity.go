@@ -81,6 +81,10 @@ type ResourceIdentityUpgradeFunc func(ctx context.Context, rawState map[string]i
 // defined via the SchemaFunc field or Schema field. The SchemaFunc field, if
 // defined, takes precedence over the Schema field.
 func (ri *ResourceIdentity) SchemaMap() map[string]*Schema {
+	if ri == nil {
+		return nil
+	}
+
 	if ri.SchemaFunc != nil {
 		return ri.SchemaFunc()
 	}

@@ -389,7 +389,7 @@ func (r *Resource) CoreIdentitySchema() (*configschema.Block, error) {
 }
 
 func (r *Resource) coreIdentitySchema() (*configschema.Block, error) {
-	if r.Identity == nil || r.Identity.SchemaMap() == nil {
+	if r.Identity.SchemaMap() == nil {
 		return nil, fmt.Errorf("resource does not have an identity schema")
 	}
 	// while there is schemaMapWithIdentity, we don't need to use it here

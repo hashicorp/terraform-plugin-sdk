@@ -728,11 +728,7 @@ func (r *Resource) ShimInstanceStateFromValue(state cty.Value) (*terraform.Insta
 
 	// We now rebuild the state through the ResourceData, so that the set indexes
 	// match what helper/schema expects.
-	var identity map[string]*Schema
-	if r.Identity != nil {
-		identity = r.Identity.SchemaMap()
-	}
-	data, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Data(s, nil)
+	data, err := schemaMapWithIdentity{r.SchemaMap(), r.Identity.SchemaMap()}.Data(s, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -905,11 +901,7 @@ func (r *Resource) Apply(
 	s *terraform.InstanceState,
 	d *terraform.InstanceDiff,
 	meta interface{}) (*terraform.InstanceState, diag.Diagnostics) {
-	var identity map[string]*Schema
-	if r.Identity != nil {
-		identity = r.Identity.SchemaMap()
-	}
-	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
+	schema := schemaMapWithIdentity{r.SchemaMap(), r.Identity.SchemaMap()}
 	data, err := schema.Data(s, d)
 	if err != nil {
 		return s, diag.FromErr(err)
@@ -1033,12 +1025,8 @@ func (r *Resource) SimpleDiff(
 	c *terraform.ResourceConfig,
 	meta interface{}) (*terraform.InstanceDiff, error) {
 
-	var identity map[string]*Schema
-	if r.Identity != nil {
-		identity = r.Identity.SchemaMap()
-	}
 	// TODO: figure out if it makes sense to be able to set identity in CustomizeDiff at all
-	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), identity}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
+	instanceDiff, err := schemaMapWithIdentity{r.SchemaMap(), r.Identity.SchemaMap()}.Diff(ctx, s, c, r.CustomizeDiff, meta, false)
 	if err != nil {
 		return instanceDiff, err
 	}
@@ -1127,11 +1115,7 @@ func (r *Resource) RefreshWithoutUpgrade(
 		}
 	}
 
-	var identity map[string]*Schema
-	if r.Identity != nil {
-		identity = r.Identity.SchemaMap()
-	}
-	schema := schemaMapWithIdentity{r.SchemaMap(), identity}
+	schema := schemaMapWithIdentity{r.SchemaMap(), r.Identity.SchemaMap()}
 
 	if r.Exists != nil {
 		// Make a copy of data so that if it is modified it doesn't
