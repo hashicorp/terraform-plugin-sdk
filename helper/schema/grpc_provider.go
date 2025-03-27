@@ -929,6 +929,15 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 
+		// validate every attribute exists and is not null
+		identityAttrs := newIdentityVal.AsValueMap()
+		for k := range identityBlock.Attributes {
+			if v, ok := identityAttrs[k]; !ok || v.IsNull() || !v.IsWhollyKnown() {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("identity data missing for attribute '%s'. This is a bug in the provider, which should be reported in the provider's own issue tracker.", k))
+				return resp, nil
+			}
+		}
+
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1091,7 +1100,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		// TODO: we could error here if a new Diff got no Identity set
 	}
 
-	if diff == nil || (len(diff.Attributes) == 0 && len(diff.Identity) == 0) {
+	if diff == nil || (len(diff.Attributes) == 0 && res.Identity == nil) {
 		// schema.Provider.Diff returns nil if it ends up making a diff with no
 		// changes, but our new interface wants us to return an actual change
 		// description that _shows_ there are no changes. This is always the
@@ -1257,10 +1266,24 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 			return resp, nil
 		}
 
+		if len(diff.Identity) == 0 {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("no identity data found in diff for resource '%s'. This is a bug in the provider, which should be reported in the provider's own issue tracker.", req.TypeName))
+			return resp, nil
+		}
+
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
+		}
+
+		// validate every attribute exists and is not null
+		identityAttrs := newIdentityVal.AsValueMap()
+		for k := range identityBlock.Attributes {
+			if v, ok := identityAttrs[k]; !ok || v.IsNull() || !v.IsWhollyKnown() {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("identity data missing for attribute '%s'. This is a bug in the provider, which should be reported in the provider's own issue tracker.", k))
+				return resp, nil
+			}
 		}
 
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
@@ -1475,7 +1498,6 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	}
 	resp.Private = meta
 
-	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
 		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
 		if err != nil {
@@ -1483,11 +1505,25 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
+		if len(newInstanceState.Identity) == 0 {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("no identity data found in diff for resource '%s'. This is a bug in the provider, which should be reported in the provider's own issue tracker.", req.TypeName))
+			return resp, nil
+		} // TODO: test
+
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
+
+		// validate every attribute exists and is not null
+		identityAttrs := newIdentityVal.AsValueMap()
+		for k := range identityBlock.Attributes {
+			if v, ok := identityAttrs[k]; !ok || v.IsNull() || !v.IsWhollyKnown() {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("identity data missing for attribute '%s'. This is a bug in the provider, which should be reported in the provider's own issue tracker.", k))
+				return resp, nil
+			}
+		} // TODO: test
 
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
 		if err != nil {

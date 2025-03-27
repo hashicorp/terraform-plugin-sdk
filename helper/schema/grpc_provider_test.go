@@ -5064,6 +5064,92 @@ func TestReadResource(t *testing.T) {
 								Computed: true,
 							},
 						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test_bool", true)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							err = d.Set("test_string", "new-state-val")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(true),
+							"test_string": cty.StringVal("new-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
+						}),
+					),
+				},
+			},
+		},
+		"read-resource-with-identity": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+							"test_list": {
+								Type: TypeList,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Computed: true,
+							},
+						},
 						Identity: &ResourceIdentity{
 							Version: 1,
 							Schema: map[string]*Schema{
@@ -5261,6 +5347,91 @@ func TestReadResource(t *testing.T) {
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
 						Summary:  "getting identity schema failed for resource 'test': identity schema must have at least one attribute",
+					},
+				},
+			},
+		},
+		"incomplete-identity-returned": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"instance_id": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+								"region": {
+									Type:              TypeString,
+									OptionalForImport: true,
+								},
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							// identity, err := d.Identity()
+							// if err != nil {
+							// 	return diag.FromErr(err)
+							// }
+							// err = identity.Set("region", "new-region")
+							// if err != nil {
+							// 	return diag.FromErr(err)
+							// }
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"instance_id": cty.String,
+								"region":      cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"instance_id": cty.StringVal("test-id"),
+								"region":      cty.UnknownVal(cty.String),
+							}),
+						),
+					},
+				},
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("test-id"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("test-id"),
+						}),
+					),
+				},
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "identity data missing for attribute 'region'. This is a bug in the provider, which should be reported in the provider's own issue tracker.",
 					},
 				},
 			},
@@ -5732,6 +5903,197 @@ func TestPlanResourceChange(t *testing.T) {
 								"name": cty.StringVal("Peter"),
 							}),
 						),
+					},
+				},
+			},
+		},
+		"new-resource-with-identity-error-when-unset": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"name": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "no identity data found in diff for resource 'test'. This is a bug in the provider, which should be reported in the provider's own issue tracker.",
+					},
+				},
+			},
+		},
+		"new-resource-with-identity-error-when-incomplete": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"name": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+								"region": {
+									Type:              TypeString,
+									OptionalForImport: true,
+								},
+							},
+						},
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, meta interface{}) error {
+							identity, err := d.Identity()
+							if err != nil {
+								return err
+							}
+							err = identity.Set("name", "Peter")
+							if err != nil {
+								return err
+							}
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "identity data missing for attribute 'region'. This is a bug in the provider, which should be reported in the provider's own issue tracker.",
 					},
 				},
 			},
@@ -6913,6 +7275,91 @@ func TestApplyResourceChange(t *testing.T) {
 				},
 			},
 		},
+		"create: unknown identity from plan set in CreateContext diag in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							rd.SetId("baz")
+							return nil
+						},
+						Schema: map[string]*Schema{},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							Schema: map[string]*Schema{
+								"ident": {
+									Type:              TypeString,
+									RequiredForImport: true,
+								},
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"ident": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"ident": cty.UnknownVal(cty.String),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Private: []uint8(`{"schema_version":"4"}`),
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "identity data missing for attribute 'ident'. This is a bug in the provider, which should be reported in the provider's own issue tracker.",
+					},
+				},
+			},
+		},
 		"create: no identity schema diag in ApplyResourceChangeResponse": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -7068,6 +7515,22 @@ func TestApplyResourceChange(t *testing.T) {
 
 				if testCase.expected != nil && testCase.expected.NewState != nil {
 					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.NewState.MsgPack))
+				}
+
+				if resp != nil && resp.NewIdentity != nil && resp.NewIdentity.IdentityData != nil {
+					block, err := testCase.server.getResourceIdentitySchemaBlock("test")
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Logf("resp.NewIdentity.IdentityData.MsgPack: %s", mustMsgpackUnmarshal(block.ImpliedType(), resp.NewIdentity.IdentityData.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.NewIdentity != nil && testCase.expected.NewIdentity.IdentityData != nil {
+					block, err := testCase.server.getResourceIdentitySchemaBlock("test")
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Logf("expected: %s", mustMsgpackUnmarshal(block.ImpliedType(), testCase.expected.NewIdentity.IdentityData.MsgPack))
 				}
 
 				t.Error(diff)
