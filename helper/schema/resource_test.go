@@ -1677,12 +1677,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"OptionalForImport and RequiredForImport both false": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						OptionalForImport: false,
-						RequiredForImport: false,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							OptionalForImport: false,
+							RequiredForImport: false,
+						},
+					}
 				},
 			},
 			true,
@@ -1690,12 +1692,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"OptionalForImport and RequiredForImport both true": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						OptionalForImport: true,
-						RequiredForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							OptionalForImport: true,
+							RequiredForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1703,8 +1707,10 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeMap is not valid": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {Type: TypeMap, OptionalForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeMap, OptionalForImport: true},
+					}
 				},
 			},
 			true,
@@ -1712,8 +1718,10 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeSet is not valid": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {Type: TypeSet, OptionalForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeSet, OptionalForImport: true},
+					}
 				},
 			},
 			true,
@@ -1721,8 +1729,10 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeObject is not valid": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {Type: typeObject, OptionalForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: typeObject, OptionalForImport: true},
+					}
 				},
 			},
 			true,
@@ -1730,8 +1740,10 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeInvalid is not valid": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {Type: TypeInvalid, OptionalForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeInvalid, OptionalForImport: true},
+					}
 				},
 			},
 			true,
@@ -1739,10 +1751,12 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeList contains TypeMap": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type: TypeList, Elem: TypeMap, OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList, Elem: TypeMap, OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1750,18 +1764,20 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		" TypeList contains TypeSet": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type: TypeList,
-						Elem: &Resource{
-							Schema: map[string]*Schema{
-								"bar": {
-									Type:              TypeSet,
-									RequiredForImport: true,
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList,
+							Elem: &Resource{
+								Schema: map[string]*Schema{
+									"bar": {
+										Type:              TypeSet,
+										RequiredForImport: true,
+									},
 								},
 							},
 						},
-					},
+					}
 				},
 			},
 			true,
@@ -1769,10 +1785,12 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"TypeList contains TypeInvalid": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type: TypeList, Elem: TypeInvalid, OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList, Elem: TypeInvalid, OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1780,12 +1798,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"ForceNew is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						ForceNew:          true,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ForceNew:          true,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1793,12 +1813,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Optional is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						Optional:          true,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Optional:          true,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1806,12 +1828,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Required is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						Required:          true,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Required:          true,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1819,12 +1843,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"WriteOnly is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						WriteOnly:         true,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							WriteOnly:         true,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1832,12 +1858,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Computed is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						Computed:          true,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Computed:          true,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1845,12 +1873,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Deprecated is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						Deprecated:        "deprecated",
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Deprecated:        "deprecated",
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1858,12 +1888,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Default is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						Default:           42,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Default:           42,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1871,12 +1903,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"MaxItems is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						MaxItems:          5,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							MaxItems:          5,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1884,12 +1918,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"MinItems is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						MinItems:          1,
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							MinItems:          1,
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1897,12 +1933,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"DiffSuppressOnRefresh is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:                  TypeInt,
-						DiffSuppressOnRefresh: true,
-						OptionalForImport:     true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:                  TypeInt,
+							DiffSuppressOnRefresh: true,
+							OptionalForImport:     true,
+						},
+					}
 				},
 			},
 			true,
@@ -1910,12 +1948,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"RequiredWith is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						RequiredWith:      []string{"bar"},
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							RequiredWith:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1923,12 +1963,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"ComputedWhen is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						ComputedWhen:      []string{"bar"},
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ComputedWhen:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1936,12 +1978,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"DefaultFunc is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						DefaultFunc:       func() (interface{}, error) { return 42, nil },
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							DefaultFunc:       func() (interface{}, error) { return 42, nil },
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1949,12 +1993,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"StateFunc is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						StateFunc:         func(val interface{}) string { return "" },
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							StateFunc:         func(val interface{}) string { return "" },
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1962,12 +2008,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"ValidateFunc is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						ValidateFunc:      func(val interface{}, key string) (ws []string, es []error) { return nil, nil },
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ValidateFunc:      func(val interface{}, key string) (ws []string, es []error) { return nil, nil },
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1975,12 +2023,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"AtLeastOneOf is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						AtLeastOneOf:      []string{"bar"},
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							AtLeastOneOf:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -1988,12 +2038,14 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"ConflictsWith is set": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type:              TypeInt,
-						ConflictsWith:     []string{"bar"},
-						OptionalForImport: true,
-					},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ConflictsWith:     []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
 				},
 			},
 			true,
@@ -2001,9 +2053,11 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Valid resource identity OptionalForImport": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type: TypeInt, OptionalForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeInt, OptionalForImport: true},
+					}
 				},
 			},
 			false,
@@ -2011,9 +2065,11 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 
 		"Valid resource identity RequiredorImport": {
 			&ResourceIdentity{
-				Schema: map[string]*Schema{
-					"foo": {
-						Type: TypeInt, RequiredForImport: true},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeInt, RequiredForImport: true},
+					}
 				},
 			},
 			false,

@@ -3307,13 +3307,15 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 					"test_resource1": {
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema: map[string]*Schema{
-								"test": {
-									Type:              TypeString,
-									RequiredForImport: true,
-									OptionalForImport: false,
-									Description:       "test resource",
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"test": {
+										Type:              TypeString,
+										RequiredForImport: true,
+										OptionalForImport: false,
+										Description:       "test resource",
+									},
+								}
 							},
 						},
 					},
@@ -3392,15 +3394,17 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 				ResourcesMap: map[string]*Resource{
 					"test_resource": {
 						Identity: &ResourceIdentity{
-							Schema: map[string]*Schema{
-								"bool_attr":       {Type: TypeBool, Description: "Boolean attribute"},
-								"float_attr":      {Type: TypeFloat, Description: "Float attribute"},
-								"int_attr":        {Type: TypeInt, Description: "Int attribute"},
-								"list_bool_attr":  {Type: TypeList, Elem: TypeBool, Description: "List Bool attribute"},
-								"list_float_attr": {Type: TypeList, Elem: TypeFloat, Description: "List Float attribute"},
-								"list_int_attr":   {Type: TypeList, Elem: TypeInt, Description: "List Int attribute"},
-								"list_str_attr":   {Type: TypeList, Elem: TypeString, Description: "List String attribute"},
-								"string_attr":     {Type: TypeString, Description: "String attribute"},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"bool_attr":       {Type: TypeBool, Description: "Boolean attribute"},
+									"float_attr":      {Type: TypeFloat, Description: "Float attribute"},
+									"int_attr":        {Type: TypeInt, Description: "Int attribute"},
+									"list_bool_attr":  {Type: TypeList, Elem: TypeBool, Description: "List Bool attribute"},
+									"list_float_attr": {Type: TypeList, Elem: TypeFloat, Description: "List Float attribute"},
+									"list_int_attr":   {Type: TypeList, Elem: TypeInt, Description: "List Int attribute"},
+									"list_str_attr":   {Type: TypeList, Elem: TypeString, Description: "List String attribute"},
+									"string_attr":     {Type: TypeString, Description: "String attribute"},
+								}
 							},
 						},
 					},
@@ -3449,7 +3453,9 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 					"test_resource1": {
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema:  map[string]*Schema{},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{}
+							},
 						},
 					},
 				},
@@ -3501,13 +3507,15 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 		SchemaVersion: 1,
 		Identity: &ResourceIdentity{
 			Version: 1,
-			Schema: map[string]*Schema{
-				"id": {
-					Type:              TypeString,
-					RequiredForImport: true,
-					OptionalForImport: false,
-					Description:       "id of thing",
-				},
+			SchemaFunc: func() map[string]*Schema {
+				return map[string]*Schema{
+					"id": {
+						Type:              TypeString,
+						RequiredForImport: true,
+						OptionalForImport: false,
+						Description:       "id of thing",
+					},
+				}
 			},
 			IdentityUpgraders: []IdentityUpgrader{
 				{
@@ -3584,13 +3592,15 @@ func TestUpgradeResourceIdentity_removedAttr(t *testing.T) {
 		SchemaVersion: 1,
 		Identity: &ResourceIdentity{
 			Version: 1,
-			Schema: map[string]*Schema{
-				"id": {
-					Type:              TypeString,
-					RequiredForImport: true,
-					OptionalForImport: false,
-					Description:       "id of thing",
-				},
+			SchemaFunc: func() map[string]*Schema {
+				return map[string]*Schema{
+					"id": {
+						Type:              TypeString,
+						RequiredForImport: true,
+						OptionalForImport: false,
+						Description:       "id of thing",
+					},
+				}
 			},
 			IdentityUpgraders: []IdentityUpgrader{
 				{
@@ -3669,13 +3679,15 @@ func TestUpgradeResourceIdentity_jsonStateBigInt(t *testing.T) {
 		SchemaVersion: 1,
 		Identity: &ResourceIdentity{
 			Version: 1,
-			Schema: map[string]*Schema{
-				"int": {
-					Type:              TypeInt,
-					RequiredForImport: true,
-					OptionalForImport: false,
-					Description:       "",
-				},
+			SchemaFunc: func() map[string]*Schema {
+				return map[string]*Schema{
+					"int": {
+						Type:              TypeInt,
+						RequiredForImport: true,
+						OptionalForImport: false,
+						Description:       "",
+					},
+				}
 			},
 		},
 	}
@@ -5066,15 +5078,17 @@ func TestReadResource(t *testing.T) {
 						},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema: map[string]*Schema{
-								"instance_id": {
-									Type:              TypeString,
-									RequiredForImport: true,
-								},
-								"region": {
-									Type:              TypeString,
-									OptionalForImport: true,
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"instance_id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"region": {
+										Type:              TypeString,
+										OptionalForImport: true,
+									},
+								}
 							},
 						},
 						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
@@ -5226,7 +5240,9 @@ func TestReadResource(t *testing.T) {
 						SchemaVersion: 1,
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema:  map[string]*Schema{},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{}
+							},
 						},
 					},
 				},
@@ -5538,11 +5554,13 @@ func TestPlanResourceChange(t *testing.T) {
 						},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema: map[string]*Schema{
-								"name": {
-									Type:              TypeString,
-									RequiredForImport: true,
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
 							},
 						},
 					},
@@ -5644,11 +5662,13 @@ func TestPlanResourceChange(t *testing.T) {
 						},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema: map[string]*Schema{
-								"name": {
-									Type:              TypeString,
-									RequiredForImport: true,
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
 							},
 						},
 						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, meta interface{}) error {
@@ -5732,6 +5752,96 @@ func TestPlanResourceChange(t *testing.T) {
 								"name": cty.StringVal("Peter"),
 							}),
 						),
+					},
+				},
+			},
+		},
+		"new-resource-with-identity-error-when-unset": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.UnknownVal(cty.String),
+							"foo": cty.StringVal("baz"),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "no identity data found in diff for resource 'test'. This is a bug in the provider, which should be reported in the provider's own issue tracker.",
 					},
 				},
 			},
@@ -5827,7 +5937,9 @@ func TestPlanResourceChange(t *testing.T) {
 						},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema:  map[string]*Schema{},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{}
+							},
 						},
 					},
 				},
@@ -6833,11 +6945,13 @@ func TestApplyResourceChange(t *testing.T) {
 						Schema: map[string]*Schema{},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema: map[string]*Schema{
-								"ident": {
-									Type:              TypeString,
-									RequiredForImport: true,
-								},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"ident": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
 							},
 						},
 					},
@@ -6988,7 +7102,9 @@ func TestApplyResourceChange(t *testing.T) {
 						Schema:        map[string]*Schema{},
 						Identity: &ResourceIdentity{
 							Version: 1,
-							Schema:  map[string]*Schema{},
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{}
+							},
 						},
 					},
 				},
