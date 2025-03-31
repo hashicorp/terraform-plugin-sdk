@@ -32,15 +32,16 @@ type ResourceIdentity struct {
 	// Version is the identity schema version.
 	Version int64
 
-	// Schema is the structure and type information for the identity.
-	// The types allowed in this Schema will be more restricted than
-	// previous resource schemas.
-	Schema map[string]*Schema
-
-	// SchemaFunc is an optional function that returns the schema for the
-	// identity. Use this field instead of Schema on resource identity
-	// declarations to prevent storing all identity schema information in
-	// memory for the lifecycle of a provider.
+	// SchemaFunc is the function that returns the schema for the
+	// identity. Using a function for this field allows to prevent
+	// storing all identity schema information in memory for the
+	// lifecycle of a provider.
+	// The types of the schema values are restricted to the types:
+	//   - TypeBool
+	//   - TypeFloat
+	//   - TypeInt
+	//   - TypeString
+	//   - TypeList (of any of the above types)
 	SchemaFunc func() map[string]*Schema
 
 	// New struct, will be similar to (Resource).StateUpgraders
@@ -77,17 +78,12 @@ type ResourceIdentity struct {
 // align to the typing mentioned above.
 type ResourceIdentityUpgradeFunc func(ctx context.Context, rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error)
 
-// SchemaMap returns the schema information for this Resource whether it is
-// defined via the SchemaFunc field or Schema field. The SchemaFunc field, if
-// defined, takes precedence over the Schema field.
+// SchemaMap returns the schema information for this resource identity
+// defined via the SchemaFunc field.
 func (ri *ResourceIdentity) SchemaMap() map[string]*Schema {
-	if ri == nil {
+	if ri == nil || ri.SchemaFunc == nil {
 		return nil
 	}
 
-	if ri.SchemaFunc != nil {
-		return ri.SchemaFunc()
-	}
-
-	return ri.Schema
+	return ri.SchemaFunc()
 }
