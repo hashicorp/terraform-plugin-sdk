@@ -81,7 +81,7 @@ type ResourceIdentityUpgradeFunc func(ctx context.Context, rawState map[string]i
 // SchemaMap returns the schema information for this resource identity
 // defined via the SchemaFunc field.
 func (ri *ResourceIdentity) SchemaMap() map[string]*Schema {
-	if ri == nil {
+	if ri == nil || ri.SchemaFunc == nil {
 		return nil
 	}
 
