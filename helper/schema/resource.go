@@ -1398,7 +1398,7 @@ func isReservedResourceFieldName(name string) bool {
 //
 // This function is useful for unit tests and ResourceImporter functions.
 func (r *Resource) Data(s *terraform.InstanceState) *ResourceData {
-	result, err := schemaMap(r.SchemaMap()).Data(s, nil)
+	result, err := schemaMapWithIdentity{r.SchemaMap(), r.Identity.SchemaMap()}.Data(s, nil)
 	if err != nil {
 		// At the time of writing, this isn't possible (Data never returns
 		// non-nil errors). We panic to find this in the future if we have to.

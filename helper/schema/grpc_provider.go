@@ -1566,7 +1566,27 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		return resp, nil
 	}
 
-	newInstanceStates, err := s.provider.ImportState(ctx, info, req.ID)
+	var identity map[string]string
+	// parse identity data if available
+	if req.Identity != nil && req.Identity.IdentityData != nil {
+		// convert req.Identity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		identityVal, err := msgpack.Unmarshal(req.Identity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identity = hcl2shim.FlatmapValueFromHCL2(identityVal)
+	}
+
+	newInstanceStates, err := s.provider.ImportStateWithIdentity(ctx, info, req.ID, identity)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
@@ -1622,12 +1642,40 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
+		var identityData *tfprotov5.ResourceIdentityData
+		if is.Identity != nil {
+			identityBlock, err := s.getResourceIdentitySchemaBlock(resourceType)
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+				return resp, nil
+			}
+
+			newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(is.Identity, identityBlock.ImpliedType())
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+				return resp, nil
+			}
+
+			newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+				return resp, nil
+			}
+
+			identityData = &tfprotov5.ResourceIdentityData{
+				IdentityData: &tfprotov5.DynamicValue{
+					MsgPack: newIdentityMP,
+				},
+			}
+		}
+
 		importedResource := &tfprotov5.ImportedResource{
 			TypeName: resourceType,
 			State: &tfprotov5.DynamicValue{
 				MsgPack: newStateMP,
 			},
-			Private: meta,
+			Private:  meta,
+			Identity: identityData,
 		}
 
 		resp.ImportedResources = append(resp.ImportedResources, importedResource)
