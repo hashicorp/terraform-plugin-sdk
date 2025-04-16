@@ -7715,6 +7715,169 @@ func TestImportResourceState(t *testing.T) {
 				},
 			},
 		},
+		"basic-import-from-identity": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+						Importer: &ResourceImporter{
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								identity, err := d.Identity()
+								if err != nil {
+									t.Fatalf("failed to get identity: %v", err)
+								}
+								result, exists := identity.GetOk("id")
+								if !exists {
+									t.Fatalf("expected id to exist in identity")
+								}
+
+								err = d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								d.SetId(result.(string))
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				Identity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"id": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"id": cty.StringVal("imported-id"),
+							}),
+						),
+					},
+				},
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: []*tfprotov5.ImportedResource{
+					{
+						TypeName: "test",
+						State: &tfprotov5.DynamicValue{
+							MsgPack: mustMsgpackMarshal(
+								cty.Object(map[string]cty.Type{
+									"id":          cty.String,
+									"test_string": cty.String,
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"id":          cty.StringVal("imported-id"),
+									"test_string": cty.StringVal("new-imported-val"),
+								}),
+							),
+						},
+						Private: []byte(`{"schema_version":"1"}`),
+						Identity: &tfprotov5.ResourceIdentityData{
+							IdentityData: &tfprotov5.DynamicValue{
+								MsgPack: mustMsgpackMarshal(
+									cty.Object(map[string]cty.Type{
+										"id": cty.String,
+									}),
+									cty.ObjectVal(map[string]cty.Value{
+										"id": cty.StringVal("imported-id"),
+									}),
+								),
+							},
+						},
+					},
+				},
+			},
+		},
+		"basic-import-from-identity-no-id": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Computed: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+						Importer: &ResourceImporter{
+							// Note: this does not set the Id on the ResourceData which results in an error that this test expects
+							StateContext: func(ctx context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								err := d.Set("test_string", "new-imported-val")
+								if err != nil {
+									return nil, err
+								}
+
+								return []*ResourceData{d}, nil
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ImportResourceStateRequest{
+				TypeName: "test",
+				Identity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"id": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"id": cty.StringVal("imported-id"),
+							}),
+						),
+					},
+				},
+			},
+			expected: &tfprotov5.ImportResourceStateResponse{
+				ImportedResources: nil,
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "The provider returned a resource missing an identifier during ImportResourceState. This is generally a bug in the resource implementation for import. Resource import code should not call d.SetId(\"\") or create an empty ResourceData. If the resource is missing, instead return an error. Please report this to the provider developers.",
+					},
+				},
+			},
+		},
 		"resource-doesnt-exist": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
