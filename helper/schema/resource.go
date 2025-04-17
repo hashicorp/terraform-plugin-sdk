@@ -1216,7 +1216,7 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 		if !r.updateFuncSet() {
 			nonForceNewAttrs := make([]string, 0)
 			for k, v := range schema {
-				if !v.ForceNew && !v.Computed {
+				if !v.ForceNew && !v.Computed && !v.WriteOnly {
 					nonForceNewAttrs = append(nonForceNewAttrs, k)
 				}
 			}
