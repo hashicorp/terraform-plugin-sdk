@@ -2271,6 +2271,164 @@ func TestProviderImportState(t *testing.T) {
 	}
 }
 
+func TestProviderImportStateWithIdentity(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		provider       *Provider
+		info           *terraform.InstanceInfo
+		id             string
+		identity       map[string]string
+		expectedStates []*terraform.InstanceState
+		expectedErr    error
+	}{
+		"error-missing-identity-schema": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{},
+						// no identity schema defined
+					},
+				},
+			},
+			identity: map[string]string{
+				"id": "test-id",
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			expectedErr: fmt.Errorf("resource test_resource doesn't support identity import"),
+		},
+		"error-missing-ResourceData-Id": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							StateContext: func(_ context.Context, d *ResourceData, _ interface{}) ([]*ResourceData, error) {
+								// Example for handling import based on identity but not
+								// setting the id even though it's still required to be set
+								d.SetId("")
+								return []*ResourceData{d}, nil
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			identity: map[string]string{
+				"id": "test-id",
+			},
+			expectedErr: fmt.Errorf("The provider returned a resource missing an identifier during ImportResourceState."),
+		},
+		"Importer-StateContext-from-identity": {
+			provider: &Provider{
+				ResourcesMap: map[string]*Resource{
+					"test_resource": {
+						Importer: &ResourceImporter{
+							StateContext: func(_ context.Context, d *ResourceData, meta interface{}) ([]*ResourceData, error) {
+								if d.Id() != "" {
+									return nil, fmt.Errorf("expected d.Id() to be empty, got: %s", d.Id())
+								}
+
+								identity, err := d.Identity()
+								if err != nil {
+									return nil, fmt.Errorf("error getting identity: %s", err)
+								}
+								id, exists := identity.GetOk("id")
+								if !exists {
+									return nil, fmt.Errorf("expected identity to contain key id")
+								}
+								if id != "test-id" {
+									return nil, fmt.Errorf("expected identity id %q, got: %s", "test-id", id)
+								}
+
+								// set region as we act as if it's derived from provider defaults
+								err = identity.Set("region", "eu-central-1")
+								if err != nil {
+									return nil, fmt.Errorf("error setting identity region: %s", err)
+								}
+								// set the id as well
+								d.SetId(id.(string))
+
+								return []*ResourceData{d}, nil
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"region": {
+										Type:              TypeString,
+										OptionalForImport: true,
+									},
+								}
+							},
+						},
+					},
+				},
+			},
+			info: &terraform.InstanceInfo{
+				Type: "test_resource",
+			},
+			identity: map[string]string{
+				"id": "test-id",
+			},
+			expectedStates: []*terraform.InstanceState{
+				{
+					Attributes: map[string]string{"id": "test-id"},
+					Ephemeral:  terraform.EphemeralState{Type: "test_resource"},
+					ID:         "test-id",
+					Identity:   map[string]string{"id": "test-id", "region": "eu-central-1"},
+					Meta:       map[string]interface{}{"schema_version": "0"},
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			states, err := testCase.provider.ImportStateWithIdentity(context.Background(), testCase.info, testCase.id, testCase.identity)
+
+			if err != nil {
+				if testCase.expectedErr == nil {
+					t.Fatalf("unexpected error: %s", err)
+				}
+
+				if !strings.Contains(err.Error(), testCase.expectedErr.Error()) {
+					t.Fatalf("expected error %q, got: %s", testCase.expectedErr, err)
+				}
+			}
+
+			if err == nil && testCase.expectedErr != nil {
+				t.Fatalf("expected error %q, got none", testCase.expectedErr)
+			}
+
+			if diff := cmp.Diff(states, testCase.expectedStates); diff != "" {
+				t.Fatalf("unexpected states difference: %s", diff)
+			}
+		})
+	}
+}
+
 func TestProviderMeta(t *testing.T) {
 	p := new(Provider)
 	if v := p.Meta(); v != nil {
