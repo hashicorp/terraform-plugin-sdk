@@ -31,7 +31,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 	reqBody := `An example
 		multiline
 		request body`
-	req, _ := http.NewRequest("GET", "https://www.terraform.io", bytes.NewBufferString(reqBody))
+	req, _ := http.NewRequest("GET", "https://developer.hashicorp.com/terraform", bytes.NewBufferString(reqBody))
 	res, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -40,7 +40,7 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 
 	entries, err := tflogtest.MultilineJSONDecode(loggerOutput)
 	if err != nil {
-		t.Fatalf("log outtput parsing failed: %v", err)
+		t.Fatalf("log output parsing failed: %v", err)
 	}
 
 	if len(entries) != 2 {
@@ -67,12 +67,12 @@ func TestNewLoggingHTTPTransport(t *testing.T) {
 		"@module":             "provider",
 		"tf_http_op_type":     "request",
 		"tf_http_req_method":  "GET",
-		"tf_http_req_uri":     "/",
+		"tf_http_req_uri":     "/terraform",
 		"tf_http_req_version": "HTTP/1.1",
 		"tf_http_req_body":    "An example multiline request body",
 		"tf_http_trans_id":    transId,
 		"Accept-Encoding":     "gzip",
-		"Host":                "www.terraform.io",
+		"Host":                "developer.hashicorp.com",
 		"User-Agent":          "Go-http-client/1.1",
 		"Content-Length":      "37",
 	}); diff != "" {
@@ -122,7 +122,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 	reqBody := `An example
 		multiline
 		request body`
-	req, _ := http.NewRequest("GET", "https://www.terraform.io", bytes.NewBufferString(reqBody))
+	req, _ := http.NewRequest("GET", "https://developer.hashicorp.com/terraform", bytes.NewBufferString(reqBody))
 	res, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -158,12 +158,12 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 		"@module":             "provider.test-subsystem",
 		"tf_http_op_type":     "request",
 		"tf_http_req_method":  "GET",
-		"tf_http_req_uri":     "/",
+		"tf_http_req_uri":     "/terraform",
 		"tf_http_req_version": "HTTP/1.1",
 		"tf_http_req_body":    "An example multiline request body",
 		"tf_http_trans_id":    transId,
 		"Accept-Encoding":     "gzip",
-		"Host":                "www.terraform.io",
+		"Host":                "developer.hashicorp.com",
 		"User-Agent":          "Go-http-client/1.1",
 		"Content-Length":      "37",
 	}); diff != "" {
@@ -201,7 +201,7 @@ func TestNewSubsystemLoggingHTTPTransport(t *testing.T) {
 func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 	ctx, loggerOutput := setupRootLogger()
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "tf_http_op_type")
-	ctx = tflog.MaskAllFieldValuesRegexes(ctx, regexp.MustCompile(`(?s)<html>.*</html>`))
+	ctx = tflog.MaskAllFieldValuesRegexes(ctx, regexp.MustCompile(`(?s)<html.*>.*</html>`))
 	ctx = tflog.MaskMessageStrings(ctx, "Request", "Response")
 
 	transport := logging.NewLoggingHTTPTransport(http.DefaultTransport)
@@ -210,7 +210,7 @@ func TestNewLoggingHTTPTransport_LogMasking(t *testing.T) {
 		Timeout:   10 * time.Second,
 	}
 
-	req, _ := http.NewRequest("GET", "https://www.terraform.io", nil)
+	req, _ := http.NewRequest("GET", "https://developer.hashicorp.com/terraform", nil)
 	res, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -266,7 +266,7 @@ func TestNewLoggingHTTPTransport_LogOmitting(t *testing.T) {
 		Timeout:   10 * time.Second,
 	}
 
-	req, _ := http.NewRequest("GET", "https://www.terraform.io", nil)
+	req, _ := http.NewRequest("GET", "https://developer.hashicorp.com/terraform", nil)
 	res, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
