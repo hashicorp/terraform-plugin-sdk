@@ -243,6 +243,25 @@ func TestValidationStringIsWhiteSpace(t *testing.T) {
 	}
 }
 
+func TestValidationStringLenBetween(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: "abc",
+			f:   StringLenBetween(1, 5),
+		},
+		{
+			val:         "InvalidValue",
+			f:           StringLenBetween(1, 5),
+			expectedErr: regexp.MustCompile(`expected length of [\w]+ to be in the range \(1 \- 5\), got InvalidValue`),
+		},
+		{
+			val:         1,
+			f:           StringLenBetween(1, 5),
+			expectedErr: regexp.MustCompile(`expected type of [\w]+ to be string`),
+		},
+	})
+}
+
 func TestValidationStringIsBase64(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
