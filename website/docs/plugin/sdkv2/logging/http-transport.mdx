@@ -4,22 +4,25 @@ description: |-
   SDKv2 provides a helper to send all the HTTP transactions to structured logging.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # HTTP Transport
 
 Terraform's public interface has included `helper/logging` [`NewTransport()`](https://github.com/hashicorp/terraform-plugin-sdk/blob/main/helper/logging/transport.go) since `v0.9.5`. This helper is an implementation of the Golang standard library [`http.RoundTripper`](https://pkg.go.dev/net/http#RoundTripper) that lets you add logging at the `DEBUG` level to your provider's HTTP transactions.
 
 We do not recommend using this original helper because it is designed to log the entirety of each request and response. This includes any sensitive content that may be present in the message header or body, presenting security concerns.
 
-Instead, we recommend using the [terraform-plugin-log](https://www.terraform.io/plugin/log) library to produce logs for your provider. This library does not present the same security concerns and provides [log filtering](https://www.terraform.io/plugin/log/filtering) functionality. This page explains how to set up the new `RoundTripper()` helper to log HTTP Transactions with `terraform-plugin-log`. 
+Instead, we recommend using the [terraform-plugin-log](/terraform/plugin/log) library to produce logs for your provider. This library does not present the same security concerns and provides [log filtering](/terraform/plugin/log/filtering) functionality. This page explains how to set up the new `RoundTripper()` helper to log HTTP Transactions with `terraform-plugin-log`. 
 
 # Setting Up Logging for HTTP Transactions
 
-The recommended logging helper for SDK is built on top of [terraform-plugin-log](https://www.terraform.io/plugin/log). This lets you leverage the features from our structured logging framework without having to write an entire implementation of `http.RoundTripper`.
+The recommended logging helper for SDK is built on top of [terraform-plugin-log](/terraform/plugin/log). This lets you leverage the features from our structured logging framework without having to write an entire implementation of `http.RoundTripper`.
 
-There are two functions inside `helper/logging` that target a specific logging setup for your provider. Refer to [“Writing Log Output”](https://www.terraform.io/plugin/log/writing) for details.
+There are two functions inside `helper/logging` that target a specific logging setup for your provider. Refer to [“Writing Log Output”](/terraform/plugin/log/writing) for details.
 
 * `NewLoggingHTTPTransport(transport http.RoundTripper)`: Use this method when you want logging against the `tflog` Provider root logger.
-* `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`: Use this method when you want logging against a `tflog` Provider [Subsystem logger](https://www.terraform.io/plugin/log/writing#subsystems). The `subsystem` string you use with `NewSubsystemLoggingHTTPTransport()` must match the [pre-created subsystem logger name](https://www.terraform.io/plugin/log/writing#create-subsystems).
+* `NewSubsystemLoggingHTTPTransport(subsystem string, transport http.RoundTripper)`: Use this method when you want logging against a `tflog` Provider [Subsystem logger](/terraform/plugin/log/writing#subsystems). The `subsystem` string you use with `NewSubsystemLoggingHTTPTransport()` must match the [pre-created subsystem logger name](/terraform/plugin/log/writing#create-subsystems).
 
 To set up HTTP transport, you must create the HTTP Client to use the new transport and then add logging configuration to the HTTP request context.
 
@@ -75,7 +78,7 @@ The logging transport produces two log entries for each HTTP transaction: one fo
 
 ### Request Example
 
-The following example shows a log generated from an HTTP Request to [https://terraform.io](https://terraform.io).
+The following example shows a log generated from an HTTP Request to [https://terraform.io](https://terraform.io/).
 
 ```text
 2022-07-26T18:54:08.880+0100 [DEBUG] provider: Sending HTTP Request: Accept-Encoding=gzip Content-Length=0 \
@@ -84,7 +87,7 @@ The following example shows a log generated from an HTTP Request to [https://ter
     tf_http_req_uri=/ tf_http_req_version=HTTP/1.1 tf_http_trans_id=7e80e48d-8f32-f527-1412-52a8c84359e7
 ```
 
-The following example shows the same logs after you enable [logging in JSON format](https://www.terraform.io/internals/debugging).
+The following example shows the same logs after you enable [logging in JSON format](/terraform/internals/debugging).
 
 ```json
 {
@@ -109,7 +112,7 @@ The following example shows the same logs after you enable [logging in JSON form
 
 ### Response Example
 
-The following example shows logs from a [https://terraform.io](https://terraform.io) HTTP response.
+The following example shows logs from a [https://terraform.io](https://terraform.io/) HTTP response.
 
 ```text
 2022-07-26T18:54:10.734+0100 [DEBUG] provider: Received HTTP Response: Age=9 \
@@ -157,7 +160,7 @@ the following example shows the same logs in JSON format.
 
 ### Log Information
 
-Each log contains the following information, which is represented as [fields](https://www.terraform.io/plugin/log/writing#fields) in the JSON format.
+Each log contains the following information, which is represented as [fields](/terraform/plugin/log/writing#fields) in the JSON format.
 
 |             Log field name | Description                                                                                                                                                                          | Possible values                                                                                       |     Applies to     |
 |---------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|:------------------:|
@@ -175,7 +178,7 @@ Each log contains the following information, which is represented as [fields](ht
 
 ## Filtering Sensitive Data
 
-To [filter logs](https://www.terraform.io/plugin/log/filtering), you must configure the `context.Context` before before it is added to the `http.Request`.
+To [filter logs](/terraform/plugin/log/filtering), you must configure the `context.Context` before before it is added to the `http.Request`.
 
 The following example masks all the header values of HTTP Requests containing an `Authorization` and `Proxy-Authorization` credentials.
 
@@ -198,6 +201,6 @@ defer res.Body.Close()
 
 # Links
 
-* [Plugin Development - Logging](https://www.terraform.io/plugin/log) - Learn more about the logging framework 
+* [Plugin Development - Logging](/terraform/plugin/log) - Learn more about the logging framework 
 * [terraform-plugin-log - tflog](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-log/tflog) - Read the Golang documentation for the logging framework
 * Read the Golang documentation for [`NewLoggingHTTPTransport()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging#NewLoggingHTTPTransport) and [`NewSubsystemLoggingHTTPTransport()`](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging#NewSubsystemLoggingHTTPTransport)

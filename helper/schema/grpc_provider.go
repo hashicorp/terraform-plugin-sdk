@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -13,6 +16,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
@@ -24,6 +28,9 @@ import (
 const (
 	newExtraKey = "_new_extra_shim"
 )
+
+// Verify provider server interface implementation.
+var _ tfprotov5.ProviderServer = (*GRPCProviderServer)(nil)
 
 func NewGRPCProviderServer(p *Provider) *GRPCProviderServer {
 	return &GRPCProviderServer{
@@ -64,14 +71,160 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 	return stoppable
 }
 
+func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities {
+	return &tfprotov5.ServerCapabilities{
+		GetProviderSchemaOptional: true,
+	}
+}
+
+func (s *GRPCProviderServer) GetResourceIdentitySchemas(ctx context.Context, req *tfprotov5.GetResourceIdentitySchemasRequest) (*tfprotov5.GetResourceIdentitySchemasResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Getting resource identity schemas")
+
+	resp := &tfprotov5.GetResourceIdentitySchemasResponse{
+		IdentitySchemas: make(map[string]*tfprotov5.ResourceIdentitySchema),
+	}
+
+	for typ, res := range s.provider.ResourcesMap {
+		logging.HelperSchemaTrace(ctx, "Found resource identity type", map[string]interface{}{logging.KeyResourceType: typ})
+
+		if res.Identity != nil {
+			idschema, err := res.CoreIdentitySchema()
+
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", typ, err))
+				return resp, nil
+			}
+
+			resp.IdentitySchemas[typ] = &tfprotov5.ResourceIdentitySchema{
+				Version:            res.Identity.Version,
+				IdentityAttributes: convert.ConfigIdentitySchemaToProto(ctx, idschema),
+			}
+		}
+	}
+
+	return resp, nil
+
+}
+
+func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *tfprotov5.UpgradeResourceIdentityRequest) (*tfprotov5.UpgradeResourceIdentityResponse, error) {
+	ctx = logging.InitContext(ctx)
+	resp := &tfprotov5.UpgradeResourceIdentityResponse{}
+
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
+
+	schemaBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	version := req.Version
+
+	jsonMap := map[string]interface{}{}
+
+	switch {
+	// if there's a JSON state, we need to decode it.
+	case req.RawIdentity != nil && len(req.RawIdentity.JSON) > 0:
+		if res.UseJSONNumber {
+			err = unmarshalJSON(req.RawIdentity.JSON, &jsonMap)
+		} else {
+			err = json.Unmarshal(req.RawIdentity.JSON, &jsonMap)
+		}
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+	default:
+		logging.HelperSchemaDebug(ctx, "no resource identity provided to upgrade")
+		return resp, nil
+	}
+
+	// complete the upgrade of the JSON states
+	logging.HelperSchemaTrace(ctx, "Upgrading JSON identity")
+
+	jsonMap, err = s.upgradeJSONIdentity(ctx, version, jsonMap, res)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	// The provider isn't required to clean out removed fields
+	s.removeAttributes(ctx, jsonMap, schemaBlock.ImpliedType())
+
+	// now we need to turn the state into the default json representation, so
+	// that it can be re-decoded using the actual schema.
+	val, err := JSONMapToStateValue(jsonMap, schemaBlock) // TODO: Find out if we need resource identity version here
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	// Now we need to make sure blocks are represented correctly, which means
+	// that missing blocks are empty collections, rather than null.
+	// First we need to CoerceValue to ensure that all object types match.
+	val, err = schemaBlock.CoerceValue(val)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	// encode the final state to the expected msgpack format
+	newStateMP, err := msgpack.Marshal(val, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	resp.UpgradedIdentity = &tfprotov5.ResourceIdentityData{IdentityData: &tfprotov5.DynamicValue{MsgPack: newStateMP}}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) GetMetadata(ctx context.Context, req *tfprotov5.GetMetadataRequest) (*tfprotov5.GetMetadataResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Getting provider metadata")
+
+	resp := &tfprotov5.GetMetadataResponse{
+		DataSources:        make([]tfprotov5.DataSourceMetadata, 0, len(s.provider.DataSourcesMap)),
+		EphemeralResources: make([]tfprotov5.EphemeralResourceMetadata, 0),
+		Functions:          make([]tfprotov5.FunctionMetadata, 0),
+		Resources:          make([]tfprotov5.ResourceMetadata, 0, len(s.provider.ResourcesMap)),
+		ServerCapabilities: s.serverCapabilities(),
+	}
+
+	for typeName := range s.provider.DataSourcesMap {
+		resp.DataSources = append(resp.DataSources, tfprotov5.DataSourceMetadata{
+			TypeName: typeName,
+		})
+	}
+
+	for typeName := range s.provider.ResourcesMap {
+		resp.Resources = append(resp.Resources, tfprotov5.ResourceMetadata{
+			TypeName: typeName,
+		})
+	}
+
+	return resp, nil
+}
+
 func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
 	ctx = logging.InitContext(ctx)
 
 	logging.HelperSchemaTrace(ctx, "Getting provider schema")
 
 	resp := &tfprotov5.GetProviderSchemaResponse{
-		ResourceSchemas:   make(map[string]*tfprotov5.Schema),
-		DataSourceSchemas: make(map[string]*tfprotov5.Schema),
+		DataSourceSchemas:        make(map[string]*tfprotov5.Schema, len(s.provider.DataSourcesMap)),
+		EphemeralResourceSchemas: make(map[string]*tfprotov5.Schema, 0),
+		Functions:                make(map[string]*tfprotov5.Function, 0),
+		ResourceSchemas:          make(map[string]*tfprotov5.Schema, len(s.provider.ResourcesMap)),
+		ServerCapabilities:       s.serverCapabilities(),
 	}
 
 	resp.Provider = &tfprotov5.Schema{
@@ -114,6 +267,11 @@ func (s *GRPCProviderServer) getProviderMetaSchemaBlock() *configschema.Block {
 func (s *GRPCProviderServer) getResourceSchemaBlock(name string) *configschema.Block {
 	res := s.provider.ResourcesMap[name]
 	return res.CoreConfigSchema()
+}
+
+func (s *GRPCProviderServer) getResourceIdentitySchemaBlock(name string) (*configschema.Block, error) {
+	res := s.provider.ResourcesMap[name]
+	return res.CoreIdentitySchema()
 }
 
 func (s *GRPCProviderServer) getDatasourceSchemaBlock(name string) *configschema.Block {
@@ -239,6 +397,32 @@ func (s *GRPCProviderServer) ValidateResourceTypeConfig(ctx context.Context, req
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
 	}
+	if req.ClientCapabilities == nil || !req.ClientCapabilities.WriteOnlyAttributesAllowed {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateWriteOnlyNullValues(configVal, schemaBlock, cty.Path{}))
+	}
+
+	r := s.provider.ResourcesMap[req.TypeName]
+
+	// Calling all ValidateRawResourceConfigFunc here since they validate on the raw go-cty config value
+	// and were introduced after the public provider.ValidateResource method.
+	if r.ValidateRawResourceConfigFuncs != nil {
+		writeOnlyAllowed := false
+
+		if req.ClientCapabilities != nil {
+			writeOnlyAllowed = req.ClientCapabilities.WriteOnlyAttributesAllowed
+		}
+
+		validateReq := ValidateResourceConfigFuncRequest{
+			WriteOnlyAttributesAllowed: writeOnlyAllowed,
+			RawConfig:                  configVal,
+		}
+
+		for _, validateFunc := range r.ValidateRawResourceConfigFuncs {
+			validateResp := &ValidateResourceConfigFuncResponse{}
+			validateFunc(ctx, validateReq, validateResp)
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, validateResp.Diagnostics)
+		}
+	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
 
@@ -350,6 +534,9 @@ func (s *GRPCProviderServer) UpgradeResourceState(ctx context.Context, req *tfpr
 	// Normalize the value and fill in any missing blocks.
 	val = objchange.NormalizeObjectFromLegacySDK(val, schemaBlock)
 
+	// Set any write-only attribute values to null
+	val = setWriteOnlyNullValues(val, schemaBlock)
+
 	// encode the final state to the expected msgpack format
 	newStateMP, err := msgpack.Marshal(val, schemaBlock.ImpliedType())
 	if err != nil {
@@ -459,7 +646,7 @@ func (s *GRPCProviderServer) upgradeJSONState(ctx context.Context, version int, 
 // Remove any attributes no longer present in the schema, so that the json can
 // be correctly decoded.
 func (s *GRPCProviderServer) removeAttributes(ctx context.Context, v interface{}, ty cty.Type) {
-	// we're only concerned with finding maps that corespond to object
+	// we're only concerned with finding maps that correspond to object
 	// attributes
 	switch v := v.(type) {
 	case []interface{}:
@@ -546,6 +733,18 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	}
 
 	config := terraform.NewResourceConfigShimmed(configVal, schemaBlock)
+
+	// CtyValue is the raw protocol configuration data from newer APIs.
+	//
+	// This field was only added as a targeted fix for passing raw protocol data
+	// through the existing (helper/schema.Provider).Configure() exported method
+	// and is only populated in that situation. The data could theoretically be
+	// set in the NewResourceConfigShimmed() function, however the consequences
+	// of doing this were not investigated at the time the fix was introduced.
+	//
+	// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1270
+	config.CtyValue = configVal
+
 	// TODO: remove global stop context hack
 	// This attaches a global stop synchro'd context onto the provider.Configure
 	// request scoped context. This provides a substitute for the removed provider.StopContext()
@@ -553,11 +752,36 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	// request scoped contexts, however this is a large undertaking for very large providers.
 	ctxHack := context.WithValue(ctx, StopContextKey, s.StopContext(context.Background()))
 
+	// NOTE: This is a hack to pass the deferral_allowed field from the Terraform client to the
+	// underlying (provider).Configure function, which cannot be changed because the function
+	// signature is public. (╯°□°)╯︵ ┻━┻
+	s.provider.deferralAllowed = configureDeferralAllowed(req.ClientCapabilities)
+
 	logging.HelperSchemaTrace(ctx, "Calling downstream")
 	diags := s.provider.Configure(ctxHack, config)
 	logging.HelperSchemaTrace(ctx, "Called downstream")
 
 	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, diags)
+
+	if s.provider.providerDeferred != nil {
+		// Check if a deferred response was incorrectly set on the provider. This would cause an error during later RPCs.
+		if !s.provider.deferralAllowed {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov5.Diagnostic{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Invalid Deferred Provider Response",
+				Detail: "Provider configured a deferred response for all resources and data sources but the Terraform request " +
+					"did not indicate support for deferred actions. This is an issue with the provider and should be reported to the provider developers.",
+			})
+		} else {
+			logging.HelperSchemaDebug(
+				ctx,
+				"Provider has configured a deferred response, all associated resources and data sources will automatically return a deferred response.",
+				map[string]interface{}{
+					logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+				},
+			)
+		}
+	}
 
 	return resp, nil
 }
@@ -578,6 +802,23 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 
+	if s.provider.providerDeferred != nil {
+		logging.HelperSchemaDebug(
+			ctx,
+			"Provider has deferred response configured, automatically returning deferred response.",
+			map[string]interface{}{
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+			},
+		)
+
+		resp.NewState = req.CurrentState
+		resp.NewIdentity = req.CurrentIdentity
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+		return resp, nil
+	}
+
 	stateVal, err := msgpack.Unmarshal(req.CurrentState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -590,6 +831,28 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		return resp, nil
 	}
 	instanceState.RawState = stateVal
+
+	// TODO: is there a more elegant way to do this? this requires us to look for the identity schema block again
+	if req.CurrentIdentity != nil && req.CurrentIdentity.IdentityData != nil {
+
+		// convert req.CurrentIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the instanceState
+		instanceState.Identity = identityAttrs
+	}
 
 	private := make(map[string]interface{})
 	if len(req.Private) > 0 {
@@ -641,6 +904,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 	newStateVal = normalizeNullValues(newStateVal, stateVal, false)
 	newStateVal = copyTimeoutValues(newStateVal, stateVal)
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -652,6 +916,32 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		MsgPack: newStateMP,
 	}
 
+	if newInstanceState.Identity != nil {
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.NewIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
+		}
+	}
+
 	return resp, nil
 }
 
@@ -659,20 +949,43 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	ctx = logging.InitContext(ctx)
 	resp := &tfprotov5.PlanResourceChangeResponse{}
 
-	// This is a signal to Terraform Core that we're doing the best we can to
-	// shim the legacy type system of the SDK onto the Terraform type system
-	// but we need it to cut us some slack. This setting should not be taken
-	// forward to any new SDK implementations, since setting it prevents us
-	// from catching certain classes of provider bug that can lead to
-	// confusing downstream errors.
-	resp.UnsafeToUseLegacyTypeSystem = true //nolint:staticcheck
-
 	res, ok := s.provider.ResourcesMap[req.TypeName]
 	if !ok {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
 		return resp, nil
 	}
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+
+	// This is a signal to Terraform Core that we're doing the best we can to
+	// shim the legacy type system of the SDK onto the Terraform type system
+	// but we need it to cut us some slack. This setting should not be taken
+	// forward to any new SDK implementations, since setting it prevents us
+	// from catching certain classes of provider bug that can lead to
+	// confusing downstream errors.
+	if !res.EnableLegacyTypeSystemPlanErrors {
+		//nolint:staticcheck // explicitly for this SDK
+		resp.UnsafeToUseLegacyTypeSystem = true
+	}
+
+	// Provider deferred response is present and the resource hasn't opted-in to CustomizeDiff being called, return early
+	// with proposed new state as a best effort for PlannedState.
+	if s.provider.providerDeferred != nil && !res.ResourceBehavior.ProviderDeferred.EnablePlanModification {
+		logging.HelperSchemaDebug(
+			ctx,
+			"Provider has deferred response configured, automatically returning deferred response.",
+			map[string]interface{}{
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+			},
+		)
+
+		resp.PlannedState = req.ProposedNewState
+		resp.PlannedPrivate = req.PriorPrivate
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+		resp.PlannedIdentity = req.PriorIdentity
+		return resp, nil
+	}
 
 	priorStateVal, err := msgpack.Unmarshal(req.PriorState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
@@ -692,6 +1005,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if proposedNewStateVal.IsNull() {
 		resp.PlannedState = req.ProposedNewState
 		resp.PlannedPrivate = req.PriorPrivate
+		resp.PlannedIdentity = req.PriorIdentity
 		return resp, nil
 	}
 
@@ -738,6 +1052,27 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// turn the proposed state into a legacy configuration
 	cfg := terraform.NewResourceConfigShimmed(proposedNewStateVal, schemaBlock)
 
+	// add identity data to priorState
+	if req.PriorIdentity != nil && req.PriorIdentity.IdentityData != nil {
+		// convert req.PriorIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		identityVal, err := msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the priorState
+		priorState.Identity = identityAttrs
+	}
+
 	diff, err := res.SimpleDiff(ctx, priorState, cfg, s.provider.Meta())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -753,15 +1088,17 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		diff.Attributes["id"] = &terraform.ResourceAttrDiff{
 			NewComputed: true,
 		}
+		// TODO: we could error here if a new Diff got no Identity set
 	}
 
-	if diff == nil || len(diff.Attributes) == 0 {
+	if diff == nil || (len(diff.Attributes) == 0 && len(diff.Identity) == 0) {
 		// schema.Provider.Diff returns nil if it ends up making a diff with no
 		// changes, but our new interface wants us to return an actual change
 		// description that _shows_ there are no changes. This is always the
 		// prior state, because we force a diff above if this is a new instance.
 		resp.PlannedState = req.PriorState
 		resp.PlannedPrivate = req.PriorPrivate
+		resp.PlannedIdentity = req.PriorIdentity
 		return resp, nil
 	}
 
@@ -817,6 +1154,9 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	if create {
 		plannedStateVal = SetUnknowns(plannedStateVal, schemaBlock)
 	}
+
+	// Set any write-only attribute values to null
+	plannedStateVal = setWriteOnlyNullValues(plannedStateVal, schemaBlock)
 
 	plannedMP, err := msgpack.Marshal(plannedStateVal, schemaBlock.ImpliedType())
 	if err != nil {
@@ -894,6 +1234,48 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		resp.RequiresReplace = append(resp.RequiresReplace, pathToAttributePath(p))
 	}
 
+	// Provider deferred response is present, add the deferred response alongside the provider-modified plan
+	if s.provider.providerDeferred != nil {
+		logging.HelperSchemaDebug(
+			ctx,
+			"Provider has deferred response configured, returning deferred response with modified plan.",
+			map[string]interface{}{
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+			},
+		)
+
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+	}
+
+	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
+	if res.Identity != nil {
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.PlannedIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
+		}
+	}
+
 	return resp, nil
 }
 
@@ -943,6 +1325,27 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		}
 	}
 
+	// add identity data to priorState
+	if req.PlannedIdentity != nil && req.PlannedIdentity.IdentityData != nil {
+		// convert req.PriorIdentity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		identityVal, err := msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		// Step 3: Well, set it in the priorState
+		priorState.Identity = identityAttrs
+	}
+
 	var diff *terraform.InstanceDiff
 	destroy := false
 
@@ -956,6 +1359,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			RawPlan:    plannedStateVal,
 			RawState:   priorStateVal,
 			RawConfig:  configVal,
+			Identity:   priorState.Identity,
 		}
 	} else {
 		diff, err = DiffFromValues(ctx, priorStateVal, plannedStateVal, configVal, stripResourceModifiers(res))
@@ -972,7 +1376,10 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			RawPlan:    plannedStateVal,
 			RawState:   priorStateVal,
 			RawConfig:  configVal,
+			Identity:   priorState.Identity,
 		}
+	} else {
+		diff.Identity = priorState.Identity
 	}
 
 	// add NewExtra Fields that may have been stored in the private data
@@ -1050,6 +1457,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 
 	newStateVal = copyTimeoutValues(newStateVal, plannedStateVal)
 
+	newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
+
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1066,13 +1475,43 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	}
 	resp.Private = meta
 
+	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
+	if res.Identity != nil {
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.NewIdentity = &tfprotov5.ResourceIdentityData{
+			IdentityData: &tfprotov5.DynamicValue{
+				MsgPack: newIdentityMP,
+			},
+		}
+	}
+
 	// This is a signal to Terraform Core that we're doing the best we can to
 	// shim the legacy type system of the SDK onto the Terraform type system
 	// but we need it to cut us some slack. This setting should not be taken
 	// forward to any new SDK implementations, since setting it prevents us
 	// from catching certain classes of provider bug that can lead to
 	// confusing downstream errors.
-	resp.UnsafeToUseLegacyTypeSystem = true //nolint:staticcheck
+	if !res.EnableLegacyTypeSystemApplyErrors {
+		//nolint:staticcheck // explicitly for this SDK
+		resp.UnsafeToUseLegacyTypeSystem = true
+	}
 
 	return resp, nil
 }
@@ -1085,7 +1524,69 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		Type: req.TypeName,
 	}
 
-	newInstanceStates, err := s.provider.ImportState(ctx, info, req.ID)
+	if s.provider.providerDeferred != nil {
+		logging.HelperSchemaDebug(
+			ctx,
+			"Provider has deferred response configured, automatically returning deferred response.",
+			map[string]interface{}{
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+			},
+		)
+
+		// The logic for ensuring the resource type is supported by this provider is inside of (provider).ImportState
+		// We need to check to ensure the resource type is supported before using the schema
+		_, ok := s.provider.ResourcesMap[req.TypeName]
+		if !ok {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+			return resp, nil
+		}
+
+		// Since we are automatically deferring, send back an unknown value for the imported object
+		schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
+		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.ImportedResources = []*tfprotov5.ImportedResource{
+			{
+				TypeName: req.TypeName,
+				State: &tfprotov5.DynamicValue{
+					MsgPack: unknownStateMp,
+				},
+			},
+		}
+
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+
+		return resp, nil
+	}
+
+	var identity map[string]string
+	// parse identity data if available
+	if req.Identity != nil && req.Identity.IdentityData != nil {
+		// convert req.Identity to flat map identity structure
+		// Step 1: Turn JSON into cty.Value based on schema
+		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+			return resp, nil
+		}
+
+		identityVal, err := msgpack.Unmarshal(req.Identity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+		// Step 2: Turn cty.Value into flatmap representation
+		identity = hcl2shim.FlatmapValueFromHCL2(identityVal)
+	}
+
+	newInstanceStates, err := s.provider.ImportStateWithIdentity(ctx, info, req.ID, identity)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
@@ -1110,6 +1611,25 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 		// Normalize the value and fill in any missing blocks.
 		newStateVal = objchange.NormalizeObjectFromLegacySDK(newStateVal, schemaBlock)
 
+		// Ensure any timeouts block is null in the imported state. There is no
+		// configuration to read from during import, so it is never valid to
+		// return a known value for the block.
+		//
+		// This is done without modifying HCL2ValueFromFlatmap or
+		// NormalizeObjectFromLegacySDK to prevent other unexpected changes.
+		//
+		// Reference: https://github.com/hashicorp/terraform-plugin-sdk/issues/1145
+		newStateType := newStateVal.Type()
+
+		if newStateVal != cty.NilVal && !newStateVal.IsNull() && newStateType.IsObjectType() && newStateType.HasAttribute(TimeoutsConfigKey) {
+			newStateValueMap := newStateVal.AsValueMap()
+			newStateValueMap[TimeoutsConfigKey] = cty.NullVal(newStateType.AttributeType(TimeoutsConfigKey))
+			newStateVal = cty.ObjectVal(newStateValueMap)
+		}
+
+		// Set any write-only attribute values to null
+		newStateVal = setWriteOnlyNullValues(newStateVal, schemaBlock)
+
 		newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1122,15 +1642,79 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
+		var identityData *tfprotov5.ResourceIdentityData
+		if is.Identity != nil {
+			identityBlock, err := s.getResourceIdentitySchemaBlock(resourceType)
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("getting identity schema failed for resource '%s': %w", req.TypeName, err))
+				return resp, nil
+			}
+
+			newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(is.Identity, identityBlock.ImpliedType())
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+				return resp, nil
+			}
+
+			newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+			if err != nil {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+				return resp, nil
+			}
+
+			identityData = &tfprotov5.ResourceIdentityData{
+				IdentityData: &tfprotov5.DynamicValue{
+					MsgPack: newIdentityMP,
+				},
+			}
+		}
+
 		importedResource := &tfprotov5.ImportedResource{
 			TypeName: resourceType,
 			State: &tfprotov5.DynamicValue{
 				MsgPack: newStateMP,
 			},
-			Private: meta,
+			Private:  meta,
+			Identity: identityData,
 		}
 
 		resp.ImportedResources = append(resp.ImportedResources, importedResource)
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) MoveResourceState(ctx context.Context, req *tfprotov5.MoveResourceStateRequest) (*tfprotov5.MoveResourceStateResponse, error) {
+	if req == nil {
+		return nil, fmt.Errorf("MoveResourceState request is nil")
+	}
+
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for MoveResourceState")
+
+	resp := &tfprotov5.MoveResourceStateResponse{}
+
+	_, ok := s.provider.ResourcesMap[req.TargetTypeName]
+
+	if !ok {
+		resp.Diagnostics = []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Resource Type",
+				Detail:   fmt.Sprintf("The %q resource type is not supported by this provider.", req.TargetTypeName),
+			},
+		}
+
+		return resp, nil
+	}
+
+	resp.Diagnostics = []*tfprotov5.Diagnostic{
+		{
+			Severity: tfprotov5.DiagnosticSeverityError,
+			Summary:  "Move Resource State Not Supported",
+			Detail:   fmt.Sprintf("The %q resource type does not support moving resource state across resource types.", req.TargetTypeName),
+		},
 	}
 
 	return resp, nil
@@ -1141,6 +1725,32 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	resp := &tfprotov5.ReadDataSourceResponse{}
 
 	schemaBlock := s.getDatasourceSchemaBlock(req.TypeName)
+
+	if s.provider.providerDeferred != nil {
+		logging.HelperSchemaDebug(
+			ctx,
+			"Provider has deferred response configured, automatically returning deferred response.",
+			map[string]interface{}{
+				logging.KeyDeferredReason: s.provider.providerDeferred.Reason.String(),
+			},
+		)
+
+		// Send an unknown value for the data source
+		unknownVal := cty.UnknownVal(schemaBlock.ImpliedType())
+		unknownStateMp, err := msgpack.Marshal(unknownVal, schemaBlock.ImpliedType())
+		if err != nil {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		resp.State = &tfprotov5.DynamicValue{
+			MsgPack: unknownStateMp,
+		}
+		resp.Deferred = &tfprotov5.Deferred{
+			Reason: tfprotov5.DeferredReason(s.provider.providerDeferred.Reason),
+		}
+		return resp, nil
+	}
 
 	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
@@ -1198,6 +1808,104 @@ func (s *GRPCProviderServer) ReadDataSource(ctx context.Context, req *tfprotov5.
 	resp.State = &tfprotov5.DynamicValue{
 		MsgPack: newStateMP,
 	}
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) CallFunction(ctx context.Context, req *tfprotov5.CallFunctionRequest) (*tfprotov5.CallFunctionResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for provider function call")
+
+	resp := &tfprotov5.CallFunctionResponse{
+		Error: &tfprotov5.FunctionError{
+			Text: fmt.Sprintf("Function Not Found: No function named %q was found in the provider.", req.Name),
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) GetFunctions(ctx context.Context, req *tfprotov5.GetFunctionsRequest) (*tfprotov5.GetFunctionsResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Getting provider functions")
+
+	resp := &tfprotov5.GetFunctionsResponse{
+		Functions: make(map[string]*tfprotov5.Function, 0),
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) ValidateEphemeralResourceConfig(ctx context.Context, req *tfprotov5.ValidateEphemeralResourceConfigRequest) (*tfprotov5.ValidateEphemeralResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource validate")
+
+	resp := &tfprotov5.ValidateEphemeralResourceConfigResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) OpenEphemeralResource(ctx context.Context, req *tfprotov5.OpenEphemeralResourceRequest) (*tfprotov5.OpenEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource open")
+
+	resp := &tfprotov5.OpenEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) RenewEphemeralResource(ctx context.Context, req *tfprotov5.RenewEphemeralResourceRequest) (*tfprotov5.RenewEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource renew")
+
+	resp := &tfprotov5.RenewEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) CloseEphemeralResource(ctx context.Context, req *tfprotov5.CloseEphemeralResourceRequest) (*tfprotov5.CloseEphemeralResourceResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for ephemeral resource close")
+
+	resp := &tfprotov5.CloseEphemeralResourceResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Ephemeral Resource Type",
+				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
 	return resp, nil
 }
 
@@ -1284,7 +1992,7 @@ func stripResourceModifiers(r *Resource) *Resource {
 	newResource.CustomizeDiff = nil
 	newResource.Schema = map[string]*Schema{}
 
-	for k, s := range r.Schema {
+	for k, s := range r.SchemaMap() {
 		newResource.Schema[k] = stripSchema(s)
 	}
 
@@ -1312,7 +2020,7 @@ func stripSchema(s *Schema) *Schema {
 }
 
 // Zero values and empty containers may be interchanged by the apply process.
-// When there is a discrepency between src and dst value being null or empty,
+// When there is a discrepancy between src and dst value being null or empty,
 // prefer the src value. This takes a little more liberty with set types, since
 // we can't correlate modified set values. In the case of sets, if the src set
 // was wholly known we assume the value was correctly applied and copy that
@@ -1535,4 +2243,34 @@ func validateConfigNulls(ctx context.Context, v cty.Value, path cty.Path) []*tfp
 	}
 
 	return diags
+}
+
+// Helper function that check a ConfigureProviderClientCapabilities struct to determine if a deferred response can be
+// returned to the Terraform client. If no ConfigureProviderClientCapabilities have been passed from the client, then false
+// is returned.
+func configureDeferralAllowed(in *tfprotov5.ConfigureProviderClientCapabilities) bool {
+	if in == nil {
+		return false
+	}
+
+	return in.DeferralAllowed
+}
+
+// Resource Identity version of upgradeJSONState
+func (s *GRPCProviderServer) upgradeJSONIdentity(ctx context.Context, version int64, m map[string]interface{}, res *Resource) (map[string]interface{}, error) {
+	var err error
+
+	for _, upgrader := range res.Identity.IdentityUpgraders {
+		if version != upgrader.Version {
+			continue
+		}
+
+		m, err = upgrader.Upgrade(ctx, m, s.provider.Meta())
+		if err != nil {
+			return nil, err
+		}
+		version++
+	}
+
+	return m, nil
 }

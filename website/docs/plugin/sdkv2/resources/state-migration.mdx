@@ -3,9 +3,12 @@ page_title: Resources - State Migration
 description: Migrating state values within resources.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Resources - State Migration
 
-Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor while the [Terraform state](/language/state) stores mapping and metadata information for those remote objects. There are several reasons why a resource implementation needs to change: backend APIs Terraform interacts with will change overtime, or the current implementation might be incorrect or unmaintainable. Some of these changes may not be backward compatible and a migration is needed for resources provisioned in the wild with old schema configurations.
+Resources define the data types and API interactions required to create, update, and destroy infrastructure with a cloud vendor while the [Terraform state](/terraform/language/state) stores mapping and metadata information for those remote objects. There are several reasons why a resource implementation needs to change: backend APIs Terraform interacts with will change overtime, or the current implementation might be incorrect or unmaintainable. Some of these changes may not be backward compatible and a migration is needed for resources provisioned in the wild with old schema configurations.
 
 The mechanism that is used for state migrations changed between v0.11 and v0.12 of the SDK bundled with Terraform core. Be sure to choose the method that matches your Terraform dependency.
 
@@ -13,7 +16,7 @@ The mechanism that is used for state migrations changed between v0.11 and v0.12 
 
 ~> **Note:** This method of state migration does not work if the provider has a dependency on the Terraform v0.11 SDK. See the [Terraform v0.11 SDK State Migrations](#terraform-v0-11-sdk-state-migrations) section for details on using `MigrateState` instead.
 
-For this task provider developers should use a resource's `SchemaVersion` and `StateUpgraders` fields. Resources typically do not have these fields configured unless state migrations have been perfomed in the past.
+For this task provider developers should use a resource's `SchemaVersion` and `StateUpgraders` fields. Resources typically do not have these fields configured unless state migrations have been performed in the past.
 
 When Terraform encounters a newer resource `SchemaVersion` during planning, it will automatically migrate the state through each `StateUpgrader` function until it matches the current `SchemaVersion`.
 
@@ -106,8 +109,8 @@ func resourceExampleInstanceResourceV0() *schema.Resource {
     }
 }
 
-func resourceExampleInstanceStateUpgradeV0(rawState map[string]any, meta any) (map[string]any, error) {
-    rawState["name"] = rawState["name"] + "."
+func resourceExampleInstanceStateUpgradeV0(ctx context.Context, rawState map[string]any, meta any) (map[string]any, error) {
+    rawState["name"] = rawState["name"].(string) + "."
 
     return rawState, nil
 }

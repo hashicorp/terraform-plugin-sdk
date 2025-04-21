@@ -1,7 +1,0 @@
-```release-note:bug
-helper/resource: Ensured `@caller` in SDK logging entries accurately reflected calling code location
-```
-
-```release-note:bug
-helper/schema: Ensured `@caller` in SDK logging entries accurately reflected calling code location
-```

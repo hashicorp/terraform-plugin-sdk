@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package validation
 
 import (
@@ -240,6 +243,25 @@ func TestValidationStringIsWhiteSpace(t *testing.T) {
 	}
 }
 
+func TestValidationStringLenBetween(t *testing.T) {
+	runTestCases(t, []testCase{
+		{
+			val: "abc",
+			f:   StringLenBetween(1, 5),
+		},
+		{
+			val:         "InvalidValue",
+			f:           StringLenBetween(1, 5),
+			expectedErr: regexp.MustCompile(`expected length of [\w]+ to be in the range \(1 \- 5\), got InvalidValue`),
+		},
+		{
+			val:         1,
+			f:           StringLenBetween(1, 5),
+			expectedErr: regexp.MustCompile(`expected type of [\w]+ to be string`),
+		},
+	})
+}
+
 func TestValidationStringIsBase64(t *testing.T) {
 	cases := map[string]struct {
 		Value interface{}
@@ -290,12 +312,12 @@ func TestValidationStringInSlice(t *testing.T) {
 		{
 			val:         "VALIDVALUE",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got VALIDVALUE`),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \["ValidValue" "AnotherValidValue"\], got VALIDVALUE`),
 		},
 		{
 			val:         "InvalidValue",
 			f:           StringInSlice([]string{"ValidValue", "AnotherValidValue"}, false),
-			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \[ValidValue AnotherValidValue\], got InvalidValue`),
+			expectedErr: regexp.MustCompile(`expected [\w]+ to be one of \["ValidValue" "AnotherValidValue"\], got InvalidValue`),
 		},
 		{
 			val:         1,

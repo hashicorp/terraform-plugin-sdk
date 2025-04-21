@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package structure
 
 import (
@@ -67,7 +70,7 @@ func TestNormalizeJsonString_valid(t *testing.T) {
 
 func TestNormalizeJsonString_invalid(t *testing.T) {
 	// Well formatted but not valid,
-	// missing closing squre bracket.
+	// missing closing square bracket.
 	invalidJson := `{
    "abc": {
       "def": 123,

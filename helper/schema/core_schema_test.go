@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -450,6 +453,25 @@ func TestSchemaMapCoreConfigSchema(t *testing.T) {
 					"string": {
 						Type:     cty.String,
 						Optional: true, // Just so we can progress to provider-driven validation and return the error there
+					},
+				},
+				BlockTypes: map[string]*configschema.NestedBlock{},
+			}),
+		},
+		"write-only": {
+			map[string]*Schema{
+				"string": {
+					Type:      TypeString,
+					Optional:  true,
+					WriteOnly: true,
+				},
+			},
+			testResource(&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"string": {
+						Type:      cty.String,
+						Optional:  true,
+						WriteOnly: true,
 					},
 				},
 				BlockTypes: map[string]*configschema.NestedBlock{},

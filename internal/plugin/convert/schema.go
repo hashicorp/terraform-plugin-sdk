@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package convert
 
 import (
@@ -9,6 +12,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 )
@@ -148,6 +152,7 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 			Required:        a.Required,
 			Sensitive:       a.Sensitive,
 			Deprecated:      a.Deprecated,
+			WriteOnly:       a.WriteOnly,
 		}
 
 		var err error
@@ -165,6 +170,30 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 	}
 
 	return block
+}
+
+func ConfigIdentitySchemaToProto(ctx context.Context, identitySchema *configschema.Block) []*tfprotov5.ResourceIdentitySchemaAttribute {
+	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0)
+
+	for name, a := range identitySchema.Attributes {
+
+		attr := &tfprotov5.ResourceIdentitySchemaAttribute{
+			Name:              name,
+			Description:       a.Description,
+			OptionalForImport: a.OptionalForImport,
+			RequiredForImport: a.RequiredForImport,
+		}
+
+		var err error
+		attr.Type, err = tftypeFromCtyType(a.Type)
+		if err != nil {
+			panic(err)
+		}
+
+		output = append(output, attr)
+	}
+
+	return output
 }
 
 func protoStringKind(ctx context.Context, k configschema.StringKind) tfprotov5.StringKind {

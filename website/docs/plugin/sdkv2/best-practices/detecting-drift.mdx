@@ -1,10 +1,13 @@
 ---
-page_title: Plugin Development - Detecting Drift
+page_title: Plugin Development - SDKv2 Detecting Drift
 description: |-
   "Drift" describes changes to infrastructure outside of Terraform. Learn how
   to ensure that Terraform detects drift so that users will know when their
   infrastructure has changed.
 ---
+
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
 
 # Detecting Drift
 
@@ -185,8 +188,8 @@ set for unset attributes. These situations expectedly result in drift, but can
 be reconciled by using Terraform's [schema functions][2], such as
 `DiffSuppressFunc` or `DefaultFunc`.
 
-[0]: /plugin/sdkv2/schemas/schema-types#primitive-types
+[0]: /terraform/plugin/sdkv2/schemas/schema-types#primitive-types
 
-[1]: /plugin/sdkv2/schemas/schema-types#aggregate-types
+[1]: /terraform/plugin/sdkv2/schemas/schema-types#aggregate-types
 
-[2]: /plugin/sdkv2/schemas/schema-behaviors#function-behaviors
+[2]: /terraform/plugin/sdkv2/schemas/schema-behaviors#function-behaviors

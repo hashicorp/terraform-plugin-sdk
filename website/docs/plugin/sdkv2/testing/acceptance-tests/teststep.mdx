@@ -5,7 +5,16 @@ description: |-
   file to a given state.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Acceptance Tests: TestSteps
+
+<Highlight>
+
+Terraform Provider testing has migrated to a new [terraform-plugin-testing](/terraform/plugin/testing) Go module. New features will only be implemented in the new module. Review the [migration documentation](/terraform/plugin/testing/migrating) to learn how to switch existing testing code.
+
+</Highlight>
 
 `TestStep`s represent the application of an actual Terraform configuration file
 to a given state. Each step requires a configuration as input and provides
@@ -14,8 +23,8 @@ under test.
 
 ## Test Modes
 
-Terraform’s test framework facilitates two distinct modes of acceptance tests,
-_Lifecycle_ and _Import_.
+Terraform’s test framework facilitates three distinct modes of acceptance tests,
+_Lifecycle_, _Import_ and _Refresh_.
 
 _Lifecycle_ mode is the most common mode, and is used for testing plugins by
 providing one or more configuration files with the same logic as would be used
@@ -25,6 +34,10 @@ _Import_ mode is used for testing resource functionality to import existing
 infrastructure into a Terraform statefile, using the same logic as would be used
 when running `terraform import`.
 
+_Refresh_ mode is used for testing resource functionality to refresh existing
+infrastructure, using the same logic as would be used when running
+`terraform refresh`.
+
 An acceptance test’s mode is implicitly determined by the fields provided in the
 `TestStep` definition. The applicable fields are defined in the [TestStep
 Reference API](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/helper/resource#TestStep).
@@ -32,7 +45,7 @@ Reference API](https://pkg.go.dev/github.com/hashicorp/terraform-plugin-sdk/help
 ## Steps
 
 `Steps` is a field within
-[TestCase](/plugin/sdkv2/testing/acceptance-tests/testcase), the struct used
+[TestCase](/terraform/plugin/sdkv2/testing/acceptance-tests/testcase), the struct used
 to construct acceptance tests. Each step represents a full `terraform apply` of
 a given configuration language, followed by zero or more checks (defined later)
 to verify the application. Each `Step` is applied in order, and require its own
@@ -290,6 +303,10 @@ func testAccCheckExampleWidgetExists(resourceName string, widget *example.Widget
 }
 ```
 
+## Caveats
+
+[`for_each`](/terraform/language/meta-arguments/for_each) syntax is not supported in the `Config` field.
+
 ## Next Steps
 
-Acceptance Testing is an essential approach to validating the implementation of a Terraform Provider. Using actual APIs to provision resources for testing can leave behind real infrastructure that costs money between tests. The reasons for these leaks can vary, regardless Terraform provides a mechanism known as [Sweepers](/plugin/sdkv2/testing/acceptance-tests/sweepers) to help keep the testing account clean.
+Acceptance Testing is an essential approach to validating the implementation of a Terraform Provider. Using actual APIs to provision resources for testing can leave behind real infrastructure that costs money between tests. The reasons for these leaks can vary, regardless Terraform provides a mechanism known as [Sweepers](/terraform/plugin/sdkv2/testing/acceptance-tests/sweepers) to help keep the testing account clean.

@@ -1,28 +1,58 @@
-issues:
-  exclude-rules:
-    - linters:
-        - staticcheck
-      text: 'SA1019: schema.SchemaValidateFunc is deprecated'
-  max-per-linter: 0
-  max-same-issues: 0
-
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
-    - deadcode
+    - copyloopvar
     - durationcheck
     - errcheck
-    - exportloopref
-    - gofmt
-    - gosimple
+    - govet
     - ineffassign
     - makezero
     - nilerr
-    # - paralleltest # Reference: https://github.com/kunwardeep/paralleltest/issues/14
     - predeclared
     - staticcheck
-    - tenv
     - unconvert
     - unparam
-    - varcheck
-    - vet
+    - unused
+    - usetesting
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: 'SA1019: schema.SchemaValidateFunc is deprecated'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - '-QF1001' # "could apply De Morgan's law" -- https://staticcheck.dev/docs/checks/#QF1001
+        - '-QF1002' # "could use tagged switch" -- https://staticcheck.dev/docs/checks/#QF1002
+        - '-QF1004' # "could use strings.ReplaceAll instead" -- https://staticcheck.dev/docs/checks/#QF1004
+        - '-QF1007' # "could merge conditional assignment into variable declaration" -- https://staticcheck.dev/docs/checks/#QF1007
+        - '-QF1008' # "could remove embedded field "Block" from selector" -- https://staticcheck.dev/docs/checks/#QF1008
+        - '-QF1011' # "could omit type *terraform.InstanceState from declaration" -- https://staticcheck.dev/docs/checks/#QF1011
+        - '-ST1003' # example: "const autoTFVarsJson should be autoTFVarsJSON" -- https://staticcheck.dev/docs/checks/#ST1003
+        - '-ST1005' # "error strings should not end with punctuation or newlines" -- https://staticcheck.dev/docs/checks/#ST1005
+        - '-ST1016' # example: "methods on the same type should have the same receiver name (seen 2x "r", 2x "s")" -- https://staticcheck.dev/docs/checks/#ST1016
+        - '-ST1023' # example: "should omit type *terraform.InstanceState from declaration;" -- https://staticcheck.dev/docs/checks/#ST1023
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

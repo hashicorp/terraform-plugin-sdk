@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package resource
 
 import (
@@ -8,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -65,8 +69,6 @@ func TestTestCaseHasProviders(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		name, test := name, test
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -145,8 +147,6 @@ func TestTestCaseValidate(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		name, test := name, test
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

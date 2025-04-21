@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Added more visible logging for test steps skipped via the `TestStep` type `SkipFunc` field.
-```

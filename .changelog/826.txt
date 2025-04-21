@@ -1,3 +1,0 @@
-```release-note:bug
-helper/schema: Included path information in list size diagnostics for cases where Terraform does not include the configuration source
-```

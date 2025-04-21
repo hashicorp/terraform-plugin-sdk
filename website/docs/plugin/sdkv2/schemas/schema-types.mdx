@@ -6,6 +6,9 @@ description: |-
   element.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Schema Attributes and Types
 
 Almost every Terraform Plugin offers user configurable parameters, examples such
@@ -29,7 +32,7 @@ func resourceExampleResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validatName,
+				ValidateFunc: validateName,
 			},
 			// ... //
 		},
@@ -39,14 +42,14 @@ func resourceExampleResource() *schema.Resource {
 
 The Schema attribute `Type` defines what kind of values users can provide in
 their configuration for this element. Here we define the available schema types
-supported. See [Schema Behaviors](/plugin/sdkv2/schemas/schema-behaviors)
+supported. See [Schema Behaviors](/terraform/plugin/sdkv2/schemas/schema-behaviors)
 for more information on configuring element behaviors.
 
 ## Types
 
 The schema attribute `Type` determines what data is valid in configuring the
 element, as well as the type of data returned when used in an
-[expression](/configuration/expressions). Schemas attributes must
+[expression](/terraform/language/expressions). Schemas attributes must
 be one of the types defined below, and can be loosely categorized as either
 **Primitive** or **Aggregate** types:
 
@@ -54,7 +57,7 @@ be one of the types defined below, and can be loosely categorized as either
 
 Primitive types are simple values such as integers, booleans, and strings.
 Primitives are stored in the
-[state file](/language/state) as `"key": "value"`
+[state file](/terraform/language/state) as `"key": "value"`
 string pairs, where both `key` and `value` are string representations.
 
 **Aggregate types**
@@ -405,5 +408,5 @@ of the attributes of the set.
 
 ## Next Steps
 
-Checkout [Schema Behaviors](/plugin/sdkv2/schemas/schema-behaviors) to learn
+Checkout [Schema Behaviors](/terraform/plugin/sdkv2/schemas/schema-behaviors) to learn
 how to customize each schema elements behavior.

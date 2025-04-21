@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -632,19 +635,18 @@ func TestResourceApply_isNewResource(t *testing.T) {
 }
 
 func TestResourceInternalValidate(t *testing.T) {
-	cases := []struct {
+	cases := map[string]struct {
 		In       *Resource
 		Writable bool
 		Err      bool
 	}{
-		0: {
+		"nil": {
 			nil,
 			true,
 			true,
 		},
 
-		// No optional and no required
-		1: {
+		"No optional and no required": {
 			&Resource{
 				Schema: map[string]*Schema{
 					"foo": {
@@ -658,8 +660,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		// Update undefined for non-ForceNew field
-		2: {
+		"Update undefined for non-ForceNew field": {
 			&Resource{
 				Create: Noop,
 				Schema: map[string]*Schema{
@@ -673,8 +674,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		// Update defined for ForceNew field
-		3: {
+		"Update defined for ForceNew field": {
 			&Resource{
 				Create: Noop,
 				Update: Noop,
@@ -690,8 +690,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		// non-writable doesn't need Update, Create or Delete
-		4: {
+		"non-writable doesn't need Update, Create or Delete": {
 			&Resource{
 				Schema: map[string]*Schema{
 					"goo": {
@@ -704,8 +703,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
-		// non-writable *must not* have Create
-		5: {
+		"non-writable *must not* have Create": {
 			&Resource{
 				Create: Noop,
 				Schema: map[string]*Schema{
@@ -719,8 +717,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		// writable must have Read
-		6: {
+		"writable must have Read": {
 			&Resource{
 				Create: Noop,
 				Update: Noop,
@@ -736,8 +733,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		// writable must have Delete
-		7: {
+		"writable must have Delete": {
 			&Resource{
 				Create: Noop,
 				Read:   Noop,
@@ -753,7 +749,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		8: { // Reserved name at root should be disallowed
+		"Reserved name at root should be disallowed": {
 			&Resource{
 				Create: Noop,
 				Read:   Noop,
@@ -770,7 +766,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 		},
 
-		9: { // Reserved name at nested levels should be allowed
+		"Reserved name at nested levels should be allowed": {
 			&Resource{
 				Create: Noop,
 				Read:   Noop,
@@ -795,7 +791,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
-		10: { // Provider reserved name should be allowed in resource
+		"Provider reserved name should be allowed in resource": {
 			&Resource{
 				Create: Noop,
 				Read:   Noop,
@@ -812,7 +808,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
-		11: { // ID should be allowed in data source
+		"ID should be allowed in data source": {
 			&Resource{
 				Read: Noop,
 				Schema: map[string]*Schema{
@@ -826,7 +822,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
-		12: { // Deprecated ID should be allowed in resource
+		"Deprecated ID should be allowed in resource": {
 			&Resource{
 				Create: Noop,
 				Read:   Noop,
@@ -845,7 +841,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
-		13: { // non-writable must not define CustomizeDiff
+		"non-writable must not define CustomizeDiff": {
 			&Resource{
 				Read: Noop,
 				Schema: map[string]*Schema{
@@ -859,7 +855,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 			true,
 		},
-		14: { // Deprecated resource
+		"Deprecated resource": {
 			&Resource{
 				Read: Noop,
 				Schema: map[string]*Schema{
@@ -873,7 +869,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		15: { // Create and CreateContext should not both be set
+		"Create and CreateContext should not both be set": {
 			&Resource{
 				Create:        Noop,
 				CreateContext: NoopContext,
@@ -890,7 +886,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		16: { // Read and ReadContext should not both be set
+		"Read and ReadContext should not both be set": {
 			&Resource{
 				Create:      Noop,
 				Read:        Noop,
@@ -907,7 +903,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		17: { // Update and UpdateContext should not both be set
+		"Update and UpdateContext should not both be set": {
 			&Resource{
 				Create:        Noop,
 				Read:          Noop,
@@ -924,7 +920,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		18: { // Delete and DeleteContext should not both be set
+		"Delete and DeleteContext should not both be set": {
 			&Resource{
 				Create:        Noop,
 				Read:          Noop,
@@ -941,7 +937,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		19: { // Create and CreateWithoutTimeout should not both be set
+		"Create and CreateWithoutTimeout should not both be set": {
 			&Resource{
 				Create:               Noop,
 				CreateWithoutTimeout: NoopContext,
@@ -958,7 +954,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		20: { // Read and ReadWithoutTimeout should not both be set
+		"Read and ReadWithoutTimeout should not both be set": {
 			&Resource{
 				Create:             Noop,
 				Read:               Noop,
@@ -975,7 +971,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		21: { // Update and UpdateWithoutTimeout should not both be set
+		"Update and UpdateWithoutTimeout should not both be set": {
 			&Resource{
 				Create:               Noop,
 				Read:                 Noop,
@@ -992,7 +988,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		22: { // Delete and DeleteWithoutTimeout should not both be set
+		"Delete and DeleteWithoutTimeout should not both be set": {
 			&Resource{
 				Create:               Noop,
 				Read:                 Noop,
@@ -1009,7 +1005,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		23: { // CreateContext and CreateWithoutTimeout should not both be set
+		"CreateContext and CreateWithoutTimeout should not both be set": {
 			&Resource{
 				CreateContext:        NoopContext,
 				CreateWithoutTimeout: NoopContext,
@@ -1026,7 +1022,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		24: { // ReadContext and ReadWithoutTimeout should not both be set
+		"ReadContext and ReadWithoutTimeout should not both be set": {
 			&Resource{
 				Create:             Noop,
 				ReadContext:        NoopContext,
@@ -1043,7 +1039,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		25: { // UpdateContext and UpdateWithoutTimeout should not both be set
+		"UpdateContext and UpdateWithoutTimeout should not both be set": {
 			&Resource{
 				Create:               Noop,
 				Read:                 Noop,
@@ -1060,7 +1056,7 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
-		26: { // DeleteContext and DeleteWithoutTimeout should not both be set
+		"DeleteContext and DeleteWithoutTimeout should not both be set": {
 			&Resource{
 				Create:               Noop,
 				Read:                 Noop,
@@ -1077,20 +1073,65 @@ func TestResourceInternalValidate(t *testing.T) {
 			true,
 			true,
 		},
+		"Non-Writable SchemaFunc and Schema should not both be set": {
+			In: &Resource{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"test": {
+							Type:     TypeString,
+							Required: true,
+						},
+					}
+				},
+				Read: Noop,
+			},
+			Writable: false,
+			Err:      true,
+		},
+		"Writable SchemaFunc and Schema should not both be set": {
+			In: &Resource{
+				Schema: map[string]*Schema{
+					"test": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"test": {
+							Type:     TypeString,
+							Required: true,
+						},
+					}
+				},
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
+			},
+			Writable: true,
+			Err:      true,
+		},
 	}
 
-	for i, tc := range cases {
-		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
 			sm := schemaMap{}
 			if tc.In != nil {
 				sm = schemaMap(tc.In.Schema)
 			}
 			err := tc.In.InternalValidate(sm, tc.Writable)
 			if err != nil && !tc.Err {
-				t.Fatalf("%d: expected validation to pass: %s", i, err)
+				t.Fatalf("%s: expected validation to pass: %s", name, err)
 			}
 			if err == nil && tc.Err {
-				t.Fatalf("%d: expected validation to fail", i)
+				t.Fatalf("%s: expected validation to fail", name)
 			}
 		})
 	}
@@ -1616,5 +1657,434 @@ func TestResource_ContextTimeout(t *testing.T) {
 
 	if !deadlineSet {
 		t.Fatal("context does not have timeout")
+	}
+}
+
+func TestResourceInternalIdentityValidate(t *testing.T) {
+	cases := map[string]struct {
+		In  *ResourceIdentity
+		Err bool
+	}{
+		"nil": {
+			nil,
+			true,
+		},
+
+		"schema is nil": {
+			&ResourceIdentity{},
+			true,
+		},
+
+		"OptionalForImport and RequiredForImport both false": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							OptionalForImport: false,
+							RequiredForImport: false,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"OptionalForImport and RequiredForImport both true": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							OptionalForImport: true,
+							RequiredForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeMap is not valid": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeMap, OptionalForImport: true},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeSet is not valid": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeSet, OptionalForImport: true},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeObject is not valid": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: typeObject, OptionalForImport: true},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeInvalid is not valid": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {Type: TypeInvalid, OptionalForImport: true},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeList contains TypeMap": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList, Elem: TypeMap, OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		" TypeList contains TypeSet": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList,
+							Elem: &Resource{
+								Schema: map[string]*Schema{
+									"bar": {
+										Type:              TypeSet,
+										RequiredForImport: true,
+									},
+								},
+							},
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"TypeList contains TypeInvalid": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeList, Elem: TypeInvalid, OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"ForceNew is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ForceNew:          true,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Optional is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Optional:          true,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Required is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Required:          true,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"WriteOnly is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							WriteOnly:         true,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Computed is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Computed:          true,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Deprecated is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Deprecated:        "deprecated",
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Default is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							Default:           42,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"MaxItems is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							MaxItems:          5,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"MinItems is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							MinItems:          1,
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"DiffSuppressOnRefresh is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:                  TypeInt,
+							DiffSuppressOnRefresh: true,
+							OptionalForImport:     true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"RequiredWith is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							RequiredWith:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"ComputedWhen is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ComputedWhen:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"DefaultFunc is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							DefaultFunc:       func() (interface{}, error) { return 42, nil },
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"StateFunc is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							StateFunc:         func(val interface{}) string { return "" },
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"ValidateFunc is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ValidateFunc:      func(val interface{}, key string) (ws []string, es []error) { return nil, nil },
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"AtLeastOneOf is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							AtLeastOneOf:      []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"ConflictsWith is set": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type:              TypeInt,
+							ConflictsWith:     []string{"bar"},
+							OptionalForImport: true,
+						},
+					}
+				},
+			},
+			true,
+		},
+
+		"Valid resource identity OptionalForImport": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeInt, OptionalForImport: true},
+					}
+				},
+			},
+			false,
+		},
+
+		"Valid resource identity RequiredorImport": {
+			&ResourceIdentity{
+				SchemaFunc: func() map[string]*Schema {
+					return map[string]*Schema{
+						"foo": {
+							Type: TypeInt, RequiredForImport: true},
+					}
+				},
+			},
+			false,
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			err := tc.In.InternalIdentityValidate()
+			if err != nil && !tc.Err {
+				t.Fatalf("%s: expected validation to pass: %s", name, err)
+			}
+			if err == nil && tc.Err {
+				t.Fatalf("%s: expected validation to fail", name)
+			}
+		})
 	}
 }

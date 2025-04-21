@@ -1,9 +1,5 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -14,3 +10,14 @@ updates:
       - dependency-name: "github.com/hashicorp/go-hclog"
       # go-plugin should only be updated via terraform-plugin-go
       - dependency-name: "github.com/hashicorp/go-plugin"
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    schedule:
+      interval: "daily"
+  # Dependabot only updates hashicorp GHAs, external GHAs are managed by internal tooling (tsccr)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-name: "hashicorp/*"

@@ -1,3 +1,0 @@
-```release-note:enhancement
-helper/resource: Support JSON in `TestStep` type `Config` field
-```

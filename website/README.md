@@ -1,5 +1,8 @@
 # Terraform Documentation
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 This directory contains the portions of [the Terraform website][terraform.io] that pertain to the Terraform Plugin SDK.
 
 The files in this directory are intended to be used in conjunction with
@@ -31,6 +34,16 @@ To preview your content, complete the following steps:
 1. Navigate into your local `terraform-plugin-sdk` top-level directory and run `make website`.
 1. Open `http://localhost:3000` in your web browser. While the preview is running, you can edit pages and Next.js will automatically rebuild them.
 1. When you're done with the preview, press `ctrl-C` in your terminal to stop the server.
+
+### Validating Content
+
+Content changes are automatically validated against a set of rules as part of the pull request process. If you want to run these checks locally to validate your content before committing your changes, you can run the following command:
+
+```
+npm run content-check
+```
+
+If the validation fails, actionable error messages will be displayed to help you address detected issues.
 
 ## Deployment
 

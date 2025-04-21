@@ -1,8 +1,10 @@
+version: 2
 project_name: terraform-plugin-sdk
-build:
-  skip: true
+builds:
+  - skip: true
 milestones:
   - close: true
 release:
+  prerelease: auto
   ids:
     - 'none'

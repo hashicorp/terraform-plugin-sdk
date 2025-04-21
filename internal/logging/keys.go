@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package logging
 
 // Structured logging keys.
@@ -25,11 +28,17 @@ const (
 	// The type of resource being operated on, such as "random_pet"
 	KeyResourceType = "tf_resource_type"
 
+	// The Deferred reason for an RPC response
+	KeyDeferredReason = "tf_deferred_reason"
+
 	// The name of the test being executed.
 	KeyTestName = "test_name"
 
 	// The TestStep number of the test being executed. Starts at 1.
 	KeyTestStepNumber = "test_step_number"
+
+	// Terraform configuration used during acceptance testing Terraform operations.
+	KeyTestTerraformConfiguration = "test_terraform_configuration"
 
 	// The Terraform CLI logging level (TF_LOG) used for an acceptance test.
 	KeyTestTerraformLogLevel = "test_terraform_log_level"
@@ -48,6 +57,9 @@ const (
 
 	// The path to the Terraform CLI used for an acceptance test.
 	KeyTestTerraformPath = "test_terraform_path"
+
+	// Terraform plan output generated during a TestStep.
+	KeyTestTerraformPlan = "test_terraform_plan"
 
 	// The working directory of the acceptance test.
 	KeyTestWorkingDirectory = "test_working_directory"

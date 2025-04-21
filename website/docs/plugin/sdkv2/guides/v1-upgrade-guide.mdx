@@ -3,13 +3,16 @@ page_title: Terraform Plugin SDK
 description: Official standalone SDK for Terraform plugin development
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Terraform Plugin SDK
 
 As of September 2019, Terraform provider developers importing the Go module `github.com/hashicorp/terraform`, known as Terraform Core, should switch to `github.com/hashicorp/terraform-plugin-sdk`, the Terraform Plugin SDK, instead.
 
 ## Why a separate module?
 
-While the `helper/*` and other packages in Terraform Core has served us well, in order for provider development to evolve, the SDK needed to break out into its own repository. Terraform Core's versioning has been oriented towards practitioners. With the "unofficial" SDK existing in the core repository, the SDK becomes tied to Core releases and cannot follow semantic versioning. The new standalone SDK [github.com/hashicorp/terraform-plugin-sdk](https://github.com/hashicorp/terraform-plugin-sdk) follows sematic versioning starting with v1.0.0.
+While the `helper/*` and other packages in Terraform Core has served us well, in order for provider development to evolve, the SDK needed to break out into its own repository. Terraform Core's versioning has been oriented towards practitioners. With the "unofficial" SDK existing in the core repository, the SDK becomes tied to Core releases and cannot follow semantic versioning. The new standalone SDK [github.com/hashicorp/terraform-plugin-sdk](https://github.com/hashicorp/terraform-plugin-sdk) follows semantic versioning starting with v1.0.0.
 
 We will use the term "legacy Terraform plugin SDK" when referring to the version of Terraform Core imported and used by providers.
 
@@ -44,7 +47,7 @@ If this command succeeds, proceed to Step 2.
 
 Otherwise, the tool will output the steps you need to take to ensure the provider can be migrated. Please see <https://github.com/hashicorp/tf-sdk-migrator> for more information about the eligibility checks, and see the [Deprecations section](#deprecations) below for what to do if you are using deprecated packages or identifiers.
 
-Projects that are on an old version of the legacy Terraform plugin SDK, particularly < v0.12, should first [upgrade to v0.12](/plugin/sdkv2/guides/terraform-0.12-compatibility).
+Projects that are on an old version of the legacy Terraform plugin SDK, particularly < v0.12, should first [upgrade to v0.12](/terraform/plugin/sdkv2/guides/terraform-0.12-compatibility).
 
 #### Step 2: Migrate
 

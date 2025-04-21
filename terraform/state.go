@@ -1,9 +1,13 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package terraform
 
 import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +18,6 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-cty/cty"
-	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-uuid"
 	"github.com/mitchellh/copystructure"
 
@@ -43,7 +46,7 @@ var rootModulePath = []string{"root"}
 // normalizeModulePath takes a raw module path and returns a path that
 // has the rootModulePath prepended to it. If I could go back in time I
 // would've never had a rootModulePath (empty path would be root). We can
-// still fix this but thats a big refactor that my branch doesn't make sense
+// still fix this but that's a big refactor that my branch doesn't make sense
 // for. Instead, this function normalizes paths.
 func normalizeModulePath(p []string) addrs.ModuleInstance {
 	// FIXME: Remove this once everyone is using addrs.ModuleInstance.
@@ -284,7 +287,7 @@ func (s *State) Validate() error {
 	s.Lock()
 	defer s.Unlock()
 
-	var result error
+	var result []error
 
 	// !!!! FOR DEVELOPERS !!!!
 	//
@@ -306,7 +309,7 @@ func (s *State) Validate() error {
 
 			key := strings.Join(ms.Path, ".")
 			if _, ok := found[key]; ok {
-				result = multierror.Append(result, fmt.Errorf(
+				result = append(result, fmt.Errorf(
 					strings.TrimSpace(stateValidateErrMultiModule), key))
 				continue
 			}
@@ -315,7 +318,7 @@ func (s *State) Validate() error {
 		}
 	}
 
-	return result
+	return errors.Join(result...)
 }
 
 // Remove removes the item in the state at the given address, returning
@@ -796,7 +799,7 @@ func (s *OutputState) Equal(other *OutputState) bool {
 // module.
 type ModuleState struct {
 	// Path is the import path from the root module. Modules imports are
-	// always disjoint, so the path represents amodule tree
+	// always disjoint, so the path represents a module tree
 	Path []string `json:"path"`
 
 	// Locals are kept only transiently in-memory, because we can always
@@ -1302,6 +1305,10 @@ type InstanceState struct {
 	// and collections.
 	Meta map[string]interface{} `json:"meta"`
 
+	// Identity is the identity data used to track resource identity
+	// starting in Terraform 1.12+
+	Identity map[string]string `json:"identity"`
+
 	ProviderMeta cty.Value
 
 	RawConfig cty.Value
@@ -1326,6 +1333,9 @@ func (s *InstanceState) init() {
 	}
 	if s.Meta == nil {
 		s.Meta = make(map[string]interface{})
+	}
+	if s.Identity == nil {
+		s.Identity = make(map[string]string)
 	}
 	s.Ephemeral.init()
 }
@@ -1388,6 +1398,7 @@ func (s *InstanceState) Set(from *InstanceState) {
 	s.Ephemeral = from.Ephemeral
 	s.Meta = from.Meta
 	s.Tainted = from.Tainted
+	s.Identity = from.Identity
 }
 
 func (s *InstanceState) DeepCopy() *InstanceState {
@@ -1467,6 +1478,8 @@ func (s *InstanceState) Equal(other *InstanceState) bool {
 		return false
 	}
 
+	// TODO: compare identity
+
 	return true
 }
 
@@ -1543,6 +1556,8 @@ func (s *InstanceState) String() string {
 		av := attributes[ak]
 		buf.WriteString(fmt.Sprintf("%s = %s\n", ak, av))
 	}
+
+	// TODO: add identity
 
 	buf.WriteString(fmt.Sprintf("Tainted = %t\n", s.Tainted))
 

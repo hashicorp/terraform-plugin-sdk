@@ -54,7 +54,7 @@ We welcome issues of all kinds including feature requests, bug reports or docume
 
 ### Bug Reports
 
- - [ ] **Test against latest release**: Make sure you test against the latest avaiable version of both Terraform and SDK.
+ - [ ] **Test against latest release**: Make sure you test against the latest available version of both Terraform and SDK.
 It is possible we already fixed the bug you're experiencing.
 
  - [ ] **Search for duplicates**: It's helpful to keep bug reports consolidated to one thread, so do a quick search on existing bug reports to check if anybody else has reported the same thing. You can scope searches by the label `bug` to help narrow things down.
@@ -100,6 +100,8 @@ before raising a pull request.
 
 - [ ] **Changelog**: Refer to the [changelog](#changelog) section for more information about how to create changelog entries.
 
+- [ ] **License Headers**: All source code requires a license header at the top of the file, refer to [License Headers](#license-headers) for information on how to autogenerate these headers.
+
 ### Cosmetic changes, code formatting, and typos
 
 In general we do not accept PRs containing only the following changes:
@@ -114,7 +116,7 @@ In the case of `terraform-plugin-sdk`, the repo's close relationship to the `ter
 
 #### Exceptions
 
-We belive that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
+We believe that one should "leave the campsite cleaner than you found it", so you are welcome to clean up cosmetic issues in the neighbourhood when submitting a patch that makes functional changes or fixes.
 
 ### Dependency Updates
 
@@ -122,29 +124,26 @@ Dependency management is performed by [dependabot](https://docs.github.com/en/co
 
 ### Changelog
 
-HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade. We use [go-changelog](https://github.com/hashicorp/go-changelog) to generate and update the changelog from files created in the `.changelog/` directory.
+HashiCorp’s open-source projects have always maintained user-friendly, readable CHANGELOGs that allow practitioners and developers to tell at a glance whether a release should have any effect on them, and to gauge the risk of an upgrade.
 
-#### Changelog Format
+We follow Terraform Plugin
+[changelog specifications](https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#changelog-specification).
 
-The changelog format requires an entry in the following format, where HEADER corresponds to the changelog category, and the entry is the changelog entry itself. The entry should be included in a file in the `.changelog` directory with the naming convention `{PR-NUMBER}.txt`. For example, to create a changelog entry for pull request 1234, there should be a file named `.changelog/1234.txt`.
+#### Changie Automation Tool
+This project uses the [Changie](https://changie.dev/) automation tool for changelog automation.
 
-``````markdown
-```release-note:{HEADER}
-{ENTRY}
+To add a new entry to the `CHANGELOG`, install Changie using the following [instructions](https://changie.dev/guide/installation/)
+
+After Changie is installed on your local machine, run:
+```bash
+changie new
 ```
-``````
+and choose a `kind` of change corresponding to the Terraform Plugin [changelog categories](https://developer.hashicorp.com/terraform/plugin/best-practices/versioning#categorization)
 
-If a pull request should contain multiple changelog entries, then multiple blocks can be added to the same changelog file. For example:
+Fill out the body field following the entry format. Changie will then prompt for a GitHub issue or pull request number.
 
-``````markdown
-```release-note:note
-tfsdk: The `Old()` function has been deprecated. Any code using `Old()` should be updated to use the new `New()` function instead.
-```
-
-```release-note:enhancement
-tfsdk: Added `New()` function, which does new and exciting things
-```
-``````
+Repeat this process for any additional changes. The `.yaml` files created in the `.changes/unreleased` folder
+should be pushed the repository along with any code changes.
 
 #### Pull Request Types to CHANGELOG
 
@@ -164,53 +163,54 @@ The CHANGELOG is intended to show developer-impacting changes to the codebase fo
 
 ###### Major Features
 
-A major feature entry should use the `release-note:feature` header.
+A major feature entry should use the `FEATURES` kind.
 
 ``````markdown
-```release-note:feature
 Added `great` package, which solves all the problems
-```
+
 ``````
 
 ###### Bug Fixes
 
-A new bug entry should use the `release-note:bug` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix should the fix apply to all sub-packages.
+A new bug entry should use the `BUG FIXES` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix should the fix apply to all sub-packages.
 
 ``````markdown
-```release-note:bug
 tfsdk: Prevented potential panic in `Example()` function
-```
+
 ``````
 
 ###### Enhancements
 
-A new enhancement entry should use the `release-note:enhancement` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for enchancements that apply to all sub-packages.
+A new enhancement entry should use the `ENHANCEMENTS` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for enhancements that apply to all sub-packages.
 
 ``````markdown
-```release-note:enhancement
 attr: Added `Great` interface for doing great things
-```
+
 ``````
 
 ###### Deprecations
 
-A deprecation entry should use the `release-note:note` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
+A deprecation entry should use the `NOTES` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for changes that apply to all sub-packages.
 
 ``````markdown
-```release-note:note
 diag: The `Old()` function is being deprecated in favor of the `New()` function
-```
+
 ``````
 
 ###### Breaking Changes and Removals
 
-A breaking-change entry should use the `release-note:breaking-change` header and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use an `all` prefix for changes that apply to all sub-packages.
+A breaking-change entry should use the `BREAKING CHANGES` kind and have a prefix indicating the sub-package it corresponds to, a colon, then followed by a brief summary. Use a `all` prefix for changes that apply to all sub-packages.
 
 ``````markdown
-```release-note:breaking-change
 tfsdk: The `Example` type `Old` field has been removed since it is not necessary
-```
+
 ``````
+
+### License Headers
+
+All source code files (excluding autogenerated files like `go.mod`, prose, and files excluded in [.copywrite.hcl](../.copywrite.hcl)) must have a license header at the top.
+
+This can be autogenerated by running `make generate` or running `go generate ./...` in the [/tools](../tools) directory.
 
 ## Linting
 
@@ -262,7 +262,7 @@ To test the `ci-go/terraform-provider-corner` job, a valid GitHub Personal Acces
 
 ### Go Unit Tests
 
-Go code unit testing is perfomed via Go's built-in testing functionality.
+Go code unit testing is performed via Go's built-in testing functionality.
 
 To run the Go unit testing locally:
 
@@ -339,33 +339,15 @@ This section is dedicated to the maintainers of this project.
 
 ### Releases
 
-Before running a release:
+To cut a release, go to the repository in GitHub and click on the `Actions` tab.
 
-- **`meta/meta.go`**: The versions must be appropriately updated.
-- **Changelog**: The changelog must be constructed from unreleased entries in the `.changelog` directory.
+Select the `Release` workflow on the left-hand menu.
 
-Install the latest version of the [`changelog-build`](https://pkg.go.dev/github.com/hashicorp/go-changelog/cmd/changelog-build) command, if it not already available:
+Click on the `Run workflow` button.
 
-```shell
-go install github.com/hashicorp/go-changelog/cmd/changelog-build
-```
+Select the branch to cut the release from (default is main).
 
-Run the [`changelog-build`](https://pkg.go.dev/github.com/hashicorp/go-changelog/cmd/changelog-build) command from the root directory of the repository:
+Input the `Release version number` which is the Semantic Release number including
+the `v` prefix (i.e. `v1.4.0` or `v1.4.0-alpha.1`) and click `Run workflow` to kickoff the release.
 
-```shell
-changelog-build -changelog-template .changelog.tmpl -entries-dir .changelog -last-release $(git describe --tags --abbrev=0) -note-template .changelog-note.tmpl -this-release HEAD
-```
-
-This will generate a section of Markdown text for the next release. Open the `CHANGELOG.md` file, add a `# X.Y.Z` header as the first line, then add the output from the `changelog-build` command.
-
-Commit, push, create a release Git tag, and push the tag:
-
-```shell
-git add CHANGELOG.md meta/meta.go
-git commit -m "Update CHANGELOG and versions for v1.2.3"
-git push
-git tag v1.2.3
-git push --tags
-```
-
-GitHub Actions will pick up the new release tag and kick off the release workflow.
+The (deprecated) version information in `meta/meta.go` will be updated automatically and a commit will be pushed.

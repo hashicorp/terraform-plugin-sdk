@@ -3,6 +3,9 @@ page_title: Terraform Plugin SDK v2 Upgrade Guide
 description: Upgrade guide for version 2 of the Terraform Plugin SDK.
 ---
 
+> [!IMPORTANT]  
+> **Documentation Update:** Product documentation previously located in `/website` has moved to the [`hashicorp/web-unified-docs`](https://github.com/hashicorp/web-unified-docs) repository, where all product documentation is now centralized. Please make contributions directly to `web-unified-docs`, since changes to `/website` in this repository will not appear on developer.hashicorp.com.
+
 # Terraform Plugin SDK v2 Upgrade Guide
 
 Version 2.0.0 of the Terraform Plugin SDK is a major release and includes some
@@ -30,7 +33,7 @@ Upgrade topics:
 * [Louder `helper/schema.ResourceData.Set` Errors in Testing](#louder-helper-schema-resourcedata-set-errors-in-testing)
 * [More Consistent Usage of `github.com/mitchellh/go-testing-interface`](#more-consistent-usage-of-github-com-mitchellh-go-testing-interface)
 * [Corrected Results of `helper/acctest.RandIntRange`](#corrected-results-of-helper-acctest-randintrange)
-* [Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`](#clearer-handling-of-nil-for-helper-resource-nonretryableerror-and-helper-resource-retryableerror)
+* [Clearer Handling of `nil` for `helper/retry.RetryableError` and `helper/retry.RetryableError`](#clearer-handling-of-nil-for-helper-resource-nonretryableerror-and-helper-resource-retryableerror)
 * [More Robust Handling of `helper/schema.TypeSet` Hashes](#more-robust-handling-of-helper-schema-typeset-hashes)
 * [Stronger Validation for `helper/schema.Schema.Computed` Fields](#stronger-validation-for-helper-schema-schema-computed-fields)
 * [More Robust Validation of `helper/schema.TypeMap` `Elem`s](#more-robust-validation-of-helper-schema-typemap-elems)
@@ -147,10 +150,10 @@ func Create(ctx context.Context, *schema.ResourceData, meta any) diag.Diagnostic
         // this is the standard way to convert a Go error to Diagnostics
         return diag.FromErr(err)
     }
-    
+
     // Warning or Errors can be collected in a slice type
     var diags diag.Diagnostics
-    
+
     // Diagnostics supports warnings, a detailed message
     // as well as linking to a specific attribute
     // see github.com/hashicorp/go-cty for learning the Path types
@@ -176,11 +179,10 @@ func Create(ctx context.Context, *schema.ResourceData, meta any) diag.Diagnostic
 
 The `helper/schema.Resource` and `helper/schema.Schema` types both now have
 `Description` properties that accept strings. These properties are laying the
-groundwork for future improvements to Terraform, and will have no visible
-effect to the Terraform CLI at the moment. If you’d like to build in support
-for your provider starting now, it’s recommended that you set these properties
-to whatever you’d document the resource or field as in your terraform.io docs
-for the resource.
+groundwork for future improvements to Terraform, and has no visible
+effect to the Terraform CLI at the moment. If you want to build in support
+for your provider starting now, we recommend that you set these properties
+to whatever you would document the resource or field as in your provider documentation for the resource.
 
 You can globally set the format of the text in these fields by setting the
 global variable `helper/schema.DescriptionKind`. Its acceptable values are
@@ -250,7 +252,7 @@ Third, the provider must be started by delve, and Terraform must be told how to
 connect to it. Providers using `plugin.Debug` will output instructions on how
 to tell Terraform how to connect.
 
--> **Note**: You can find more details on the [Debugging Providers page](/plugin/sdkv2/debugging).
+-> **Note**: You can find more details on the [Debugging Providers page](/terraform/plugin/sdkv2/debugging).
 
 ## Support for Provider Metadata
 
@@ -288,13 +290,13 @@ integer between the arguments. It has been corrected to return an integer
 between the arguments. Any usage reliant on the old, buggy behavior should be
 updated.
 
-## Clearer Handling of `nil` for `helper/resource.NonRetryableError` and `helper/resource.RetryableError`
+## Clearer Handling of `nil` for `helper/retry.RetryableError` and `helper/retry.RetryableError`
 
-Previously, passing a `nil` error to `helper/resource.RetryableError` and
-`helper/resource.NonRetryableError` could lead to subtle bugs and even crashes.
+Previously, passing a `nil` error to `helper/retry.RetryableError` and
+`helper/retry.RetryableError` could lead to subtle bugs and even crashes.
 It will now return an error. Providers should check that the error is not `nil`
-before calling `helper/resource.NonRetryableError` or
-`helper/resource.RetryableError`.
+before calling `helper/retry.RetryableError` or
+`helper/retry.RetryableError`.
 
 ## More Robust Handling of `helper/schema.TypeSet` Hashes
 
@@ -596,7 +598,7 @@ deprecated aliases have been removed:
 
 ## Removal of `helper/schema.Schema.PromoteSingle`
 
-The `PromotSingle` property of `*helper/schema.Schema` is a discouraged pattern
+The `PromoteSingle` property of `*helper/schema.Schema` is a discouraged pattern
 and no longer valid after Terraform 0.12, and has been removed.
 
 ## Removal of `helper/schema.ResourceData.UnsafeSetFieldRaw`
@@ -617,7 +619,7 @@ help us understand your use case so we can recommend a path forward.
 
 The `Removed` property of `helper/schema.Schema`, used to provide a friendly
 error message when a field has been removed after its [deprecation
-period](/plugin/sdkv2/best-practices/deprecations),
+period](/terraform/plugin/sdkv2/best-practices/deprecations),
 behaved unexpectedly in tests and other situations. It has been removed. The
 recommendation is now to delete the field after the deprecation period, and let
 Terraform’s built-in error messaging indicate its removal.
@@ -625,9 +627,9 @@ Terraform’s built-in error messaging indicate its removal.
 ## Removal of `helper/encryption` Package
 
 The `helper/encryption` package supports an [anti-pattern that is now
-discouraged](/plugin/sdkv2/best-practices/sensitive-state#don-39-t-encrypt-state),
+discouraged](/terraform/plugin/best-practices/sensitive-state#don-t-encrypt-state),
 so it has been removed. Providers relying on it should see the
-[documentation](/plugin/sdkv2/best-practices/sensitive-state)
+[documentation](/terraform/plugin/best-practices/sensitive-state)
 on that pattern and select an alternative approach.
 
 ## Removal of Discouraged Variables, Functions, Types, and Interfaces
