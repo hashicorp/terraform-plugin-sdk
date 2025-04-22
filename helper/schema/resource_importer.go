@@ -6,6 +6,7 @@ package schema
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ResourceImporter defines how a resource is imported in Terraform. This
@@ -82,4 +83,31 @@ func ImportStatePassthrough(d *ResourceData, m interface{}) ([]*ResourceData, er
 // that are not the same as the ID.
 func ImportStatePassthroughContext(ctx context.Context, d *ResourceData, m interface{}) ([]*ResourceData, error) {
 	return []*ResourceData{d}, nil
+}
+
+func ImportStatePassthroughWithIdentity(idAttributePath string) StateContextFunc {
+	return func(ctx context.Context, d *ResourceData, m interface{}) ([]*ResourceData, error) {
+		// If we import by id, we just return the resource data as is, no need to change it
+		if d.Id() != "" {
+			return []*ResourceData{d}, nil
+		}
+
+		// If we import by identity, we need to set the id based on the idAttributePath
+		identity, err := d.Identity()
+		if err != nil {
+			return nil, fmt.Errorf("error getting identity: %s", err)
+		}
+		id, exists := identity.GetOk(idAttributePath)
+		if !exists {
+			return nil, fmt.Errorf("expected identity to contain key %s", idAttributePath)
+		}
+		idStr, ok := id.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected identity key %s to be a string, was: %T", idAttributePath, id)
+		}
+
+		d.SetId(idStr)
+
+		return []*ResourceData{d}, nil
+	}
 }
