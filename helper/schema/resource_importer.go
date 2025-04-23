@@ -85,6 +85,25 @@ func ImportStatePassthroughContext(ctx context.Context, d *ResourceData, m inter
 	return []*ResourceData{d}, nil
 }
 
+// ImportStatePassthroughWithIdentity creates a StateContextFunc that supports both
+// identity-based and ID-only resource import scenarios. This function is useful
+// when a resource can be imported either by its unique ID or by an identity attribute.
+//
+// The `idAttributePath` parameter specifies the name of the identity attribute
+// to use when importing by identity. Since identity attributes are "flat",
+// `idAttributePath` should be a simple attribute name (e.g., "name" or "identifier").
+// Note that the identity attribute must be a string, as this function expects
+// to set the resource ID using the value of the specified attribute.
+//
+// If the resource is imported by ID (i.e., `d.Id()` is already set), the function
+// simply returns the resource data as-is. Otherwise, it attempts to retrieve the
+// identity attribute specified by `idAttributePath` and sets it as the resource ID.
+//
+// Parameters:
+//   - idAttributePath: The name of the identity attribute to use for setting the ID.
+//
+// Returns:
+//   - A StateContextFunc that handles the import logic.
 func ImportStatePassthroughWithIdentity(idAttributePath string) StateContextFunc {
 	return func(ctx context.Context, d *ResourceData, m interface{}) ([]*ResourceData, error) {
 		// If we import by id, we just return the resource data as is, no need to change it

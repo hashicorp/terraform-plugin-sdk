@@ -119,6 +119,24 @@ func TestImportStatePassthroughWithIdentity(t *testing.T) {
 			expectedError: "expected identity to contain key email",
 		},
 		{
+			name:            "import from identity fails if attribute is not a string",
+			idAttributePath: "number",
+			resourceData: &ResourceData{
+				identitySchema: map[string]*Schema{
+					"number": {
+						Type:              TypeInt,
+						RequiredForImport: true,
+					},
+				},
+				state: &terraform.InstanceState{
+					Identity: map[string]string{
+						"number": "1",
+					},
+				},
+			},
+			expectedError: "expected identity key number to be a string, was: int",
+		},
+		{
 			name:            "import from identity fails without schema",
 			idAttributePath: "email",
 			resourceData: &ResourceData{
