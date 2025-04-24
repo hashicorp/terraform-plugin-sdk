@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/schema: Fixed bug that blocked write-only attributes from being used with resources without update functions.'
+time: 2025-04-24T13:31:43.847209-04:00
+custom:
+    Issue: "1472"
