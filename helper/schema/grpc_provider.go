@@ -788,11 +788,43 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 
 func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
 	ctx = logging.InitContext(ctx)
+	readFollowingImport := false
+
+	ReqPrivate := req.Private
+
+	if ReqPrivate != nil {
+		// unmarshal the private data
+		if len(ReqPrivate) > 0 {
+			newReqPrivate := make(map[string]interface{})
+			if err := json.Unmarshal(ReqPrivate, &newReqPrivate); err != nil {
+				return nil, err
+			}
+			// This internal private field is set on a resource during ImportResourceState to help framework determine if
+			// the resource has been recently imported. We only need to read this once, so we immediately clear it after.
+			if _, ok := newReqPrivate[terraform.ImportBeforeReadMetaKey]; ok {
+				readFollowingImport = true
+				delete(newReqPrivate, terraform.ImportBeforeReadMetaKey)
+
+				if len(newReqPrivate) == 0 {
+					// if there are no other private data, set the private data to nil
+					ReqPrivate = nil
+				} else {
+					// set the new private data without the import key
+					bytes, err := json.Marshal(newReqPrivate)
+					if err != nil {
+						return nil, err
+					}
+					ReqPrivate = bytes
+				}
+			}
+		}
+	}
+
 	resp := &tfprotov5.ReadResourceResponse{
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
 		// persist it in the state.
-		Private: req.Private,
+		Private: ReqPrivate,
 	}
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
@@ -832,7 +864,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 	instanceState.RawState = stateVal
 
-	// TODO: is there a more elegant way to do this? this requires us to look for the identity schema block again
+	var currentIdentityVal cty.Value
 	if req.CurrentIdentity != nil && req.CurrentIdentity.IdentityData != nil {
 
 		// convert req.CurrentIdentity to flat map identity structure
@@ -843,20 +875,20 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 
-		identityVal, err := msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		currentIdentityVal, err = msgpack.Unmarshal(req.CurrentIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
 		// Step 2: Turn cty.Value into flatmap representation
-		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(currentIdentityVal)
 		// Step 3: Well, set it in the instanceState
 		instanceState.Identity = identityAttrs
 	}
 
 	private := make(map[string]interface{})
-	if len(req.Private) > 0 {
-		if err := json.Unmarshal(req.Private, &private); err != nil {
+	if len(ReqPrivate) > 0 {
+		if err := json.Unmarshal(ReqPrivate, &private); err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
@@ -926,6 +958,15 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		// If we're refreshing the resource state (excluding a recently imported resource), validate that the new identity isn't changing
+		if !readFollowingImport && !currentIdentityVal.IsNull() && !currentIdentityVal.RawEquals(newIdentityVal) {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("Unexpected Identity Change: %s", "During the read operation, the Terraform Provider unexpectedly returned a different identity then the previously stored one.\n\n"+
+				"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
+				fmt.Sprintf("Current Identity: %s\n\n", currentIdentityVal.GoString())+
+				fmt.Sprintf("New Identity: %s", newIdentityVal.GoString())))
 			return resp, nil
 		}
 
@@ -1052,6 +1093,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 	// turn the proposed state into a legacy configuration
 	cfg := terraform.NewResourceConfigShimmed(proposedNewStateVal, schemaBlock)
 
+	var priorIdentityVal cty.Value
 	// add identity data to priorState
 	if req.PriorIdentity != nil && req.PriorIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
@@ -1062,13 +1104,13 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 			return resp, nil
 		}
 
-		identityVal, err := msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		priorIdentityVal, err = msgpack.Unmarshal(req.PriorIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
 		// Step 2: Turn cty.Value into flatmap representation
-		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(priorIdentityVal)
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
 	}
@@ -1257,13 +1299,26 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 			return resp, nil
 		}
 
-		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
+		plannedIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(diff.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
 
-		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
+		// If we're updating or deleting and we already have an identity stored, validate that the planned identity isn't changing
+		if !create && !priorIdentityVal.IsNull() && !priorIdentityVal.RawEquals(plannedIdentityVal) {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+				"Unexpected Identity Change: During the planning operation, the Terraform Provider unexpectedly returned a different identity than the previously stored one.\n\n"+
+					"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
+					"Prior Identity: %s\n\nPlanned Identity: %s",
+				priorIdentityVal.GoString(),
+				plannedIdentityVal.GoString(),
+			))
+
+			return resp, nil
+		}
+
+		plannedIdentityMP, err := msgpack.Marshal(plannedIdentityVal, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
@@ -1271,7 +1326,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 
 		resp.PlannedIdentity = &tfprotov5.ResourceIdentityData{
 			IdentityData: &tfprotov5.DynamicValue{
-				MsgPack: newIdentityMP,
+				MsgPack: plannedIdentityMP,
 			},
 		}
 	}
@@ -1299,6 +1354,8 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		return resp, nil
 	}
 
+	create := priorStateVal.IsNull()
+
 	plannedStateVal, err := msgpack.Unmarshal(req.PlannedState.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
@@ -1325,6 +1382,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		}
 	}
 
+	var plannedIdentityVal cty.Value
 	// add identity data to priorState
 	if req.PlannedIdentity != nil && req.PlannedIdentity.IdentityData != nil {
 		// convert req.PriorIdentity to flat map identity structure
@@ -1335,13 +1393,13 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
-		identityVal, err := msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
+		plannedIdentityVal, err = msgpack.Unmarshal(req.PlannedIdentity.IdentityData.MsgPack, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
 		// Step 2: Turn cty.Value into flatmap representation
-		identityAttrs := hcl2shim.FlatmapValueFromHCL2(identityVal)
+		identityAttrs := hcl2shim.FlatmapValueFromHCL2(plannedIdentityVal)
 		// Step 3: Well, set it in the priorState
 		priorState.Identity = identityAttrs
 	}
@@ -1486,6 +1544,18 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		newIdentityVal, err := hcl2shim.HCL2ValueFromFlatmap(newInstanceState.Identity, identityBlock.ImpliedType())
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+			return resp, nil
+		}
+
+		if !create && !plannedIdentityVal.IsNull() && !plannedIdentityVal.RawEquals(newIdentityVal) {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+				"Unexpected Identity Change: During the update operation, the Terraform Provider unexpectedly returned a different identity than the previously stored one.\n\n"+
+					"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
+					"Planned Identity: %s\n\nNew Identity: %s",
+				plannedIdentityVal.GoString(),
+				newIdentityVal.GoString(),
+			))
+
 			return resp, nil
 		}
 
@@ -1635,6 +1705,10 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
+
+		// Set an internal private field that will get sent alongside the imported resource. This will be cleared by
+		// the following ReadResource RPC and is primarily used to control validation of resource identities during refresh.
+		is.Meta[terraform.ImportBeforeReadMetaKey] = true
 
 		meta, err := json.Marshal(is.Meta)
 		if err != nil {
@@ -2262,7 +2336,7 @@ func (s *GRPCProviderServer) upgradeJSONIdentity(ctx context.Context, version in
 
 	for _, upgrader := range res.Identity.IdentityUpgraders {
 		if version != upgrader.Version {
-			continue
+			continue // TODO: can we replace this with an error (as we'll require all versions to be upgraded)
 		}
 
 		m, err = upgrader.Upgrade(ctx, m, s.provider.Meta())
