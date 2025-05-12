@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Added `RequiredForImport` and `OptionalForImport` fields to the `Schema` struct, which
+  are only valid for identity schemas.'
+time: 2025-05-12T17:11:31.101353-04:00
+custom:
+    Issue: "1444"

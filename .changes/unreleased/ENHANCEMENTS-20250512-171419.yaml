@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Updated `ResourceData` to support passing of identity data in CRUD and import functions for managed resources.'
+time: 2025-05-12T17:14:19.893664-04:00
+custom:
+    Issue: "1444"

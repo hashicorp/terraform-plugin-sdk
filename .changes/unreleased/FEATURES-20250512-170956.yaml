@@ -1,0 +1,5 @@
+kind: FEATURES
+body: 'helper/schema: Added new `TestResourceDataWithIdentityRaw` function for creating a `ResourceData` struct with identity data for unit testing.'
+time: 2025-05-12T17:09:56.812031-04:00
+custom:
+    Issue: "1475"
