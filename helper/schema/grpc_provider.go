@@ -790,13 +790,13 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	ctx = logging.InitContext(ctx)
 	readFollowingImport := false
 
-	ReqPrivate := req.Private
+	reqPrivate := req.Private
 
-	if ReqPrivate != nil {
+	if reqPrivate != nil {
 		// unmarshal the private data
-		if len(ReqPrivate) > 0 {
+		if len(reqPrivate) > 0 {
 			newReqPrivate := make(map[string]interface{})
-			if err := json.Unmarshal(ReqPrivate, &newReqPrivate); err != nil {
+			if err := json.Unmarshal(reqPrivate, &newReqPrivate); err != nil {
 				return nil, err
 			}
 			// This internal private field is set on a resource during ImportResourceState to help framework determine if
@@ -807,14 +807,14 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 
 				if len(newReqPrivate) == 0 {
 					// if there are no other private data, set the private data to nil
-					ReqPrivate = nil
+					reqPrivate = nil
 				} else {
 					// set the new private data without the import key
 					bytes, err := json.Marshal(newReqPrivate)
 					if err != nil {
 						return nil, err
 					}
-					ReqPrivate = bytes
+					reqPrivate = bytes
 				}
 			}
 		}
@@ -824,7 +824,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		// helper/schema did previously handle private data during refresh, but
 		// core is now going to expect this to be maintained in order to
 		// persist it in the state.
-		Private: ReqPrivate,
+		Private: reqPrivate,
 	}
 
 	res, ok := s.provider.ResourcesMap[req.TypeName]
@@ -887,8 +887,8 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 	}
 
 	private := make(map[string]interface{})
-	if len(ReqPrivate) > 0 {
-		if err := json.Unmarshal(ReqPrivate, &private); err != nil {
+	if len(reqPrivate) > 0 {
+		if err := json.Unmarshal(reqPrivate, &private); err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}

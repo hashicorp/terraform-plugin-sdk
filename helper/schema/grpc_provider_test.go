@@ -5076,6 +5076,9 @@ func TestReadResource(t *testing.T) {
 								Computed: true,
 							},
 						},
+						ResourceBehavior: ResourceBehavior{
+							MutableIdentity: true,
+						},
 						Identity: &ResourceIdentity{
 							Version: 1,
 							SchemaFunc: func() map[string]*Schema {
@@ -5106,7 +5109,7 @@ func TestReadResource(t *testing.T) {
 							if err != nil {
 								return diag.FromErr(err)
 							}
-							err = identity.Set("region", "test-region") // TODO: once we support disabling validation, this should be set to "new-region" and this test should ignore validation
+							err = identity.Set("region", "new-region")
 							if err != nil {
 								return diag.FromErr(err)
 							}
@@ -5181,7 +5184,7 @@ func TestReadResource(t *testing.T) {
 							}),
 							cty.ObjectVal(map[string]cty.Value{
 								"instance_id": cty.StringVal("test-id"),
-								"region":      cty.StringVal("test-region"),
+								"region":      cty.StringVal("new-region"),
 							}),
 						),
 					},
@@ -5895,8 +5898,107 @@ New Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("chang
 				},
 			},
 		},
-		// "destroy-resource-identity-may-not-change": not required, as same request and response as update-resource-identity-may-not-change
-		// "upgraded-identity-version-identity-may-not-change": not required, as same request and response as update-resource-identity-may-not-change
+		"does-not-remove-user-data-from-private": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test": {
+								Type: TypeString,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"identity": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test", "hello")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							identity, err := d.Identity()
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("identity", "changed")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity": cty.StringVal("initial"),
+							}),
+						),
+					},
+				},
+				Private: []byte(`{".import_before_read":true,"user_defined_key":"user_defined_value"}`),
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("hello"),
+						}),
+					),
+				},
+				Private: []byte(`{"user_defined_key":"user_defined_value"}`),
+				NewIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity": cty.StringVal("changed"),
+							}),
+						),
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -7583,9 +7685,6 @@ Planned Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("c
 				},
 			},
 		},
-		// "imported-resource-by-id-identity-may-not-change" same as update-resource-identity-may-not-change
-		// "imported-resource-by-identity-identity-may-not-change" same as update-resource-identity-may-not-change
-		// "upgraded-identity-version-identity-may-not-change" same as update-resource-identity-may-not-change
 	}
 
 	for name, testCase := range testCases {
@@ -7954,7 +8053,7 @@ func TestApplyResourceChange(t *testing.T) {
 								"ident": cty.String,
 							}),
 							cty.ObjectVal(map[string]cty.Value{
-								"ident": cty.UnknownVal(cty.String), // TODO: allow change during create in handler!
+								"ident": cty.NullVal(cty.String),
 							}),
 						),
 					},
@@ -8713,9 +8812,6 @@ New Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("chang
 				},
 			},
 		},
-		// "imported-resource-by-id-identity-may-not-change": this is effectively the same as update-resource-identity-may-not-change
-		// "imported-resource-by-identity-identity-may-not-change": this is effectively the same as update-resource-identity-may-not-change
-		// "upgraded-identity-version-identity-may-not-change": this is effectively the same as update-resource-identity-may-not-change
 	}
 
 	for name, testCase := range testCases {
