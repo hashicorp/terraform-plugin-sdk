@@ -159,7 +159,7 @@ func (s *GRPCProviderServer) UpgradeResourceIdentity(ctx context.Context, req *t
 
 	// now we need to turn the state into the default json representation, so
 	// that it can be re-decoded using the actual schema.
-	val, err := JSONMapToStateValue(jsonMap, schemaBlock) // TODO: Find out if we need resource identity version here
+	val, err := JSONMapToStateValue(jsonMap, schemaBlock)
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 		return resp, nil
@@ -962,7 +962,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 		}
 
 		// If we're refreshing the resource state (excluding a recently imported resource), validate that the new identity isn't changing
-		if !readFollowingImport && !currentIdentityVal.IsNull() && !currentIdentityVal.RawEquals(newIdentityVal) {
+		if !res.ResourceBehavior.MutableIdentity && !readFollowingImport && !currentIdentityVal.IsNull() && !currentIdentityVal.RawEquals(newIdentityVal) {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("Unexpected Identity Change: %s", "During the read operation, the Terraform Provider unexpectedly returned a different identity then the previously stored one.\n\n"+
 				"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
 				fmt.Sprintf("Current Identity: %s\n\n", currentIdentityVal.GoString())+
@@ -1130,7 +1130,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		diff.Attributes["id"] = &terraform.ResourceAttrDiff{
 			NewComputed: true,
 		}
-		// TODO: we could error here if a new Diff got no Identity set
 	}
 
 	if diff == nil || (len(diff.Attributes) == 0 && len(diff.Identity) == 0) {
@@ -1291,7 +1290,6 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		}
 	}
 
-	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
 		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
 		if err != nil {
@@ -1306,7 +1304,7 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		}
 
 		// If we're updating or deleting and we already have an identity stored, validate that the planned identity isn't changing
-		if !create && !priorIdentityVal.IsNull() && !priorIdentityVal.RawEquals(plannedIdentityVal) {
+		if !res.ResourceBehavior.MutableIdentity && !create && !priorIdentityVal.IsNull() && !priorIdentityVal.RawEquals(plannedIdentityVal) {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
 				"Unexpected Identity Change: During the planning operation, the Terraform Provider unexpectedly returned a different identity than the previously stored one.\n\n"+
 					"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
@@ -1533,7 +1531,6 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 	}
 	resp.Private = meta
 
-	// TODO: if schema defines identity, we should error if there's none written to newInstanceState
 	if res.Identity != nil {
 		identityBlock, err := s.getResourceIdentitySchemaBlock(req.TypeName)
 		if err != nil {
@@ -1547,7 +1544,7 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
-		if !create && !plannedIdentityVal.IsNull() && !plannedIdentityVal.RawEquals(newIdentityVal) {
+		if !res.ResourceBehavior.MutableIdentity && !create && !plannedIdentityVal.IsNull() && !plannedIdentityVal.RawEquals(newIdentityVal) {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
 				"Unexpected Identity Change: During the update operation, the Terraform Provider unexpectedly returned a different identity than the previously stored one.\n\n"+
 					"This is always a problem with the provider and should be reported to the provider developer.\n\n"+
@@ -2336,7 +2333,7 @@ func (s *GRPCProviderServer) upgradeJSONIdentity(ctx context.Context, version in
 
 	for _, upgrader := range res.Identity.IdentityUpgraders {
 		if version != upgrader.Version {
-			continue // TODO: can we replace this with an error (as we'll require all versions to be upgraded)
+			continue
 		}
 
 		m, err = upgrader.Upgrade(ctx, m, s.provider.Meta())
