@@ -1,5 +1,0 @@
-kind: FEATURES
-body: 'helper/schema: Added new `Identity` field to `Resource` that supports defining an identity schema for managed resources only.'
-time: 2025-05-12T17:16:20.82808-04:00
-custom:
-    Issue: "1444"
