@@ -5790,7 +5790,7 @@ func TestReadResource(t *testing.T) {
 				Diagnostics: []*tfprotov5.Diagnostic{
 					{
 						Severity: tfprotov5.DiagnosticSeverityError,
-						Summary: (`Unexpected Identity Change: During the read operation, the Terraform Provider unexpectedly returned a different identity then the previously stored one.
+						Summary: (`Unexpected Identity Change: During the read operation, the Terraform Provider unexpectedly returned a different identity than the previously stored one.
 
 This is always a problem with the provider and should be reported to the provider developer.
 
