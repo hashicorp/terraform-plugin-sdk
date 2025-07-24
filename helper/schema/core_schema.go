@@ -4,11 +4,14 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 )
 
 // StringKind represents the format a string is in.
@@ -282,6 +285,13 @@ func (s *Schema) coreConfigSchemaType() cty.Type {
 	default:
 		// should never happen for a valid schema
 		panic(fmt.Errorf("invalid Schema.Type %s", s.Type))
+	}
+}
+
+func (r *Resource) ProtoSchema(ctx context.Context) *tfprotov5.Schema {
+	return &tfprotov5.Schema{
+		Version: int64(r.SchemaVersion),
+		Block:   convert.ConfigSchemaToProto(ctx, r.CoreConfigSchema()),
 	}
 }
 
