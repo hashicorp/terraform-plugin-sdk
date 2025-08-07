@@ -680,10 +680,9 @@ func TestProtoIdentitySchema(t *testing.T) {
 			expected: &tfprotov5.ResourceIdentitySchema{
 				IdentityAttributes: []*tfprotov5.ResourceIdentitySchemaAttribute{
 					{
-						Name:              "int",
-						Type:              tftypes.Number,
-						Description:       "foo bar baz",
-						RequiredForImport: true,
+						Name:              "bool",
+						Type:              tftypes.Bool,
+						OptionalForImport: true,
 					},
 					{
 						Name:              "float",
@@ -691,9 +690,10 @@ func TestProtoIdentitySchema(t *testing.T) {
 						OptionalForImport: true,
 					},
 					{
-						Name:              "bool",
-						Type:              tftypes.Bool,
-						OptionalForImport: true,
+						Name:              "int",
+						Type:              tftypes.Number,
+						Description:       "foo bar baz",
+						RequiredForImport: true,
 					},
 					{
 						Name:              "string",
