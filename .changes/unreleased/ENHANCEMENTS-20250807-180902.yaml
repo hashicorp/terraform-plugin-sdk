@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Added new helper methods for converting Resource and Identity schemas to protocol representations.'
+time: 2025-08-07T18:09:02.117077-04:00
+custom:
+    Issue: "1504"
