@@ -15,7 +15,11 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/go-cty/cty/gocty"
 
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/convert"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -57,6 +61,91 @@ type getResult struct {
 	Computed       bool
 	Exists         bool
 	Schema         *Schema
+}
+
+func (d *ResourceData) TfTypeIdentity() tftypes.Value {
+	s := schemaMap(d.identitySchema).CoreConfigSchema()
+
+	state := d.State()
+
+	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Identity, s.ImpliedType())
+	if err != nil {
+		// TODO should we return an error of panic if something goes wrong here
+	}
+
+	return convert.ObjectTfType(stateVal)
+}
+
+func (d *ResourceData) TfTypeResource() tftypes.Value {
+	s := schemaMap(d.schema).CoreConfigSchema()
+
+	// The CoreConfigSchema method on schemaMaps doesn't automatically handle adding the id
+	// attribute or timeouts like the method on Resource does
+	if _, ok := s.Attributes["id"]; !ok {
+		s.Attributes["id"] = &configschema.Attribute{
+			Type:     cty.String,
+			Optional: true,
+			Computed: true,
+		}
+	}
+
+	_, timeoutsAttr := s.Attributes[TimeoutsConfigKey]
+	_, timeoutsBlock := s.BlockTypes[TimeoutsConfigKey]
+
+	if d.timeouts != nil && !timeoutsAttr && !timeoutsBlock {
+		timeouts := configschema.Block{
+			Attributes: map[string]*configschema.Attribute{},
+		}
+
+		if d.timeouts.Create != nil {
+			timeouts.Attributes[TimeoutCreate] = &configschema.Attribute{
+				Type:     cty.String,
+				Optional: true,
+			}
+		}
+
+		if d.timeouts.Read != nil {
+			timeouts.Attributes[TimeoutRead] = &configschema.Attribute{
+				Type:     cty.String,
+				Optional: true,
+			}
+		}
+
+		if d.timeouts.Update != nil {
+			timeouts.Attributes[TimeoutUpdate] = &configschema.Attribute{
+				Type:     cty.String,
+				Optional: true,
+			}
+		}
+
+		if d.timeouts.Delete != nil {
+			timeouts.Attributes[TimeoutDelete] = &configschema.Attribute{
+				Type:     cty.String,
+				Optional: true,
+			}
+		}
+
+		if d.timeouts.Default != nil {
+			timeouts.Attributes[TimeoutDefault] = &configschema.Attribute{
+				Type:     cty.String,
+				Optional: true,
+			}
+		}
+
+		s.BlockTypes[TimeoutsConfigKey] = &configschema.NestedBlock{
+			Nesting: configschema.NestingSingle,
+			Block:   timeouts,
+		}
+	}
+
+	state := d.State()
+
+	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Attributes, s.ImpliedType())
+	if err != nil {
+		// TODO should we return an error of panic if something goes wrong here
+	}
+
+	return convert.ObjectTfType(stateVal)
 }
 
 // Get returns the data for the given key, or nil if the key doesn't exist
