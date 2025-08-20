@@ -9,10 +9,19 @@ func PrimitiveTfType(in cty.Value) tftypes.Value {
 	var val tftypes.Value
 	switch in.Type() {
 	case cty.String:
+		if in.IsNull() {
+			return tftypes.NewValue(tftypes.String, nil)
+		}
 		val = tftypes.NewValue(tftypes.String, in.AsString())
 	case cty.Bool:
+		if in.IsNull() {
+			return tftypes.NewValue(tftypes.Bool, nil)
+		}
 		val = tftypes.NewValue(tftypes.Bool, in.True())
 	case cty.Number:
+		if in.IsNull() {
+			return tftypes.NewValue(tftypes.Number, nil)
+		}
 		val = tftypes.NewValue(tftypes.Number, in.AsBigFloat())
 	}
 
