@@ -34,7 +34,7 @@ func TestPrimitiveTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := PrimitiveTfType(test.Value)
+			got := PrimitiveTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
@@ -142,13 +142,35 @@ func TestListTfType(t *testing.T) {
 				}),
 			}),
 		},
+		{
+			Value: cty.ListVal([]cty.Value{
+				cty.ObjectVal(map[string]cty.Value{
+					"enforcement": cty.NullVal(cty.String),
+				}),
+			}),
+			Want: tftypes.NewValue(tftypes.List{
+				ElementType: tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"enforcement": tftypes.String,
+					},
+				},
+			}, []tftypes.Value{
+				tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"enforcement": tftypes.String,
+					},
+				}, map[string]tftypes.Value{
+					"enforcement": tftypes.NewValue(tftypes.String, nil),
+				}),
+			}),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ListTfType(test.Value)
+			got := ListTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)

@@ -73,7 +73,7 @@ func (d *ResourceData) TfTypeIdentity() tftypes.Value {
 		// TODO should we return an error of panic if something goes wrong here
 	}
 
-	return convert.ObjectTfType(stateVal)
+	return convert.ToTfValue(stateVal)
 }
 
 func (d *ResourceData) TfTypeResource() tftypes.Value {
@@ -145,7 +145,7 @@ func (d *ResourceData) TfTypeResource() tftypes.Value {
 		// TODO should we return an error of panic if something goes wrong here
 	}
 
-	return convert.ObjectTfType(stateVal)
+	return convert.ToTfValue(stateVal)
 }
 
 // Get returns the data for the given key, or nil if the key doesn't exist
