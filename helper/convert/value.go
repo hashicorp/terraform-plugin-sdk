@@ -18,7 +18,6 @@ func PrimitiveTfValue(in cty.Value) tftypes.Value {
 		val = tftypes.NewValue(tftypes.Bool, in.True())
 	case cty.Number:
 		val = tftypes.NewValue(tftypes.Number, in.AsBigFloat())
-		// TODO other number types?
 	}
 
 	return val
@@ -88,6 +87,22 @@ func ObjectTfValue(in cty.Value) tftypes.Value {
 	return tftypes.NewValue(objType, vals)
 }
 
+func TupleTfValue(in cty.Value) tftypes.Value {
+	tupleType := ToTfType(in.Type())
+
+	if in.IsNull() || in.LengthInt() == 0 {
+		return emptyTfValue(tupleType)
+	}
+
+	vals := make([]tftypes.Value, 0)
+
+	for _, v := range in.AsValueSlice() {
+		vals = append(vals, ToTfValue(v))
+	}
+
+	return tftypes.NewValue(tupleType, vals)
+}
+
 func ToTfValue(in cty.Value) tftypes.Value {
 	ty := in.Type()
 	switch {
@@ -102,7 +117,7 @@ func ToTfValue(in cty.Value) tftypes.Value {
 	case ty.IsSetType():
 		return SetTfValue(in)
 	case ty.IsTupleType():
-		// TODO
+		return TupleTfValue(in)
 	}
 
 	return emptyTfValue(ToTfType(in.Type()))

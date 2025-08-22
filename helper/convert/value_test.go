@@ -27,7 +27,10 @@ func TestPrimitiveTfType(t *testing.T) {
 			Value: cty.NumberIntVal(42),
 			Want:  tftypes.NewValue(tftypes.Number, 42),
 		},
-		// TODO other number types
+		{
+			Value: cty.NumberFloatVal(3.14),
+			Want:  tftypes.NewValue(tftypes.Number, 3.14),
+		},
 	}
 
 	for _, test := range tests {
@@ -82,7 +85,6 @@ func TestListTfType(t *testing.T) {
 				tftypes.NewValue(tftypes.Number, 200),
 			}),
 		},
-		// TODO other number types
 		{
 			Value: cty.ListVal([]cty.Value{
 				cty.ObjectVal(map[string]cty.Value{
@@ -179,4 +181,237 @@ func TestListTfType(t *testing.T) {
 	}
 }
 
-// TODO more tests
+func TestSetTfType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		Value cty.Value
+		Want  tftypes.Value
+	}{
+		{
+			Value: cty.SetVal([]cty.Value{
+				cty.StringVal("apple"),
+				cty.StringVal("cherry"),
+				cty.StringVal("kangaroo"),
+			}),
+			Want: tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{
+				tftypes.NewValue(tftypes.String, "apple"),
+				tftypes.NewValue(tftypes.String, "cherry"),
+				tftypes.NewValue(tftypes.String, "kangaroo"),
+			}),
+		},
+		{
+			Value: cty.SetVal([]cty.Value{
+				cty.BoolVal(true),
+				cty.BoolVal(false),
+			}),
+			Want: tftypes.NewValue(tftypes.Set{ElementType: tftypes.Bool}, []tftypes.Value{
+				tftypes.NewValue(tftypes.Bool, true),
+				tftypes.NewValue(tftypes.Bool, false),
+			}),
+		},
+		{
+			Value: cty.SetVal([]cty.Value{
+				cty.NumberIntVal(100),
+				cty.NumberIntVal(200),
+			}),
+			Want: tftypes.NewValue(tftypes.Set{ElementType: tftypes.Number}, []tftypes.Value{
+				tftypes.NewValue(tftypes.Number, 100),
+				tftypes.NewValue(tftypes.Number, 200),
+			}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Value.GoString(), func(t *testing.T) {
+			t.Parallel()
+
+			got := SetTfValue(test.Value)
+
+			if diff := cmp.Diff(test.Want, got); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
+			}
+		})
+	}
+}
+
+func TestTupleTfType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		Value cty.Value
+		Want  tftypes.Value
+	}{
+		{
+			Value: cty.TupleVal([]cty.Value{cty.StringVal("one")}),
+			Want: tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String}}, []tftypes.Value{
+				tftypes.NewValue(tftypes.String, "one"),
+			}),
+		},
+		{
+			Value: cty.TupleVal([]cty.Value{
+				cty.StringVal("apple"),
+				cty.NumberIntVal(5),
+				cty.StringVal("kangaroo"),
+			}),
+			Want: tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.Number, tftypes.String}}, []tftypes.Value{
+				tftypes.NewValue(tftypes.String, "apple"),
+				tftypes.NewValue(tftypes.Number, 5),
+				tftypes.NewValue(tftypes.String, "kangaroo"),
+			}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Value.GoString(), func(t *testing.T) {
+			t.Parallel()
+
+			got := TupleTfValue(test.Value)
+
+			if diff := cmp.Diff(test.Want, got); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
+			}
+		})
+	}
+}
+
+func TestObjectTfType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		Value cty.Value
+		Want  tftypes.Value
+	}{
+		{
+			Value: cty.ObjectVal(map[string]cty.Value{
+				"name":   cty.StringVal("Alice"),
+				"breed":  cty.StringVal("Beagle"),
+				"weight": cty.NumberIntVal(20),
+			}),
+			Want: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"name":   tftypes.String,
+				"breed":  tftypes.String,
+				"weight": tftypes.Number,
+			}}, map[string]tftypes.Value{
+				"name":   tftypes.NewValue(tftypes.String, "Alice"),
+				"breed":  tftypes.NewValue(tftypes.String, "Beagle"),
+				"weight": tftypes.NewValue(tftypes.Number, 20),
+			}),
+		},
+		{
+			Value: cty.ObjectVal(map[string]cty.Value{
+				"chonk": cty.ObjectVal(map[string]cty.Value{
+					"size":   cty.StringVal("large"),
+					"weight": cty.NumberIntVal(50),
+				}),
+				"blep": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"color": cty.StringVal("brown"),
+						"pattern": cty.ObjectVal(map[string]cty.Value{
+							"style": cty.ListVal([]cty.Value{cty.StringVal("striped"), cty.StringVal("spotted")}),
+						}),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"color": cty.StringVal("black"),
+						"pattern": cty.ObjectVal(map[string]cty.Value{
+							"style": cty.ListVal([]cty.Value{cty.StringVal("dotted"), cty.StringVal("plain")}),
+						}),
+					}),
+				}),
+			}),
+			Want: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"chonk": tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"size":   tftypes.String,
+						"weight": tftypes.Number,
+					},
+				},
+				"blep": tftypes.List{ElementType: tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"color": tftypes.String,
+						"pattern": tftypes.Object{
+							AttributeTypes: map[string]tftypes.Type{
+								"style": tftypes.List{ElementType: tftypes.String},
+							},
+						},
+					},
+				}},
+			}}, map[string]tftypes.Value{
+				"chonk": tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"size":   tftypes.String,
+						"weight": tftypes.Number,
+					}}, map[string]tftypes.Value{
+					"size":   tftypes.NewValue(tftypes.String, "large"),
+					"weight": tftypes.NewValue(tftypes.Number, 50),
+				}),
+				"blep": tftypes.NewValue(tftypes.List{ElementType: tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"color": tftypes.String,
+						"pattern": tftypes.Object{
+							AttributeTypes: map[string]tftypes.Type{
+								"style": tftypes.List{ElementType: tftypes.String},
+							},
+						},
+					}}}, []tftypes.Value{
+					tftypes.NewValue(tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"color": tftypes.String,
+							"pattern": tftypes.Object{
+								AttributeTypes: map[string]tftypes.Type{
+									"style": tftypes.List{ElementType: tftypes.String},
+								},
+							},
+						},
+					}, map[string]tftypes.Value{
+						"color": tftypes.NewValue(tftypes.String, "brown"),
+						"pattern": tftypes.NewValue(tftypes.Object{
+							AttributeTypes: map[string]tftypes.Type{
+								"style": tftypes.List{ElementType: tftypes.String},
+							},
+						}, map[string]tftypes.Value{
+							"style": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+								tftypes.NewValue(tftypes.String, "striped"),
+								tftypes.NewValue(tftypes.String, "spotted"),
+							}),
+						}),
+					}),
+					tftypes.NewValue(tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"color": tftypes.String,
+							"pattern": tftypes.Object{
+								AttributeTypes: map[string]tftypes.Type{
+									"style": tftypes.List{ElementType: tftypes.String},
+								},
+							},
+						},
+					}, map[string]tftypes.Value{
+						"color": tftypes.NewValue(tftypes.String, "black"),
+						"pattern": tftypes.NewValue(tftypes.Object{
+							AttributeTypes: map[string]tftypes.Type{
+								"style": tftypes.List{ElementType: tftypes.String},
+							},
+						}, map[string]tftypes.Value{
+							"style": tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{
+								tftypes.NewValue(tftypes.String, "dotted"),
+								tftypes.NewValue(tftypes.String, "plain"),
+							}),
+						}),
+					}),
+				}),
+			}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Value.GoString(), func(t *testing.T) {
+			t.Parallel()
+
+			got := ObjectTfValue(test.Value)
+
+			if diff := cmp.Diff(test.Want, got); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
+			}
+		})
+	}
+}

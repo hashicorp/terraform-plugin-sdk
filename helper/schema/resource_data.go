@@ -63,6 +63,7 @@ type getResult struct {
 	Schema         *Schema
 }
 
+// TfTypeIdentity returns the identity data as a tftypes.Value.
 func (d *ResourceData) TfTypeIdentity() tftypes.Value {
 	s := schemaMap(d.identitySchema).CoreConfigSchema()
 
@@ -70,12 +71,13 @@ func (d *ResourceData) TfTypeIdentity() tftypes.Value {
 
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Identity, s.ImpliedType())
 	if err != nil {
-		// TODO should we return an error of panic if something goes wrong here
+		panic(fmt.Errorf("converting identity to tf value: %+v", err))
 	}
 
 	return convert.ToTfValue(stateVal)
 }
 
+// TfTypeResource returns the resource data as a tftypes.Value.
 func (d *ResourceData) TfTypeResource() tftypes.Value {
 	s := schemaMap(d.schema).CoreConfigSchema()
 
@@ -142,7 +144,7 @@ func (d *ResourceData) TfTypeResource() tftypes.Value {
 
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Attributes, s.ImpliedType())
 	if err != nil {
-		// TODO should we return an error of panic if something goes wrong here
+		panic(fmt.Errorf("converting resource state to tf value: %+v", err))
 	}
 
 	return convert.ToTfValue(stateVal)
