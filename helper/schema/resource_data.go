@@ -63,22 +63,26 @@ type getResult struct {
 	Schema         *Schema
 }
 
-// TfTypeIdentity returns the identity data as a tftypes.Value.
-func (d *ResourceData) TfTypeIdentity() tftypes.Value {
+// TfTypeIdentityState returns the identity data as a tftypes.Value.
+func (d *ResourceData) TfTypeIdentityState() tftypes.Value {
 	s := schemaMap(d.identitySchema).CoreConfigSchema()
 
 	state := d.State()
 
+	if state == nil {
+		log.Panicf("state is nil")
+	}
+
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Identity, s.ImpliedType())
 	if err != nil {
-		panic(fmt.Errorf("converting identity to tf value: %+v", err))
+		log.Panicf("converting identity to tf value: %+v", err)
 	}
 
 	return convert.ToTfValue(stateVal)
 }
 
-// TfTypeResource returns the resource data as a tftypes.Value.
-func (d *ResourceData) TfTypeResource() tftypes.Value {
+// TfTypeResourceState returns the resource data as a tftypes.Value.
+func (d *ResourceData) TfTypeResourceState() tftypes.Value {
 	s := schemaMap(d.schema).CoreConfigSchema()
 
 	// The CoreConfigSchema method on schemaMaps doesn't automatically handle adding the id
@@ -142,9 +146,13 @@ func (d *ResourceData) TfTypeResource() tftypes.Value {
 
 	state := d.State()
 
+	if state == nil {
+		log.Panicf("state is nil")
+	}
+
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Attributes, s.ImpliedType())
 	if err != nil {
-		panic(fmt.Errorf("converting resource state to tf value: %+v", err))
+		log.Panicf("converting resource state to tf value: %+v", err)
 	}
 
 	return convert.ToTfValue(stateVal)
