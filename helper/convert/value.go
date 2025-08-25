@@ -6,11 +6,12 @@ package convert
 import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"log"
 )
 
 func PrimitiveTfValue(in cty.Value) tftypes.Value {
-	if in.IsNull() {
-		return emptyTfValue(ToTfType(in.Type()))
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(ToTfType(in.Type()))
 	}
 
 	var val tftypes.Value
@@ -29,8 +30,8 @@ func PrimitiveTfValue(in cty.Value) tftypes.Value {
 func ListTfValue(in cty.Value) tftypes.Value {
 	listType := ToTfType(in.Type())
 
-	if in.IsNull() || in.LengthInt() == 0 {
-		return emptyTfValue(listType)
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(listType)
 	}
 
 	vals := make([]tftypes.Value, 0)
@@ -45,8 +46,8 @@ func ListTfValue(in cty.Value) tftypes.Value {
 func MapTfValue(in cty.Value) tftypes.Value {
 	mapType := ToTfType(in.Type())
 
-	if in.IsNull() || in.LengthInt() == 0 {
-		return emptyTfValue(mapType)
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(mapType)
 	}
 
 	vals := make(map[string]tftypes.Value)
@@ -61,8 +62,8 @@ func MapTfValue(in cty.Value) tftypes.Value {
 func SetTfValue(in cty.Value) tftypes.Value {
 	setType := ToTfType(in.Type())
 
-	if in.IsNull() || in.LengthInt() == 0 {
-		return emptyTfValue(setType)
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(setType)
 	}
 
 	vals := make([]tftypes.Value, 0)
@@ -77,8 +78,8 @@ func SetTfValue(in cty.Value) tftypes.Value {
 func ObjectTfValue(in cty.Value) tftypes.Value {
 	objType := ToTfType(in.Type())
 
-	if in.IsNull() || in.LengthInt() == 0 {
-		return emptyTfValue(objType)
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(objType)
 	}
 
 	vals := make(map[string]tftypes.Value)
@@ -93,8 +94,8 @@ func ObjectTfValue(in cty.Value) tftypes.Value {
 func TupleTfValue(in cty.Value) tftypes.Value {
 	tupleType := ToTfType(in.Type())
 
-	if in.IsNull() || in.LengthInt() == 0 {
-		return emptyTfValue(tupleType)
+	if in.IsNull() || !in.IsKnown() {
+		return nullTfValue(tupleType)
 	}
 
 	vals := make([]tftypes.Value, 0)
@@ -121,11 +122,13 @@ func ToTfValue(in cty.Value) tftypes.Value {
 		return SetTfValue(in)
 	case ty.IsTupleType():
 		return TupleTfValue(in)
+	default:
+		log.Panicf("unknown type: %s", ty)
 	}
 
-	return emptyTfValue(ToTfType(in.Type()))
+	return nullTfValue(ToTfType(in.Type()))
 }
 
-func emptyTfValue(ty tftypes.Type) tftypes.Value {
+func nullTfValue(ty tftypes.Type) tftypes.Value {
 	return tftypes.NewValue(ty, nil)
 }

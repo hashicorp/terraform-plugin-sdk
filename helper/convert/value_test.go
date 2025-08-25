@@ -40,7 +40,7 @@ func TestPrimitiveTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := PrimitiveTfValue(test.Value)
+			got := ToTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
@@ -147,35 +147,13 @@ func TestListTfType(t *testing.T) {
 				}),
 			}),
 		},
-		{
-			Value: cty.ListVal([]cty.Value{
-				cty.ObjectVal(map[string]cty.Value{
-					"enforcement": cty.NullVal(cty.String),
-				}),
-			}),
-			Want: tftypes.NewValue(tftypes.List{
-				ElementType: tftypes.Object{
-					AttributeTypes: map[string]tftypes.Type{
-						"enforcement": tftypes.String,
-					},
-				},
-			}, []tftypes.Value{
-				tftypes.NewValue(tftypes.Object{
-					AttributeTypes: map[string]tftypes.Type{
-						"enforcement": tftypes.String,
-					},
-				}, map[string]tftypes.Value{
-					"enforcement": tftypes.NewValue(tftypes.String, nil),
-				}),
-			}),
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ListTfValue(test.Value)
+			got := ToTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
@@ -223,13 +201,150 @@ func TestSetTfType(t *testing.T) {
 				tftypes.NewValue(tftypes.Number, 200),
 			}),
 		},
+		{
+			Value: cty.SetVal([]cty.Value{
+				cty.ObjectVal(map[string]cty.Value{
+					"name":   cty.StringVal("Alice"),
+					"breed":  cty.StringVal("Beagle"),
+					"weight": cty.NumberIntVal(20),
+					"toys":   cty.SetVal([]cty.Value{cty.StringVal("ball"), cty.StringVal("rope")}),
+				}),
+				cty.ObjectVal(map[string]cty.Value{
+					"name":   cty.StringVal("Bobby"),
+					"breed":  cty.StringVal("Golden"),
+					"weight": cty.NumberIntVal(30),
+					"toys":   cty.SetVal([]cty.Value{cty.StringVal("dummy"), cty.StringVal("frisbee")}),
+				}),
+			}),
+			Want: tftypes.NewValue(tftypes.Set{
+				ElementType: tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"name":   tftypes.String,
+						"breed":  tftypes.String,
+						"weight": tftypes.Number,
+						"toys":   tftypes.Set{ElementType: tftypes.String},
+					},
+				},
+			}, []tftypes.Value{
+				tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"name":   tftypes.String,
+						"breed":  tftypes.String,
+						"weight": tftypes.Number,
+						"toys":   tftypes.Set{ElementType: tftypes.String},
+					},
+				}, map[string]tftypes.Value{
+					"name":   tftypes.NewValue(tftypes.String, "Alice"),
+					"breed":  tftypes.NewValue(tftypes.String, "Beagle"),
+					"weight": tftypes.NewValue(tftypes.Number, 20),
+					"toys": tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{
+						tftypes.NewValue(tftypes.String, "ball"),
+						tftypes.NewValue(tftypes.String, "rope"),
+					}),
+				}),
+				tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"name":   tftypes.String,
+						"breed":  tftypes.String,
+						"weight": tftypes.Number,
+						"toys":   tftypes.Set{ElementType: tftypes.String},
+					},
+				}, map[string]tftypes.Value{
+					"name":   tftypes.NewValue(tftypes.String, "Bobby"),
+					"breed":  tftypes.NewValue(tftypes.String, "Golden"),
+					"weight": tftypes.NewValue(tftypes.Number, 30),
+					"toys": tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, []tftypes.Value{
+						tftypes.NewValue(tftypes.String, "dummy"),
+						tftypes.NewValue(tftypes.String, "frisbee"),
+					}),
+				}),
+			}),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := SetTfValue(test.Value)
+			got := ToTfValue(test.Value)
+
+			if diff := cmp.Diff(test.Want, got); diff != "" {
+				t.Errorf("unexpected differences: %s", diff)
+			}
+		})
+	}
+}
+
+func TestMapTfType(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		Value cty.Value
+		Want  tftypes.Value
+	}{
+		{
+			Value: cty.MapVal(map[string]cty.Value{
+				"foo": cty.StringVal("bar"),
+				"baz": cty.StringVal("qux"),
+			}),
+			Want: tftypes.NewValue(tftypes.Map{
+				ElementType: tftypes.String,
+			}, map[string]tftypes.Value{
+				"foo": tftypes.NewValue(tftypes.String, "bar"),
+				"baz": tftypes.NewValue(tftypes.String, "qux"),
+			}),
+		},
+		{
+			Value: cty.MapVal(map[string]cty.Value{
+				"foo": cty.MapVal(map[string]cty.Value{
+					"foo": cty.StringVal("bar"),
+					"baz": cty.StringVal("qux"),
+				}),
+			}),
+			Want: tftypes.NewValue(tftypes.Map{
+				ElementType: tftypes.Map{
+					ElementType: tftypes.String,
+				}}, map[string]tftypes.Value{
+				"foo": tftypes.NewValue(tftypes.Map{
+					ElementType: tftypes.String,
+				}, map[string]tftypes.Value{
+					"foo": tftypes.NewValue(tftypes.String, "bar"),
+					"baz": tftypes.NewValue(tftypes.String, "qux"),
+				}),
+			}),
+		},
+		{
+			Value: cty.MapVal(map[string]cty.Value{
+				"foo": cty.ObjectVal(map[string]cty.Value{
+					"fruits": cty.MapVal(map[string]cty.Value{
+						"ananas":   cty.StringVal("pineapple"),
+						"erdbeere": cty.StringVal("strawberry"),
+					}),
+				}),
+			}),
+			Want: tftypes.NewValue(tftypes.Map{
+				ElementType: tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"fruits": tftypes.Map{ElementType: tftypes.String},
+					}}}, map[string]tftypes.Value{
+				"foo": tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"fruits": tftypes.Map{ElementType: tftypes.String},
+					}}, map[string]tftypes.Value{
+					"fruits": tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{
+						"ananas":   tftypes.NewValue(tftypes.String, "pineapple"),
+						"erdbeere": tftypes.NewValue(tftypes.String, "strawberry"),
+					}),
+				}),
+			}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Value.GoString(), func(t *testing.T) {
+			t.Parallel()
+
+			got := ToTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
@@ -255,12 +370,12 @@ func TestTupleTfType(t *testing.T) {
 			Value: cty.TupleVal([]cty.Value{
 				cty.StringVal("apple"),
 				cty.NumberIntVal(5),
-				cty.StringVal("kangaroo"),
+				cty.TupleVal([]cty.Value{cty.StringVal("banana"), cty.StringVal("pineapple")}),
 			}),
-			Want: tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.Number, tftypes.String}}, []tftypes.Value{
+			Want: tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.Number, tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.String}}}}, []tftypes.Value{
 				tftypes.NewValue(tftypes.String, "apple"),
 				tftypes.NewValue(tftypes.Number, 5),
-				tftypes.NewValue(tftypes.String, "kangaroo"),
+				tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.String}}, []tftypes.Value{tftypes.NewValue(tftypes.String, "banana"), tftypes.NewValue(tftypes.String, "pineapple")}),
 			}),
 		},
 	}
@@ -269,7 +384,7 @@ func TestTupleTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := TupleTfValue(test.Value)
+			got := ToTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
@@ -410,7 +525,7 @@ func TestObjectTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ObjectTfValue(test.Value)
+			got := ToTfValue(test.Value)
 
 			if diff := cmp.Diff(test.Want, got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
