@@ -40,9 +40,12 @@ func TestPrimitiveTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
@@ -153,9 +156,12 @@ func TestListTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
@@ -266,9 +272,12 @@ func TestSetTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
@@ -344,9 +353,12 @@ func TestMapTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
@@ -384,9 +396,12 @@ func TestTupleTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})
@@ -525,9 +540,12 @@ func TestObjectTfType(t *testing.T) {
 		t.Run(test.Value.GoString(), func(t *testing.T) {
 			t.Parallel()
 
-			got := ToTfValue(test.Value)
+			got, err := ToTfValue(test.Value)
+			if err != nil {
+				t.Error(err)
+			}
 
-			if diff := cmp.Diff(test.Want, got); diff != "" {
+			if diff := cmp.Diff(test.Want, *got); diff != "" {
 				t.Errorf("unexpected differences: %s", diff)
 			}
 		})

@@ -5,7 +5,6 @@ package schema
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"math"
 	"reflect"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -4344,7 +4344,10 @@ func TestResourceData_TfTypeIdentityState(t *testing.T) {
 		"foo": tftypes.NewValue(tftypes.String, "bar"),
 	})
 
-	tfTypeIdentity := d.TfTypeIdentityState()
+	tfTypeIdentity, err := d.TfTypeIdentityState()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
 
 	if !tfTypeIdentity.Equal(expectedIdentity) {
 		t.Fatalf("expected tftype value of identity to be %+v, got %+v", expectedIdentity, tfTypeIdentity)
@@ -4426,7 +4429,10 @@ func TestResourceData_TfTypeResourceState(t *testing.T) {
 			t.Fatalf("err: %s", err)
 		}
 
-		tfTypeIdentity := tc.d.TfTypeResourceState()
+		tfTypeIdentity, err := tc.d.TfTypeResourceState()
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
 
 		if !tfTypeIdentity.Equal(tc.expected) {
 			t.Fatalf("expected tftype value of identity to be %+v, got %+v", tc.expected, tfTypeIdentity)

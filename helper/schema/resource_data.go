@@ -17,9 +17,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -64,25 +64,25 @@ type getResult struct {
 }
 
 // TfTypeIdentityState returns the identity data as a tftypes.Value.
-func (d *ResourceData) TfTypeIdentityState() tftypes.Value {
+func (d *ResourceData) TfTypeIdentityState() (*tftypes.Value, error) {
 	s := schemaMap(d.identitySchema).CoreConfigSchema()
 
 	state := d.State()
 
 	if state == nil {
-		log.Panicf("state is nil")
+		return nil, fmt.Errorf("state is nil, call SetId() on ResourceData first")
 	}
 
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Identity, s.ImpliedType())
 	if err != nil {
-		log.Panicf("converting identity to tf value: %+v", err)
+		return nil, fmt.Errorf("converting identity flatmap to cty value: %+v", err)
 	}
 
 	return convert.ToTfValue(stateVal)
 }
 
 // TfTypeResourceState returns the resource data as a tftypes.Value.
-func (d *ResourceData) TfTypeResourceState() tftypes.Value {
+func (d *ResourceData) TfTypeResourceState() (*tftypes.Value, error) {
 	s := schemaMap(d.schema).CoreConfigSchema()
 
 	// The CoreConfigSchema method on schemaMaps doesn't automatically handle adding the id
@@ -145,14 +145,13 @@ func (d *ResourceData) TfTypeResourceState() tftypes.Value {
 	}
 
 	state := d.State()
-
 	if state == nil {
-		log.Panicf("state is nil")
+		return nil, fmt.Errorf("state is nil, call SetId() on ResourceData first")
 	}
 
 	stateVal, err := hcl2shim.HCL2ValueFromFlatmap(state.Attributes, s.ImpliedType())
 	if err != nil {
-		log.Panicf("converting resource state to tf value: %+v", err)
+		return nil, fmt.Errorf("converting resource state flatmap to cty value: %+v", err)
 	}
 
 	return convert.ToTfValue(stateVal)
