@@ -679,6 +679,11 @@ type ResourceBehavior struct {
 	// resource's lifecycle. Setting this flag to true will disable the SDK validation that ensures identity
 	// data doesn't change during RPC calls.
 	MutableIdentity bool
+
+	// AllowNullIdentity toggles whether the managed resource allows identities to be null. Setting this flag to true
+	// disables the SDK validation that ensures the identity cannot be null at the end of ApplyResourceChange and ReadResource
+	// RPC calls in certain situations.
+	AllowNullIdentity bool
 }
 
 // ProviderDeferredBehavior enables provider-defined logic to be executed

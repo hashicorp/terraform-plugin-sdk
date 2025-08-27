@@ -880,6 +880,7 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
 		}
+
 		// Step 2: Turn cty.Value into flatmap representation
 		identityAttrs := hcl2shim.FlatmapValueFromHCL2(currentIdentityVal)
 		// Step 3: Well, set it in the instanceState
@@ -968,6 +969,24 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 				fmt.Sprintf("Current Identity: %s\n\n", currentIdentityVal.GoString())+
 				fmt.Sprintf("New Identity: %s", newIdentityVal.GoString())))
 			return resp, nil
+		}
+
+		if !res.ResourceBehavior.AllowNullIdentity {
+			isFullyNull := true
+			for _, v := range newIdentityVal.AsValueMap() {
+				if !v.IsNull() {
+					isFullyNull = false
+					break
+				}
+			}
+
+			if isFullyNull {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+					"Missing Resource Identity After Read: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource read. "+
+						"This is always a problem with the provider and should be reported to the provider developer",
+				))
+				return resp, nil
+			}
 		}
 
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
@@ -1542,6 +1561,24 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 		if err != nil {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 			return resp, nil
+		}
+
+		if !res.ResourceBehavior.AllowNullIdentity {
+			isFullyNull := true
+			for _, v := range newIdentityVal.AsValueMap() {
+				if !v.IsNull() {
+					isFullyNull = false
+					break
+				}
+			}
+
+			if isFullyNull {
+				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+					"Missing Resource Identity After Create: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource create. "+
+						"This is always a problem with the provider and should be reported to the provider developer",
+				))
+				return resp, nil
+			}
 		}
 
 		if !res.ResourceBehavior.MutableIdentity && !create && !plannedIdentityVal.IsNull() && !plannedIdentityVal.RawEquals(newIdentityVal) {
