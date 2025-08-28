@@ -34,6 +34,14 @@ func TestPrimitiveTfType(t *testing.T) {
 			Value: cty.NumberFloatVal(3.14),
 			Want:  tftypes.NewValue(tftypes.Number, 3.14),
 		},
+		{
+			Value: cty.NullVal(cty.String),
+			Want:  tftypes.NewValue(tftypes.String, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.String),
+			Want:  tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		},
 	}
 
 	for _, test := range tests {
@@ -149,6 +157,14 @@ func TestListTfType(t *testing.T) {
 					}),
 				}),
 			}),
+		},
+		{
+			Value: cty.NullVal(cty.List(cty.String)),
+			Want:  tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.List(cty.String)),
+			Want:  tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, tftypes.UnknownValue),
 		},
 	}
 
@@ -266,6 +282,14 @@ func TestSetTfType(t *testing.T) {
 				}),
 			}),
 		},
+		{
+			Value: cty.NullVal(cty.Set(cty.String)),
+			Want:  tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.Set(cty.String)),
+			Want:  tftypes.NewValue(tftypes.Set{ElementType: tftypes.String}, tftypes.UnknownValue),
+		},
 	}
 
 	for _, test := range tests {
@@ -347,6 +371,14 @@ func TestMapTfType(t *testing.T) {
 				}),
 			}),
 		},
+		{
+			Value: cty.NullVal(cty.Map(cty.String)),
+			Want:  tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.Map(cty.String)),
+			Want:  tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, tftypes.UnknownValue),
+		},
 	}
 
 	for _, test := range tests {
@@ -389,6 +421,14 @@ func TestTupleTfType(t *testing.T) {
 				tftypes.NewValue(tftypes.Number, 5),
 				tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String, tftypes.String}}, []tftypes.Value{tftypes.NewValue(tftypes.String, "banana"), tftypes.NewValue(tftypes.String, "pineapple")}),
 			}),
+		},
+		{
+			Value: cty.NullVal(cty.Tuple([]cty.Type{cty.String})),
+			Want:  tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String}}, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.Tuple([]cty.Type{cty.String})),
+			Want:  tftypes.NewValue(tftypes.Tuple{ElementTypes: []tftypes.Type{tftypes.String}}, tftypes.UnknownValue),
 		},
 	}
 
@@ -533,6 +573,26 @@ func TestObjectTfType(t *testing.T) {
 					}),
 				}),
 			}),
+		},
+		{
+			Value: cty.NullVal(cty.Object(map[string]cty.Type{
+				"foo": cty.String,
+				"bar": cty.Number,
+			})),
+			Want: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"foo": tftypes.String,
+				"bar": tftypes.Number,
+			}}, nil),
+		},
+		{
+			Value: cty.UnknownVal(cty.Object(map[string]cty.Type{
+				"foo": cty.String,
+				"bar": cty.Number,
+			})),
+			Want: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"foo": tftypes.String,
+				"bar": tftypes.Number,
+			}}, tftypes.UnknownValue),
 		},
 	}
 

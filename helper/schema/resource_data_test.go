@@ -4420,6 +4420,58 @@ func TestResourceData_TfTypeResourceState(t *testing.T) {
 				"id":       tftypes.NewValue(tftypes.String, "baz"),
 			}),
 		},
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				timeouts: &ResourceTimeout{},
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+			}),
+		},
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				timeouts: &ResourceTimeout{
+					Create: DefaultTimeout(30 * time.Minute),
+				},
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+					"timeouts": tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"create": tftypes.String,
+						},
+					},
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+				"timeouts": tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"create": tftypes.String,
+					},
+				}, map[string]tftypes.Value{
+					"create": tftypes.NewValue(tftypes.String, nil),
+				}),
+			}),
+		},
 	}
 
 	for _, tc := range cases {
