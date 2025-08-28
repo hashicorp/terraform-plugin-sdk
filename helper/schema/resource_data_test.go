@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-cty/cty"
 
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -4311,6 +4312,183 @@ func TestResourceDataIdentity_no_schema(t *testing.T) {
 	}
 	if diff := cmp.Diff("Resource does not have Identity schema. Please set one in order to use Identity(). This is always a problem in the provider code.", err.Error()); diff != "" {
 		t.Fatalf("unexpected error message (-want +got):\n%s", diff)
+	}
+}
+
+func TestResourceData_TfTypeIdentityState(t *testing.T) {
+	d := &ResourceData{
+		identitySchema: map[string]*Schema{
+			"foo": {
+				Type:              TypeString,
+				RequiredForImport: true,
+			},
+		},
+	}
+
+	d.SetId("baz") // just required to be able to call .State()
+
+	identity, err := d.Identity()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	err = identity.Set("foo", "bar")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expectedIdentity := tftypes.NewValue(tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"foo": tftypes.String,
+		}}, map[string]tftypes.Value{
+		"foo": tftypes.NewValue(tftypes.String, "bar"),
+	})
+
+	tfTypeIdentity, err := d.TfTypeIdentityState()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if !tfTypeIdentity.Equal(expectedIdentity) {
+		t.Fatalf("expected tftype value of identity to be %+v, got %+v", expectedIdentity, tfTypeIdentity)
+	}
+}
+
+func TestResourceData_TfTypeResourceState(t *testing.T) {
+	cases := []struct {
+		d        *ResourceData
+		expected tftypes.Value
+	}{
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				timeouts: timeoutForValues(30, 5, 30, 5, 5),
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+					"timeouts": tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"create":  tftypes.String,
+							"delete":  tftypes.String,
+							"read":    tftypes.String,
+							"update":  tftypes.String,
+							"default": tftypes.String,
+						},
+					},
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+				"timeouts": tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"create":  tftypes.String,
+						"default": tftypes.String,
+						"delete":  tftypes.String,
+						"read":    tftypes.String,
+						"update":  tftypes.String,
+					},
+				}, map[string]tftypes.Value{
+					"create":  tftypes.NewValue(tftypes.String, nil),
+					"default": tftypes.NewValue(tftypes.String, nil),
+					"delete":  tftypes.NewValue(tftypes.String, nil),
+					"read":    tftypes.NewValue(tftypes.String, nil),
+					"update":  tftypes.NewValue(tftypes.String, nil),
+				}),
+			}),
+		},
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+			}),
+		},
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				timeouts: &ResourceTimeout{},
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+			}),
+		},
+		{
+			d: &ResourceData{
+				schema: map[string]*Schema{
+					"location": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				timeouts: &ResourceTimeout{
+					Create: DefaultTimeout(30 * time.Minute),
+				},
+			},
+			expected: tftypes.NewValue(tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"location": tftypes.String,
+					"id":       tftypes.String,
+					"timeouts": tftypes.Object{
+						AttributeTypes: map[string]tftypes.Type{
+							"create": tftypes.String,
+						},
+					},
+				}}, map[string]tftypes.Value{
+				"location": tftypes.NewValue(tftypes.String, "westeurope"),
+				"id":       tftypes.NewValue(tftypes.String, "baz"),
+				"timeouts": tftypes.NewValue(tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"create": tftypes.String,
+					},
+				}, map[string]tftypes.Value{
+					"create": tftypes.NewValue(tftypes.String, nil),
+				}),
+			}),
+		},
+	}
+
+	for _, tc := range cases {
+		tc.d.SetId("baz") // just required to be able to call .State()
+
+		if err := tc.d.Set("location", "westeurope"); err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		tfTypeIdentity, err := tc.d.TfTypeResourceState()
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		if !tfTypeIdentity.Equal(tc.expected) {
+			t.Fatalf("expected tftype value of identity to be %+v, got %+v", tc.expected, tfTypeIdentity)
+		}
 	}
 }
 
