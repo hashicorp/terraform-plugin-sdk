@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/go-cty/cty"
@@ -962,6 +963,22 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 			return resp, nil
 		}
 
+		isFullyNull := true
+		for _, v := range newIdentityVal.AsValueMap() {
+			if !v.IsNull() {
+				isFullyNull = false
+				break
+			}
+		}
+
+		if isFullyNull {
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+				"Missing Resource Identity After Read: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource read. "+
+					"This is always a problem with the provider and should be reported to the provider developer",
+			))
+			return resp, nil
+		}
+
 		// If we're refreshing the resource state (excluding a recently imported resource), validate that the new identity isn't changing
 		if !res.ResourceBehavior.MutableIdentity && !readFollowingImport && !currentIdentityVal.IsNull() && !currentIdentityVal.RawEquals(newIdentityVal) {
 			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("Unexpected Identity Change: %s", "During the read operation, the Terraform Provider unexpectedly returned a different identity then the previously stored one.\n\n"+
@@ -969,24 +986,6 @@ func (s *GRPCProviderServer) ReadResource(ctx context.Context, req *tfprotov5.Re
 				fmt.Sprintf("Current Identity: %s\n\n", currentIdentityVal.GoString())+
 				fmt.Sprintf("New Identity: %s", newIdentityVal.GoString())))
 			return resp, nil
-		}
-
-		if !res.ResourceBehavior.AllowNullIdentity {
-			isFullyNull := true
-			for _, v := range newIdentityVal.AsValueMap() {
-				if !v.IsNull() {
-					isFullyNull = false
-					break
-				}
-			}
-
-			if isFullyNull {
-				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
-					"Missing Resource Identity After Read: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource read. "+
-						"This is always a problem with the provider and should be reported to the provider developer",
-				))
-				return resp, nil
-			}
 		}
 
 		newIdentityMP, err := msgpack.Marshal(newIdentityVal, identityBlock.ImpliedType())
@@ -1563,22 +1562,26 @@ func (s *GRPCProviderServer) ApplyResourceChange(ctx context.Context, req *tfpro
 			return resp, nil
 		}
 
-		if !res.ResourceBehavior.AllowNullIdentity {
-			isFullyNull := true
-			for _, v := range newIdentityVal.AsValueMap() {
-				if !v.IsNull() {
-					isFullyNull = false
-					break
-				}
+		isFullyNull := true
+		for _, v := range newIdentityVal.AsValueMap() {
+			if !v.IsNull() {
+				isFullyNull = false
+				break
+			}
+		}
+
+		if isFullyNull {
+			op := "Create"
+			if !create {
+				op = "Update"
 			}
 
-			if isFullyNull {
-				resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
-					"Missing Resource Identity After Create: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource create. "+
-						"This is always a problem with the provider and should be reported to the provider developer",
-				))
-				return resp, nil
-			}
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf(
+				"Missing Resource Identity After %s: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource %s. "+
+					"This is always a problem with the provider and should be reported to the provider developer", op, strings.ToLower(op),
+			))
+
+			return resp, nil
 		}
 
 		if !res.ResourceBehavior.MutableIdentity && !create && !plannedIdentityVal.IsNull() && !plannedIdentityVal.RawEquals(newIdentityVal) {
