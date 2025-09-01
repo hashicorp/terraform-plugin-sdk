@@ -5707,6 +5707,103 @@ func TestReadResource(t *testing.T) {
 				},
 			},
 		},
+		"prevent-null-identity": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test": {
+								Type: TypeString,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"subscription_id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"resource_group_name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							err := d.Set("test", "hello")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"subscription_id":     cty.String,
+								"resource_group_name": cty.String,
+								"name":                cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"subscription_id":     cty.NullVal(cty.String),
+								"resource_group_name": cty.NullVal(cty.String),
+								"name":                cty.NullVal(cty.String),
+							}),
+						),
+					},
+				},
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("hello"),
+						}),
+					),
+				},
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary: "Missing Resource Identity After Read: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource read. " +
+							"This is always a problem with the provider and should be reported to the provider developer",
+					},
+				},
+			},
+		},
 		"update-resource-identity-may-not-change": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -8230,6 +8327,107 @@ func TestApplyResourceChange(t *testing.T) {
 				},
 				NewState: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(cty.DynamicPseudoType, cty.NullVal(cty.DynamicPseudoType)),
+				},
+			},
+		},
+		"create: null identity not allowed in ApplyResourceChangeResponse": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 4,
+						CreateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							rd.SetId("baz")
+
+							return nil
+						},
+						Schema: map[string]*Schema{},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"subscription_id": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"resource_group_name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{}),
+						cty.NullVal(
+							cty.Object(map[string]cty.Type{}),
+						),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.UnknownVal(cty.String),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"subscription_id":     cty.String,
+								"resource_group_name": cty.String,
+								"name":                cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"subscription_id":     cty.NullVal(cty.String),
+								"resource_group_name": cty.NullVal(cty.String),
+								"name":                cty.NullVal(cty.String),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("baz"),
+						}),
+					),
+				},
+				Private: []uint8(`{"schema_version":"4"}`),
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary: "Missing Resource Identity After Create: The Terraform provider unexpectedly returned no resource identity after having no errors in the resource create. " +
+							"This is always a problem with the provider and should be reported to the provider developer",
+					},
 				},
 			},
 		},
