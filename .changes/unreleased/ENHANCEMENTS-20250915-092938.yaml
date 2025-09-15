@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Added an additional validation check to ensure the resource identity object is not null.'
+time: 2025-09-15T09:29:38.603088+02:00
+custom:
+    Issue: "1513"
