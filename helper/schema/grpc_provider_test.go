@@ -3763,6 +3763,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				Functions:          []tfprotov5.FunctionMetadata{},
 				EphemeralResources: []tfprotov5.EphemeralResourceMetadata{},
 				ListResources:      []tfprotov5.ListResourceMetadata{},
+				Actions:            []tfprotov5.ActionMetadata{},
 				Resources:          []tfprotov5.ResourceMetadata{},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
@@ -3792,6 +3793,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				Functions:          []tfprotov5.FunctionMetadata{},
 				EphemeralResources: []tfprotov5.EphemeralResourceMetadata{},
 				ListResources:      []tfprotov5.ListResourceMetadata{},
+				Actions:            []tfprotov5.ActionMetadata{},
 				Resources: []tfprotov5.ResourceMetadata{
 					{
 						TypeName: "test_resource1",
@@ -3817,6 +3819,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				Functions:          []tfprotov5.FunctionMetadata{},
 				EphemeralResources: []tfprotov5.EphemeralResourceMetadata{},
 				ListResources:      []tfprotov5.ListResourceMetadata{},
+				Actions:            []tfprotov5.ActionMetadata{},
 				Resources: []tfprotov5.ResourceMetadata{
 					{
 						TypeName: "test_resource1",
