@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -196,6 +197,7 @@ func (s *GRPCProviderServer) GetMetadata(ctx context.Context, req *tfprotov5.Get
 		DataSources:        make([]tfprotov5.DataSourceMetadata, 0, len(s.provider.DataSourcesMap)),
 		EphemeralResources: make([]tfprotov5.EphemeralResourceMetadata, 0),
 		Functions:          make([]tfprotov5.FunctionMetadata, 0),
+		ListResources:      make([]tfprotov5.ListResourceMetadata, 0),
 		Resources:          make([]tfprotov5.ResourceMetadata, 0, len(s.provider.ResourcesMap)),
 		ServerCapabilities: s.serverCapabilities(),
 	}
@@ -224,6 +226,7 @@ func (s *GRPCProviderServer) GetProviderSchema(ctx context.Context, req *tfproto
 		DataSourceSchemas:        make(map[string]*tfprotov5.Schema, len(s.provider.DataSourcesMap)),
 		EphemeralResourceSchemas: make(map[string]*tfprotov5.Schema, 0),
 		Functions:                make(map[string]*tfprotov5.Function, 0),
+		ListResourceSchemas:      make(map[string]*tfprotov5.Schema, 0),
 		ResourceSchemas:          make(map[string]*tfprotov5.Schema, len(s.provider.ResourcesMap)),
 		ServerCapabilities:       s.serverCapabilities(),
 	}
@@ -2015,6 +2018,48 @@ func (s *GRPCProviderServer) CloseEphemeralResource(ctx context.Context, req *tf
 				Detail:   fmt.Sprintf("The %q ephemeral resource type is not supported by this provider.", req.TypeName),
 			},
 		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) ValidateListResourceConfig(ctx context.Context, req *tfprotov5.ValidateListResourceConfigRequest) (*tfprotov5.ValidateListResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for list resource validate")
+
+	resp := &tfprotov5.ValidateListResourceConfigResponse{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown List Resource Type",
+				Detail:   fmt.Sprintf("The %q list resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	}
+
+	return resp, nil
+}
+
+func (s *GRPCProviderServer) ListResource(ctx context.Context, req *tfprotov5.ListResourceRequest) (*tfprotov5.ListResourceServerStream, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for list resource list")
+
+	result := make([]tfprotov5.ListResourceResult, 0)
+
+	result = append(result, tfprotov5.ListResourceResult{
+		Diagnostics: []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown List Resource Type",
+				Detail:   fmt.Sprintf("The %q list resource type is not supported by this provider.", req.TypeName),
+			},
+		},
+	})
+
+	resp := &tfprotov5.ListResourceServerStream{
+		Results: slices.Values(result),
 	}
 
 	return resp, nil
