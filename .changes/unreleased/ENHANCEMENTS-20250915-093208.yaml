@@ -1,5 +1,0 @@
-kind: ENHANCEMENTS
-body: 'helper/schema: Added the `TfTypeIdentityState()` and `TfTypeResourceState()` methods to `ResourceData` which return the identity and state values as a `tftypes.Value`.'
-time: 2025-09-15T09:32:08.842763+02:00
-custom:
-    Issue: "1508"

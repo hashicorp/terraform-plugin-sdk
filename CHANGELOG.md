@@ -1,3 +1,17 @@
+## 2.38.0 (September 17, 2025)
+
+NOTES:
+
+* all: This Go module has been updated to Go 1.24 per the [Go support policy](https://go.dev/doc/devel/release#policy). It is recommended to review the [Go 1.24 release notes](https://go.dev/doc/go1.24) before upgrading. Any consumers building on earlier Go versions may experience errors. ([#1518](https://github.com/hashicorp/terraform-plugin-sdk/issues/1518))
+* helper/schema: Update the provider server to handle the ListResource RPCs by returning an error since they are not supported by SDKv2. ([#1521](https://github.com/hashicorp/terraform-plugin-sdk/issues/1521))
+* helper/schema: Update the provider server to handle Action RPCs by returning an error since they are not supported by SDKv2. ([#1522](https://github.com/hashicorp/terraform-plugin-sdk/issues/1522))
+
+ENHANCEMENTS:
+
+* helper/schema: Added new helper methods for converting Resource and Identity schemas to protocol representations. ([#1504](https://github.com/hashicorp/terraform-plugin-sdk/issues/1504))
+* helper/schema: Added an additional validation check to ensure the resource identity object is not null. ([#1513](https://github.com/hashicorp/terraform-plugin-sdk/issues/1513))
+* helper/schema: Added the `TfTypeIdentityState()` and `TfTypeResourceState()` methods to `ResourceData` which return the identity and state values as a `tftypes.Value`. ([#1508](https://github.com/hashicorp/terraform-plugin-sdk/issues/1508))
+
 ## 2.37.0 (May 16, 2025)
 
 NOTES:
