@@ -1,5 +1,0 @@
-kind: BUG FIXES
-body: 'all: Prevent identity change validation from raising an error when prior identity is empty (all attributes are null)'
-time: 2025-09-22T09:19:42.075962-04:00
-custom:
-    Issue: "1527"

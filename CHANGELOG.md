@@ -1,3 +1,9 @@
+## 2.38.1 (September 22, 2025)
+
+BUG FIXES:
+
+* all: Prevent identity change validation from raising an error when prior identity is empty (all attributes are null) ([#1527](https://github.com/hashicorp/terraform-plugin-sdk/issues/1527))
+
 ## 2.38.0 (September 17, 2025)
 
 NOTES:
