@@ -1,5 +1,0 @@
-kind: NOTES
-body: 'helper/schema: Update the provider server to handle Action RPCs by returning an error since they are not supported by SDKv2.'
-time: 2025-09-16T12:47:28.705896-04:00
-custom:
-    Issue: "1522"

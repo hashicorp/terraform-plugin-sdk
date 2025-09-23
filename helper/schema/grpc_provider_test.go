@@ -6001,6 +6001,112 @@ New Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("chang
 				},
 			},
 		},
+		"update-resource-identity-with-empty-prior-identity-identity-may-change": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test": {
+								Type: TypeString,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"identity_attr_a": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"identity_attr_b": {
+										Type:              TypeInt,
+										OptionalForImport: true,
+									},
+								}
+							},
+						},
+						ReadContext: func(ctx context.Context, d *ResourceData, meta interface{}) diag.Diagnostics {
+							identity, err := d.Identity()
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("identity_attr_a", "changed")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("identity_attr_b", 20)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ReadResourceRequest{
+				TypeName: "test",
+				CurrentIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.NullVal(cty.String),
+								"identity_attr_b": cty.NullVal(cty.Number),
+							}),
+						),
+					},
+				},
+				CurrentState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"test": cty.String,
+							"id":   cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"test": cty.StringVal("hello"),
+							"id":   cty.StringVal("initial"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ReadResourceResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("hello"),
+						}),
+					),
+				},
+				NewIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.StringVal("changed"),
+								"identity_attr_b": cty.NumberIntVal(20),
+							}),
+						),
+					},
+				},
+			},
+		},
 		"does-not-remove-user-data-from-private": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -7664,6 +7770,140 @@ Planned Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("c
 				},
 			},
 		},
+		"update-resource-identity-with-empty-prior-identity-identity-may-change": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test": {
+								Type: TypeString,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"identity_attr_a": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"identity_attr_b": {
+										Type:              TypeInt,
+										OptionalForImport: true,
+									},
+								}
+							},
+						},
+						CustomizeDiff: func(ctx context.Context, d *ResourceDiff, meta interface{}) error {
+							identity, err := d.Identity()
+							if err != nil {
+								return err
+							}
+							err = identity.Set("identity_attr_a", "changed")
+							if err != nil {
+								return err
+							}
+							err = identity.Set("identity_attr_b", 20)
+							if err != nil {
+								return err
+							}
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				PriorIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.NullVal(cty.String),
+								"identity_attr_b": cty.NullVal(cty.Number),
+							}),
+						),
+					},
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.UnknownVal(cty.String),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.NullVal(cty.String),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.UnknownVal(cty.String),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				RequiresReplace: []*tftypes.AttributePath{
+					tftypes.NewAttributePath().WithAttributeName("id"),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.StringVal("changed"),
+								"identity_attr_b": cty.NumberIntVal(20),
+							}),
+						),
+					},
+				},
+			},
+		},
 		"destroy-resource-identity-may-not-change": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
@@ -8904,6 +9144,138 @@ New Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("chang
 							}),
 							cty.ObjectVal(map[string]cty.Value{
 								"identity": cty.StringVal("changed"),
+							}),
+						),
+					},
+				},
+			},
+		},
+		"update-resource-identity-with-empty-prior-identity-identity-may-change": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test": {
+								Type: TypeString,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"identity_attr_a": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+									"identity_attr_b": {
+										Type:              TypeInt,
+										OptionalForImport: true,
+									},
+								}
+							},
+						},
+						UpdateContext: func(_ context.Context, rd *ResourceData, _ interface{}) diag.Diagnostics {
+							identity, err := rd.Identity()
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("identity_attr_a", "changed")
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							err = identity.Set("identity_attr_b", 20)
+							if err != nil {
+								return diag.FromErr(err)
+							}
+							rd.SetId("changed")
+							return nil
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.ApplyResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("initial"),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.NullVal(cty.String),
+								"identity_attr_b": cty.NullVal(cty.Number),
+							}),
+						),
+					},
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.NullVal(cty.String),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.ApplyResourceChangeResponse{
+				NewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":   cty.String,
+							"test": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":   cty.StringVal("changed"),
+							"test": cty.StringVal("initial"),
+						}),
+					),
+				},
+				Private:                     []uint8(`{"schema_version":"1"}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				NewIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"identity_attr_a": cty.String,
+								"identity_attr_b": cty.Number,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"identity_attr_a": cty.StringVal("changed"),
+								"identity_attr_b": cty.NumberIntVal(20),
 							}),
 						),
 					},
