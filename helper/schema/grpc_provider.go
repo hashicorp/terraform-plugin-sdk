@@ -7,7 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -723,6 +725,11 @@ func (s *GRPCProviderServer) ConfigureProvider(ctx context.Context, req *tfproto
 	resp := &tfprotov5.ConfigureProviderResponse{}
 
 	schemaBlock := s.getProviderSchemaBlock()
+
+	// HACK to get around configuring this when it's already been configured
+	if req.Config == nil {
+		return resp, nil
+	}
 
 	configVal, err := msgpack.Unmarshal(req.Config.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
@@ -2049,6 +2056,158 @@ func (s *GRPCProviderServer) ListResource(ctx context.Context, req *tfprotov5.Li
 	}
 
 	return resp, nil
+}
+
+func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tfprotov5.GenerateResourceConfigRequest) (*tfprotov5.GenerateResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	logging.HelperSchemaTrace(ctx, "Returning error for generate resource config")
+
+	resp := &tfprotov5.GenerateResourceConfigResponse{}
+	//resp := &tfprotov5.GenerateResourceConfigResponse{
+	//	Diagnostics: []*tfprotov5.Diagnostic{
+	//		{
+	//			Severity: tfprotov5.DiagnosticSeverityError,
+	//			Summary:  "Unknown Generate Resource Config Type",
+	//			Detail:   fmt.Sprintf("Generate Resource Config is not supported for %q", req.TypeName),
+	//		},
+	//	},
+	//}
+
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+		return resp, nil
+	}
+
+	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+
+	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	instanceState, err := res.ShimInstanceStateFromValue(stateVal)
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newStateVal, err := hcl2shim.HCL2ValueFromFlatmap(instanceState.Attributes, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	asMap := newStateVal.AsValueMap()
+
+	conflictsWith := make(map[string][]string)
+	exactlyOneOf := make(map[string][]string)
+	requiredWith := make(map[string][]string)
+
+	for k, v := range res.Schema {
+		if v.Computed && !v.Optional && !v.Required {
+			//delete(asMap, k)
+		}
+
+		if v.ConflictsWith != nil {
+			conflictsWith[k] = v.ConflictsWith
+		}
+		if v.ExactlyOneOf != nil {
+			exactlyOneOf[k] = v.ExactlyOneOf
+		}
+		if v.RequiredWith != nil {
+			requiredWith[k] = v.RequiredWith
+		}
+		if v.Optional && v.Type == TypeInt || v.Type == TypeFloat {
+			if v.ValidateFunc != nil {
+
+			}
+		}
+		// TODO check for default values
+		//if v.Optional && v.DefaultValue() {
+		//
+		//}
+	}
+
+	cKeys := sortedKeys(conflictsWith)
+
+	for _, k := range cKeys {
+		// First build a map of all properties and their values that conflict
+		values := make(map[string]cty.Value)
+		values[k] = asMap[k]
+		for _, v := range conflictsWith[k] {
+			values[v] = asMap[v]
+		}
+
+		// Now check how many are set
+		allNull := true
+		numberOfNonNullValues := 0
+		for _, v := range values {
+			if !v.IsNull() {
+				allNull = false
+				numberOfNonNullValues++
+			}
+		}
+
+		// None or one are set, let's continue
+		if allNull || numberOfNonNullValues == 1 {
+			continue
+		}
+
+		// What if we just always pick the first one that has been set?
+		// gotta sort the keys first again...
+		sorted := sortedKeysCty(values)
+		alreadyOneValueSet := false
+		for _, k := range sorted {
+			if !alreadyOneValueSet {
+				if !values[k].IsNull() {
+					alreadyOneValueSet = true
+					continue
+				}
+			}
+			if values[k].IsNull() {
+				continue
+			}
+
+			ty := asMap[k].Type()
+			asMap[k] = cty.NullVal(ty)
+		}
+	}
+
+	newStateVal = cty.ObjectVal(asMap)
+
+	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+	}
+
+	log.Print(instanceState)
+
+	resp.Config = &tfprotov5.DynamicValue{MsgPack: newStateMP}
+
+	return resp, nil
+}
+
+func sortedKeys(m map[string][]string) []string {
+	keys := make([]string, 0)
+	for k, _ := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
+}
+
+func sortedKeysCty(m map[string]cty.Value) []string {
+	keys := make([]string, 0)
+	for k, _ := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }
 
 func (s *GRPCProviderServer) ValidateActionConfig(ctx context.Context, req *tfprotov5.ValidateActionConfigRequest) (*tfprotov5.ValidateActionConfigResponse, error) {
