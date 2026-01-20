@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"slices"
 	"sort"
 	"strconv"
@@ -78,6 +77,7 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities {
 	return &tfprotov5.ServerCapabilities{
 		GetProviderSchemaOptional: true,
+		GenerateResourceConfig:    true,
 	}
 }
 
@@ -2106,11 +2106,8 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 	exactlyOneOf := make(map[string][]string)
 	requiredWith := make(map[string][]string)
 
+	// Populate all the maps of special cases
 	for k, v := range res.Schema {
-		if v.Computed && !v.Optional && !v.Required {
-			//delete(asMap, k)
-		}
-
 		if v.ConflictsWith != nil {
 			conflictsWith[k] = v.ConflictsWith
 		}
@@ -2120,19 +2117,44 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		if v.RequiredWith != nil {
 			requiredWith[k] = v.RequiredWith
 		}
-		if v.Optional && v.Type == TypeInt || v.Type == TypeFloat {
-			if v.ValidateFunc != nil {
+	}
 
-			}
+	for k, v := range asMap {
+		ty := v.Type()
+
+		if v.IsNull() {
+			continue
 		}
-		// TODO check for default values
-		//if v.Optional && v.DefaultValue() {
-		//
-		//}
+
+		if k == "id" || k == "timeouts" {
+			asMap[k] = cty.NullVal(ty)
+			continue
+		}
+
+		if ty == cty.String || ty == cty.Number || ty == cty.Bool {
+			newVal, err := transformAttributes(v, *res.Schema[k])
+			if err != nil {
+				return nil, fmt.Errorf("processing attribute %q: %w", k, err)
+			}
+			asMap[k] = *newVal
+		}
+		if ty.IsSetType() || ty.IsListType() {
+			newVal, err := transformListsOrSets(v, *res.Schema[k])
+			if err != nil {
+				return nil, fmt.Errorf("processing attribute %q: %w", k, err)
+			}
+			asMap[k] = *newVal
+		}
+		if ty.IsMapType() {
+			newVal, err := transformMaps(v, *res.Schema[k])
+			if err != nil {
+				return nil, fmt.Errorf("processing attribute %q: %w", k, err)
+			}
+			asMap[k] = *newVal
+		}
 	}
 
 	cKeys := sortedKeys(conflictsWith)
-
 	for _, k := range cKeys {
 		// First build a map of all properties and their values that conflict
 		values := make(map[string]cty.Value)
@@ -2171,19 +2193,54 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 				continue
 			}
 
-			ty := asMap[k].Type()
-			asMap[k] = cty.NullVal(ty)
+			asMap[k] = cty.NullVal(asMap[k].Type())
 		}
 	}
 
+	rKeys := sortedKeys(requiredWith)
+	for _, k := range rKeys {
+		values := make(map[string]cty.Value)
+		values[k] = asMap[k]
+		for _, v := range requiredWith[k] {
+			values[v] = asMap[v]
+		}
+
+		// Now check how many are set
+		allNull := true
+		numberOfNonNullValues := 0
+		for _, v := range values {
+			if !v.IsNull() {
+				allNull = false
+				numberOfNonNullValues++
+			}
+		}
+
+		if allNull || numberOfNonNullValues == len(values) {
+			// all or none or set which is good
+			continue
+		}
+
+		sorted := sortedKeysCty(values)
+		for _, k := range sorted {
+			if !values[k].IsNull() {
+				asMap[k] = cty.NullVal(asMap[k].Type())
+			}
+		}
+	}
+
+	// TODO process exactlyOneOf
+
 	newStateVal = cty.ObjectVal(asMap)
+
+	// TODO validate the type matches
+	//if ok := newStateVal.Type().Equals(schemaBlock.ImpliedType()); !ok {
+	//	return nil, fmt.Errorf("generated resource config has incorrect type: expected %s, got %s", schemaBlock.ImpliedType().GoString(), newStateVal.Type().GoString())
+	//}
 
 	newStateMP, err := msgpack.Marshal(newStateVal, schemaBlock.ImpliedType())
 	if err != nil {
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
 	}
-
-	log.Print(instanceState)
 
 	resp.Config = &tfprotov5.DynamicValue{MsgPack: newStateMP}
 
