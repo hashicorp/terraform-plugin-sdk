@@ -11615,7 +11615,7 @@ func TestNormalizeNullValues(t *testing.T) {
 				"network_interface": cty.ListVal([]cty.Value{
 					cty.ObjectVal(map[string]cty.Value{
 						"network_ip":    cty.StringVal("10.128.0.64"),
-						"access_config": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{"public_ptr_domain_name": cty.String, "nat_ip": cty.String}))),
+						"access_config": cty.ListValEmpty(cty.Object(map[string]cty.Type{"public_ptr_domain_name": cty.String, "nat_ip": cty.String})),
 						"address":       cty.StringVal("address"),
 						"name":          cty.StringVal("nic0"),
 					}),
@@ -11775,9 +11775,9 @@ func TestNormalizeNullValues(t *testing.T) {
 				})),
 			}),
 			Expect: cty.ObjectVal(map[string]cty.Value{
-				"set": cty.NullVal(cty.Set(cty.Object(map[string]cty.Type{
+				"set": cty.SetValEmpty(cty.Object(map[string]cty.Type{
 					"list": cty.List(cty.String),
-				}))),
+				})),
 			}),
 			Apply: true,
 		},

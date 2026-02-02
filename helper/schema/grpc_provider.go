@@ -2248,13 +2248,17 @@ func normalizeNullValues(dst, src cty.Value, apply bool) cty.Value {
 	}
 
 	// Handle null/empty changes for collections during apply.
-	// A change between null and empty values prefers src to make sure the state
+	// A change from emtpy to null values prefers src to make sure the state
 	// is consistent between plan and apply.
+	// A change from null to empty values prefers dst to not generate drifts of
+	// values when refresh.
 	if ty.IsCollectionType() && apply {
 		dstEmpty := !dst.IsNull() && dst.IsKnown() && dst.LengthInt() == 0
 		srcEmpty := !src.IsNull() && src.IsKnown() && src.LengthInt() == 0
 
-		if (src.IsNull() && dstEmpty) || (srcEmpty && dst.IsNull()) {
+		if src.IsNull() && dstEmpty {
+			return dst
+		} else if srcEmpty && dst.IsNull() {
 			return src
 		}
 	}
