@@ -1,5 +1,0 @@
-kind: BUG FIXES
-body: 'all: Prevent "Missing Resource Identity" error if the resource returned any errors during apply.'
-time: 2026-01-14T13:07:55.161469-05:00
-custom:
-    Issue: "1541"
