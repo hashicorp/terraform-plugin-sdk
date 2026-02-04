@@ -10668,6 +10668,182 @@ func TestImportResourceState_Timeouts_Removed(t *testing.T) {
 	}
 }
 
+func TestGenerateResourceConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.GenerateResourceConfigRequest
+		expected *tfprotov5.GenerateResourceConfigResponse
+	}{
+		"null-resource": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_list": {
+								Type: TypeList,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Computed: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"test_bool":   cty.NullVal(cty.Bool),
+							"test_string": cty.StringVal("prior-state-val"),
+							"test_list":   cty.NullVal(cty.List(cty.String)),
+						}),
+					),
+				},
+			},
+		},
+		"conflictsWith": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_bool": {
+								Type:     TypeBool,
+								Computed: true,
+							},
+							"test_string": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_list": {
+								Type: TypeList,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Computed: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.StringVal("test-id"),
+							"test_bool":   cty.BoolVal(false),
+							"test_string": cty.StringVal("prior-state-val"),
+							"test_list": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":          cty.String,
+							"test_bool":   cty.Bool,
+							"test_string": cty.String,
+							"test_list":   cty.List(cty.String),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":          cty.NullVal(cty.String),
+							"test_bool":   cty.NullVal(cty.Bool),
+							"test_string": cty.NullVal(cty.String),
+							"test_list":   cty.NullVal(cty.List(cty.String)),
+						}),
+					),
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := testCase.server.GenerateResourceConfig(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && resp.Config != nil {
+					t.Logf("resp.Config.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.Config.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.Config != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.Config.MsgPack))
+				}
+
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func TestReadDataSource(t *testing.T) {
 	t.Parallel()
 

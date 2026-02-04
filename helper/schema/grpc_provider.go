@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2114,6 +2115,175 @@ func (s *GRPCProviderServer) InvokeAction(ctx context.Context, req *tfprotov5.In
 	return resp, nil
 }
 
+func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tfprotov5.GenerateResourceConfigRequest) (*tfprotov5.GenerateResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+	resp := &tfprotov5.GenerateResourceConfigResponse{}
+
+	//res, ok := s.provider.ResourcesMap[req.TypeName]
+	//if !ok {
+	//	resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, fmt.Errorf("unknown resource type: %s", req.TypeName))
+	//	return resp, nil
+	//}
+	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+
+	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newConfigVal := stateVal
+
+	// Handle top level attributes and defaults
+	newConfigVal, err = cty.Transform(newConfigVal, func(path cty.Path, val cty.Value) (cty.Value, error) {
+		// we're only looking for top-level attributes
+		if len(path) != 1 {
+			return val, nil
+		}
+
+		// get the Schema definition for this attribute
+		getAttr, ok := path[0].(cty.GetAttrStep)
+		// these should all exist, but just ignore anything strange
+		if !ok {
+			return val, nil
+		}
+
+		// special cases:
+		// timeouts block, and id attribute set to null
+		// todo: might need to set to empty list
+		if getAttr.Name == "timeouts" || getAttr.Name == "id" {
+			return cty.NullVal(val.Type()), nil
+		}
+
+		attrSchema := s.provider.Schema[getAttr.Name]
+		// continue to ignore anything that doesn't match
+		if attrSchema == nil {
+			return val, nil
+		}
+
+		// set deprecated attributes set to null
+		if attrSchema.Deprecated != "" {
+			return cty.NullVal(val.Type()), nil
+		}
+
+		// nothing to do if we already have a value
+		// or if the attribute is not optional
+		if !isCtyObjectNullOrEmpty(val) || !attrSchema.Optional {
+			return val, nil
+		}
+
+		// find a default value if it exists
+		def, err := attrSchema.DefaultValue()
+		if err != nil {
+			return val, fmt.Errorf("error getting default for %q: %w", getAttr.Name, err)
+		}
+
+		// no default, set to null
+		if def == nil {
+			return cty.NullVal(val.Type()), nil
+		}
+
+		// create a cty.Value and make sure it's the correct type
+		tmpVal := hcl2shim.HCL2ValueFromConfigValue(def)
+
+		// helper/schema used to allow setting "" to a bool
+		if val.Type() == cty.Bool && tmpVal.RawEquals(cty.StringVal("")) {
+			// return a warning about the conversion
+			resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, "provider set empty string as default value for bool "+getAttr.Name)
+			tmpVal = cty.False
+		}
+
+		val, err = ctyconvert.Convert(tmpVal, val.Type())
+		if err != nil {
+			return val, fmt.Errorf("error setting default for %q: %w", getAttr.Name, err)
+		}
+
+		return val, nil
+	})
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newConfigVal = setComputedOnlyNullValues(newConfigVal, schemaBlock)
+
+	genSchema := make(map[string]*configGenSchema)
+
+	configGenerationSchemaMap(s.provider.ResourcesMap[req.TypeName].Schema, genSchema, "")
+
+	// Handle conflicts with
+	newConfigVal, err = cty.Transform(newConfigVal, func(path cty.Path, val cty.Value) (cty.Value, error) {
+		if len(path) == 0 {
+			return val, nil
+		}
+		curVal := val
+
+		curValMapPath := ctyPathToFlatmapPath(path)
+		sch, ok := genSchema[curValMapPath]
+		if !ok {
+			return curVal, fmt.Errorf("Cannot retrieve config schema at key %s", curValMapPath)
+		}
+
+		conflictsWith := make(map[string]cty.Value)
+		conflictsWithKeys := make([]string, 0)
+		if len(sch.ConflictsWith) > 0 {
+
+			if !curVal.IsNull() {
+				conflictsWith[curValMapPath] = curVal
+				conflictsWithKeys = append(conflictsWithKeys, curValMapPath)
+			}
+
+			for i := range sch.ConflictsWith {
+				key := sch.ConflictsWith[i]
+				ctyPath := flatmapPathToCtyPath(key)
+
+				// get cty.Value at that path
+				val, err := ctyPath.Apply(newConfigVal)
+				if err != nil {
+					return cty.Value{}, err
+				}
+
+				if !val.IsNull() {
+					conflictsWith[key] = val
+					conflictsWithKeys = append(conflictsWithKeys, key)
+				}
+			}
+
+			// only process conflictsWith values if there are more
+			// than one non-nil values, otherwise just leave alone.
+			if len(conflictsWithKeys) > 1 {
+				conflictsWith[curValMapPath] = val
+				conflictsWithKeys = append(conflictsWithKeys, curValMapPath)
+
+				// sort the keys and find the first non-null value to keep
+				sort.Strings(conflictsWithKeys)
+				firstKey := conflictsWithKeys[0]
+				delete(conflictsWith, firstKey)
+				if firstKey == curValMapPath {
+					curVal = cty.NullVal(curVal.Type())
+				}
+			}
+		}
+
+		return curVal, nil
+	})
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newConfigMP, err := msgpack.Marshal(newConfigVal, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+	resp.Config = &tfprotov5.DynamicValue{
+		MsgPack: newConfigMP,
+	}
+
+	return resp, nil
+}
+
 func pathToAttributePath(path cty.Path) *tftypes.AttributePath {
 	var steps []tftypes.AttributePathStep
 
@@ -2485,10 +2655,11 @@ func isCtyObjectNullOrEmpty(val cty.Value) bool {
 	if val.IsNull() {
 		return true
 	}
-
-	for _, v := range val.AsValueMap() {
-		if !v.IsNull() {
-			return false
+	if val.CanIterateElements() {
+		for _, v := range val.AsValueMap() {
+			if !v.IsNull() {
+				return false
+			}
 		}
 	}
 
