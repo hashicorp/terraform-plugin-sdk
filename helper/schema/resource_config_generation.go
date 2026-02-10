@@ -283,9 +283,9 @@ func flatmapPathToCtyPath(fp string) cty.Path {
 	return result
 }
 
-func processConflictsWith(configVal cty.Value, schema map[string]*Schema) (cty.Value, []string, error) {
+func processConflictsWith(configVal cty.Value, schema map[string]*Schema) (cty.Value, cty.PathSet, error) {
 	genSchema := make(map[string]*configGenSchema)
-	markedForNullification := make([]string, 0)
+	markedForNullification := cty.NewPathSet()
 
 	configGenerationSchemaMap(schema, genSchema, "")
 
@@ -338,14 +338,14 @@ func processConflictsWith(configVal cty.Value, schema map[string]*Schema) (cty.V
 				// if the current value is not the first key,
 				// nullify it immediately.
 				if firstKey != curValMapPath {
-					curVal = cty.NullVal(curVal.Type())
+					markedForNullification.Add(path)
 					delete(conflictsWith, curValMapPath)
 				}
 			}
 		}
 
 		for k := range conflictsWith {
-			markedForNullification = append(markedForNullification, k)
+			markedForNullification.Add(flatmapPathToCtyPath(k))
 		}
 
 		return curVal, nil

@@ -27,9 +27,10 @@ import (
 )
 
 var (
-	typeComparer  = cmp.Comparer(cty.Type.Equals)
-	valueComparer = cmp.Comparer(cty.Value.RawEquals)
-	equateEmpty   = cmpopts.EquateEmpty()
+	typeComparer    = cmp.Comparer(cty.Type.Equals)
+	valueComparer   = cmp.Comparer(cty.Value.RawEquals)
+	pathSetComparer = cmp.Comparer(cty.PathSet.Equal)
+	equateEmpty     = cmpopts.EquateEmpty()
 )
 
 func testApplyDiff(t *testing.T,

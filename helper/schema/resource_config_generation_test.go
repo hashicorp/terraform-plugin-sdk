@@ -343,7 +343,7 @@ func TestProcessConflictsWith(t *testing.T) {
 		//	Schema:          map[string]*Schema{},
 		//	expectSchemaMap: map[string]*configGenSchema{},
 		//},
-		"Top-level attribute - nullified": {
+		"primitive attribute with ConflictsWith: other attribute marked for nullification": {
 			Schema: map[string]*Schema{
 				"attr_a": {
 					Type:          TypeString,
@@ -363,33 +363,9 @@ func TestProcessConflictsWith(t *testing.T) {
 				"attr_a": cty.StringVal("val"),
 				"attr_b": cty.StringVal("val"),
 			}),
-			expectedPaths: []string{
-				"attr_b",
-			},
+			expectedCtyPaths: cty.NewPathSet(cty.GetAttrPath("attr_b")),
 		},
-		"Top-level attribute - other": {
-			Schema: map[string]*Schema{
-				"attr_a": {
-					Type:     TypeString,
-					Optional: true,
-				},
-				"attr_b": {
-					Type:          TypeString,
-					Optional:      true,
-					ConflictsWith: []string{"attr_a"},
-				},
-			},
-			ctyVal: cty.ObjectVal(map[string]cty.Value{
-				"attr_a": cty.StringVal("val"),
-				"attr_b": cty.StringVal("val"),
-			}),
-			expectedCtyVal: cty.ObjectVal(map[string]cty.Value{
-				"attr_a": cty.StringVal("val"),
-				"attr_b": cty.NullVal(cty.String),
-			}),
-			expectedPaths: []string{},
-		},
-		"list attribute - nullified": {
+		"list attribute with ConflictsWith marked for nullification": {
 			Schema: map[string]*Schema{
 				"attr_a": {
 					Type:     TypeString,
@@ -408,9 +384,13 @@ func TestProcessConflictsWith(t *testing.T) {
 			}),
 			expectedCtyVal: cty.ObjectVal(map[string]cty.Value{
 				"attr_a": cty.StringVal("value"),
-				"attr_b": cty.NullVal(cty.List(cty.String)),
+				"attr_b": cty.ListVal([]cty.Value{cty.StringVal("true"), cty.StringVal("false")}),
 			}),
-			expectedPaths: []string{},
+			expectedCtyPaths: cty.NewPathSet(
+				cty.GetAttrPath("attr_b"),
+				cty.GetAttrPath("attr_b").IndexInt(0),
+				cty.GetAttrPath("attr_b").IndexInt(1),
+			),
 		},
 		"list attribute - marked for nullification": {
 			Schema: map[string]*Schema{
@@ -965,7 +945,7 @@ func TestProcessConflictsWith(t *testing.T) {
 			if diff := cmp.Diff(actualCty, tc.expectedCtyVal, valueComparer); diff != "" {
 				t.Error(diff)
 			}
-			if diff := cmp.Diff(actualPaths, tc.expectedPaths); diff != "" {
+			if diff := cmp.Diff(actualPaths, tc.expectedCtyPaths, pathSetComparer); diff != "" {
 				t.Error(diff)
 			}
 		})
