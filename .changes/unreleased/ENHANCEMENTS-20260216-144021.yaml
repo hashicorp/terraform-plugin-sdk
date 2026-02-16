@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Added support for deprecation messages on attributes and blocks, which are now populated from the Schema''s Deprecated field and passed through to the protocol layer'
+time: 2026-02-16T14:40:21.41278+01:00
+custom:
+    Issue: "1553"
