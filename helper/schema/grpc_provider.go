@@ -1785,6 +1785,93 @@ func (s *GRPCProviderServer) ImportResourceState(ctx context.Context, req *tfpro
 	return resp, nil
 }
 
+func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tfprotov5.GenerateResourceConfigRequest) (*tfprotov5.GenerateResourceConfigResponse, error) {
+	ctx = logging.InitContext(ctx)
+
+	resp := &tfprotov5.GenerateResourceConfigResponse{}
+
+	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+
+	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newConfigVal := stateVal
+
+	// Handle top level attributes and defaults
+	newConfigVal, err = cty.Transform(newConfigVal, func(path cty.Path, val cty.Value) (cty.Value, error) {
+		if val.IsNull() {
+			return val, nil
+		}
+
+		if len(path) == 0 {
+			return val, nil
+		}
+
+		ty := val.Type()
+		null := cty.NullVal(ty)
+
+		// find the attribute or block schema representing the value
+		attr := schemaBlock.AttributeByPath(path)
+		block := schemaBlock.BlockByPath(path)
+		switch {
+		case attr != nil:
+			// deprecated attributes
+			if attr.Deprecated {
+				return null, nil
+			}
+
+			// read-only attributes are not written in the configuration
+			if attr.Computed && !attr.Optional {
+				return null, nil
+			}
+
+			// The legacy SDK adds an Optional+Computed "id" attribute to the
+			// resource schema even if not defined in provider code.
+			// During validation, however, the presence of an extraneous "id"
+			// attribute in config will cause an error.
+			// Remove this attribute so we do not generate an "id" attribute
+			// where there is a risk that it is not in the real resource schema.
+			if path.Equals(cty.GetAttrPath("id")) && attr.Computed && attr.Optional {
+				return null, nil
+			}
+
+			// If we have "" for an optional value, assume it is actually null
+			// due to the legacy SDK.
+			if ty == cty.String {
+				if !val.IsNull() && attr.Optional && len(val.AsString()) == 0 {
+					return null, nil
+				}
+			}
+			return val, nil
+
+		case block != nil:
+			if block.Deprecated {
+				return null, nil
+			}
+		}
+
+		return val, nil
+	})
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+
+	newConfigMP, err := msgpack.Marshal(newConfigVal, schemaBlock.ImpliedType())
+	if err != nil {
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		return resp, nil
+	}
+	resp.Config = &tfprotov5.DynamicValue{
+		MsgPack: newConfigMP,
+	}
+
+	return resp, nil
+}
+
 func (s *GRPCProviderServer) MoveResourceState(ctx context.Context, req *tfprotov5.MoveResourceStateRequest) (*tfprotov5.MoveResourceStateResponse, error) {
 	if req == nil {
 		return nil, fmt.Errorf("MoveResourceState request is nil")
