@@ -11466,7 +11466,8 @@ func TestGenerateResourceConfig(t *testing.T) {
 								Required: true,
 							},
 							"test_deprecated": {
-								Type: TypeList,
+								Type:     TypeList,
+								Optional: true,
 								Elem: &Schema{
 									Type: TypeString,
 								},
@@ -11479,6 +11480,19 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_empty_string": {
 								Type:     TypeString,
 								Optional: true,
+							},
+							"test_deprecated_block": {
+								Type:       TypeList,
+								Optional:   true,
+								Deprecated: "deprecated",
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
 							},
 						},
 					},
@@ -11496,6 +11510,9 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_deprecated":   cty.List(cty.String),
 							"test_false_bool":   cty.Bool,
 							"test_empty_string": cty.String,
+							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
 							"id":            cty.StringVal("id-val"),
@@ -11508,6 +11525,14 @@ func TestGenerateResourceConfig(t *testing.T) {
 							}),
 							"test_false_bool":   cty.BoolVal(false),
 							"test_empty_string": cty.StringVal(""),
+							"test_deprecated_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-a"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-b"),
+								}),
+							}),
 						}),
 					),
 				},
@@ -11523,6 +11548,9 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_deprecated":   cty.List(cty.String),
 							"test_false_bool":   cty.Bool,
 							"test_empty_string": cty.String,
+							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
 							"id":                cty.NullVal(cty.String),
@@ -11532,6 +11560,9 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_deprecated":   cty.NullVal(cty.List(cty.String)),
 							"test_false_bool":   cty.BoolVal(false),
 							"test_empty_string": cty.NullVal(cty.String),
+							"test_deprecated_block": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
 						}),
 					),
 				},
