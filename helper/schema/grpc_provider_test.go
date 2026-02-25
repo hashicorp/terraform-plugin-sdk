@@ -3767,6 +3767,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				Resources:          []tfprotov5.ResourceMetadata{},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},
@@ -3804,6 +3805,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},
@@ -3830,6 +3832,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},

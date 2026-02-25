@@ -76,6 +76,7 @@ func (s *GRPCProviderServer) StopContext(ctx context.Context) context.Context {
 func (s *GRPCProviderServer) serverCapabilities() *tfprotov5.ServerCapabilities {
 	return &tfprotov5.ServerCapabilities{
 		GetProviderSchemaOptional: true,
+		GenerateResourceConfig:    true,
 	}
 }
 
