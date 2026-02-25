@@ -61,21 +61,21 @@ func (s TestStep) providerConfig(_ context.Context, skipProviderBlock bool) stri
 
 	for name, externalProvider := range s.ExternalProviders {
 		if !skipProviderBlock {
-			providerBlocks.WriteString(fmt.Sprintf("provider %q {}\n", name))
+			fmt.Fprintf(&providerBlocks, "provider %q {}\n", name)
 		}
 
 		if externalProvider.Source == "" && externalProvider.VersionConstraint == "" {
 			continue
 		}
 
-		requiredProviderBlocks.WriteString(fmt.Sprintf("    %s = {\n", name))
+		fmt.Fprintf(&requiredProviderBlocks, "    %s = {\n", name)
 
 		if externalProvider.Source != "" {
-			requiredProviderBlocks.WriteString(fmt.Sprintf("      source = %q\n", externalProvider.Source))
+			fmt.Fprintf(&requiredProviderBlocks, "      source = %q\n", externalProvider.Source)
 		}
 
 		if externalProvider.VersionConstraint != "" {
-			requiredProviderBlocks.WriteString(fmt.Sprintf("      version = %q\n", externalProvider.VersionConstraint))
+			fmt.Fprintf(&requiredProviderBlocks, "      version = %q\n", externalProvider.VersionConstraint)
 		}
 
 		requiredProviderBlocks.WriteString("    }\n")
