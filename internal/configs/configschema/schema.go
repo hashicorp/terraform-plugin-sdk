@@ -44,6 +44,10 @@ type Block struct {
 	// Deprecated indicates whether the block has been marked as deprecated in the
 	// provider and usage should be discouraged.
 	Deprecated bool
+
+	// DeprecationMessage is a human-readable message explaining why the block
+	// is deprecated and what users should do instead.
+	DeprecationMessage string
 }
 
 // Attribute represents a configuration attribute, within a block.
@@ -83,6 +87,10 @@ type Attribute struct {
 	// Deprecated indicates whether the attribute has been marked as deprecated in the
 	// provider and usage should be discouraged.
 	Deprecated bool
+
+	// DeprecationMessage is a human-readable message explaining why the attribute
+	// is deprecated and what users should do instead.
+	DeprecationMessage string
 
 	// WriteOnly indicates that the practitioner can choose a value for this
 	// attribute, but Terraform will not store this attribute in plan or state.
