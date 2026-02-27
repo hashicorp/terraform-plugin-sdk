@@ -95,6 +95,17 @@ func (s *Set) Len() int {
 	return len(s.m)
 }
 
+// Map returns the internal map of the set that cannot be modified.
+func (s *Set) Map() map[string]interface{} {
+	m := make(map[string]interface{}, len(s.m))
+
+	for k, v := range s.m {
+		m[k] = v
+	}
+
+	return m
+}
+
 // List returns the elements of this set in slice format.
 //
 // The order of the returned elements is deterministic. Given the same
