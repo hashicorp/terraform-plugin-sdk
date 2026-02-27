@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/hashicorp/terraform-exec v0.25.0
 	github.com/hashicorp/terraform-json v0.27.2
-	github.com/hashicorp/terraform-plugin-go v0.30.0
+	github.com/hashicorp/terraform-plugin-go v0.30.1-0.20260224203057-7d789423e31f
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-testing-interface v1.14.1

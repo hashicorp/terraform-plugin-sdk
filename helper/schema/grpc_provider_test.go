@@ -3767,6 +3767,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				Resources:          []tfprotov5.ResourceMetadata{},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},
@@ -3804,6 +3805,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},
@@ -3830,6 +3832,7 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 				},
 				ServerCapabilities: &tfprotov5.ServerCapabilities{
 					GetProviderSchemaOptional: true,
+					GenerateResourceConfig:    true,
 				},
 			},
 		},
@@ -11337,6 +11340,260 @@ func TestPrepareProviderConfig(t *testing.T) {
 
 			if tc.ExpectConfig.GoString() != val.GoString() {
 				t.Fatalf("\nexpected: %#v\ngot: %#v", tc.ExpectConfig, val)
+			}
+		})
+	}
+}
+
+func TestGenerateResourceConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct {
+		server   *GRPCProviderServer
+		req      *tfprotov5.GenerateResourceConfigRequest
+		expected *tfprotov5.GenerateResourceConfigResponse
+	}{
+		"null-state": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Computed: true,
+								Optional: true,
+							},
+							"test_computed": {
+								Type:     TypeString,
+								Computed: true,
+							},
+							"test_optional": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_required": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_deprecated": {
+								Type: TypeList,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Deprecated: "deprecated",
+							},
+							"test_false_bool": {
+								Type:     TypeBool,
+								Optional: true,
+							},
+							"test_empty_string": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+						}),
+						cty.NullVal(cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+						})),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+						}),
+						cty.NullVal(cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+						})),
+					),
+				},
+			},
+		},
+		"simple-resource": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Computed: true,
+								Optional: true,
+							},
+							"test_computed": {
+								Type:     TypeString,
+								Computed: true,
+							},
+							"test_optional": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_required": {
+								Type:     TypeString,
+								Required: true,
+							},
+							"test_deprecated": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Schema{
+									Type: TypeString,
+								},
+								Deprecated: "deprecated",
+							},
+							"test_false_bool": {
+								Type:     TypeBool,
+								Optional: true,
+							},
+							"test_empty_string": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_deprecated_block": {
+								Type:       TypeList,
+								Optional:   true,
+								Deprecated: "deprecated",
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":            cty.StringVal("id-val"),
+							"test_computed": cty.StringVal("computed-val"),
+							"test_optional": cty.StringVal("optional-val"),
+							"test_required": cty.StringVal("required-val"),
+							"test_deprecated": cty.ListVal([]cty.Value{
+								cty.StringVal("hello"),
+								cty.StringVal("world"),
+							}),
+							"test_false_bool":   cty.BoolVal(false),
+							"test_empty_string": cty.StringVal(""),
+							"test_deprecated_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-a"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-b"),
+								}),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_required":     cty.String,
+							"test_deprecated":   cty.List(cty.String),
+							"test_false_bool":   cty.Bool,
+							"test_empty_string": cty.String,
+							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":                cty.NullVal(cty.String),
+							"test_computed":     cty.NullVal(cty.String),
+							"test_optional":     cty.StringVal("optional-val"),
+							"test_required":     cty.StringVal("required-val"),
+							"test_deprecated":   cty.NullVal(cty.List(cty.String)),
+							"test_false_bool":   cty.BoolVal(false),
+							"test_empty_string": cty.NullVal(cty.String),
+							"test_deprecated_block": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+						}),
+					),
+				},
+			},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := testCase.server.GenerateResourceConfig(context.Background(), testCase.req)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {
+				ty := testCase.server.getResourceSchemaBlock("test").ImpliedType()
+
+				if resp != nil && resp.Config != nil {
+					t.Logf("resp.Config.MsgPack: %s", mustMsgpackUnmarshal(ty, resp.Config.MsgPack))
+				}
+
+				if testCase.expected != nil && testCase.expected.Config != nil {
+					t.Logf("expected: %s", mustMsgpackUnmarshal(ty, testCase.expected.Config.MsgPack))
+				}
+
+				t.Error(diff)
 			}
 		})
 	}
