@@ -37,6 +37,33 @@ func TestSuppressJsonDiff(t *testing.T) {
 			newValue: `{ "enabled": true }`,
 			expected: true,
 		},
+		"different-structure (array)": {
+			oldValue: `[{ "enabled": true }]`,
+			newValue: `[{ "enabled": true, "world": "round" }]`,
+			expected: false,
+		},
+		"different-value (array)": {
+			oldValue: `[{ "enabled": true }]`,
+			newValue: `[{ "enabled": false }]`,
+			expected: false,
+		},
+		"different order (array)": {
+			oldValue: `[{ "enabled": true }, { "enabled": false }]`,
+			newValue: `[{ "enabled": false }, { "enabled": true }]`,
+			expected: false,
+		},
+		"same (array)": {
+			oldValue: `[{ "enabled": true }]`,
+			newValue: `[{ "enabled": true }]`,
+			expected: true,
+		},
+		"same-whitespace (array)": {
+			oldValue: `[{
+				"enabled": true
+			}]`,
+			newValue: `[{ "enabled": true }]`,
+			expected: true,
+		},
 	}
 
 	for name, testCase := range testCases {
