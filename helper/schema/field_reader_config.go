@@ -45,6 +45,11 @@ func (r *ConfigFieldReader) readField(
 		// the address with the real list index. i.e. set.50 might actually
 		// map to set.12 in the config, since it is in list order in the
 		// config, not indexed by set value.
+		
+		updatedAddress := make([]string, len(address))
+		copy(updatedAddress, address)
+		address = updatedAddress
+
 		for i, v := range schemaList {
 			// Sets are the only thing that cause this issue.
 			if v.Type != TypeSet {
