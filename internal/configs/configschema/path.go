@@ -35,7 +35,7 @@ func (b *Block) AttributeByPath(path cty.Path) *Attribute {
 
 // BlockByPath looks up the Block schema which corresponds to the given
 // cty.Path. A nil value is returned if the given path does not correspond to a
-// specific attribute.
+// specific block.
 func (b *Block) BlockByPath(path cty.Path) *Block {
 	for i, step := range path {
 		switch step := step.(type) {

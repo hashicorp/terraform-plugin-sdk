@@ -1,3 +1,9 @@
+## 2.39.0 (February 27, 2026)
+
+ENHANCEMENTS:
+
+* helper/schema: Added support for deprecation messages on attributes and blocks, which are now populated from the Schema's Deprecated field and passed through to the protocol layer ([#1553](https://github.com/hashicorp/terraform-plugin-sdk/issues/1553))
+
 ## 2.38.2 (February 02, 2026)
 
 BUG FIXES:

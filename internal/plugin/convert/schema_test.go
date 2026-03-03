@@ -187,6 +187,54 @@ func TestConvertSchemaBlocks(t *testing.T) {
 				},
 			},
 		},
+		"deprecated attribute": {
+			&tfprotov5.SchemaBlock{
+				Attributes: []*tfprotov5.SchemaAttribute{
+					{
+						Name:               "deprecated_attr",
+						Type:               tftypes.String,
+						Optional:           true,
+						Deprecated:         true,
+						DeprecationMessage: "use other_attr instead",
+					},
+				},
+			},
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"deprecated_attr": {
+						Type:               cty.String,
+						Optional:           true,
+						Deprecated:         true,
+						DeprecationMessage: "use other_attr instead",
+					},
+				},
+			},
+		},
+		"deprecated block": {
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
+					{
+						TypeName: "deprecated_block",
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							Deprecated:         true,
+							DeprecationMessage: "use new_block instead",
+						},
+					},
+				},
+			},
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"deprecated_block": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Deprecated:         true,
+							DeprecationMessage: "use new_block instead",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for name, tc := range tests {
@@ -369,6 +417,54 @@ func TestConvertProtoSchemaBlocks(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		"deprecated attribute": {
+			&tfprotov5.SchemaBlock{
+				Attributes: []*tfprotov5.SchemaAttribute{
+					{
+						Name:               "deprecated_attr",
+						Type:               tftypes.String,
+						Optional:           true,
+						Deprecated:         true,
+						DeprecationMessage: "use other_attr instead",
+					},
+				},
+			},
+			&configschema.Block{
+				Attributes: map[string]*configschema.Attribute{
+					"deprecated_attr": {
+						Type:               cty.String,
+						Optional:           true,
+						Deprecated:         true,
+						DeprecationMessage: "use other_attr instead",
+					},
+				},
+			},
+		},
+		"deprecated block": {
+			&tfprotov5.SchemaBlock{
+				BlockTypes: []*tfprotov5.SchemaNestedBlock{
+					{
+						TypeName: "deprecated_block",
+						Nesting:  tfprotov5.SchemaNestedBlockNestingModeSingle,
+						Block: &tfprotov5.SchemaBlock{
+							Deprecated:         true,
+							DeprecationMessage: "use new_block instead",
+						},
+					},
+				},
+			},
+			&configschema.Block{
+				BlockTypes: map[string]*configschema.NestedBlock{
+					"deprecated_block": {
+						Nesting: configschema.NestingSingle,
+						Block: configschema.Block{
+							Deprecated:         true,
+							DeprecationMessage: "use new_block instead",
 						},
 					},
 				},
