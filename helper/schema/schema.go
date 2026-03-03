@@ -2579,3 +2579,51 @@ func (t ValueType) Zero() interface{} {
 		panic(fmt.Sprintf("unknown type %s", t))
 	}
 }
+
+// AttributeByPath looks up the Attribute schema which corresponds to the given
+// cty.Path. A nil value is returned if the given path does not correspond to a
+// specific attribute.
+func (m schemaMap) AttributeByPath(path cty.Path) *Schema {
+	schema := m
+
+	for i, step := range path {
+		switch step := step.(type) {
+		case cty.GetAttrStep:
+			if attr := schema[step.Name]; attr != nil {
+				if i == len(path)-1 {
+					return attr
+				}
+			}
+
+			if nestedBlock, ok := schema[step.Name].Elem.(*Resource); ok {
+				schema = nestedBlock.Schema
+				continue
+			}
+
+			return nil
+		}
+	}
+	return nil
+}
+
+// BlockByPath looks up the Block schema which corresponds to the given
+// cty.Path. A nil value is returned if the given path does not correspond to a
+// specific block.
+func (m schemaMap) BlockByPath(path cty.Path) *Schema {
+	schema := m
+	for i, step := range path {
+		switch step := step.(type) {
+		case cty.GetAttrStep:
+			if nestedBlock, ok := schema[step.Name].Elem.(*Resource); ok {
+				if len(nestedBlock.Schema) > 0 && i < len(path)-1 {
+					return schemaMap(nestedBlock.Schema).BlockByPath(path[i+1:])
+				} else if i < len(path)-1 {
+					return nil
+				}
+
+				return schema[step.Name]
+			}
+		}
+	}
+	return nil
+}
