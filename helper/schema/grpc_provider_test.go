@@ -11497,6 +11497,63 @@ func TestGenerateResourceConfig(t *testing.T) {
 									},
 								},
 							},
+							"test_nested_block": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_nested_block": {
+											Type:     TypeList,
+											Optional: true,
+											Elem: &Resource{
+												Schema: map[string]*Schema{
+													"test_computed": {
+														Type:     TypeString,
+														Computed: true,
+													},
+													"test_optional": {
+														Type:     TypeString,
+														Optional: true,
+													},
+													"test_required": {
+														Type:     TypeString,
+														Required: true,
+													},
+													"test_deprecated": {
+														Type:     TypeList,
+														Optional: true,
+														Elem: &Schema{
+															Type: TypeString,
+														},
+														Deprecated: "deprecated",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							"test_nested_deprecated_block": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_nested_block": {
+											Type:       TypeList,
+											Optional:   true,
+											Deprecated: "deprecated",
+											Elem: &Resource{
+												Schema: map[string]*Schema{
+													"test_nested_nested_block_attr": {
+														Type:     TypeString,
+														Optional: true,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -11515,6 +11572,19 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_empty_string": cty.String,
 							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
 								"test_nested_block_attr": cty.String,
+							})),
+							"test_nested_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_nested_block": cty.List(cty.Object(map[string]cty.Type{
+									"test_computed":   cty.String,
+									"test_optional":   cty.String,
+									"test_required":   cty.String,
+									"test_deprecated": cty.List(cty.String),
+								})),
+							})),
+							"test_nested_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_nested_block": cty.List(cty.Object(map[string]cty.Type{
+									"test_nested_nested_block_attr": cty.String,
+								})),
 							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
@@ -11536,6 +11606,74 @@ func TestGenerateResourceConfig(t *testing.T) {
 									"test_nested_block_attr": cty.StringVal("val-b"),
 								}),
 							}),
+							"test_nested_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed": cty.StringVal("computed-val-a"),
+											"test_optional": cty.StringVal("optional-val-a"),
+											"test_required": cty.StringVal("required-val-a"),
+											"test_deprecated": cty.ListVal([]cty.Value{
+												cty.StringVal("hello-a"),
+												cty.StringVal("world-a"),
+											}),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed": cty.StringVal("computed-val-b"),
+											"test_optional": cty.StringVal("optional-val-b"),
+											"test_required": cty.StringVal("required-val-b"),
+											"test_deprecated": cty.ListVal([]cty.Value{
+												cty.StringVal("hello-b"),
+												cty.StringVal("world-b"),
+											}),
+										}),
+									}),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed": cty.StringVal("computed-val-a"),
+											"test_optional": cty.StringVal("optional-val-a"),
+											"test_required": cty.StringVal("required-val-a"),
+											"test_deprecated": cty.ListVal([]cty.Value{
+												cty.StringVal("hello-a"),
+												cty.StringVal("world-a"),
+											}),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed": cty.StringVal("computed-val-b"),
+											"test_optional": cty.StringVal("optional-val-b"),
+											"test_required": cty.StringVal("required-val-b"),
+											"test_deprecated": cty.ListVal([]cty.Value{
+												cty.StringVal("hello-b"),
+												cty.StringVal("world-b"),
+											}),
+										}),
+									}),
+								}),
+							}),
+							"test_nested_deprecated_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_nested_nested_block_attr": cty.StringVal("val-a"),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_nested_nested_block_attr": cty.StringVal("val-b"),
+										}),
+									}),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_nested_nested_block_attr": cty.StringVal("val-a"),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_nested_nested_block_attr": cty.StringVal("val-b"),
+										}),
+									}),
+								}),
+							}),
 						}),
 					),
 				},
@@ -11554,6 +11692,19 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
 								"test_nested_block_attr": cty.String,
 							})),
+							"test_nested_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_nested_block": cty.List(cty.Object(map[string]cty.Type{
+									"test_computed":   cty.String,
+									"test_optional":   cty.String,
+									"test_required":   cty.String,
+									"test_deprecated": cty.List(cty.String),
+								})),
+							})),
+							"test_nested_deprecated_block": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_nested_block": cty.List(cty.Object(map[string]cty.Type{
+									"test_nested_nested_block_attr": cty.String,
+								})),
+							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
 							"id":                cty.NullVal(cty.String),
@@ -11566,6 +11717,52 @@ func TestGenerateResourceConfig(t *testing.T) {
 							"test_deprecated_block": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
 								"test_nested_block_attr": cty.String,
 							}))),
+							"test_nested_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed":   cty.NullVal(cty.String),
+											"test_optional":   cty.StringVal("optional-val-a"),
+											"test_required":   cty.StringVal("required-val-a"),
+											"test_deprecated": cty.NullVal(cty.List(cty.String)),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed":   cty.NullVal(cty.String),
+											"test_optional":   cty.StringVal("optional-val-b"),
+											"test_required":   cty.StringVal("required-val-b"),
+											"test_deprecated": cty.NullVal(cty.List(cty.String)),
+										}),
+									}),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.ListVal([]cty.Value{
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed":   cty.NullVal(cty.String),
+											"test_optional":   cty.StringVal("optional-val-a"),
+											"test_required":   cty.StringVal("required-val-a"),
+											"test_deprecated": cty.NullVal(cty.List(cty.String)),
+										}),
+										cty.ObjectVal(map[string]cty.Value{
+											"test_computed":   cty.NullVal(cty.String),
+											"test_optional":   cty.StringVal("optional-val-b"),
+											"test_required":   cty.StringVal("required-val-b"),
+											"test_deprecated": cty.NullVal(cty.List(cty.String)),
+										}),
+									}),
+								}),
+							}),
+							"test_nested_deprecated_block": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+										"test_nested_nested_block_attr": cty.String,
+									}))),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_nested_block": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+										"test_nested_nested_block_attr": cty.String,
+									}))),
+								}),
+							}),
 						}),
 					),
 				},
