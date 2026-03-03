@@ -1792,6 +1792,7 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 	resp := &tfprotov5.GenerateResourceConfigResponse{}
 
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
+	res := s.provider.ResourcesMap[req.TypeName]
 
 	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
@@ -1827,12 +1828,12 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		null := cty.NullVal(ty)
 
 		// find the attribute or block schema representing the value
-		attr := schemaBlock.AttributeByPath(path)
-		block := schemaBlock.BlockByPath(path)
+		attr := schemaMap(res.Schema).AttributeByPath(path)
+		block := schemaMap(res.Schema).BlockByPath(path)
 		switch {
 		case attr != nil:
 			// deprecated attributes
-			if attr.Deprecated {
+			if attr.Deprecated != "" {
 				return null, nil
 			}
 
@@ -1861,9 +1862,13 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 			return val, nil
 
 		case block != nil:
-			if block.Deprecated {
+			if block.Deprecated != "" {
 				return null, nil
 			}
+
+			//if path.Equals(cty.GetAttrPath("timeouts")) {
+			//	return null, nil
+			//}
 		}
 
 		return val, nil
