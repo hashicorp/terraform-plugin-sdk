@@ -1857,7 +1857,11 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		return val, nil
 	})
 	if err != nil {
-		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, err)
+		configErr := fmt.Errorf("An unexpected error occurred while trying to generate resource configuration. "+
+			"This is an error in terraform-plugin-sdk used by the provider. "+
+			"Please report the following to the provider developers.\n\n"+
+			"Original Error: %s", err.Error())
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, configErr)
 		return resp, nil
 	}
 
