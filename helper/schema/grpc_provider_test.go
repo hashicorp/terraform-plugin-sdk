@@ -11349,9 +11349,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
-		server   *GRPCProviderServer
-		req      *tfprotov5.GenerateResourceConfigRequest
-		expected *tfprotov5.GenerateResourceConfigResponse
+		server      *GRPCProviderServer
+		req         *tfprotov5.GenerateResourceConfigRequest
+		expected    *tfprotov5.GenerateResourceConfigResponse
+		ExpectError string
 	}{
 		"null-state": {
 			server: NewGRPCProviderServer(&Provider{
@@ -11364,33 +11365,6 @@ func TestGenerateResourceConfig(t *testing.T) {
 								Computed: true,
 								Optional: true,
 							},
-							"test_computed": {
-								Type:     TypeString,
-								Computed: true,
-							},
-							"test_optional": {
-								Type:     TypeString,
-								Optional: true,
-							},
-							"test_required": {
-								Type:     TypeString,
-								Required: true,
-							},
-							"test_deprecated": {
-								Type: TypeList,
-								Elem: &Schema{
-									Type: TypeString,
-								},
-								Deprecated: "deprecated",
-							},
-							"test_false_bool": {
-								Type:     TypeBool,
-								Optional: true,
-							},
-							"test_empty_string": {
-								Type:     TypeString,
-								Optional: true,
-							},
 						},
 					},
 				},
@@ -11400,50 +11374,15 @@ func TestGenerateResourceConfig(t *testing.T) {
 				State: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
-							"test_computed":     cty.String,
-							"test_optional":     cty.String,
-							"test_required":     cty.String,
-							"test_deprecated":   cty.List(cty.String),
-							"test_false_bool":   cty.Bool,
-							"test_empty_string": cty.String,
+							"id": cty.String,
 						}),
 						cty.NullVal(cty.Object(map[string]cty.Type{
-							"id":                cty.String,
-							"test_computed":     cty.String,
-							"test_optional":     cty.String,
-							"test_required":     cty.String,
-							"test_deprecated":   cty.List(cty.String),
-							"test_false_bool":   cty.Bool,
-							"test_empty_string": cty.String,
+							"id": cty.String,
 						})),
 					),
 				},
 			},
-			expected: &tfprotov5.GenerateResourceConfigResponse{
-				Config: &tfprotov5.DynamicValue{
-					MsgPack: mustMsgpackMarshal(
-						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
-							"test_computed":     cty.String,
-							"test_optional":     cty.String,
-							"test_required":     cty.String,
-							"test_deprecated":   cty.List(cty.String),
-							"test_false_bool":   cty.Bool,
-							"test_empty_string": cty.String,
-						}),
-						cty.NullVal(cty.Object(map[string]cty.Type{
-							"id":                cty.String,
-							"test_computed":     cty.String,
-							"test_optional":     cty.String,
-							"test_required":     cty.String,
-							"test_deprecated":   cty.List(cty.String),
-							"test_false_bool":   cty.Bool,
-							"test_empty_string": cty.String,
-						})),
-					),
-				},
-			},
+			ExpectError: "Unexpected Generate Config Request",
 		},
 		"simple-resource": {
 			server: NewGRPCProviderServer(&Provider{
@@ -11777,6 +11716,15 @@ func TestGenerateResourceConfig(t *testing.T) {
 
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			if testCase.ExpectError != "" && len(resp.Diagnostics) > 0 {
+				for _, d := range resp.Diagnostics {
+					if !strings.Contains(d.Summary, testCase.ExpectError) {
+						t.Fatalf("Unexpected error: %s/%s", d.Summary, d.Detail)
+					}
+				}
+				return
 			}
 
 			if diff := cmp.Diff(resp, testCase.expected, valueComparer); diff != "" {

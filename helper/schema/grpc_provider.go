@@ -1799,6 +1799,18 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		return resp, nil
 	}
 
+	if stateVal.IsNull() {
+		resp.Diagnostics = []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unexpected Generate Config Request",
+				Detail: "An unexpected error was encountered when generating resource configuration. The current state was missing.\n\n" +
+					"This is always a problem with Terraform or terraform-plugin-sdk. Please report this to the provider developer.",
+			},
+		}
+
+	}
+
 	newConfigVal := stateVal
 
 	// Handle top level attributes and defaults
