@@ -2589,18 +2589,22 @@ func (m schemaMap) AttributeByPath(path cty.Path) *Schema {
 	for i, step := range path {
 		switch step := step.(type) {
 		case cty.GetAttrStep:
-			if attr := schema[step.Name]; attr != nil {
-				if i == len(path)-1 {
-					return attr
-				}
+			attr := schema[step.Name]
+			if attr == nil {
+				return nil
 			}
 
-			if nestedBlock, ok := schema[step.Name].Elem.(*Resource); ok {
+			if nestedBlock, ok := attr.Elem.(*Resource); ok {
+				if i == len(path)-1 {
+					return nil
+				}
 				schema = nestedBlock.Schema
 				continue
 			}
 
-			return nil
+			if i == len(path)-1 {
+				return attr
+			}
 		}
 	}
 	return nil
@@ -2614,14 +2618,19 @@ func (m schemaMap) BlockByPath(path cty.Path) *Schema {
 	for i, step := range path {
 		switch step := step.(type) {
 		case cty.GetAttrStep:
-			if nestedBlock, ok := schema[step.Name].Elem.(*Resource); ok {
+			attr := schema[step.Name]
+			if attr == nil {
+				return nil
+			}
+
+			if nestedBlock, ok := attr.Elem.(*Resource); ok {
 				if len(nestedBlock.Schema) > 0 && i < len(path)-1 {
 					return schemaMap(nestedBlock.Schema).BlockByPath(path[i+1:])
 				} else if i < len(path)-1 {
 					return nil
 				}
 
-				return schema[step.Name]
+				return attr
 			}
 		}
 	}

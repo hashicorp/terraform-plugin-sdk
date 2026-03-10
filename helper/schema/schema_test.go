@@ -9477,3 +9477,263 @@ func TestHasWriteOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributeByPath(t *testing.T) {
+
+	schema := map[string]*Schema{
+		"a1": {
+			Type:        TypeString,
+			Description: "a1",
+		},
+		"a2": {
+			Type:        TypeString,
+			Description: "a2",
+		},
+		"b1": {
+			Type:     TypeList,
+			Optional: true,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"a3": {
+						Type:        TypeString,
+						Description: "a3",
+					},
+					"a4": {
+						Type:        TypeString,
+						Description: "a4",
+					},
+					"b2": {
+						Type:     TypeMap,
+						Optional: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"a5": {
+									Type:        TypeString,
+									Description: "a5",
+								},
+								"a6": {
+									Type:        TypeString,
+									Description: "a6",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"b3": {
+			Type:     TypeMap,
+			Optional: true,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"a7": {
+						Type:        TypeString,
+						Description: "a7",
+					},
+					"a8": {
+						Type:        TypeString,
+						Description: "a8",
+					},
+					"b4": {
+						Type:     TypeSet,
+						Optional: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"a9": {
+									Type:        TypeString,
+									Description: "a9",
+								},
+								"a10": {
+									Type:        TypeString,
+									Description: "a10",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range []struct {
+		path            cty.Path
+		attrDescription string
+		exists          bool
+	}{
+		{
+			cty.GetAttrPath("a2"),
+			"a2",
+			true,
+		},
+		{
+			cty.GetAttrPath("a3").IndexInt(1).GetAttr("b2").IndexString("foo").GetAttr("no"),
+			"missing",
+			false,
+		},
+		{
+			cty.GetAttrPath("b1"),
+			"block",
+			false,
+		},
+		{
+			cty.GetAttrPath("b1").IndexInt(1).GetAttr("a3"),
+			"a3",
+			true,
+		},
+		{
+			cty.GetAttrPath("b1").IndexInt(1).GetAttr("b2").IndexString("foo").GetAttr("a7"),
+			"missing",
+			false,
+		},
+		{
+			cty.GetAttrPath("b1").IndexInt(1).GetAttr("b2").IndexString("foo").GetAttr("a6"),
+			"a6",
+			true,
+		},
+		{
+			cty.GetAttrPath("b3").IndexString("foo").GetAttr("b2").IndexString("foo").GetAttr("a7"),
+			"missing_block",
+			false,
+		},
+		{
+			cty.GetAttrPath("b3").IndexString("foo").GetAttr("a7"),
+			"a7",
+			true,
+		},
+		{
+			// Index steps don't apply to the schema, so the set Index value doesn't matter.
+			cty.GetAttrPath("b3").IndexString("foo").GetAttr("b4").Index(cty.EmptyObjectVal).GetAttr("a9"),
+			"a9",
+			true,
+		},
+	} {
+		t.Run(tc.attrDescription, func(t *testing.T) {
+			attr := schemaMap(schema).AttributeByPath(tc.path)
+			if !tc.exists && attr == nil {
+				return
+			}
+
+			if attr == nil {
+				t.Fatalf("missing attribute from path %#v\n", tc.path)
+			}
+
+			if attr.Description != tc.attrDescription {
+				t.Fatalf("expected Attribute for %q, got %#v\n", tc.attrDescription, attr)
+			}
+		})
+	}
+}
+
+func TestBlockByPath(t *testing.T) {
+	schema := map[string]*Schema{
+		"a1": {
+			Type:        TypeString,
+			Description: "a1",
+		},
+		"a2": {
+			Type:        TypeString,
+			Description: "a2",
+		},
+		"b1": {
+			Type:     TypeList,
+			Optional: true,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"a3": {
+						Type:        TypeString,
+						Description: "a3",
+					},
+					"a4": {
+						Type:        TypeString,
+						Description: "a4",
+					},
+					"b2": {
+						Type:     TypeMap,
+						Optional: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"a5": {
+									Type:        TypeString,
+									Description: "a5",
+								},
+								"a6": {
+									Type:        TypeString,
+									Description: "a6",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"b3": {
+			Type:     TypeMap,
+			Optional: true,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"a7": {
+						Type:        TypeString,
+						Description: "a7",
+					},
+					"a8": {
+						Type:        TypeString,
+						Description: "a8",
+					},
+					"b4": {
+						Type:     TypeSet,
+						Optional: true,
+						Elem: &Resource{
+							Schema: map[string]*Schema{
+								"a9": {
+									Type:        TypeString,
+									Description: "a9",
+								},
+								"a10": {
+									Type:        TypeString,
+									Description: "a10",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for i, tc := range []struct {
+		path   cty.Path
+		exists bool
+	}{
+		{
+			cty.GetAttrPath("b1").IndexInt(1).GetAttr("b2"),
+			true,
+		},
+		{
+			cty.GetAttrPath("b1"),
+			true,
+		},
+		{
+			cty.GetAttrPath("b2"),
+			false,
+		},
+		{
+			cty.GetAttrPath("b3").IndexString("foo").GetAttr("b2"),
+			false,
+		},
+		{
+			cty.GetAttrPath("b3").IndexString("foo").GetAttr("b4"),
+			true,
+		},
+	} {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			block := schemaMap(schema).BlockByPath(tc.path)
+			if !tc.exists && block == nil {
+				return
+			}
+
+			if block == nil {
+				t.Fatalf("missing block from path %#v\n", tc.path)
+			}
+		})
+	}
+}
