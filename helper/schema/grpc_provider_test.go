@@ -11395,6 +11395,18 @@ func TestGenerateResourceConfig(t *testing.T) {
 								Computed: true,
 								Optional: true,
 							},
+							"timeouts": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_timeout_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
 							"test_computed": {
 								Type:     TypeString,
 								Computed: true,
@@ -11502,7 +11514,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 				State: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
 							"test_computed":     cty.String,
 							"test_optional":     cty.String,
 							"test_required":     cty.String,
@@ -11527,7 +11542,15 @@ func TestGenerateResourceConfig(t *testing.T) {
 							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
-							"id":            cty.StringVal("id-val"),
+							"id": cty.StringVal("id-val"),
+							"timeouts": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-a"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-b"),
+								}),
+							}),
 							"test_computed": cty.StringVal("computed-val"),
 							"test_optional": cty.StringVal("optional-val"),
 							"test_required": cty.StringVal("required-val"),
@@ -11621,7 +11644,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
 							"test_computed":     cty.String,
 							"test_optional":     cty.String,
 							"test_required":     cty.String,
@@ -11646,7 +11672,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
-							"id":                cty.NullVal(cty.String),
+							"id": cty.NullVal(cty.String),
+							"timeouts": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							}))),
 							"test_computed":     cty.NullVal(cty.String),
 							"test_optional":     cty.StringVal("optional-val"),
 							"test_required":     cty.StringVal("required-val"),
