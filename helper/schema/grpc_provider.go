@@ -1866,9 +1866,9 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 				return null, nil
 			}
 
-			//if path.Equals(cty.GetAttrPath("timeouts")) {
-			//	return null, nil
-			//}
+			if path.Equals(cty.GetAttrPath("timeouts")) {
+				return null, nil
+			}
 		}
 
 		return val, nil
