@@ -1813,9 +1813,12 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 	}
 
 	newConfigVal := stateVal
+	markedForNullification := cty.NewPathSet()
 
-	// Handle top level attributes and defaults
 	newConfigVal, err = cty.Transform(newConfigVal, func(path cty.Path, val cty.Value) (cty.Value, error) {
+		if path == nil {
+			return val, nil
+		}
 		if val.IsNull() {
 			return val, nil
 		}
@@ -1859,6 +1862,34 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 					return null, nil
 				}
 			}
+
+			conflictsWithPaths, err := processConflictsWith(attr.ConflictsWith, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(conflictsWithPaths)
+			if markedForNullification.Has(path) {
+				return null, nil
+			}
+
+			exactlyOneOfPaths, err := processExactlyOneOf(attr.ExactlyOneOf, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(exactlyOneOfPaths)
+			if markedForNullification.Has(path) {
+				return null, nil
+			}
+
+			requiredWithPaths, err := processRequiredWith(attr.RequiredWith, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(requiredWithPaths)
+			if markedForNullification.Has(path) {
+				return null, nil
+			}
+
 			return val, nil
 
 		case block != nil:
@@ -1867,6 +1898,33 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 			}
 
 			if path.Equals(cty.GetAttrPath("timeouts")) {
+				return null, nil
+			}
+
+			conflictsWithPaths, err := processConflictsWith(block.ConflictsWith, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(conflictsWithPaths)
+			if markedForNullification.Has(path) {
+				return null, nil
+			}
+
+			exactlyOneOfPaths, err := processExactlyOneOf(block.ExactlyOneOf, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(exactlyOneOfPaths)
+			if markedForNullification.Has(path) {
+				return null, nil
+			}
+
+			requiredWithPaths, err := processRequiredWith(block.RequiredWith, newConfigVal, path)
+			if err != nil {
+				return val, err
+			}
+			markedForNullification = markedForNullification.Union(requiredWithPaths)
+			if markedForNullification.Has(path) {
 				return null, nil
 			}
 		}
@@ -1881,6 +1939,13 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, configErr)
 		return resp, nil
 	}
+
+	newConfigVal, err = cty.Transform(newConfigVal, func(path cty.Path, val cty.Value) (cty.Value, error) {
+		if markedForNullification.Has(path) {
+			return cty.NullVal(val.Type()), nil
+		}
+		return val, nil
+	})
 
 	newConfigMP, err := msgpack.Marshal(newConfigVal, schemaBlock.ImpliedType())
 	if err != nil {
