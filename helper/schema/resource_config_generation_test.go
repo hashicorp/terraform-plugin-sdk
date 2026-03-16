@@ -622,10 +622,7 @@ func TestProcessConflictsWith(t *testing.T) {
 					schema = block
 				}
 
-				markedfordeletion, err := processConflictsWith(schema.ConflictsWith, tc.ctyVal, path)
-				if err != nil {
-					return cty.Value{}, err
-				}
+				markedfordeletion := processConflictsWith(schema.ConflictsWith, tc.ctyVal, path)
 				for _, p := range markedfordeletion.List() {
 					actualMarkedForNullification.Add(p)
 				}
@@ -1258,10 +1255,7 @@ func TestProcessExactlyOneOf(t *testing.T) {
 					schema = block
 				}
 
-				markedfordeletion, err := processExactlyOneOf(schema.ExactlyOneOf, tc.ctyVal, path)
-				if err != nil {
-					return cty.Value{}, err
-				}
+				markedfordeletion := processExactlyOneOf(schema.ExactlyOneOf, tc.ctyVal, path)
 				for _, p := range markedfordeletion.List() {
 					actualMarkedForNullification.Add(p)
 				}
@@ -1660,10 +1654,7 @@ func TestProcessRequiredWith(t *testing.T) {
 					schema = block
 				}
 
-				markedfordeletion, err := processRequiredWith(schema.RequiredWith, tc.ctyVal, path)
-				if err != nil {
-					return cty.Value{}, err
-				}
+				markedfordeletion := processRequiredWith(schema.RequiredWith, tc.ctyVal, path)
 				for _, p := range markedfordeletion.List() {
 					actualMarkedForNullification.Add(p)
 				}

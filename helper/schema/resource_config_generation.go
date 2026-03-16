@@ -1,3 +1,6 @@
+// Copyright IBM Corp. 2019, 2026
+// SPDX-License-Identifier: MPL-2.0
+
 package schema
 
 import (
@@ -9,7 +12,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 )
 
-func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath cty.Path) (cty.PathSet, error) {
+func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath cty.Path) cty.PathSet {
 	markedForNullification := cty.NewPathSet()
 	nonNullKeys := make([]string, 0)
 	curValMapPath := ctyPathToFlatmapPath(curPath)
@@ -39,7 +42,7 @@ func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath c
 		// only process conflictsWith values if there are more
 		// than one non-nil values, otherwise just leave alone.
 		if len(nonNullKeys) < 1 {
-			return markedForNullification, nil
+			return markedForNullification
 		}
 
 		// sort the keys and find the first non-null value to keep
@@ -61,10 +64,10 @@ func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath c
 		}
 	}
 
-	return markedForNullification, nil
+	return markedForNullification
 }
 
-func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty.Path) (cty.PathSet, error) {
+func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty.Path) cty.PathSet {
 	markedForNullification := cty.NewPathSet()
 	nonNullKeys := make([]string, 0)
 	curValMapPath := ctyPathToFlatmapPath(curPath)
@@ -104,7 +107,7 @@ func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty
 		// only process exactlyOneOf values if there are more
 		// than one non-nil values, otherwise just leave alone.
 		if len(nonNullKeys) < 1 {
-			return markedForNullification, nil
+			return markedForNullification
 		}
 
 		// sort the keys and find the first non-null value to keep
@@ -126,10 +129,10 @@ func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty
 		}
 	}
 
-	return markedForNullification, nil
+	return markedForNullification
 }
 
-func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty.Path) (cty.PathSet, error) {
+func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty.Path) cty.PathSet {
 	markedForNullification := cty.NewPathSet()
 	nonNullKeys := make([]string, 0)
 	curValMapPath := ctyPathToFlatmapPath(curPath)
@@ -168,7 +171,7 @@ func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty
 		}
 
 		if len(requiredWith) == len(nonNullKeys) {
-			return markedForNullification, nil
+			return markedForNullification
 		}
 
 		for k := range nonNullKeys {
@@ -185,7 +188,7 @@ func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty
 
 	}
 
-	return markedForNullification, nil
+	return markedForNullification
 }
 
 func ctyPathToFlatmapPath(p cty.Path) string {

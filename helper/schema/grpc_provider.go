@@ -1863,28 +1863,19 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 				}
 			}
 
-			conflictsWithPaths, err := processConflictsWith(attr.ConflictsWith, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			conflictsWithPaths := processConflictsWith(attr.ConflictsWith, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(conflictsWithPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
 			}
 
-			exactlyOneOfPaths, err := processExactlyOneOf(attr.ExactlyOneOf, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			exactlyOneOfPaths := processExactlyOneOf(attr.ExactlyOneOf, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(exactlyOneOfPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
 			}
 
-			requiredWithPaths, err := processRequiredWith(attr.RequiredWith, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			requiredWithPaths := processRequiredWith(attr.RequiredWith, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(requiredWithPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
@@ -1901,28 +1892,19 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 				return null, nil
 			}
 
-			conflictsWithPaths, err := processConflictsWith(block.ConflictsWith, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			conflictsWithPaths := processConflictsWith(block.ConflictsWith, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(conflictsWithPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
 			}
 
-			exactlyOneOfPaths, err := processExactlyOneOf(block.ExactlyOneOf, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			exactlyOneOfPaths := processExactlyOneOf(block.ExactlyOneOf, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(exactlyOneOfPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
 			}
 
-			requiredWithPaths, err := processRequiredWith(block.RequiredWith, newConfigVal, path)
-			if err != nil {
-				return val, err
-			}
+			requiredWithPaths := processRequiredWith(block.RequiredWith, newConfigVal, path)
 			markedForNullification = markedForNullification.Union(requiredWithPaths)
 			if markedForNullification.Has(path) {
 				return null, nil
@@ -1946,6 +1928,14 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		}
 		return val, nil
 	})
+	if err != nil {
+		configErr := fmt.Errorf("An unexpected error occurred while trying to generate resource configuration. "+
+			"This is an error in terraform-plugin-sdk used by the provider. "+
+			"Please report the following to the provider developers.\n\n"+
+			"Original Error: %s", err.Error())
+		resp.Diagnostics = convert.AppendProtoDiag(ctx, resp.Diagnostics, configErr)
+		return resp, nil
+	}
 
 	newConfigMP, err := msgpack.Marshal(newConfigVal, schemaBlock.ImpliedType())
 	if err != nil {
