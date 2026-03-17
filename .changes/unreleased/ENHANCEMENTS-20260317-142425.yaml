@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'all: adds new logic for handling `ConflictsWith` schema behavior in default resource configuration generation logic.'
+time: 2026-03-17T14:24:25.026623-04:00
+custom:
+    Issue: "1566"
