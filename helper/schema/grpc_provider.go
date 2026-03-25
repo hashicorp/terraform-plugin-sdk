@@ -1810,6 +1810,7 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 			},
 		}
 
+		return resp, nil
 	}
 
 	newConfigVal := stateVal

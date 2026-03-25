@@ -19,6 +19,8 @@ func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath c
 
 	if len(conflictsWith) > 0 {
 
+		// The calling cty.Transform only calls this function
+		//when the current value is non-null
 		nonNullKeys = append(nonNullKeys, curValMapPath)
 
 		for i := range conflictsWith {
@@ -37,12 +39,6 @@ func processConflictsWith(conflictsWith []string, configVal cty.Value, curPath c
 			if !val.IsNull() {
 				nonNullKeys = append(nonNullKeys, key)
 			}
-		}
-
-		// only process conflictsWith values if there are more
-		// than one non-nil values, otherwise just leave alone.
-		if len(nonNullKeys) < 1 {
-			return markedForNullification
 		}
 
 		// sort the keys and find the first non-null value to keep
@@ -74,14 +70,17 @@ func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty
 
 	if len(exactlyOneOf) > 0 {
 
-		// Self-references are allowed in the ExactlyOneOf slice
-		// so we need to avoid duplication for the current value path.
-		selfReference := false
+		// The calling cty.Transform only calls this function
+		//when the current value is non-null
+		nonNullKeys = append(nonNullKeys, curValMapPath)
 
 		for i := range exactlyOneOf {
 			key := exactlyOneOf[i]
+
+			// Self-references are allowed in the ExactlyOneOf slice
+			// so we need to avoid duplication for the current value path.
 			if key == curValMapPath {
-				selfReference = true
+				continue
 			}
 
 			ctyPath := flatmapPathToCtyPath(key)
@@ -98,16 +97,6 @@ func processExactlyOneOf(exactlyOneOf []string, configVal cty.Value, curPath cty
 			if !val.IsNull() {
 				nonNullKeys = append(nonNullKeys, key)
 			}
-		}
-
-		if !selfReference {
-			nonNullKeys = append(nonNullKeys, curValMapPath)
-		}
-
-		// only process exactlyOneOf values if there are more
-		// than one non-nil values, otherwise just leave alone.
-		if len(nonNullKeys) < 1 {
-			return markedForNullification
 		}
 
 		// sort the keys and find the first non-null value to keep
@@ -139,14 +128,20 @@ func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty
 
 	if len(requiredWith) > 0 {
 
-		// Self-references are allowed in the requiredWith slice
-		// so we need to avoid duplication for the current value path.
+		// The calling cty.Transform only calls this function
+		//when the current value is non-null
+		nonNullKeys = append(nonNullKeys, curValMapPath)
+
 		selfReference := false
 
 		for i := range requiredWith {
 			key := requiredWith[i]
+
+			// Self-references are allowed in the requiredWith slice
+			// so we need to avoid duplication for the current value path.
 			if key == curValMapPath {
 				selfReference = true
+				continue
 			}
 
 			ctyPath := flatmapPathToCtyPath(key)
@@ -166,8 +161,10 @@ func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty
 		}
 
 		if !selfReference {
-			nonNullKeys = append(nonNullKeys, curValMapPath)
-			requiredWith = append(requiredWith, curValMapPath)
+			requiredWithKeys := make([]string, len(requiredWith))
+			copy(requiredWithKeys, requiredWith)
+			requiredWith = append(requiredWithKeys, curValMapPath)
+
 		}
 
 		if len(requiredWith) == len(nonNullKeys) {
