@@ -162,8 +162,9 @@ func processRequiredWith(requiredWith []string, configVal cty.Value, curPath cty
 
 		if !selfReference {
 			requiredWithKeys := make([]string, 0)
-			copy(requiredWithKeys, requiredWith)
-			requiredWith = append(requiredWithKeys, curValMapPath)
+			requiredWithKeys = append(requiredWithKeys, requiredWith...)
+			requiredWithKeys = append(requiredWithKeys, curValMapPath)
+			requiredWith = requiredWithKeys
 
 		}
 
