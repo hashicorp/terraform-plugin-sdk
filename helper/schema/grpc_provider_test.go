@@ -11395,6 +11395,18 @@ func TestGenerateResourceConfig(t *testing.T) {
 								Computed: true,
 								Optional: true,
 							},
+							"timeouts": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_timeout_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
 							"test_computed": {
 								Type:     TypeString,
 								Computed: true,
@@ -11502,7 +11514,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 				State: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
 							"test_computed":     cty.String,
 							"test_optional":     cty.String,
 							"test_required":     cty.String,
@@ -11527,7 +11542,15 @@ func TestGenerateResourceConfig(t *testing.T) {
 							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
-							"id":            cty.StringVal("id-val"),
+							"id": cty.StringVal("id-val"),
+							"timeouts": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-a"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-b"),
+								}),
+							}),
 							"test_computed": cty.StringVal("computed-val"),
 							"test_optional": cty.StringVal("optional-val"),
 							"test_required": cty.StringVal("required-val"),
@@ -11621,7 +11644,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 				Config: &tfprotov5.DynamicValue{
 					MsgPack: mustMsgpackMarshal(
 						cty.Object(map[string]cty.Type{
-							"id":                cty.String,
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
 							"test_computed":     cty.String,
 							"test_optional":     cty.String,
 							"test_required":     cty.String,
@@ -11646,7 +11672,10 @@ func TestGenerateResourceConfig(t *testing.T) {
 							})),
 						}),
 						cty.ObjectVal(map[string]cty.Value{
-							"id":                cty.NullVal(cty.String),
+							"id": cty.NullVal(cty.String),
+							"timeouts": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							}))),
 							"test_computed":     cty.NullVal(cty.String),
 							"test_optional":     cty.StringVal("optional-val"),
 							"test_required":     cty.StringVal("required-val"),
@@ -11702,6 +11731,437 @@ func TestGenerateResourceConfig(t *testing.T) {
 									}))),
 								}),
 							}),
+						}),
+					),
+				},
+			},
+		},
+		"schema-behaviors": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Computed: true,
+								Optional: true,
+							},
+							"timeouts": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_timeout_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_conflicts_attr_a": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_conflicts_attr_b": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_conflicts_attr_c": {
+								Type:     TypeString,
+								Optional: true,
+								ConflictsWith: []string{
+									"test_conflicts_attr_a",
+									"test_conflicts_attr_b",
+								},
+							},
+							"test_conflicts_block_a": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+								ConflictsWith: []string{
+									"test_conflicts_block_b",
+									"test_conflicts_block_c",
+								},
+							},
+							"test_conflicts_block_b": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_conflicts_block_c": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_exactly_attr_a": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_exactly_attr_b": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_exactly_attr_c": {
+								Type:     TypeString,
+								Optional: true,
+								ExactlyOneOf: []string{
+									"test_exactly_attr_a",
+									"test_exactly_attr_b",
+								},
+							},
+							"test_exactly_block_a": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+								ExactlyOneOf: []string{
+									"test_exactly_block_b",
+									"test_exactly_block_c",
+								},
+							},
+							"test_exactly_block_b": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_exactly_block_c": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_required_with_attr_a": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_required_with_attr_b": {
+								Type:     TypeString,
+								Optional: true,
+							},
+							"test_required_with_attr_c": {
+								Type:     TypeString,
+								Optional: true,
+								RequiredWith: []string{
+									"test_required_with_attr_a",
+									"test_required_with_attr_b",
+								},
+							},
+							"test_required_with_block_a": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+								RequiredWith: []string{
+									"test_required_with_block_b",
+									"test_required_with_block_c",
+								},
+							},
+							"test_required_with_block_b": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+							"test_required_with_block_c": {
+								Type:     TypeList,
+								Optional: true,
+								Elem: &Resource{
+									Schema: map[string]*Schema{
+										"test_nested_block_attr": {
+											Type:     TypeString,
+											Optional: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
+							"test_conflicts_attr_a": cty.String,
+							"test_conflicts_attr_b": cty.String,
+							"test_conflicts_attr_c": cty.String,
+							"test_conflicts_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_conflicts_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_conflicts_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_attr_a": cty.String,
+							"test_exactly_attr_b": cty.String,
+							"test_exactly_attr_c": cty.String,
+							"test_exactly_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})), "test_required_with_attr_a": cty.String,
+							"test_required_with_attr_b": cty.String,
+							"test_required_with_attr_c": cty.String,
+							"test_required_with_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_required_with_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_required_with_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.StringVal("id-val"),
+							"timeouts": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-a"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_timeout_attr": cty.StringVal("val-b"),
+								}),
+							}),
+							"test_conflicts_attr_a": cty.StringVal("val-c"),
+							"test_conflicts_attr_b": cty.StringVal("val-d"),
+							"test_conflicts_attr_c": cty.StringVal("val-e"),
+							"test_conflicts_block_a": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-f"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-g"),
+								}),
+							}),
+							"test_conflicts_block_b": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-h"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-i"),
+								}),
+							}),
+							"test_conflicts_block_c": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-j"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-k"),
+								}),
+							}),
+							"test_exactly_attr_a": cty.StringVal("val-l"),
+							"test_exactly_attr_b": cty.StringVal("val-m"),
+							"test_exactly_attr_c": cty.StringVal("val-n"),
+							"test_exactly_block_a": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-o"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-p"),
+								}),
+							}),
+							"test_exactly_block_b": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-q"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-r"),
+								}),
+							}),
+							"test_exactly_block_c": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-s"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-t"),
+								}),
+							}),
+							"test_required_with_attr_a": cty.NullVal(cty.String),
+							"test_required_with_attr_b": cty.StringVal("val-u"),
+							"test_required_with_attr_c": cty.StringVal("val-v"),
+							"test_required_with_block_a": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-w"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-x"),
+								}),
+							}),
+							"test_required_with_block_b": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_required_with_block_c": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-y"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-z"),
+								}),
+							}),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id": cty.String,
+							"timeouts": cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							})),
+							"test_conflicts_attr_a": cty.String,
+							"test_conflicts_attr_b": cty.String,
+							"test_conflicts_attr_c": cty.String,
+							"test_conflicts_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_conflicts_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_conflicts_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_attr_a": cty.String,
+							"test_exactly_attr_b": cty.String,
+							"test_exactly_attr_c": cty.String,
+							"test_exactly_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_exactly_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_required_with_attr_a": cty.String,
+							"test_required_with_attr_b": cty.String,
+							"test_required_with_attr_c": cty.String,
+							"test_required_with_block_a": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_required_with_block_b": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+							"test_required_with_block_c": cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							})),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id": cty.NullVal(cty.String),
+							"timeouts": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_timeout_attr": cty.String,
+							}))),
+							"test_conflicts_attr_a": cty.StringVal("val-c"),
+							"test_conflicts_attr_b": cty.NullVal(cty.String),
+							"test_conflicts_attr_c": cty.NullVal(cty.String),
+							"test_conflicts_block_a": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-f"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-g"),
+								}),
+							}),
+							"test_conflicts_block_b": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_conflicts_block_c": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_exactly_attr_a": cty.StringVal("val-l"),
+							"test_exactly_attr_b": cty.NullVal(cty.String),
+							"test_exactly_attr_c": cty.NullVal(cty.String),
+							"test_exactly_block_a": cty.ListVal([]cty.Value{
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-o"),
+								}),
+								cty.ObjectVal(map[string]cty.Value{
+									"test_nested_block_attr": cty.StringVal("val-p"),
+								}),
+							}),
+							"test_exactly_block_b": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_exactly_block_c": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_required_with_attr_a": cty.NullVal(cty.String),
+							"test_required_with_attr_b": cty.NullVal(cty.String),
+							"test_required_with_attr_c": cty.NullVal(cty.String),
+							"test_required_with_block_a": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_required_with_block_b": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
+							"test_required_with_block_c": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{
+								"test_nested_block_attr": cty.String,
+							}))),
 						}),
 					),
 				},
