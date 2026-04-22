@@ -1791,8 +1791,37 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 
 	resp := &tfprotov5.GenerateResourceConfigResponse{}
 
-	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
-	res := s.provider.ResourcesMap[req.TypeName]
+	// req.TypeName may refer to a list/query resource type that this
+	// SDK's managed ResourcesMap does not know about (Terraform can
+	// route `terraform query` `list "foo" {}` calls here through mux).
+	// The schema-block lookup would then deref a nil Resource, and
+	// msgpack.Unmarshal below would nil-deref if req.State is nil.
+	// Surface a diagnostic instead of panicking (#1575).
+	res, ok := s.provider.ResourcesMap[req.TypeName]
+	if !ok || res == nil {
+		resp.Diagnostics = []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unknown Resource Type",
+				Detail: fmt.Sprintf("GenerateResourceConfig was called for resource type %q, which is not registered as a managed resource with this SDK-based provider. "+
+					"This typically means Terraform is routing a list/query request to the managed-resource schema path.", req.TypeName),
+			},
+		}
+		return resp, nil
+	}
+	schemaBlock := res.CoreConfigSchema()
+
+	if req.State == nil {
+		resp.Diagnostics = []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Summary:  "Unexpected Generate Config Request",
+				Detail: "An unexpected error was encountered when generating resource configuration. The request did not include a state payload.\n\n" +
+					"This is always a problem with Terraform or terraform-plugin-sdk. Please report this to the provider developer.",
+			},
+		}
+		return resp, nil
+	}
 
 	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
