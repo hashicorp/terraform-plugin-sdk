@@ -1,5 +1,5 @@
 kind: BUG FIXES
-body: 'helper/schema: Fix `PlanResourceChange` skipping the no-op shortcut when a resource has `Identity` set, which caused legacy state shapes (e.g. an empty `timeouts {}` block) to be re-shaped via the flatmap path and produce spurious diffs.'
+body: 'helper/schema: Fixed a bug that caused spurious diffs in the plan when resource identity is set but didn''t change.'
 time: 2026-04-23T11:05:43.475731+02:00
 custom:
     Issue: "1582"
