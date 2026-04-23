@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -1148,7 +1149,13 @@ func (s *GRPCProviderServer) PlanResourceChange(ctx context.Context, req *tfprot
 		}
 	}
 
-	if diff == nil || (len(diff.Attributes) == 0 && len(diff.Identity) == 0) {
+	// The diff carries identity over from the prior state unconditionally
+	// (see schemaMapWithIdentity.Diff), so a non-empty diff.Identity does not
+	// necessarily indicate an identity change. Treat the identity as unchanged
+	// when it matches what was supplied in the prior state.
+	identityUnchanged := diff == nil || maps.Equal(diff.Identity, priorState.Identity)
+
+	if diff == nil || (len(diff.Attributes) == 0 && identityUnchanged) {
 		// schema.Provider.Diff returns nil if it ends up making a diff with no
 		// changes, but our new interface wants us to return an actual change
 		// description that _shows_ there are no changes. This is always the
