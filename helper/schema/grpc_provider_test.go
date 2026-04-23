@@ -8028,6 +8028,158 @@ Planned Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("c
 				},
 			},
 		},
+		// Regression test: when a resource defines Identity and the prior
+		// state contains an empty `timeouts {}` block (a state shape that
+		// older provider versions could persist), the no-op planning
+		// shortcut must still trigger. Previously, because the diff
+		// unconditionally carries identity over from prior state,
+		// `len(diff.Identity) != 0` caused us to skip the shortcut and
+		// re-shape state via the legacy flatmap path, which dropped the
+		// empty timeouts block and produced a spurious `- timeouts {}`
+		// plan. See hashicorp/terraform-provider-google#27055.
+		"identity-noop-preserves-empty-timeouts-block": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"foo": {
+								Type:     TypeString,
+								Optional: true,
+							},
+						},
+						Identity: &ResourceIdentity{
+							Version: 1,
+							SchemaFunc: func() map[string]*Schema {
+								return map[string]*Schema{
+									"name": {
+										Type:              TypeString,
+										RequiredForImport: true,
+									},
+								}
+							},
+						},
+						Timeouts: &ResourceTimeout{
+							Create: DefaultTimeout(20 * time.Minute),
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.PlanResourceChangeRequest{
+				TypeName: "test",
+				PriorState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"timeouts": cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.StringVal("existing"),
+							"foo": cty.StringVal("bar"),
+							// Empty `timeouts {}` block: a non-null object
+							// with all-null inner attributes, which is what
+							// state from older provider versions can look
+							// like for resources that never declared
+							// timeouts in config.
+							"timeouts": cty.ObjectVal(map[string]cty.Value{
+								"create": cty.NullVal(cty.String),
+							}),
+						}),
+					),
+				},
+				ProposedNewState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"timeouts": cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.StringVal("existing"),
+							"foo": cty.StringVal("bar"),
+							// Config has no timeouts block, so proposed
+							// new state has a null timeouts.
+							"timeouts": cty.NullVal(cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							})),
+						}),
+					),
+				},
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"timeouts": cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.NullVal(cty.String),
+							"foo": cty.StringVal("bar"),
+							"timeouts": cty.NullVal(cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							})),
+						}),
+					),
+				},
+				PriorIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"name": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"name": cty.StringVal("existing"),
+							}),
+						),
+					},
+				},
+				PriorPrivate: []byte(`{"_new_extra_shim":{}}`),
+			},
+			// Expect the planned state to equal the prior state exactly:
+			// the no-op shortcut should fire and the timeouts block must
+			// not be dropped.
+			expected: &tfprotov5.PlanResourceChangeResponse{
+				PlannedState: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":  cty.String,
+							"foo": cty.String,
+							"timeouts": cty.Object(map[string]cty.Type{
+								"create": cty.String,
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":  cty.StringVal("existing"),
+							"foo": cty.StringVal("bar"),
+							"timeouts": cty.ObjectVal(map[string]cty.Value{
+								"create": cty.NullVal(cty.String),
+							}),
+						}),
+					),
+				},
+				PlannedPrivate:              []byte(`{"_new_extra_shim":{}}`),
+				UnsafeToUseLegacyTypeSystem: true,
+				PlannedIdentity: &tfprotov5.ResourceIdentityData{
+					IdentityData: &tfprotov5.DynamicValue{
+						MsgPack: mustMsgpackMarshal(
+							cty.Object(map[string]cty.Type{
+								"name": cty.String,
+							}),
+							cty.ObjectVal(map[string]cty.Value{
+								"name": cty.StringVal("existing"),
+							}),
+						),
+					},
+				},
+			},
+		},
 	}
 
 	for name, testCase := range testCases {
