@@ -1,3 +1,9 @@
+## 2.40.1 (April 28, 2026)
+
+BUG FIXES:
+
+* helper/schema: Fixed a bug that caused spurious diffs in the plan when resource identity is set but didn't change. ([#1582](https://github.com/hashicorp/terraform-plugin-sdk/issues/1582))
+
 ## 2.40.0 (March 10, 2026)
 
 NOTES:
