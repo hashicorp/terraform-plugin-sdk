@@ -452,11 +452,14 @@ type SchemaDefaultFunc func() (interface{}, error)
 // otherwise.
 func EnvDefaultFunc(k string, dv interface{}) SchemaDefaultFunc {
 	return func() (interface{}, error) {
-		if v := os.Getenv(k); v != "" {
-			return v, nil
+		v := os.Getenv(k)
+		if v == "" {
+			return dv, nil
 		}
-
-		return dv, nil
+		if v == "true" || v == "false" {
+			return strconv.ParseBool(v)
+		}
+		return v, nil
 	}
 }
 
