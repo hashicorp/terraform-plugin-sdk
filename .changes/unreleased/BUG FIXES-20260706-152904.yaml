@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/retry: Omitted the last error suffix from the UnexpectedStateError message when there is no last error, instead of printing a nil value'
+time: 2026-07-06T15:29:04+03:00
+custom:
+    Issue: "1359"
