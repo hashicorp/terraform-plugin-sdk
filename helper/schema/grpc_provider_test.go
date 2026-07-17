@@ -11506,6 +11506,62 @@ func TestGenerateResourceConfig(t *testing.T) {
 		expected    *tfprotov5.GenerateResourceConfigResponse
 		ExpectError string
 	}{
+		"unknown-resource-type": {
+			// Regression for #1575: Terraform can route list/query
+			// requests (e.g. `list "aws_s3_bucket"`) through this
+			// entry point for a name that is not in ResourcesMap.
+			// Previously that nil-deref'd inside getResourceSchemaBlock
+			// and crashed the provider.
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "not_registered",
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Unknown Resource Type",
+						Detail: `GenerateResourceConfig was called for resource type "not_registered", ` +
+							`which is not registered as a managed resource with this SDK-based provider. ` +
+							`This typically means Terraform is routing a list/query request to the managed-resource schema path.`,
+					},
+				},
+			},
+		},
+		"nil-state": {
+			// Regression for #1575: if req.State is nil, the original
+			// msgpack.Unmarshal(req.State.MsgPack, ...) nil-deref'd.
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						Schema: map[string]*Schema{
+							"id": {
+								Type:     TypeString,
+								Computed: true,
+								Optional: true,
+							},
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				// State: nil
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Diagnostics: []*tfprotov5.Diagnostic{
+					{
+						Severity: tfprotov5.DiagnosticSeverityError,
+						Summary:  "Unexpected Generate Config Request",
+						Detail: "An unexpected error was encountered when generating resource configuration. The request did not include a state payload.\n\n" +
+							"This is always a problem with Terraform or terraform-plugin-sdk. Please report this to the provider developer.",
+					},
+				},
+			},
+		},
 		"null-state": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{
