@@ -1160,6 +1160,80 @@ func TestSchemaMap_Diff(t *testing.T) {
 		},
 
 		{
+			Name: "Set with DiffSuppressFunc",
+			Schema: map[string]*Schema{
+				"rule": {
+					Type:     TypeSet,
+					Required: true,
+					Elem: &Resource{
+						Schema: map[string]*Schema{
+							"port": {
+								Type:     TypeInt,
+								Required: true,
+							},
+							"duration": {
+								Type:     TypeString,
+								Optional: true,
+								DiffSuppressFunc: func(k, oldValue, newValue string, d *ResourceData) bool {
+									// Adding a DiffSuppressFunc to an element in a set changes behaviour.
+									// The actual suppress func doesn't matter.
+									return oldValue == newValue
+								},
+							},
+						},
+					},
+					Set: func(v interface{}) int {
+						m := v.(map[string]interface{})
+						port := m["port"].(int)
+						return port
+					},
+				},
+			},
+
+			State: &terraform.InstanceState{
+				Attributes: map[string]string{
+					"rule.#":           "1",
+					"rule.80.port":     "80",
+					"rule.80.duration": "",
+				},
+			},
+
+			Config: map[string]interface{}{
+				"rule": []interface{}{
+					map[string]interface{}{
+						"port":     90,
+						"duration": "30s",
+					},
+				},
+			},
+
+			Diff: &terraform.InstanceDiff{
+				Attributes: map[string]*terraform.ResourceAttrDiff{
+					"rule.80.port": {
+						Old:        "80",
+						New:        "0",
+						NewRemoved: true,
+					},
+					"rule.80.duration": {
+						Old:        "",
+						New:        "",
+						NewRemoved: true,
+					},
+					"rule.90.port": {
+						Old: "",
+						New: "90",
+					},
+					"rule.90.duration": {
+						Old: "",
+						New: "30s",
+					},
+				},
+			},
+
+			Err: false,
+		},
+
+		{
 			Name: "List of structure decode",
 			Schema: map[string]*Schema{
 				"ingress": {
