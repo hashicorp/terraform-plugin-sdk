@@ -423,7 +423,7 @@ func TestResourceReadDataApply_Timeout_ResourceSpecified_ReadContext(t *testing.
 		d.SetId("foo")
 
 		if deadline, ok := ctx.Deadline(); ok {
-			timeout = deadline.Sub(time.Now())
+			timeout = time.Until(deadline)
 		}
 
 		return nil
