@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Return a targeted validation error when SchemaDefaultFunc is supplied through Default instead of DefaultFunc'
+time: 2026-08-26T13:42:07+03:00
+custom:
+    Issue: "420"
