@@ -25,7 +25,10 @@ linters:
     rules:
       - linters:
           - staticcheck
-        text: 'SA1019: schema.SchemaValidateFunc is deprecated'
+        text: "SA1019: .*SchemaValidateFunc is deprecated"
+      - linters:
+          - staticcheck
+        text: "SA1019: .*UnsafeToUseLegacyTypeSystem is deprecated"
     paths:
       - third_party$
       - builtin$
