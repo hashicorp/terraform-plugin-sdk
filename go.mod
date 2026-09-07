@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-plugin-sdk/v2
 
-go 1.25.8
+go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -21,7 +21,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mitchellh/reflectwalk v1.0.2
 	github.com/zclconf/go-cty v1.19.0
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 )
 
 require (
