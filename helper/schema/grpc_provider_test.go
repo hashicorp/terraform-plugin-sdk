@@ -3272,7 +3272,6 @@ func TestGRPCProviderServerConfigureProvider(t *testing.T) {
 			t.Parallel()
 
 			resp, err := testCase.server.ConfigureProvider(context.Background(), testCase.req)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -3473,7 +3472,6 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -3482,7 +3480,6 @@ func TestGRPCProviderServerGetResourceIdentitySchemas(t *testing.T) {
 			testReq := &tfprotov5.GetResourceIdentitySchemasRequest{}
 
 			resp, err := server.GetResourceIdentitySchemas(context.Background(), testReq)
-
 			if err != nil {
 				t.Fatalf("unexpected gRPC error: %s", err)
 			}
@@ -3567,7 +3564,6 @@ func TestUpgradeResourceIdentity_jsonState(t *testing.T) {
 	}
 
 	idschema, err := r.CoreIdentitySchema()
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3847,7 +3843,6 @@ func TestGRPCProviderServerGetMetadata(t *testing.T) {
 			testReq := &tfprotov5.GetMetadataRequest{}
 
 			resp, err := server.GetMetadata(context.Background(), testReq)
-
 			if err != nil {
 				t.Fatalf("unexpected gRPC error: %s", err)
 			}
@@ -4688,7 +4683,6 @@ func TestUpgradeState_removedAttr(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestUpgradeState_flatmapState(t *testing.T) {
@@ -6217,7 +6211,6 @@ New Identity: cty.ObjectVal(map[string]cty.Value{"identity":cty.StringVal("chang
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ReadResource(context.Background(), testCase.req)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -10647,7 +10640,6 @@ func TestImportResourceState(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ImportResourceState(context.Background(), testCase.req)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -10699,7 +10691,6 @@ func TestImportResourceState_Timeouts_None(t *testing.T) {
 	stateVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
 		"id": cty.StringVal("test"),
 	}))
-
 	if err != nil {
 		t.Fatalf("unable to coerce state value: %s", err)
 	}
@@ -10710,7 +10701,6 @@ func TestImportResourceState_Timeouts_None(t *testing.T) {
 	}
 
 	resp, err := server.ImportResourceState(context.Background(), testReq)
-
 	if err != nil {
 		t.Fatalf("unexpected error during ImportResourceState: %s", err)
 	}
@@ -10734,7 +10724,6 @@ func TestImportResourceState_Timeouts_None(t *testing.T) {
 	}
 
 	gotStateVal, err := msgpack.Unmarshal(resp.ImportedResources[0].State.MsgPack, schema.ImpliedType())
-
 	if err != nil {
 		t.Fatalf("unexpected error during MessagePack unmarshal: %s", err)
 	}
@@ -10778,7 +10767,6 @@ func TestImportResourceState_Timeouts_Removed(t *testing.T) {
 	stateVal, err := schema.CoerceValue(cty.ObjectVal(map[string]cty.Value{
 		"id": cty.StringVal("test"),
 	}))
-
 	if err != nil {
 		t.Fatalf("unable to coerce state value: %s", err)
 	}
@@ -10789,7 +10777,6 @@ func TestImportResourceState_Timeouts_Removed(t *testing.T) {
 	}
 
 	resp, err := server.ImportResourceState(context.Background(), testReq)
-
 	if err != nil {
 		t.Fatalf("unexpected error during ImportResourceState: %s", err)
 	}
@@ -10813,7 +10800,6 @@ func TestImportResourceState_Timeouts_Removed(t *testing.T) {
 	}
 
 	gotStateVal, err := msgpack.Unmarshal(resp.ImportedResources[0].State.MsgPack, schema.ImpliedType())
-
 	if err != nil {
 		t.Fatalf("unexpected error during MessagePack unmarshal: %s", err)
 	}
@@ -11301,7 +11287,6 @@ func TestReadDataSource(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.ReadDataSource(context.Background(), testCase.req)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -12325,7 +12310,6 @@ func TestGenerateResourceConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := testCase.server.GenerateResourceConfig(context.Background(), testCase.req)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -12613,7 +12597,8 @@ func TestNormalizeNullValues(t *testing.T) {
 						"access_config": cty.NullVal(cty.List(cty.Object(map[string]cty.Type{"public_ptr_domain_name": cty.String, "nat_ip": cty.String}))),
 						"address":       cty.NullVal(cty.String),
 						"name":          cty.StringVal("nic0"),
-					})}),
+					}),
+				}),
 			}),
 			Dst: cty.ObjectVal(map[string]cty.Value{
 				"network_interface": cty.ListVal([]cty.Value{
@@ -12647,7 +12632,8 @@ func TestNormalizeNullValues(t *testing.T) {
 						"access_config": cty.ListValEmpty(cty.Object(map[string]cty.Type{"public_ptr_domain_name": cty.String, "nat_ip": cty.String})),
 						"address":       cty.NullVal(cty.String),
 						"name":          cty.StringVal("nic0"),
-					})}),
+					}),
+				}),
 			}),
 			Dst: cty.ObjectVal(map[string]cty.Value{
 				"network_interface": cty.ListVal([]cty.Value{
@@ -12680,7 +12666,8 @@ func TestNormalizeNullValues(t *testing.T) {
 						"access_config": cty.ListValEmpty(cty.Object(map[string]cty.Type{"public_ptr_domain_name": cty.String, "nat_ip": cty.String})),
 						"address":       cty.NullVal(cty.String),
 						"name":          cty.StringVal("nic0"),
-					})}),
+					}),
+				}),
 			}),
 			Dst: cty.ObjectVal(map[string]cty.Value{
 				"network_interface": cty.ListVal([]cty.Value{
@@ -13274,7 +13261,6 @@ func Test_pathToAttributePath_noSteps(t *testing.T) {
 
 func mustMsgpackMarshal(ty cty.Type, val cty.Value) []byte {
 	result, err := msgpack.Marshal(val, ty)
-
 	if err != nil {
 		panic(fmt.Sprintf("cannot marshal msgpack: %s\n\ntype: %v\n\nvalue: %v", err, ty, val))
 	}
@@ -13284,7 +13270,6 @@ func mustMsgpackMarshal(ty cty.Type, val cty.Value) []byte {
 
 func mustMsgpackUnmarshal(ty cty.Type, b []byte) cty.Value {
 	result, err := msgpack.Unmarshal(b, ty)
-
 	if err != nil {
 		panic(fmt.Sprintf("cannot unmarshal msgpack: %s\n\ntype: %v\n\nvalue: %v", err, ty, b))
 	}
