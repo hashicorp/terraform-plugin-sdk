@@ -12877,7 +12877,7 @@ func TestValidateNulls(t *testing.T) {
 			default:
 				for _, d := range diags {
 					if d.Severity == diag.Error {
-						t.Fatalf("unexpected error: %q", d)
+						t.Fatalf("unexpected error: %v", d)
 					}
 				}
 			}
