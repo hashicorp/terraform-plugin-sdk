@@ -3204,6 +3204,18 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 			},
 			true,
 		},
+		"Default contains SchemaDefaultFunc": {
+			map[string]*Schema{
+				"foo": {
+					Type:     TypeString,
+					Optional: true,
+					Default: SchemaDefaultFunc(func() (interface{}, error) {
+						return "bar", nil
+					}),
+				},
+			},
+			true,
+		},
 
 		"List element not set": {
 			map[string]*Schema{
@@ -5448,6 +5460,26 @@ func TestSchemaMap_InternalValidate(t *testing.T) {
 		})
 	}
 
+}
+func TestSchemaMap_InternalValidateDefaultFuncInDefault(t *testing.T) {
+	err := schemaMap(map[string]*Schema{
+		"foo": {
+			Type:     TypeString,
+			Optional: true,
+			Default: func() (interface{}, error) {
+				return "bar", nil
+			},
+		},
+	}).InternalValidate(nil)
+
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+
+	const want = "foo: Default must not be a SchemaDefaultFunc; use DefaultFunc instead"
+	if err.Error() != want {
+		t.Fatalf("unexpected error:\n got: %q\nwant: %q", err.Error(), want)
+	}
 }
 
 func TestSchemaMap_DiffSuppress(t *testing.T) {

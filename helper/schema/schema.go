@@ -1006,7 +1006,9 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		default:
 			return fmt.Errorf("%s: invalid ConfigMode value", k)
 		}
-
+		if v.Default != nil && reflect.TypeOf(v.Default).ConvertibleTo(reflect.TypeOf(SchemaDefaultFunc(nil))) {
+			return fmt.Errorf("%s: Default must not be a SchemaDefaultFunc; use DefaultFunc instead", k)
+		}
 		if v.Computed && v.Default != nil {
 			return fmt.Errorf("%s: Default must be nil if computed", k)
 		}
