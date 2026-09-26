@@ -259,6 +259,27 @@ func TestValidationStringLenBetween(t *testing.T) {
 			f:           StringLenBetween(1, 5),
 			expectedErr: regexp.MustCompile(`expected type of [\w]+ to be string`),
 		},
+		{
+			val: "日", // 3 bytes char, length must be 1
+			f:   StringLenBetween(1, 1),
+		},
+		{
+			val: "😊", // 4 bytes char, length must be 1
+			f:   StringLenBetween(1, 1),
+		},
+		{
+			val: "😊😭", // 4 bytes chars, length must be 2
+			f:   StringLenBetween(1, 2),
+		},
+		{
+			val: "が", // 2 code points
+			f:   StringLenBetween(1, 1),
+		},
+		{
+			val:         "👨‍👩‍👧‍👦", // multi code points but can't be normalized
+			f:           StringLenBetween(1, 1),
+			expectedErr: regexp.MustCompile(`expected length of [\w]+ to be in the range \(1 \- 1\), got 👨‍👩‍👧‍👦`),
+		},
 	})
 }
 
