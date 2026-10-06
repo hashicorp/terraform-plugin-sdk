@@ -1,3 +1,20 @@
+## 2.41.0 (October 06, 2026)
+
+NOTES:
+
+* This Go module has been updated to Go 1.26 per the [Go support policy](https://golang.org/doc/devel/release.html#policy). Any consumers building on earlier Go versions may experience errors. ([#1622](https://github.com/hashicorp/terraform-plugin-sdk/issues/1622))
+
+ENHANCEMENTS:
+
+* all: adds new logic for handling `ConflictsWith` schema behavior in default resource configuration generation logic. ([#1566](https://github.com/hashicorp/terraform-plugin-sdk/issues/1566))
+* all: adds new logic for handling `ExactlyOneOf` schema behavior in default resource configuration generation logic. ([#1566](https://github.com/hashicorp/terraform-plugin-sdk/issues/1566))
+* all: adds new logic for handling `RequiredWith` schema behavior in default resource configuration generation logic. ([#1566](https://github.com/hashicorp/terraform-plugin-sdk/issues/1566))
+
+BUG FIXES:
+
+* helper/schema: Fixed a bug that caused spurious diffs in the plan when resource identity is set but didn't change. ([#1582](https://github.com/hashicorp/terraform-plugin-sdk/issues/1582))
+* helper/retry: Omitted the last error suffix from the UnexpectedStateError message when there is no last error, instead of printing a nil value ([#1359](https://github.com/hashicorp/terraform-plugin-sdk/issues/1359))
+
 ## 2.40.0 (March 10, 2026)
 
 NOTES:
