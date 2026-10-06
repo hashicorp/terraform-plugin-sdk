@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
@@ -237,4 +238,17 @@ func StringIsValidRegExp(i interface{}, k string) (warnings []string, errors []e
 	}
 
 	return warnings, errors
+}
+
+// StringLenCharactersBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type string and has a character length between min and max (inclusive).
+func StringLenBytesBetween(min, max int) schema.SchemaValidateFunc {
+	return func(val interface{}, key string) (warns []string, errs []error) {
+		v := val.(string)
+		length := utf8.RuneCountInString(v)
+		if length < min || length > max {
+			errs = append(errs, fmt.Errorf("%q must be between %d and %d bytes, got %d", key, min, max, length))
+		}
+		return
+	}
 }
