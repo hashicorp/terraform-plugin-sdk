@@ -145,7 +145,7 @@ func validateWriteOnlyNullValues(val cty.Value, schema *configschema.Block, path
 				Summary:  "Write-only Attribute Not Allowed",
 				Detail: fmt.Sprintf("The resource contains a non-null value for write-only attribute %q ", name) +
 					"Write-only attributes are only supported in Terraform 1.11 and later.",
-				AttributePath: append(path, cty.GetAttrStep{Name: name}),
+				AttributePath: appendPath(path, cty.GetAttrStep{Name: name}),
 			})
 		}
 	}
@@ -166,7 +166,7 @@ func validateWriteOnlyNullValues(val cty.Value, schema *configschema.Block, path
 		}
 
 		blockValType := blockVal.Type()
-		blockPath := append(path, cty.GetAttrStep{Name: name})
+		blockPath := appendPath(path, cty.GetAttrStep{Name: name})
 
 		// This switches on the value type here, so we can correctly switch
 		// between Tuples/Lists and Maps/Objects.
