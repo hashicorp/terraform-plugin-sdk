@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/schema: Provider.InternalValidate now rejects data sources that define Identity, which is only supported for managed resources'
+time: 2026-07-07T10:29:15+03:00
+custom:
+    Issue: "1511"

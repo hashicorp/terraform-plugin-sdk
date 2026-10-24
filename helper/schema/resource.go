@@ -1302,6 +1302,10 @@ func (r *Resource) InternalValidate(topSchemaMap schemaMap, writable bool) error
 
 	// Data source
 	if r.isTopLevel() && !writable {
+		if r.Identity != nil {
+			return fmt.Errorf("must not define Identity, only managed resources support identity")
+		}
+
 		tsm = schema
 		for k := range tsm {
 			if isReservedDataSourceFieldName(k) {
