@@ -436,12 +436,12 @@ const (
 	SchemaConfigModeBlock
 )
 
-// SchemaDiffSuppressFunc is a function which can be used to determine
-// whether a detected diff on a schema element is "valid" or not, and
-// suppress it from the plan if necessary.
+// SchemaDiffSuppressFunc is a function which can be used to analyze the diff
+// between the value of remote resource and stored state to suppress update of
+// schema element from the plan if necessary.
 //
 // Return true if the diff should be suppressed, false to retain it.
-type SchemaDiffSuppressFunc func(k, oldValue, newValue string, d *ResourceData) bool
+type SchemaDiffSuppressFunc func(k, remote, state string, d *ResourceData) bool
 
 // SchemaDefaultFunc is a function called to return a default value for
 // a field.
