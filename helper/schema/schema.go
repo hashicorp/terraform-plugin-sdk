@@ -615,7 +615,9 @@ func (s *Schema) validateFunc(decoded interface{}, k string, path cty.Path) diag
 		diags = s.ValidateDiagFunc(decoded, path)
 		for i := range diags {
 			if !diags[i].AttributePath.HasPrefix(path) {
-				diags[i].AttributePath = append(path, diags[i].AttributePath...)
+				newPath := make(cty.Path, len(path), len(path)+len(diags[i].AttributePath))
+				copy(newPath, path)
+				diags[i].AttributePath = append(newPath, diags[i].AttributePath...)
 			}
 		}
 	} else if s.ValidateFunc != nil {
@@ -927,6 +929,16 @@ func (m schemaMap) Diff(
 }
 
 // Validate validates the configuration against this schema mapping.
+// appendPath returns a copy of path with step appended, never sharing a
+// backing array with path. A plain append reuses spare capacity, so sibling
+// loop iterations could overwrite a step inside an AttributePath that was
+// already stored on a diagnostic (hashicorp/terraform-plugin-sdk#1175).
+func appendPath(path cty.Path, step cty.PathStep) cty.Path {
+	newPath := make(cty.Path, len(path), len(path)+1)
+	copy(newPath, path)
+	return append(newPath, step)
+}
+
 func (m schemaMap) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
 	return m.validateObject("", m, c, cty.Path{})
 }
@@ -2139,7 +2151,7 @@ func (m schemaMap) validateList(
 			raw = r
 		}
 
-		p := append(path, cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
+		p := appendPath(path, cty.IndexStep{Key: cty.NumberIntVal(int64(i))})
 
 		switch t := schema.Elem.(type) {
 		case *Resource:
@@ -2250,7 +2262,7 @@ func validateMapValues(k string, m map[string]interface{}, schema *Schema, path 
 
 	for key, raw := range m {
 		valueType, err := getValueType(k, schema)
-		p := append(path, cty.IndexStep{Key: cty.StringVal(key)})
+		p := appendPath(path, cty.IndexStep{Key: cty.StringVal(key)})
 		if err != nil {
 			return append(diags, diag.Diagnostic{
 				Severity:      diag.Error,
@@ -2355,7 +2367,7 @@ func (m schemaMap) validateObject(
 		if k != "" {
 			key = fmt.Sprintf("%s.%s", k, subK)
 		}
-		diags = append(diags, m.validate(key, s, c, append(path, cty.GetAttrStep{Name: subK}))...)
+		diags = append(diags, m.validate(key, s, c, appendPath(path, cty.GetAttrStep{Name: subK}))...)
 	}
 
 	// Detect any extra/unknown keys and report those as errors.
@@ -2368,7 +2380,7 @@ func (m schemaMap) validateObject(
 				diags = append(diags, diag.Diagnostic{
 					Severity:      diag.Error,
 					Summary:       "Invalid or unknown key",
-					AttributePath: append(path, cty.GetAttrStep{Name: subk}),
+					AttributePath: appendPath(path, cty.GetAttrStep{Name: subk}),
 				})
 			}
 		}
