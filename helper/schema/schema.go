@@ -1320,10 +1320,10 @@ func (m schemaMap) diff(
 				}
 
 				logging.HelperSchemaDebug(ctx, "Ignoring change due to DiffSuppressFunc", map[string]interface{}{logging.KeyAttributePath: attrK})
-				attrV = &terraform.ResourceAttrDiff{
-					Old: attrV.Old,
-					New: attrV.Old,
-				}
+				// If the diff is suppressed, we want Old = New, but retain the other properties.
+				updatedAttr := *attrV
+				updatedAttr.New = attrV.Old
+				attrV = &updatedAttr
 			}
 		}
 		diff.Attributes[attrK] = attrV
