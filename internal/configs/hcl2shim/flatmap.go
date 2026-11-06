@@ -268,6 +268,9 @@ func hcl2ValueFromFlatmapMap(m map[string]string, prefix string, ty cty.Type) (c
 		return cty.NullVal(ty), nil
 	} else if strCount == UnknownVariableValue {
 		return cty.UnknownVal(ty), nil
+	} else if strCount == "0" {
+		// As for a set: nothing to find, so no scan of every key in m.
+		return cty.MapValEmpty(ety), nil
 	}
 
 	for fullKey := range m {
@@ -354,6 +357,10 @@ func hcl2ValueFromFlatmapSet(m map[string]string, prefix string, ty cty.Type) (c
 		return cty.NullVal(ty), nil
 	} else if strCount == UnknownVariableValue {
 		return cty.UnknownVal(ty), nil
+	} else if strCount == "0" {
+		// No elements to find, so no need to scan every key in m for them. A resource
+		// with many empty sets nested in a list otherwise converts in quadratic time.
+		return cty.SetValEmpty(ety), nil
 	}
 
 	// Keep track of keys we've seen, se we don't add the same set value
