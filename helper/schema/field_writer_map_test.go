@@ -5,6 +5,7 @@ package schema
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -555,5 +556,80 @@ func TestMapFieldWriterCleanMap(t *testing.T) {
 		if !reflect.DeepEqual(actual, tc.Out) {
 			t.Fatalf("%d: bad: %#v", n, actual)
 		}
+	}
+}
+
+func TestMapFieldWriterCleanNestedList(t *testing.T) {
+	schemaMap := map[string]*Schema{
+		"items": {
+			Type: TypeList,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"name":  {Type: TypeString},
+					"roles": {Type: TypeSet, Elem: &Schema{Type: TypeString}},
+				},
+			},
+		},
+	}
+	w := &MapFieldWriter{Schema: schemaMap}
+
+	first := []interface{}{
+		map[string]interface{}{"name": "a", "roles": []interface{}{"x", "y"}},
+		map[string]interface{}{"name": "b", "roles": []interface{}{"z"}},
+	}
+	if err := w.WriteField([]string{"items"}, first); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	second := []interface{}{
+		map[string]interface{}{"name": "c", "roles": []interface{}{"x"}},
+	}
+	if err := w.WriteField([]string{"items"}, second); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	expected := map[string]string{
+		"items.#":                          "1",
+		"items.0.name":                     "c",
+		"items.0.roles.#":                  "1",
+		"items.0.roles." + hashString("x"): "x",
+	}
+	if actual := w.Map(); !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("bad: %#v", actual)
+	}
+}
+
+func hashString(s string) string {
+	return strconv.Itoa(HashSchema(&Schema{Type: TypeString})(s))
+}
+
+// A list of objects that each hold sets, written in one call, as ResourceData.State does.
+// The cost of each element's sets must not grow with the elements written before it.
+func BenchmarkMapFieldWriter_listOfObjectsWithSets(b *testing.B) {
+	schemaMap := map[string]*Schema{
+		"items": {
+			Type: TypeList,
+			Elem: &Resource{
+				Schema: map[string]*Schema{
+					"name":   {Type: TypeString},
+					"roles":  {Type: TypeSet, Elem: &Schema{Type: TypeString}},
+					"groups": {Type: TypeSet, Elem: &Schema{Type: TypeString}},
+				},
+			},
+		},
+	}
+	for _, n := range []int{100, 1000, 2000} {
+		items := make([]interface{}, n)
+		for i := range items {
+			items[i] = map[string]interface{}{"name": strconv.Itoa(i), "roles": []interface{}{}, "groups": []interface{}{}}
+		}
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				w := &MapFieldWriter{Schema: schemaMap}
+				if err := w.WriteField([]string{"items"}, items); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }

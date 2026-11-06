@@ -19,6 +19,23 @@ type MapFieldWriter struct {
 
 	lock   sync.Mutex
 	result map[string]string
+
+	// written holds every prefix ("a.", "a.b.") that a key in result has been written
+	// beneath, so clearTree can skip a prefix nothing was written under.
+	written map[string]struct{}
+}
+
+// put writes one key, recording each prefix it sits under.
+func (w *MapFieldWriter) put(k, v string) {
+	w.result[k] = v
+	if w.written == nil {
+		w.written = make(map[string]struct{})
+	}
+	for i := 0; i < len(k); i++ {
+		if k[i] == '.' {
+			w.written[k[:i+1]] = struct{}{}
+		}
+	}
 }
 
 // Map returns the underlying map that is being written to.
@@ -39,7 +56,7 @@ func (w *MapFieldWriter) unsafeWriteField(addr string, value string) {
 		w.result = make(map[string]string)
 	}
 
-	w.result[addr] = value
+	w.put(addr, value)
 }
 
 // clearTree clears a field and any sub-fields of the given address out of the
@@ -48,6 +65,9 @@ func (w *MapFieldWriter) unsafeWriteField(addr string, value string) {
 // example, if the set was previously written to the writer's layer).
 func (w *MapFieldWriter) clearTree(addr []string) {
 	prefix := strings.Join(addr, ".") + "."
+	if _, ok := w.written[prefix]; !ok {
+		return
+	}
 	for k := range w.result {
 		if strings.HasPrefix(k, prefix) {
 			delete(w.result, k)
@@ -156,7 +176,7 @@ func (w *MapFieldWriter) setList(
 		return err
 	}
 
-	w.result[k+".#"] = strconv.FormatInt(int64(len(vs)), 10)
+	w.put(k+".#", strconv.FormatInt(int64(len(vs)), 10))
 	return nil
 }
 
@@ -169,7 +189,7 @@ func (w *MapFieldWriter) setMap(
 
 	if value == nil {
 		// The empty string here means the map is removed.
-		w.result[k] = ""
+		w.put(k, "")
 		return nil
 	}
 
@@ -201,7 +221,7 @@ func (w *MapFieldWriter) setMap(
 	}
 
 	// Set the count
-	w.result[k+".%"] = strconv.Itoa(len(vs))
+	w.put(k+".%", strconv.Itoa(len(vs)))
 
 	return nil
 }
@@ -245,7 +265,7 @@ func (w *MapFieldWriter) setPrimitive(
 
 	if v == nil {
 		// The empty string here means the value is removed.
-		w.result[k] = ""
+		w.put(k, "")
 		return nil
 	}
 
@@ -278,7 +298,7 @@ func (w *MapFieldWriter) setPrimitive(
 		return fmt.Errorf("Unknown type: %#v", schema.Type)
 	}
 
-	w.result[k] = set
+	w.put(k, set)
 	return nil
 }
 
@@ -291,7 +311,7 @@ func (w *MapFieldWriter) setSet(
 	k := strings.Join(addr, ".")
 
 	if value == nil {
-		w.result[k+".#"] = "0"
+		w.put(k+".#", "0")
 		return nil
 	}
 
@@ -344,7 +364,7 @@ func (w *MapFieldWriter) setSet(
 	w.clearTree(addr)
 
 	if value.(*Set) == nil {
-		w.result[k+".#"] = "0"
+		w.put(k+".#", "0")
 		return nil
 	}
 
@@ -354,6 +374,6 @@ func (w *MapFieldWriter) setSet(
 		}
 	}
 
-	w.result[k+".#"] = strconv.Itoa(value.(*Set).Len())
+	w.put(k+".#", strconv.Itoa(value.(*Set).Len()))
 	return nil
 }
