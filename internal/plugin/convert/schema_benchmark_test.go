@@ -35,6 +35,8 @@ func BenchmarkSortedKeys(b *testing.B) {
 }
 
 func BenchmarkConfigSchemaToProto(b *testing.B) {
+	const nestedBlockAttributes = 2
+
 	for _, tc := range []struct {
 		name       string
 		attributes int
@@ -56,7 +58,14 @@ func BenchmarkConfigSchemaToProto(b *testing.B) {
 			schema.Attributes[fmt.Sprintf("attribute_%02d", i)] = &configschema.Attribute{Type: cty.String}
 		}
 		for i := 0; i < tc.blocks; i++ {
-			schema.BlockTypes[fmt.Sprintf("block_%02d", i)] = &configschema.NestedBlock{Nesting: configschema.NestingSingle}
+			nested := &configschema.NestedBlock{
+				Block:   configschema.Block{Attributes: make(map[string]*configschema.Attribute, nestedBlockAttributes)},
+				Nesting: configschema.NestingSingle,
+			}
+			for j := range nestedBlockAttributes {
+				nested.Attributes[fmt.Sprintf("attribute_%02d", j)] = &configschema.Attribute{Type: cty.String}
+			}
+			schema.BlockTypes[fmt.Sprintf("block_%02d", i)] = nested
 		}
 
 		b.Run(tc.name, func(b *testing.B) {
