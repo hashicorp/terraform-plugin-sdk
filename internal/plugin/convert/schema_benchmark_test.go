@@ -19,14 +19,14 @@ var benchmarkConfigSchemaToProtoResult *tfprotov5.SchemaBlock
 func BenchmarkSortedKeys(b *testing.B) {
 	for _, size := range []int{0, 3, 10, 40} {
 		attributes := make(map[string]*configschema.Attribute, size)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			attributes[fmt.Sprintf("attribute_%02d", i)] = &configschema.Attribute{}
 		}
 
 		b.Run(fmt.Sprintf("elements=%d", size), func(b *testing.B) {
 			b.ReportAllocs()
 			var keys []string
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				keys = sortedKeys(attributes)
 			}
 			benchmarkSortedKeysResult = keys
@@ -54,10 +54,10 @@ func BenchmarkConfigSchemaToProto(b *testing.B) {
 			Attributes: make(map[string]*configschema.Attribute, tc.attributes),
 			BlockTypes: make(map[string]*configschema.NestedBlock, tc.blocks),
 		}
-		for i := 0; i < tc.attributes; i++ {
+		for i := range tc.attributes {
 			schema.Attributes[fmt.Sprintf("attribute_%02d", i)] = &configschema.Attribute{Type: cty.String}
 		}
-		for i := 0; i < tc.blocks; i++ {
+		for i := range tc.blocks {
 			nested := &configschema.NestedBlock{
 				Block:   configschema.Block{Attributes: make(map[string]*configschema.Attribute, nestedBlockAttributes)},
 				Nesting: configschema.NestingSingle,
@@ -71,7 +71,7 @@ func BenchmarkConfigSchemaToProto(b *testing.B) {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			var result *tfprotov5.SchemaBlock
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				result = ConfigSchemaToProto(context.Background(), schema)
 			}
 			benchmarkConfigSchemaToProtoResult = result
