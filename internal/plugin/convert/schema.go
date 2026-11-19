@@ -16,16 +16,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 )
 
+// The tftypes primitives are non-pointer structs, so converting one to the
+// tftypes.Type interface copies it to the heap. The values are immutable,
+// so sharing them is safe.
+var (
+	tftypeString  tftypes.Type = tftypes.String
+	tftypeNumber  tftypes.Type = tftypes.Number
+	tftypeBool    tftypes.Type = tftypes.Bool
+	tftypeDynamic tftypes.Type = tftypes.DynamicPseudoType
+)
+
 func tftypeFromCtyType(in cty.Type) (tftypes.Type, error) {
 	switch {
 	case in.Equals(cty.String):
-		return tftypes.String, nil
+		return tftypeString, nil
 	case in.Equals(cty.Number):
-		return tftypes.Number, nil
+		return tftypeNumber, nil
 	case in.Equals(cty.Bool):
-		return tftypes.Bool, nil
+		return tftypeBool, nil
 	case in.Equals(cty.DynamicPseudoType):
-		return tftypes.DynamicPseudoType, nil
+		return tftypeDynamic, nil
 	case in.IsSetType():
 		elemType, err := tftypeFromCtyType(in.ElementType())
 		if err != nil {
