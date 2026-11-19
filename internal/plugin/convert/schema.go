@@ -6,8 +6,7 @@ package convert
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"sort"
+	"slices"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
@@ -319,17 +318,15 @@ func schemaNestedBlock(ctx context.Context, b *tfprotov5.SchemaNestedBlock) *con
 }
 
 // sortedKeys returns the lexically sorted keys from the given map. This is
-// used to make schema conversions are deterministic. This panics if map keys
-// are not a string.
-func sortedKeys(m interface{}) []string {
-	v := reflect.ValueOf(m)
-	keys := make([]string, v.Len())
-
-	mapKeys := v.MapKeys()
-	for i, k := range mapKeys {
-		keys[i] = k.Interface().(string)
+// used to make schema conversions are deterministic.
+func sortedKeys[V any](m map[string]V) []string {
+	if len(m) == 0 {
+		return nil
 	}
-
-	sort.Strings(keys)
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
 	return keys
 }
