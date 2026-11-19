@@ -140,6 +140,9 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 		DeprecationMessage: b.DeprecationMessage,
 	}
 
+	if len(b.Attributes) > 0 {
+		block.Attributes = make([]*tfprotov5.SchemaAttribute, 0, len(b.Attributes))
+	}
 	for _, name := range sortedKeys(b.Attributes) {
 		a := b.Attributes[name]
 
@@ -165,6 +168,9 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 		block.Attributes = append(block.Attributes, attr)
 	}
 
+	if len(b.BlockTypes) > 0 {
+		block.BlockTypes = make([]*tfprotov5.SchemaNestedBlock, 0, len(b.BlockTypes))
+	}
 	for _, name := range sortedKeys(b.BlockTypes) {
 		b := b.BlockTypes[name]
 		block.BlockTypes = append(block.BlockTypes, protoSchemaNestedBlock(ctx, name, b))
