@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: ' tfsdk: Fixed `StringLenBetween` function to correctly count multibyte characters'
+time: 2025-09-03T15:58:19.587736995Z
+custom:
+    Issue: "1516"

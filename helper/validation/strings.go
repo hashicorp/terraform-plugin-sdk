@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure"
+	"golang.org/x/text/unicode/norm"
 )
 
 // StringIsNotEmpty is a ValidateFunc that ensures a string is not empty
@@ -78,8 +80,9 @@ func StringLenBetween(minVal, maxVal int) schema.SchemaValidateFunc {
 			errors = append(errors, fmt.Errorf("expected type of %s to be string", k))
 			return warnings, errors
 		}
-
-		if len(v) < minVal || len(v) > maxVal {
+		v = norm.NFC.String(v)
+		l := utf8.RuneCountInString(v)
+		if l < minVal || l > maxVal {
 			errors = append(errors, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s", k, minVal, maxVal, v))
 		}
 
