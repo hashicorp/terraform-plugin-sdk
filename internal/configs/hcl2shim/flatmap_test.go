@@ -5,6 +5,7 @@ package hcl2shim
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -756,6 +757,36 @@ func TestHCL2ValueFromFlatmap(t *testing.T) {
 
 			if !got.RawEquals(test.Want) {
 				t.Errorf("wrong result\ngot:  %#v\nwant: %#v", got, test.Want)
+			}
+		})
+	}
+}
+
+// A list of objects that each hold empty sets and maps, as a large data source's
+// state does. Reading each empty container must not scan the whole flatmap.
+func BenchmarkHCL2ValueFromFlatmap_listOfObjectsWithEmptyContainers(b *testing.B) {
+	ty := cty.Object(map[string]cty.Type{
+		"items": cty.List(cty.Object(map[string]cty.Type{
+			"name":   cty.String,
+			"roles":  cty.Set(cty.String),
+			"groups": cty.Set(cty.String),
+			"labels": cty.Map(cty.String),
+		})),
+	})
+	for _, n := range []int{100, 1000, 2000} {
+		m := map[string]string{"items.#": strconv.Itoa(n)}
+		for i := 0; i < n; i++ {
+			p := "items." + strconv.Itoa(i) + "."
+			m[p+"name"] = strconv.Itoa(i)
+			m[p+"roles.#"] = "0"
+			m[p+"groups.#"] = "0"
+			m[p+"labels.%"] = "0"
+		}
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				if _, err := HCL2ValueFromFlatmap(m, ty); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
