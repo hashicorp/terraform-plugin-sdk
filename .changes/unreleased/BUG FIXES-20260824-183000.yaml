@@ -1,0 +1,7 @@
+kind: BUG FIXES
+body: 'helper/schema: Fixed validation diagnostics for sibling attributes and list
+    or map elements reporting the wrong attribute path, caused by child paths sharing
+    one backing array'
+time: 2026-08-24T18:30:00+03:00
+custom:
+    Issue: "1175"
