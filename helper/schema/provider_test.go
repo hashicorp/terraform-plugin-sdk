@@ -1758,6 +1758,46 @@ func TestProviderValidate(t *testing.T) {
 			Config: nil,
 			Err:    true,
 		},
+		{
+			P: &Provider{
+				NoInternalValidate: true,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Optional: true,
+					},
+				},
+				ResourcesMap: map[string]*Resource{
+					"bar": {
+						Schema: map[string]*Schema{
+							"baz": {},
+						},
+					},
+				},
+			},
+			Config: nil,
+			Err:    false,
+		},
+		{
+			P: &Provider{
+				NoInternalValidate: true,
+				Schema: map[string]*Schema{
+					"foo": {
+						Type:     TypeString,
+						Required: true,
+					},
+				},
+				ResourcesMap: map[string]*Resource{
+					"bar": {
+						Schema: map[string]*Schema{
+							"baz": {},
+						},
+					},
+				},
+			},
+			Config: nil,
+			Err:    true,
+		},
 	}
 
 	for i, tc := range cases {

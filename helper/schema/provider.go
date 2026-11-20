@@ -103,6 +103,15 @@ type Provider struct {
 	// Terraform sends a cancellation signal.
 	ConfigureProvider func(context.Context, ConfigureProviderRequest, *ConfigureProviderResponse)
 
+	// NoInternalValidate controls whether Provider.Validate skips running
+	// InternalValidate across all resources and data sources in the provider.
+	//
+	// Providers that already verify InternalValidate in unit tests and want to
+	// avoid validating all resource and data source schemas during every
+	// PrepareProviderConfig RPC (for example, when using Resource.SchemaFunc)
+	// can set this to true.
+	NoInternalValidate bool
+
 	// configured is enabled after a Configure() call
 	configured bool
 
@@ -307,15 +316,17 @@ func (p *Provider) GetSchema(req *terraform.ProviderSchemaRequest) (*terraform.P
 // The primary use case of this call is to check that required keys are
 // set.
 func (p *Provider) Validate(c *terraform.ResourceConfig) diag.Diagnostics {
-	if err := p.InternalValidate(); err != nil {
-		return []diag.Diagnostic{
-			{
-				Severity: diag.Error,
-				Summary:  "InternalValidate",
-				Detail: fmt.Sprintf("Internal validation of the provider failed! This is always a bug\n"+
-					"with the provider itself, and not a user issue. Please report\n"+
-					"this bug:\n\n%s", err),
-			},
+	if !p.NoInternalValidate {
+		if err := p.InternalValidate(); err != nil {
+			return []diag.Diagnostic{
+				{
+					Severity: diag.Error,
+					Summary:  "InternalValidate",
+					Detail: fmt.Sprintf("Internal validation of the provider failed! This is always a bug\n"+
+						"with the provider itself, and not a user issue. Please report\n"+
+						"this bug:\n\n%s", err),
+				},
+			}
 		}
 	}
 
