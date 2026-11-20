@@ -334,7 +334,7 @@ func schemaNestedBlock(ctx context.Context, b *tfprotov5.SchemaNestedBlock) *con
 }
 
 // sortedKeys returns the lexically sorted keys from the given map. This is
-// used to make schema conversions are deterministic.
+// used to ensure schema conversions are deterministic.
 func sortedKeys[V any](m map[string]V) []string {
 	if len(m) == 0 {
 		return nil
