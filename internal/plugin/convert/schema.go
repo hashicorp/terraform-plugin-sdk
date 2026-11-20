@@ -190,7 +190,7 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 }
 
 func ConfigIdentitySchemaToProto(ctx context.Context, identitySchema *configschema.Block) []*tfprotov5.ResourceIdentitySchemaAttribute {
-	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0)
+	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0, len(identitySchema.Attributes))
 
 	for _, name := range sortedKeys(identitySchema.Attributes) {
 		a := identitySchema.Attributes[name]

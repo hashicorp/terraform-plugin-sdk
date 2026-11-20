@@ -15,6 +15,7 @@ import (
 
 var benchmarkSortedKeysResult []string
 var benchmarkConfigSchemaToProtoResult *tfprotov5.SchemaBlock
+var benchmarkConfigIdentitySchemaToProtoResult []*tfprotov5.ResourceIdentitySchemaAttribute
 
 func BenchmarkSortedKeys(b *testing.B) {
 	for _, size := range []int{0, 3, 10, 40} {
@@ -75,6 +76,26 @@ func BenchmarkConfigSchemaToProto(b *testing.B) {
 				result = ConfigSchemaToProto(context.Background(), schema)
 			}
 			benchmarkConfigSchemaToProtoResult = result
+		})
+	}
+}
+
+func BenchmarkConfigIdentitySchemaToProto(b *testing.B) {
+	for _, size := range []int{1, 2, 3, 4, 5, 6} {
+		schema := &configschema.Block{
+			Attributes: make(map[string]*configschema.Attribute, size),
+		}
+		for i := range size {
+			schema.Attributes[fmt.Sprintf("attribute_%02d", i)] = &configschema.Attribute{Type: cty.String}
+		}
+
+		b.Run(fmt.Sprintf("attributes=%d", size), func(b *testing.B) {
+			b.ReportAllocs()
+			var result []*tfprotov5.ResourceIdentitySchemaAttribute
+			for b.Loop() {
+				result = ConfigIdentitySchemaToProto(context.Background(), schema)
+			}
+			benchmarkConfigIdentitySchemaToProtoResult = result
 		})
 	}
 }
