@@ -703,6 +703,57 @@ func TestResourceInternalValidate(t *testing.T) {
 			false,
 		},
 
+		"non-writable must not define Identity": {
+			&Resource{
+				Read: Noop,
+				Schema: map[string]*Schema{
+					"goo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				Identity: &ResourceIdentity{
+					SchemaFunc: func() map[string]*Schema {
+						return map[string]*Schema{
+							"id": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						}
+					},
+				},
+			},
+			false,
+			true,
+		},
+
+		"writable may define Identity": {
+			&Resource{
+				Create: Noop,
+				Read:   Noop,
+				Update: Noop,
+				Delete: Noop,
+				Schema: map[string]*Schema{
+					"goo": {
+						Type:     TypeInt,
+						Optional: true,
+					},
+				},
+				Identity: &ResourceIdentity{
+					SchemaFunc: func() map[string]*Schema {
+						return map[string]*Schema{
+							"id": {
+								Type:              TypeString,
+								RequiredForImport: true,
+							},
+						}
+					},
+				},
+			},
+			true,
+			false,
+		},
+
 		"non-writable *must not* have Create": {
 			&Resource{
 				Create: Noop,
