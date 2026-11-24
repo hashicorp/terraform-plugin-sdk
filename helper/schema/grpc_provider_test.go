@@ -11873,6 +11873,73 @@ func TestGenerateResourceConfig(t *testing.T) {
 				},
 			},
 		},
+		"schema-func-resource": {
+			server: NewGRPCProviderServer(&Provider{
+				ResourcesMap: map[string]*Resource{
+					"test": {
+						SchemaVersion: 1,
+						SchemaFunc: func() map[string]*Schema {
+							return map[string]*Schema{
+								"id": {
+									Type:     TypeString,
+									Computed: true,
+									Optional: true,
+								},
+								"test_computed": {
+									Type:     TypeString,
+									Computed: true,
+								},
+								"test_optional": {
+									Type:     TypeString,
+									Optional: true,
+								},
+								"test_empty_string": {
+									Type:     TypeString,
+									Optional: true,
+								},
+							}
+						},
+					},
+				},
+			}),
+			req: &tfprotov5.GenerateResourceConfigRequest{
+				TypeName: "test",
+				State: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_empty_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":                cty.StringVal("id-val"),
+							"test_computed":     cty.StringVal("computed-val"),
+							"test_optional":     cty.StringVal("optional-val"),
+							"test_empty_string": cty.StringVal(""),
+						}),
+					),
+				},
+			},
+			expected: &tfprotov5.GenerateResourceConfigResponse{
+				Config: &tfprotov5.DynamicValue{
+					MsgPack: mustMsgpackMarshal(
+						cty.Object(map[string]cty.Type{
+							"id":                cty.String,
+							"test_computed":     cty.String,
+							"test_optional":     cty.String,
+							"test_empty_string": cty.String,
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"id":                cty.NullVal(cty.String),
+							"test_computed":     cty.NullVal(cty.String),
+							"test_optional":     cty.StringVal("optional-val"),
+							"test_empty_string": cty.NullVal(cty.String),
+						}),
+					),
+				},
+			},
+		},
 		"schema-behaviors": {
 			server: NewGRPCProviderServer(&Provider{
 				ResourcesMap: map[string]*Resource{

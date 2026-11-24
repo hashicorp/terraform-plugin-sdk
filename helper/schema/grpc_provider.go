@@ -1800,6 +1800,10 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 
 	schemaBlock := s.getResourceSchemaBlock(req.TypeName)
 	res := s.provider.ResourcesMap[req.TypeName]
+	// SchemaMap resolves a resource defined with SchemaFunc, whose Schema
+	// field is nil: reading res.Schema would find no attribute or block,
+	// and the whole state would be returned as configuration.
+	resSchema := schemaMap(res.SchemaMap())
 
 	stateVal, err := msgpack.Unmarshal(req.State.MsgPack, schemaBlock.ImpliedType())
 	if err != nil {
@@ -1839,8 +1843,8 @@ func (s *GRPCProviderServer) GenerateResourceConfig(ctx context.Context, req *tf
 		null := cty.NullVal(ty)
 
 		// find the attribute or block schema representing the value
-		attr := schemaMap(res.Schema).AttributeByPath(path)
-		block := schemaMap(res.Schema).BlockByPath(path)
+		attr := resSchema.AttributeByPath(path)
+		block := resSchema.BlockByPath(path)
 		switch {
 		case attr != nil:
 			// deprecated attributes
