@@ -6,8 +6,7 @@ package convert
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"sort"
+	"slices"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
@@ -17,16 +16,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/logging"
 )
 
+// The tftypes primitives are non-pointer structs, so converting one to the
+// tftypes.Type interface copies it to the heap. The values are immutable,
+// so sharing them is safe.
+var (
+	tftypeString  tftypes.Type = tftypes.String
+	tftypeNumber  tftypes.Type = tftypes.Number
+	tftypeBool    tftypes.Type = tftypes.Bool
+	tftypeDynamic tftypes.Type = tftypes.DynamicPseudoType
+)
+
 func tftypeFromCtyType(in cty.Type) (tftypes.Type, error) {
 	switch {
 	case in.Equals(cty.String):
-		return tftypes.String, nil
+		return tftypeString, nil
 	case in.Equals(cty.Number):
-		return tftypes.Number, nil
+		return tftypeNumber, nil
 	case in.Equals(cty.Bool):
-		return tftypes.Bool, nil
+		return tftypeBool, nil
 	case in.Equals(cty.DynamicPseudoType):
-		return tftypes.DynamicPseudoType, nil
+		return tftypeDynamic, nil
 	case in.IsSetType():
 		elemType, err := tftypeFromCtyType(in.ElementType())
 		if err != nil {
@@ -141,6 +150,9 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 		DeprecationMessage: b.DeprecationMessage,
 	}
 
+	if len(b.Attributes) > 0 {
+		block.Attributes = make([]*tfprotov5.SchemaAttribute, 0, len(b.Attributes))
+	}
 	for _, name := range sortedKeys(b.Attributes) {
 		a := b.Attributes[name]
 
@@ -166,6 +178,9 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 		block.Attributes = append(block.Attributes, attr)
 	}
 
+	if len(b.BlockTypes) > 0 {
+		block.BlockTypes = make([]*tfprotov5.SchemaNestedBlock, 0, len(b.BlockTypes))
+	}
 	for _, name := range sortedKeys(b.BlockTypes) {
 		b := b.BlockTypes[name]
 		block.BlockTypes = append(block.BlockTypes, protoSchemaNestedBlock(ctx, name, b))
@@ -175,7 +190,7 @@ func ConfigSchemaToProto(ctx context.Context, b *configschema.Block) *tfprotov5.
 }
 
 func ConfigIdentitySchemaToProto(ctx context.Context, identitySchema *configschema.Block) []*tfprotov5.ResourceIdentitySchemaAttribute {
-	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0)
+	output := make([]*tfprotov5.ResourceIdentitySchemaAttribute, 0, len(identitySchema.Attributes))
 
 	for _, name := range sortedKeys(identitySchema.Attributes) {
 		a := identitySchema.Attributes[name]
@@ -319,17 +334,15 @@ func schemaNestedBlock(ctx context.Context, b *tfprotov5.SchemaNestedBlock) *con
 }
 
 // sortedKeys returns the lexically sorted keys from the given map. This is
-// used to make schema conversions are deterministic. This panics if map keys
-// are not a string.
-func sortedKeys(m interface{}) []string {
-	v := reflect.ValueOf(m)
-	keys := make([]string, v.Len())
-
-	mapKeys := v.MapKeys()
-	for i, k := range mapKeys {
-		keys[i] = k.Interface().(string)
+// used to ensure schema conversions are deterministic.
+func sortedKeys[V any](m map[string]V) []string {
+	if len(m) == 0 {
+		return nil
 	}
-
-	sort.Strings(keys)
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
 	return keys
 }
