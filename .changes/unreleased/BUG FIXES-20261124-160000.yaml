@@ -1,0 +1,5 @@
+kind: BUG FIXES
+body: 'helper/schema: Fixed `GenerateResourceConfig` returning the whole state, including computed-only attributes, as configuration for resources defined with `SchemaFunc`'
+time: 2026-11-24T16:00:00.000000+00:00
+custom:
+    Issue: "1637"
