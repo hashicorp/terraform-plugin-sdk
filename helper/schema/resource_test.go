@@ -258,6 +258,206 @@ func TestResourceDiff_Timeout_diff(t *testing.T) {
 	}
 }
 
+func TestResourceReadDataApply_Timeout_ResourceSpecified_Read(t *testing.T) {
+	timeouts := &ResourceTimeout{
+		Read: DefaultTimeout(5 * time.Minute),
+	}
+
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: timeouts,
+	}
+
+	var timeout time.Duration
+	r.Read = func(d *ResourceData, m interface{}) error {
+		d.SetId("foo")
+		timeout = d.Timeout(TimeoutRead)
+		return nil
+	}
+
+	ctx := context.Background()
+	c := terraform.NewResourceConfigRaw(
+		map[string]interface{}{
+			"foo": 42,
+		},
+	)
+
+	d, err := r.Diff(ctx, nil, c, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, diags := r.ReadDataApply(ctx, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if state == nil {
+		t.Fatal("expected a non-nil state")
+	}
+
+	if *timeouts.Read != timeout {
+		t.Fatalf("timeouts not equal, expected (%#v), got (%#v)", *timeouts.Read, timeout)
+	}
+}
+
+func TestResourceReadDataApply_Timeout_ConfigSpecified_Read(t *testing.T) {
+	timeouts := &ResourceTimeout{
+		Read: DefaultTimeout(5 * time.Minute),
+	}
+
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: timeouts,
+	}
+
+	var timeout time.Duration
+	r.Read = func(d *ResourceData, m interface{}) error {
+		d.SetId("foo")
+		timeout = d.Timeout(TimeoutRead)
+		return nil
+	}
+
+	ctx := context.Background()
+	c := terraform.NewResourceConfigRaw(
+		map[string]interface{}{
+			"foo": 42,
+			TimeoutsConfigKey: map[string]interface{}{
+				"read": "1h",
+			},
+		},
+	)
+
+	d, err := r.Diff(ctx, nil, c, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, diags := r.ReadDataApply(ctx, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if state == nil {
+		t.Fatal("expected a non-nil state")
+	}
+
+	if expected := 1 * time.Hour; expected != timeout {
+		t.Fatalf("timeouts not equal, expected (%#v), got (%#v)", expected, timeout)
+	}
+}
+
+func TestResourceReadDataApply_Timeout_SDKDefault_Read(t *testing.T) {
+	timeouts := &ResourceTimeout{}
+
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: timeouts,
+	}
+
+	var timeout time.Duration
+	r.Read = func(d *ResourceData, m interface{}) error {
+		d.SetId("foo")
+		timeout = d.Timeout(TimeoutRead)
+		return nil
+	}
+
+	ctx := context.Background()
+	c := terraform.NewResourceConfigRaw(
+		map[string]interface{}{
+			"foo": 42,
+		},
+	)
+
+	d, err := r.Diff(ctx, nil, c, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, diags := r.ReadDataApply(ctx, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if state == nil {
+		t.Fatal("expected a non-nil state")
+	}
+
+	if defaultTimeout := 20 * time.Minute; defaultTimeout != timeout {
+		t.Fatalf("timeouts not equal, expected (%#v), got (%#v)", defaultTimeout, timeout)
+	}
+}
+
+func TestResourceReadDataApply_Timeout_ResourceSpecified_ReadContext(t *testing.T) {
+	timeouts := &ResourceTimeout{
+		Read: DefaultTimeout(5 * time.Minute),
+	}
+
+	r := &Resource{
+		Schema: map[string]*Schema{
+			"foo": {
+				Type:     TypeInt,
+				Optional: true,
+			},
+		},
+		Timeouts: timeouts,
+	}
+
+	var timeout time.Duration
+	r.ReadContext = func(ctx context.Context, d *ResourceData, m interface{}) diag.Diagnostics {
+		d.SetId("foo")
+
+		if deadline, ok := ctx.Deadline(); ok {
+			timeout = time.Until(deadline)
+		}
+
+		return nil
+	}
+
+	ctx := context.Background()
+	c := terraform.NewResourceConfigRaw(
+		map[string]interface{}{
+			"foo": 42,
+		},
+	)
+
+	d, err := r.Diff(ctx, nil, c, nil)
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	state, diags := r.ReadDataApply(ctx, d, nil)
+	if diags.HasError() {
+		t.Fatalf("err: %s", diagutils.ErrorDiags(diags))
+	}
+
+	if state == nil {
+		t.Fatal("expected a non-nil state")
+	}
+
+	// accounting for the slight difference between timeout value passed via context and value retrieved based on deadline
+	difference := *timeouts.Read - timeout
+	if difference < 0 || difference > 1*time.Second {
+		t.Fatalf("timeouts not equal / within expected range, expected (%#v), got (%#v), difference (%#v)", *timeouts.Read, timeout, difference)
+	}
+	t.Logf("timeouts within expected range, expected (%#v), got (%#v), difference (%#v)", *timeouts.Read, timeout, difference)
+}
+
 func TestResourceDiff_CustomizeFunc(t *testing.T) {
 	r := &Resource{
 		Schema: map[string]*Schema{
@@ -1476,7 +1676,6 @@ func TestResource_UpgradeState(t *testing.T) {
 				"oldfoo": cty.Number,
 			}),
 			Upgrade: func(ctx context.Context, m map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
-
 				oldfoo, ok := m["oldfoo"].(float64)
 				if !ok {
 					t.Fatalf("expected 1.2, got %#v", m["oldfoo"])
@@ -2056,7 +2255,8 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 				SchemaFunc: func() map[string]*Schema {
 					return map[string]*Schema{
 						"foo": {
-							Type: TypeInt, OptionalForImport: true},
+							Type: TypeInt, OptionalForImport: true,
+						},
 					}
 				},
 			},
@@ -2068,7 +2268,8 @@ func TestResourceInternalIdentityValidate(t *testing.T) {
 				SchemaFunc: func() map[string]*Schema {
 					return map[string]*Schema{
 						"foo": {
-							Type: TypeInt, RequiredForImport: true},
+							Type: TypeInt, RequiredForImport: true,
+						},
 					}
 				},
 			},
