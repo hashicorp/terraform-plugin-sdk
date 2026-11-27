@@ -1,0 +1,5 @@
+kind: ENHANCEMENTS
+body: 'helper/schema: Writing and reading state with many nested sets and maps, such as a long list of objects that each hold a set, no longer takes time quadratic in their number'
+time: 2026-11-05T19:36:51.072608391-08:00
+custom:
+    Issue: "1631"
